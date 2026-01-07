@@ -1,33 +1,28 @@
 package main
 
 import (
-	"log/slog"
 	"os"
 
+	"github.com/brewpipes/brewpipesproto/cmd"
 	"github.com/brewpipes/brewpipesproto/internal/service/auth"
 )
 
 func main() {
-	if err := run(); err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	cmd.Main(run)
 }
 
 func run() error {
 	// Entry point for the independent auth service application.
+	cfg := &auth.Config{
+		PostgresDSN:      os.Getenv("AUTH_POSTGRES_DSN"),
+		PostgresPassword: os.Getenv("AUTH_POSTGRES_PASSWORD"),
+	}
 
 	// Initialize service.
-	authSvc, err := auth.NewService()
+	svc, err := auth.NewService(cfg)
 	if err != nil {
 		return err
 	}
 
-	// Start service.
-	if err := authSvc.Start(); err != nil {
-		return err
-	}
-	defer authSvc.Stop()
-
-	return nil
+	return cmd.RunService(svc)
 }

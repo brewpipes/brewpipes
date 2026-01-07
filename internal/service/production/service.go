@@ -21,8 +21,3 @@ func (s *Service) Stop() error {
 	slog.Info("production service stopped")
 	return nil
 }
-
-func (s *Service) HealthCheck() bool {
-	slog.Info("production service health check")
-	return true
-}

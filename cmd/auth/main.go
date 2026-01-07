@@ -24,5 +24,5 @@ func run() error {
 		return err
 	}
 
-	return cmd.RunService(svc)
+	return cmd.RunServices(svc)
 }

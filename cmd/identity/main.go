@@ -15,8 +15,7 @@ func run() error {
 	// Entry point for the independent identity service application.
 
 	svc, err := identity.NewService(&identity.Config{
-		PostgresDSN:      os.Getenv("identity_POSTGRES_DSN"),
-		PostgresPassword: os.Getenv("identity_POSTGRES_PASSWORD"),
+		PostgresDSN: os.Getenv("identity_POSTGRES_DSN"),
 	})
 	if err != nil {
 		return err

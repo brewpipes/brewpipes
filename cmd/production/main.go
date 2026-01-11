@@ -15,8 +15,7 @@ func run() error {
 	// Entry point for the independent production service application.
 
 	svc, err := production.NewService(&production.Config{
-		PostgresDSN:      os.Getenv("PRODUCTION_POSTGRES_DSN"),
-		PostgresPassword: os.Getenv("PRODUCTION_POSTGRES_PASSWORD"),
+		PostgresDSN: os.Getenv("PRODUCTION_POSTGRES_DSN"),
 	})
 	if err != nil {
 		return err

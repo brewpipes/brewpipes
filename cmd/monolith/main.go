@@ -15,13 +15,11 @@ func main() {
 func run() error {
 	// Entry point for the independent identity service application.
 	identityCfg := &identity.Config{
-		PostgresDSN:      os.Getenv("POSTGRES_DSN"),
-		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
+		PostgresDSN: os.Getenv("POSTGRES_DSN"),
 	}
 
 	productionCfg := &production.Config{
-		PostgresDSN:      os.Getenv("POSTGRES_DSN"),
-		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
+		PostgresDSN: os.Getenv("POSTGRES_DSN"),
 	}
 
 	// Initialize services.

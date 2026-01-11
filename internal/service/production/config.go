@@ -1,6 +1,5 @@
 package production
 
 type Config struct {
-	PostgresDSN      string
-	PostgresPassword string
+	PostgresDSN string
 }

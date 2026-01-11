@@ -12,7 +12,6 @@ import (
 )
 
 type Service interface {
-	Name() string
 	HTTPRoutes() []service.HTTPRoute
 	Start(ctx context.Context) error
 }
@@ -39,7 +38,7 @@ func RunServices(services ...Service) error {
 	// Start all services.
 	for _, svc := range services {
 		if err := svc.Start(ctx); err != nil {
-			return fmt.Errorf("starting %s: %w", svc.Name(), err)
+			return fmt.Errorf("starting service: %w", err)
 		}
 	}
 

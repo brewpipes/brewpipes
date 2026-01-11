@@ -6,17 +6,24 @@ import (
 	"net/http"
 
 	"github.com/brewpipes/brewpipesproto/internal/service"
+	"github.com/brewpipes/brewpipesproto/internal/service/auth/handler"
+	"github.com/brewpipes/brewpipesproto/internal/service/auth/storage"
+	"github.com/gofrs/uuid/v5"
 )
 
+type Database interface {
+	GetUser(ctx context.Context, id uuid.UUID) (storage.User, error)
+	GetUserByUsername(ctx context.Context, username string) (storage.User, error)
+	ListUsers(ctx context.Context) ([]storage.User, error)
+}
+
 type Service struct {
+	db        Database
+	secretKey string
 }
 
 func NewService(cfg *Config) (*Service, error) {
 	return &Service{}, nil
-}
-
-func (s *Service) Name() string {
-	return "auth service"
 }
 
 func (s *Service) HTTPRoutes() []service.HTTPRoute {
@@ -24,7 +31,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{
 			Method:  http.MethodPost,
 			Path:    "/login",
-			Handler: http.HandlerFunc(s.handleLogin),
+			Handler: handler.HandleLogin(s.db, s.secretKey),
 		},
 	}
 }

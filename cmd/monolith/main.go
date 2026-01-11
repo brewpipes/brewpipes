@@ -15,13 +15,13 @@ func main() {
 func run() error {
 	// Entry point for the independent auth service application.
 	authCfg := &auth.Config{
-		PostgresDSN:      os.Getenv("AUTH_POSTGRES_DSN"),
-		PostgresPassword: os.Getenv("AUTH_POSTGRES_PASSWORD"),
+		PostgresDSN:      os.Getenv("POSTGRES_DSN"),
+		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
 	}
 
 	productionCfg := &production.Config{
-		PostgresDSN:      os.Getenv("PRODUCTION_POSTGRES_DSN"),
-		PostgresPassword: os.Getenv("PRODUCTION_POSTGRES_PASSWORD"),
+		PostgresDSN:      os.Getenv("POSTGRES_DSN"),
+		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
 	}
 
 	// Initialize services.

@@ -1,0 +1,27 @@
+services:
+
+  brewpipes:
+    build:
+      context: .
+      dockerfile: ./cmd/monolith/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_DSN: postgres://brewpipes:brewpipes@postgres:5432/brewpipes?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: brewpipes
+      POSTGRES_PASSWORD: brewpipes
+      POSTGRES_DB: brewpipes
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brewpipes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

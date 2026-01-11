@@ -13,13 +13,11 @@ func main() {
 
 func run() error {
 	// Entry point for the independent auth service application.
-	cfg := &auth.Config{
+
+	svc, err := auth.NewService(&auth.Config{
 		PostgresDSN:      os.Getenv("AUTH_POSTGRES_DSN"),
 		PostgresPassword: os.Getenv("AUTH_POSTGRES_PASSWORD"),
-	}
-
-	// Initialize service.
-	svc, err := auth.NewService(cfg)
+	})
 	if err != nil {
 		return err
 	}

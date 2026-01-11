@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/brewpipes/brewpipesproto/cmd"
-	"github.com/brewpipes/brewpipesproto/internal/service/production"
+	"github.com/brewpipes/brewpipesproto/internal/service/auth"
 )
 
 func main() {
@@ -13,13 +13,11 @@ func main() {
 
 func run() error {
 	// Entry point for the independent production service application.
-	cfg := &production.Config{
+
+	svc, err := auth.NewService(&auth.Config{
 		PostgresDSN:      os.Getenv("PRODUCTION_POSTGRES_DSN"),
 		PostgresPassword: os.Getenv("PRODUCTION_POSTGRES_PASSWORD"),
-	}
-
-	// Initialize service.
-	svc, err := production.NewService(cfg)
+	})
 	if err != nil {
 		return err
 	}

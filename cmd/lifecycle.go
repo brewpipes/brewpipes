@@ -2,56 +2,60 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
-	"sync"
+
+	"github.com/brewpipes/brewpipesproto/internal/service"
 )
 
-type RunnableService interface {
+type Service interface {
+	Name() string
+	HTTPRoutes() []service.HTTPRoute
 	Start(ctx context.Context) error
-	Stop(ctx context.Context) error
-	Done() <-chan error
 }
 
-func RunServices(services ...RunnableService) error {
+func RunServices(services ...Service) error {
 	// Establish root cancellable context.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	wg := sync.WaitGroup{}
-	startErrsCh := make(chan error, len(services))
+	// Aggregate HTTP routes from all services.
+	mux := http.NewServeMux()
 	for _, svc := range services {
-		wg.Go(func() {
-			if err := svc.Start(ctx); err != nil {
-				startErrsCh <- err
-			}
-		})
-	}
-
-	// Wait for all services to start or any to return an error.
-	wg.Wait()
-	close(startErrsCh)
-	for err := range startErrsCh {
-		if err != nil {
-			slog.Error("error starting service", "error", err)
-			return err
+		for _, route := range svc.HTTPRoutes() {
+			mux.Handle(route.Path, route.Handler)
 		}
 	}
+
+	// Start all services.
+	for _, svc := range services {
+		if err := svc.Start(ctx); err != nil {
+			return fmt.Errorf("starting %s: %w", svc.Name(), err)
+		}
+	}
+
+	// Create HTTP server to serve aggregated routes.
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
+
+	// Start HTTP server.
+	go func() {
+		slog.Info("starting aggregated HTTP server on :8080")
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("HTTP server error", "error", err)
+		}
+	}()
 
 	// Wait for application to receive interrupt signal.
 	<-interrupted()
 	slog.Info("application received interrupt signal, stopping services")
-
-	for _, svc := range services {
-		if err := svc.Stop(context.Background()); err != nil {
-			slog.Error("error stopping service", "error", err)
-		} else {
-			slog.Info("service stopped gracefully")
-		}
-	}
-
-	slog.Info("application terminated cleanly")
+	cancel()
+	slog.Info("application terminated")
 	return nil
 }
 

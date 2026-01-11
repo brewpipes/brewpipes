@@ -1,4 +1,4 @@
-package auth
+package identity
 
 type Config struct {
 	PostgresDSN      string

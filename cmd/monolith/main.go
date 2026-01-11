@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/brewpipes/brewpipesproto/cmd"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity"
 	"github.com/brewpipes/brewpipesproto/internal/service/production"
 )
 
@@ -13,8 +13,8 @@ func main() {
 }
 
 func run() error {
-	// Entry point for the independent auth service application.
-	authCfg := &auth.Config{
+	// Entry point for the independent identity service application.
+	identityCfg := &identity.Config{
 		PostgresDSN:      os.Getenv("POSTGRES_DSN"),
 		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
 	}
@@ -25,7 +25,7 @@ func run() error {
 	}
 
 	// Initialize services.
-	authSvc, err := auth.NewService(authCfg)
+	identitySvc, err := identity.NewService(identityCfg)
 	if err != nil {
 		return err
 	}
@@ -35,5 +35,5 @@ func run() error {
 		return err
 	}
 
-	return cmd.RunServices(authSvc, productionSvc)
+	return cmd.RunServices(identitySvc, productionSvc)
 }

@@ -10,8 +10,8 @@ import (
 
 	"github.com/brewpipes/brewpipesproto/internal/jwt"
 	"github.com/brewpipes/brewpipesproto/internal/service"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth/handler/dto"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth/storage"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity/handler/dto"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity/storage"
 	"github.com/gofrs/uuid/v5"
 	"golang.org/x/crypto/bcrypt"
 )

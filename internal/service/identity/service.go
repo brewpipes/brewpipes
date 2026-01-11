@@ -1,4 +1,4 @@
-package auth
+package identity
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/brewpipes/brewpipesproto/internal/service"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth/handler"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth/storage"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity/handler"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity/storage"
 	"github.com/gofrs/uuid/v5"
 )
 

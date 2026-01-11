@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/brewpipes/brewpipesproto/internal/service"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth/handler/dto"
-	"github.com/brewpipes/brewpipesproto/internal/service/auth/storage"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity/handler/dto"
+	"github.com/brewpipes/brewpipesproto/internal/service/identity/storage"
 )
 
 type UserLister interface {

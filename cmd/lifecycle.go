@@ -30,6 +30,12 @@ func RunServices(services ...Service) error {
 		}
 	}
 
+	// Create HTTP server to serve aggregated routes.
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
+
 	// Start all services.
 	for _, svc := range services {
 		if err := svc.Start(ctx); err != nil {
@@ -37,24 +43,23 @@ func RunServices(services ...Service) error {
 		}
 	}
 
-	// Create HTTP server to serve aggregated routes.
-	httpServer := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-	}
-
 	// Start HTTP server.
 	go func() {
 		slog.Info("starting aggregated HTTP server on :8080")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("HTTP server error", "error", err)
+			slog.Error("HTTP server exited with error", "error", err)
 		}
 	}()
 
 	// Wait for application to receive interrupt signal.
 	<-interrupted()
 	slog.Info("application received interrupt signal, stopping services")
+	if err := httpServer.Shutdown(ctx); err != nil {
+		slog.Error("error while shutting down HTTP server", "error", err)
+	}
+
 	cancel()
+
 	slog.Info("application terminated")
 	return nil
 }

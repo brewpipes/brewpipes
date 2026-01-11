@@ -64,13 +64,8 @@ func RunServices(services ...Service) error {
 }
 
 // interrupted returns a channel that is closed when an interrupt signal is received.
-func interrupted() <-chan struct{} {
+func interrupted() <-chan os.Signal {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
-	interrupted := make(chan struct{})
-	go func() {
-		<-sig
-		close(interrupted)
-	}()
-	return interrupted
+	return sig
 }

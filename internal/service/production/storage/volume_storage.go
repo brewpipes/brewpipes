@@ -22,7 +22,7 @@ func (v Volume) Validate() error {
 }
 
 func (c *Client) GetVolumes(ctx context.Context) ([]Volume, error) {
-	rows, err := c.DB.Query(ctx, `
+	rows, err := c.db.Query(ctx, `
 		SELECT id, name, description, amount, amount_unit
 		FROM volume
 	`)
@@ -45,7 +45,7 @@ func (c *Client) GetVolumes(ctx context.Context) ([]Volume, error) {
 
 func (c *Client) CreateVolume(ctx context.Context, volume Volume) (Volume, error) {
 	var id int
-	err := c.DB.QueryRow(ctx, `
+	err := c.db.QueryRow(ctx, `
 		INSERT INTO volume (
 			name,
 			description,

@@ -9,21 +9,28 @@ import (
 )
 
 type Client struct {
-	DB *pgxpool.Pool
+	dsn string
+	db  *pgxpool.Pool
 }
 
-func (c *Client) Ping(ctx context.Context) error {
-	if err := c.DB.Ping(ctx); err != nil {
+func NewClient(ctx context.Context, dsn string) (*Client, error) {
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return nil, fmt.Errorf("creating DB connection pool: %w", err)
+	}
+
+	return &Client{
+		dsn: dsn,
+		db:  pool,
+	}, nil
+}
+
+func (c *Client) Start(ctx context.Context) error {
+	if err := c.db.Ping(ctx); err != nil {
 		return fmt.Errorf("pinging Postgres: %w", err)
 	}
-	return nil
-}
 
-func (c *Client) Migrate() error {
-	if err := database.Migrate(
-		"file://./db/migrations",
-		"pgx5://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=enable",
-	); err != nil {
+	if err := database.Migrate("file://./db/migrations", c.dsn); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)
 	}
 

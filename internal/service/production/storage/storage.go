@@ -13,7 +13,7 @@ type Client struct {
 	db  *pgxpool.Pool
 }
 
-func NewClient(ctx context.Context, dsn string) (*Client, error) {
+func New(ctx context.Context, dsn string) (*Client, error) {
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("creating DB connection pool: %w", err)
@@ -30,7 +30,7 @@ func (c *Client) Start(ctx context.Context) error {
 		return fmt.Errorf("pinging Postgres: %w", err)
 	}
 
-	if err := database.Migrate("file://./db/migrations", c.dsn); err != nil {
+	if err := database.Migrate("file:///app/internal/service/production/migrations", c.dsn); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)
 	}
 

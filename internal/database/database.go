@@ -10,8 +10,7 @@ import (
 )
 
 func Migrate(from, to string) error {
-	// m, err := migrate.New(from, to)
-	m, err := migrate.New("file:///migrations", "pgx5://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=enable")
+	m, err := migrate.New(from, to)
 	if err != nil {
 		return fmt.Errorf("creating migration instance: %w", err)
 	}

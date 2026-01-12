@@ -9,14 +9,6 @@ import (
 	"github.com/gofrs/uuid/v5"
 )
 
-type Starter interface {
-	Start() error
-}
-
-type Stopper interface {
-	Stop() error
-}
-
 type HTTPRoute struct {
 	Method  string
 	Path    string

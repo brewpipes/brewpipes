@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS vessel (
     name           varchar(255) NOT NULL,
     capacity       bigint NOT NULL,
     capacity_unit  volume_unit  NOT NULL,
+    make           varchar(255),
+    model          varchar(255),
 
     created_at     timestamptz NOT NULL DEFAULT timezone('utc', now()),
     updated_at     timestamptz NOT NULL DEFAULT timezone('utc', now()),
@@ -52,8 +54,6 @@ CREATE TABLE IF NOT EXISTS transfer (
 
     source_occupancy_id  int NOT NULL REFERENCES occupancy(id),
     dest_occupancy_id    int NOT NULL REFERENCES occupancy(id),
-    amount               bigint NOT NULL,
-    amount_unit          volume_unit  NOT NULL,
     started_at           timestamptz NOT NULL DEFAULT timezone('utc', now()),
     ended_at             timestamptz,
 

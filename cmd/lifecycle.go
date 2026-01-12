@@ -16,11 +16,7 @@ type Service interface {
 	Start(ctx context.Context) error
 }
 
-func RunServices(services ...Service) error {
-	// Establish root cancellable context.
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func RunServices(ctx context.Context, services ...Service) error {
 	// Aggregate HTTP routes from all services.
 	mux := http.NewServeMux()
 	for _, svc := range services {
@@ -56,8 +52,6 @@ func RunServices(services ...Service) error {
 	if err := httpServer.Shutdown(ctx); err != nil {
 		slog.Error("error while shutting down HTTP server", "error", err)
 	}
-
-	cancel()
 
 	slog.Info("application terminated")
 	return nil

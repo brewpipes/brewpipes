@@ -22,5 +22,5 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	return cmd.RunServices(svc)
+	return cmd.RunServices(ctx, svc)
 }

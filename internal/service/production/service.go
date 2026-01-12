@@ -14,9 +14,9 @@ type Service struct {
 	storage *storage.Client
 }
 
-// NewService creates and initializes a new production service instance.
-func NewService(ctx context.Context, cfg *Config) (*Service, error) {
-	stg, err := storage.NewClient(ctx, cfg.PostgresDSN)
+// New creates and initializes a new production service instance.
+func New(ctx context.Context, cfg Config) (*Service, error) {
+	stg, err := storage.New(ctx, cfg.PostgresDSN)
 	if err != nil {
 		return nil, fmt.Errorf("creating storage client: %w", err)
 	}

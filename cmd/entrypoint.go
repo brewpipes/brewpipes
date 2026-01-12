@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 )
 
-type RunFunc func() error
+type RunFunc func(context.Context) error
 
 type RunError struct {
 	Err      error
@@ -23,7 +24,9 @@ func (e RunError) Error() string {
 // to exit with the specified exit code. If the error is not of type RunError,
 // a default exit code of 1 is used.
 func Main(run RunFunc) {
-	if err := run(); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := run(ctx); err != nil {
 		rerr, ok := err.(RunError)
 		if !ok {
 			rerr = RunError{Err: err, ExitCode: 1}

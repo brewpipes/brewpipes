@@ -9,6 +9,8 @@ require (
 	golang.org/x/crypto v0.46.0
 )
 
+require github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa // indirect
+
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/jackc/pgpassfile v1.0.0 // indirect

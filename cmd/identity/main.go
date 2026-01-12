@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/brewpipes/brewpipesproto/cmd"
@@ -11,7 +12,7 @@ func main() {
 	cmd.Main(run)
 }
 
-func run() error {
+func run(ctx context.Context) error {
 	// Entry point for the independent identity service application.
 
 	svc, err := identity.NewService(&identity.Config{

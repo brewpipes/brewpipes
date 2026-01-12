@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"os"
 
 	"github.com/brewpipes/brewpipesproto/cmd"
@@ -12,25 +14,22 @@ func main() {
 	cmd.Main(run)
 }
 
-func run() error {
+func run(ctx context.Context) error {
 	// Entry point for the independent identity service application.
-	identityCfg := &identity.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
-	}
-
-	productionCfg := &production.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
-	}
 
 	// Initialize services.
-	identitySvc, err := identity.NewService(identityCfg)
+	identitySvc, err := identity.NewService(&identity.Config{
+		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing identity service: %w", err)
 	}
 
-	productionSvc, err := production.NewService(productionCfg)
+	productionSvc, err := production.NewService(ctx, &production.Config{
+		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing production service: %w", err)
 	}
 
 	return cmd.RunServices(identitySvc, productionSvc)

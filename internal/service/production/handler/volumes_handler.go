@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/brewpipes/brewpipesproto/internal/service"
-	"github.com/brewpipes/brewpipesproto/internal/service/production/storage"
+	"github.com/brewpipes/brewpipes/internal/service"
+	"github.com/brewpipes/brewpipes/internal/service/production/storage"
 )
 
 type VolumeGetter interface {

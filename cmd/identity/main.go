@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/brewpipes/brewpipesproto/cmd"
-	"github.com/brewpipes/brewpipesproto/internal/service/identity"
+	"github.com/brewpipes/brewpipes/cmd"
+	"github.com/brewpipes/brewpipes/internal/service/identity"
 )
 
 func main() {

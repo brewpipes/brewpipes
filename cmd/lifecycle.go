@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/brewpipes/brewpipesproto/internal/service"
+	"github.com/brewpipes/brewpipes/internal/service"
 )
 
 type Service interface {

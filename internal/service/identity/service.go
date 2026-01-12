@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/brewpipes/brewpipesproto/internal/service"
-	"github.com/brewpipes/brewpipesproto/internal/service/identity/handler"
-	"github.com/brewpipes/brewpipesproto/internal/service/identity/storage"
+	"github.com/brewpipes/brewpipes/internal/service"
+	"github.com/brewpipes/brewpipes/internal/service/identity/handler"
+	"github.com/brewpipes/brewpipes/internal/service/identity/storage"
 	"github.com/gofrs/uuid/v5"
 )
 

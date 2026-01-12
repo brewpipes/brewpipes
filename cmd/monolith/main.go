@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/brewpipes/brewpipesproto/cmd"
-	"github.com/brewpipes/brewpipesproto/internal/service/identity"
-	"github.com/brewpipes/brewpipesproto/internal/service/production"
+	"github.com/brewpipes/brewpipes/cmd"
+	"github.com/brewpipes/brewpipes/internal/service/identity"
+	"github.com/brewpipes/brewpipes/internal/service/production"
 )
 
 func main() {

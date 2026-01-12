@@ -1,4 +1,4 @@
-module github.com/brewpipes/brewpipesproto
+module github.com/brewpipes/brewpipes
 
 go 1.25.5
 

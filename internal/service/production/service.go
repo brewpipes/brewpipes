@@ -5,23 +5,24 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/brewpipes/brewpipesproto/internal/database"
 	"github.com/brewpipes/brewpipesproto/internal/service"
+	"github.com/brewpipes/brewpipesproto/internal/service/production/handler"
+	"github.com/brewpipes/brewpipesproto/internal/service/production/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Service struct {
-	db *pgxpool.Pool
+	storage *storage.Client
 }
 
 func NewService(ctx context.Context, cfg *Config) (*Service, error) {
-	pool, err := pgxpool.New(ctx, "postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=enable")
+	pool, err := pgxpool.New(ctx, cfg.PostgresDSN)
 	if err != nil {
 		return nil, fmt.Errorf("creating DB connection pool: %w", err)
 	}
 
 	return &Service{
-		db: pool,
+		storage: &storage.Client{DB: pool},
 	}, nil
 }
 
@@ -30,21 +31,14 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{
 			Method:  http.MethodGet,
 			Path:    "/volumes",
-			Handler: http.HandlerFunc(s.handleGetVolumes),
+			Handler: handler.HandleGetVolumes(s.storage),
 		},
 	}
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	if err := s.db.Ping(ctx); err != nil {
+	if err := s.storage.Ping(ctx); err != nil {
 		return fmt.Errorf("pinging DB: %w", err)
-	}
-
-	if err := database.Migrate(
-		"file://./db/migrations",
-		"pgx5://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=enable",
-	); err != nil {
-		return fmt.Errorf("migrating DB: %w", err)
 	}
 
 	return nil

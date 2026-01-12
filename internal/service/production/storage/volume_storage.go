@@ -21,9 +21,31 @@ func (v Volume) Validate() error {
 	return nil
 }
 
+func (c *Client) GetVolumes(ctx context.Context) ([]Volume, error) {
+	rows, err := c.DB.Query(ctx, `
+		SELECT id, name, description, amount, amount_unit
+		FROM volume
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var volumes []Volume
+	for rows.Next() {
+		var v Volume
+		if err := rows.Scan(&v.ID, &v.Name, &v.Description, &v.Amount, &v.AmountUnit); err != nil {
+			return nil, err
+		}
+		volumes = append(volumes, v)
+	}
+
+	return volumes, nil
+}
+
 func (c *Client) CreateVolume(ctx context.Context, volume Volume) (Volume, error) {
 	var id int
-	err := c.db.QueryRow(ctx, `
+	err := c.DB.QueryRow(ctx, `
 		INSERT INTO volume (
 			name,
 			description,

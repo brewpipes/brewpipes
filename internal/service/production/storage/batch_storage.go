@@ -16,7 +16,7 @@ func (v Batch) Validate() error {
 
 func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
 	var id int
-	err := c.db.QueryRow(ctx, `
+	err := c.DB.QueryRow(ctx, `
 		INSERT INTO batch (
 			name,
 			description

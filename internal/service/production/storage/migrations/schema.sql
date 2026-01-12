@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS volume (
     id           serial PRIMARY KEY,
     name         varchar(255) NOT NULL,
     description  text,
-    amount       bigint NOT NULL,
-    amount_unit  volume_unit  NOT NULL
+    
 )
 
 -- A Vessel represents a container that can hold a volume of liquid.

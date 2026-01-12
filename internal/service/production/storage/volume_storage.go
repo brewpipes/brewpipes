@@ -3,14 +3,20 @@ package storage
 import (
 	"context"
 	"fmt"
+
+	"github.com/brewpipes/brewpipes/internal/entity"
 )
 
 type Volume struct {
-	ID          int
-	Name        string
-	Description string
-	Amount      int64
-	AmountUnit  string
+	entity.Identifiers
+	Name           string
+	Description    string
+	Amount         int64
+	AmountUnit     string
+	ParentVolumeID *int
+	entity.Timestamps
+
+	ParentVolume *Volume
 }
 
 func (v Volume) Validate() error {
@@ -44,7 +50,6 @@ func (c *Client) GetVolumes(ctx context.Context) ([]Volume, error) {
 }
 
 func (c *Client) CreateVolume(ctx context.Context, volume Volume) (Volume, error) {
-	var id int
 	err := c.db.QueryRow(ctx, `
 		INSERT INTO volume (
 			name,
@@ -52,11 +57,10 @@ func (c *Client) CreateVolume(ctx context.Context, volume Volume) (Volume, error
 			amount,
 			amount_unit
 		) VALUES ($1, $2, $3, $4) RETURNING id`,
-		volume.Name, volume.Description, volume.Amount, volume.AmountUnit).Scan(&id)
+		volume.Name, volume.Description, volume.Amount, volume.AmountUnit).Scan(&volume.ID)
 	if err != nil {
 		return Volume{}, err
 	}
 
-	volume.ID = id
 	return volume, nil
 }

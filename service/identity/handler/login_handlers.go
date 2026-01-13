@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/brewpipes/brewpipes/internal/jwt"
-	"github.com/brewpipes/brewpipes/internal/service"
-	"github.com/brewpipes/brewpipes/internal/service/identity/handler/dto"
-	"github.com/brewpipes/brewpipes/internal/service/identity/storage"
+	"github.com/brewpipes/brewpipes/service"
+	"github.com/brewpipes/brewpipes/service/identity/handler/dto"
+	"github.com/brewpipes/brewpipes/service/identity/storage"
 	"github.com/gofrs/uuid/v5"
 	"golang.org/x/crypto/bcrypt"
 )

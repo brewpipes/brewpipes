@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/brewpipes/brewpipes/internal/service"
+	"github.com/brewpipes/brewpipes/service"
 	"github.com/gofrs/uuid/v5"
 )
 

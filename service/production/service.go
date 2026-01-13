@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/brewpipes/brewpipes/internal/service"
-	"github.com/brewpipes/brewpipes/internal/service/production/handler"
-	"github.com/brewpipes/brewpipes/internal/service/production/storage"
+	"github.com/brewpipes/brewpipes/service"
+	"github.com/brewpipes/brewpipes/service/production/handler"
+	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
 type Service struct {

@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/brewpipes/brewpipes/internal/service/identity/storage"
+	"github.com/brewpipes/brewpipes/service/identity/storage"
 	"github.com/gofrs/uuid/v5"
 )
 

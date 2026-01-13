@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/brewpipes/brewpipes/cmd"
-	"github.com/brewpipes/brewpipes/internal/service/identity"
+	"github.com/brewpipes/brewpipes/service/identity"
 )
 
 func main() {

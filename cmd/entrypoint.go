@@ -7,13 +7,16 @@ import (
 	"os"
 )
 
+// RunFunc is a function that takes a context and returns an error.
 type RunFunc func(context.Context) error
 
+// RunError represents an error that occurred during the execution of a run function.
 type RunError struct {
 	Err      error
 	ExitCode int
 }
 
+// Error implements the error interface for RunError.
 func (e RunError) Error() string {
 	return e.Err.Error() + fmt.Sprintf(" (exit code %d)", e.ExitCode)
 }

@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/brewpipes/brewpipes/internal/entity"
+	"github.com/brewpipes/brewpipes/internal/database/entity"
 	bpjwt "github.com/brewpipes/brewpipes/internal/jwt"
 	"github.com/golang-jwt/jwt/v4"
 )

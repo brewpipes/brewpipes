@@ -11,11 +11,13 @@ import (
 	"github.com/brewpipes/brewpipes/service"
 )
 
+// Service is anything with HTTP routes that can be started.
 type Service interface {
 	HTTPRoutes() []service.HTTPRoute
 	Start(ctx context.Context) error
 }
 
+// RunServices starts the provided services and manages their lifecycle.
 func RunServices(ctx context.Context, services ...Service) error {
 	// Aggregate HTTP routes from all services.
 	mux := http.NewServeMux()

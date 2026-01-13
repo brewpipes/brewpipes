@@ -33,7 +33,7 @@ func (c *Client) Start(ctx context.Context) error {
 
 	// use the migrations from the "migrations" directory at this level
 	if err := database.Migrate(
-		"file://internal/service/identity/storage/migrations",
+		"file://service/identity/storage/migrations",
 		strings.Replace(c.dsn, "postgres://", "pgx5://", 1),
 	); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)

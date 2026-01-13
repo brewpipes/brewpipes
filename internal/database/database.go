@@ -24,7 +24,7 @@ func Migrate(from, to string) error {
 		}
 	}()
 
-	if err := m.Up(); err != nil {
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("applying DB migrations: %w", err)
 	}
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/brewpipes/brewpipes/internal/entity"
+	"github.com/brewpipes/brewpipes/internal/database/entity"
 )
 
 type Volume struct {

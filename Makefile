@@ -1,4 +1,4 @@
-.PHONY: info clean monolith auth-service production-service run-monolith
+.PHONY: info clean monolith auth-service production-service run-monolith psql
 
 info:
 	@echo "  make monolith            Build the monolith application"
@@ -22,3 +22,7 @@ production-service:
 run-monolith:
 	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
 	go run ./cmd/monolith
+
+# connect to the postgres container using psql
+psql:
+	psql "postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable"

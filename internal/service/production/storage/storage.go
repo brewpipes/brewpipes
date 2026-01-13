@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -30,7 +31,11 @@ func (c *Client) Start(ctx context.Context) error {
 		return fmt.Errorf("pinging Postgres: %w", err)
 	}
 
-	if err := database.Migrate("file:///app/internal/service/production/migrations", c.dsn); err != nil {
+	// use the migrations from the "migrations" directory at this level
+	if err := database.Migrate(
+		"file://internal/service/production/storage/migrations",
+		strings.Replace(c.dsn, "postgres://", "pgx5://", 1),
+	); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)
 	}
 

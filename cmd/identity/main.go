@@ -15,8 +15,9 @@ func main() {
 func run(ctx context.Context) error {
 	// Entry point for the independent identity service application.
 
-	svc, err := identity.NewService(&identity.Config{
-		PostgresDSN: os.Getenv("identity_POSTGRES_DSN"),
+	svc, err := identity.NewService(ctx, &identity.Config{
+		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return err

@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/brewpipes/brewpipes/cmd"
 	"github.com/brewpipes/brewpipes/internal/service/production"
@@ -19,14 +17,13 @@ func run(ctx context.Context) error {
 	// Entry point for the independent identity service application.
 
 	// Initialize services.
-	// identitySvc, err := identity.NewService(&identity.Config{
+	// identitySvc, err := identity.NewService(ctx, &identity.Config{
 	// 	PostgresDSN: os.Getenv("POSTGRES_DSN"),
+	// 	SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	// })
 	// if err != nil {
 	// 	return fmt.Errorf("initializing identity service: %w", err)
 	// }
-
-	slog.Info(strings.Join(os.Environ(), "\n"))
 
 	productionSvc, err := production.New(ctx, production.Config{
 		PostgresDSN: os.Getenv("POSTGRES_DSN"),

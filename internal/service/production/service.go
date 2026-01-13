@@ -3,6 +3,7 @@ package production
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/internal/service"
@@ -33,6 +34,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 }
 
 func (s *Service) Start(ctx context.Context) error {
+	slog.Info("production service starting")
 	if err := s.storage.Start(ctx); err != nil {
 		return fmt.Errorf("starting storage: %w", err)
 	}

@@ -3,71 +3,41 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/brewpipes/brewpipes/internal/service"
-	"github.com/gofrs/uuid/v5"
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Client struct {
-	db *pgxpool.Pool
+	dsn string
+	db  *pgxpool.Pool
 }
 
-func NewClient(db *pgxpool.Pool) *Client {
+func New(ctx context.Context, dsn string) (*Client, error) {
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return nil, fmt.Errorf("creating DB connection pool: %w", err)
+	}
+
 	return &Client{
-		db: db,
-	}
+		dsn: dsn,
+		db:  pool,
+	}, nil
 }
 
-func (c *Client) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := c.db.Query(ctx, "SELECT id, username, email FROM users")
-	if err != nil {
-		return nil, fmt.Errorf("querying database: %w", err)
+func (c *Client) Start(ctx context.Context) error {
+	if err := c.db.Ping(ctx); err != nil {
+		return fmt.Errorf("pinging Postgres: %w", err)
 	}
 
-	var users []User
-	for rows.Next() {
-		var user User
-		if err := rows.Scan(&user.UUID, &user.Username, &user.Password); err != nil {
-			return nil, fmt.Errorf("scanning row: %w", err)
-		}
-		users = append(users, user)
+	// use the migrations from the "migrations" directory at this level
+	if err := database.Migrate(
+		"file://internal/service/identity/storage/migrations",
+		strings.Replace(c.dsn, "postgres://", "pgx5://", 1),
+	); err != nil {
+		return fmt.Errorf("migrating DB: %w", err)
 	}
 
-	return users, nil
-}
-
-func (c *Client) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
-	rows, err := c.db.Query(ctx, "SELECT id, username, password FROM users WHERE id = $1", id)
-	if err != nil {
-		return User{}, fmt.Errorf("querying database: %w", err)
-	}
-
-	var user User
-	if rows.Next() {
-		if err := rows.Scan(&user.UUID, &user.Username, &user.Password); err != nil {
-			return User{}, fmt.Errorf("scanning row: %w", err)
-		}
-		return user, nil
-	} else {
-		return User{}, service.ErrNotFound
-	}
-}
-
-// GetUserByUsername looks up a single user by its username.
-func (c *Client) GetUserByUsername(ctx context.Context, username string) (User, error) {
-	rows, err := c.db.Query(ctx, "SELECT id, username, password FROM users WHERE username = $1", username)
-	if err != nil {
-		return User{}, fmt.Errorf("querying database: %w", err)
-	}
-
-	var user User
-	if rows.Next() {
-		if err := rows.Scan(&user.UUID, &user.Username, &user.Password); err != nil {
-			return User{}, fmt.Errorf("scanning row: %w", err)
-		}
-		return user, nil
-	} else {
-		return User{}, service.ErrNotFound
-	}
+	return nil
 }

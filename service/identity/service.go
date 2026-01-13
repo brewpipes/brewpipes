@@ -11,6 +11,11 @@ import (
 	"github.com/brewpipes/brewpipes/service/identity/storage"
 )
 
+type Config struct {
+	PostgresDSN string
+	SecretKey   string
+}
+
 type Service struct {
 	storage   *storage.Client
 	secretKey string

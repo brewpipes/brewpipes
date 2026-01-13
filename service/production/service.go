@@ -11,6 +11,10 @@ import (
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
+type Config struct {
+	PostgresDSN string
+}
+
 type Service struct {
 	storage *storage.Client
 }

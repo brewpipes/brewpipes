@@ -1008,23 +1008,17 @@ const timelineItems = computed(() => {
     })
   })
 
-  measurements.value.forEach((measurement) => {
-    if (isNoteMeasurement(measurement)) {
-      items.push({
-        id: `note-${measurement.id}`,
-        title: 'Note',
-        subtitle: measurement.notes ?? 'Note added',
-        at: measurement.observed_at ?? measurement.created_at,
-        color: 'info',
-        icon: 'mdi-note-text-outline',
-      })
-      return
-    }
+  const groupedMeasurements = groupMeasurements(measurements.value)
+  groupedMeasurements.forEach((group, index) => {
+    const subtitle = orderMeasurementGroup(group)
+      .map((measurement) => formatMeasurementEntry(measurement))
+      .filter(Boolean)
+      .join(' | ')
     items.push({
-      id: `measurement-${measurement.id}`,
-      title: `Measurement: ${measurement.kind}`,
-      subtitle: formatValue(measurement.value, measurement.unit),
-      at: measurement.observed_at ?? measurement.created_at,
+      id: `measurement-group-${index}`,
+      title: 'Reading',
+      subtitle: subtitle || 'Measurements recorded',
+      at: group[0]?.observed_at ?? group[0]?.created_at ?? new Date().toISOString(),
       color: 'secondary',
       icon: 'mdi-thermometer',
     })
@@ -1052,7 +1046,7 @@ const timelineItems = computed(() => {
     })
   })
 
-  return items.sort((a, b) => toTimestamp(a.at) - toTimestamp(b.at))
+  return items.sort((a, b) => toTimestamp(b.at) - toTimestamp(a.at))
 })
 
 watch(selectedBatchId, (value) => {
@@ -1492,6 +1486,92 @@ function handleError(error: unknown) {
 function normalizeText(value: string) {
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
+}
+
+function groupMeasurements(items: Measurement[]) {
+  const sorted = [...items].sort(
+    (a, b) => measurementTimestamp(b) - measurementTimestamp(a),
+  )
+  const groups: Measurement[][] = []
+  const thresholdMs = 2 * 60 * 1000
+  let current: Measurement[] = []
+  let anchor: number | null = null
+
+  sorted.forEach((measurement) => {
+    const timestamp = measurementTimestamp(measurement)
+    if (!current.length) {
+      current = [measurement]
+      anchor = timestamp
+      return
+    }
+    if (anchor !== null && Math.abs(anchor - timestamp) <= thresholdMs) {
+      current.push(measurement)
+      return
+    }
+    groups.push(current)
+    current = [measurement]
+    anchor = timestamp
+  })
+
+  if (current.length) {
+    groups.push(current)
+  }
+
+  return groups
+}
+
+function orderMeasurementGroup(group: Measurement[]) {
+  return [...group].sort((a, b) => measurementPriority(a) - measurementPriority(b))
+}
+
+function measurementPriority(measurement: Measurement) {
+  const normalized = normalizeMeasurementKind(measurement.kind)
+  if (isNoteMeasurement(measurement)) {
+    return 90
+  }
+  if (normalized === 'temperature' || normalized === 'temp') {
+    return 10
+  }
+  if (normalized === 'gravity' || normalized === 'grav' || normalized === 'sg') {
+    return 20
+  }
+  if (normalized === 'ph') {
+    return 30
+  }
+  return 50
+}
+
+function measurementTimestamp(measurement: Measurement) {
+  return toTimestamp(measurement.observed_at ?? measurement.created_at)
+}
+
+function formatMeasurementEntry(measurement: Measurement) {
+  if (isNoteMeasurement(measurement)) {
+    return measurement.notes ? `Note: ${measurement.notes}` : 'Note'
+  }
+  const label = formatMeasurementKind(measurement.kind)
+  return `${label} ${formatValue(measurement.value, measurement.unit)}`
+}
+
+function formatMeasurementKind(kind: string) {
+  const normalized = normalizeMeasurementKind(kind)
+  if (normalized === 'ph') {
+    return 'pH'
+  }
+  if (normalized === 'sg') {
+    return 'SG'
+  }
+  if (normalized === 'temperature' || normalized === 'temp') {
+    return 'Temp'
+  }
+  if (normalized === 'gravity' || normalized === 'grav') {
+    return 'Gravity'
+  }
+  const trimmed = kind.trim()
+  if (!trimmed) {
+    return 'Measurement'
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
 }
 
 function nowInputValue() {

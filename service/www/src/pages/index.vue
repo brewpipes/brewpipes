@@ -1024,7 +1024,7 @@ type TimelineEvent = {
   icon: string
 }
 
-const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? 'http://localhost:8080'
+const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
 const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz']
 const liquidPhaseOptions: LiquidPhase[] = ['water', 'wort', 'beer']

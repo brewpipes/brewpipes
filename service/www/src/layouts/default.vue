@@ -59,7 +59,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useDisplay, useTheme } from 'vuetify'
 
 const drawer = ref(true)
@@ -69,6 +69,7 @@ const display = useDisplay()
 const isMobile = computed(() => display.smAndDown.value)
 const isDark = computed(() => theme.global.current.value.dark)
 const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
+const themeStorageKey = 'brewpipes:theme'
 
 const navItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
@@ -95,6 +96,20 @@ function toggleRail() {
 function toggleTheme() {
   theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
 }
+
+onMounted(() => {
+  const storedTheme = localStorage.getItem(themeStorageKey)
+  if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
+    theme.global.name.value = storedTheme
+  }
+})
+
+watch(
+  () => theme.global.name.value,
+  (value) => {
+    localStorage.setItem(themeStorageKey, value)
+  },
+)
 </script>
 
 <style scoped>

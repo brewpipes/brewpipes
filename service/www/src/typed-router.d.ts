@@ -19,6 +19,12 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
+    '/additions': RouteRecordInfo<'/additions', '/additions', Record<never, never>, Record<never, never>>,
+    '/batches': RouteRecordInfo<'/batches', '/batches', Record<never, never>, Record<never, never>>,
+    '/measurements': RouteRecordInfo<'/measurements', '/measurements', Record<never, never>, Record<never, never>>,
+    '/reports': RouteRecordInfo<'/reports', '/reports', Record<never, never>, Record<never, never>>,
+    '/transfers': RouteRecordInfo<'/transfers', '/transfers', Record<never, never>, Record<never, never>>,
+    '/vessels': RouteRecordInfo<'/vessels', '/vessels', Record<never, never>, Record<never, never>>,
   }
 
   /**
@@ -34,6 +40,30 @@ declare module 'vue-router/auto-routes' {
   export interface _RouteFileInfoMap {
     'src/pages/index.vue': {
       routes: '/'
+      views: never
+    }
+    'src/pages/additions.vue': {
+      routes: '/additions'
+      views: never
+    }
+    'src/pages/batches.vue': {
+      routes: '/batches'
+      views: never
+    }
+    'src/pages/measurements.vue': {
+      routes: '/measurements'
+      views: never
+    }
+    'src/pages/reports.vue': {
+      routes: '/reports'
+      views: never
+    }
+    'src/pages/transfers.vue': {
+      routes: '/transfers'
+      views: never
+    }
+    'src/pages/vessels.vue': {
+      routes: '/vessels'
       views: never
     }
   }

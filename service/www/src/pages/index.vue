@@ -1433,7 +1433,7 @@ async function createBatch() {
   try {
     const payload = {
       short_name: newBatch.short_name.trim(),
-      brew_date: normalizeDate(newBatch.brew_date),
+      brew_date: normalizeDateOnly(newBatch.brew_date),
       notes: normalizeText(newBatch.notes),
     }
     const created = await post<Batch>('/batches', payload)
@@ -1733,8 +1733,8 @@ function normalizeText(value: string) {
   return trimmed.length > 0 ? trimmed : null
 }
 
-function normalizeDate(value: string) {
-  return value ? value : null
+function normalizeDateOnly(value: string) {
+  return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
 }
 
 function normalizeDateTime(value: string) {

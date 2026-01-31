@@ -59,7 +59,7 @@
         <v-card class="section-card">
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-beaker-outline" />
-            Batch details
+            {{ selectedBatch ? selectedBatch.short_name : 'Batch details' }}
             <v-spacer />
             <v-btn size="small" variant="text" @click="refreshAll">Refresh</v-btn>
             <v-btn size="small" variant="text" @click="clearSelection">Clear</v-btn>
@@ -76,37 +76,34 @@
 
             <div v-else>
               <v-row class="mb-4" align="stretch">
-                <v-col cols="12" md="6">
+                <v-col cols="12">
                   <v-card class="mini-card" variant="tonal">
                     <v-card-text>
-                      <div class="text-overline">Batch</div>
-                      <div class="text-h5 font-weight-semibold">
-                        {{ selectedBatch.short_name }}
-                      </div>
-                      <div class="text-body-2 text-medium-emphasis">
-                        ID {{ selectedBatch.id }} - {{ selectedBatch.uuid }}
-                      </div>
-                      <div class="text-body-2 text-medium-emphasis">
-                        Brew date {{ formatDate(selectedBatch.brew_date) }}
-                      </div>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-card class="mini-card" variant="tonal">
-                    <v-card-text>
-                      <div class="text-overline">Status</div>
-                      <div class="d-flex flex-wrap ga-2 mb-2">
-                        <v-chip v-if="latestProcessPhase" color="primary" size="small" variant="tonal">
-                          {{ latestProcessPhase.process_phase }}
-                        </v-chip>
-                        <v-chip v-if="latestLiquidPhase" color="secondary" size="small" variant="tonal">
-                          {{ latestLiquidPhase.liquid_phase }}
-                        </v-chip>
-                        <v-chip v-if="!latestLiquidPhase && !latestProcessPhase" size="small" variant="outlined">
-                          No phases yet
-                        </v-chip>
-                      </div>
+                      <div class="text-overline">Details</div>
+                      <v-row class="mt-1" dense>
+                        <v-col cols="12" md="6">
+                          <div class="text-caption text-medium-emphasis">Brew date</div>
+                          <div class="text-body-2 font-weight-medium">
+                            {{ formatDate(selectedBatch.brew_date) }}
+                          </div>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <div class="text-caption text-medium-emphasis">Current status</div>
+                          <div class="d-flex flex-wrap ga-2">
+                            <v-chip v-if="latestProcessPhase" color="primary" size="small" variant="tonal">
+                              {{ latestProcessPhase.process_phase }}
+                            </v-chip>
+                            <v-chip v-if="latestLiquidPhase" color="secondary" size="small" variant="tonal">
+                              {{ latestLiquidPhase.liquid_phase }}
+                            </v-chip>
+                            <v-chip v-if="!latestLiquidPhase && !latestProcessPhase" size="small" variant="outlined">
+                              No status yet
+                            </v-chip>
+                          </div>
+                        </v-col>
+                      </v-row>
+                      <v-divider class="my-3" />
+                      <div class="text-caption text-medium-emphasis mb-2">Latest measurements</div>
                       <div class="d-flex flex-wrap ga-2 mb-2">
                         <v-chip
                           size="small"
@@ -149,7 +146,7 @@
                         </v-chip>
                       </div>
                       <div class="text-body-2 text-medium-emphasis">
-                        Updated {{ formatDateTime(selectedBatch.updated_at) }}
+                        Last updated {{ formatDateTime(selectedBatch.updated_at) }}
                       </div>
                     </v-card-text>
                   </v-card>
@@ -647,6 +644,7 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive, ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 type Unit = 'ml' | 'usfloz' | 'ukfloz'
 type LiquidPhase = 'water' | 'wort' | 'beer'
@@ -776,6 +774,7 @@ type FlowLink = {
 }
 
 const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
+const route = useRoute()
 
 const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz']
 const additionTypeOptions: AdditionType[] = [
@@ -868,6 +867,11 @@ const timelineExtended = reactive({
 const selectedBatch = computed(() =>
   batches.value.find((batch) => batch.id === selectedBatchId.value) ?? null,
 )
+
+const routeBatchUuid = computed(() => {
+  const param = route.params.uuid
+  return typeof param === 'string' && param.trim() ? param : null
+})
 
 const latestProcessPhase = computed(() => getLatest(processPhases.value, (item) => item.phase_at))
 const latestLiquidPhase = computed(() => getLatest(batchVolumes.value, (item) => item.phase_at))
@@ -1059,6 +1063,12 @@ watch(selectedBatchId, (value) => {
   }
 })
 
+watch([routeBatchUuid, batches], ([uuid]) => {
+  if (uuid) {
+    applyRouteSelection()
+  }
+})
+
 watch(timelineObservedAtMenu, (isOpen) => {
   if (isOpen && !timelineReading.observed_at) {
     timelineReading.observed_at = nowInputValue()
@@ -1075,6 +1085,20 @@ function selectBatch(id: number) {
 
 function clearSelection() {
   selectedBatchId.value = null
+}
+
+function applyRouteSelection() {
+  const uuid = routeBatchUuid.value
+  if (!uuid) {
+    return null
+  }
+  const match = batches.value.find((batch) => batch.uuid === uuid)
+  if (match) {
+    selectedBatchId.value = match.id
+    return true
+  }
+  selectedBatchId.value = null
+  return false
 }
 
 function showNotice(text: string, color = 'success') {
@@ -1117,10 +1141,13 @@ async function refreshAll() {
   errorMessage.value = ''
   try {
     await Promise.all([loadBatches(), loadVolumes()])
-    if (!selectedBatchId.value && batches.value.length > 0) {
-      selectedBatchId.value = batches.value[0].id
-    } else if (selectedBatchId.value) {
-      await loadBatchData(selectedBatchId.value)
+    const routeApplied = applyRouteSelection()
+    if (routeApplied === null) {
+      if (!selectedBatchId.value && batches.value.length > 0) {
+        selectedBatchId.value = batches.value[0].id
+      } else if (selectedBatchId.value) {
+        await loadBatchData(selectedBatchId.value)
+      }
     }
   } catch (error) {
     handleError(error)

@@ -2,8 +2,12 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/brewpipes/brewpipes/service"
+	"github.com/jackc/pgx/v5"
 )
 
 func (c *Client) CreateBatchVolume(ctx context.Context, batchVolume BatchVolume) (BatchVolume, error) {
@@ -37,6 +41,34 @@ func (c *Client) CreateBatchVolume(ctx context.Context, batchVolume BatchVolume)
 	)
 	if err != nil {
 		return BatchVolume{}, fmt.Errorf("creating batch volume: %w", err)
+	}
+
+	return batchVolume, nil
+}
+
+func (c *Client) GetBatchVolume(ctx context.Context, id int64) (BatchVolume, error) {
+	var batchVolume BatchVolume
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, batch_id, volume_id, liquid_phase, phase_at, created_at, updated_at, deleted_at
+		FROM batch_volume
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&batchVolume.ID,
+		&batchVolume.UUID,
+		&batchVolume.BatchID,
+		&batchVolume.VolumeID,
+		&batchVolume.LiquidPhase,
+		&batchVolume.PhaseAt,
+		&batchVolume.CreatedAt,
+		&batchVolume.UpdatedAt,
+		&batchVolume.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return BatchVolume{}, service.ErrNotFound
+		}
+		return BatchVolume{}, fmt.Errorf("getting batch volume: %w", err)
 	}
 
 	return batchVolume, nil

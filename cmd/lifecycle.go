@@ -26,7 +26,11 @@ func RunServices(ctx context.Context, services ...Service) error {
 	mux := http.NewServeMux()
 	for _, svc := range services {
 		for _, route := range svc.HTTPRoutes() {
-			mux.Handle(route.Path, route.Handler)
+			pattern := route.Path
+			if route.Method != "" {
+				pattern = route.Method + " " + route.Path
+			}
+			mux.Handle(pattern, route.Handler)
 		}
 	}
 

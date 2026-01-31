@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/service"
 	"github.com/gofrs/uuid/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -65,6 +68,41 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 	)
 	if err != nil {
 		return Addition{}, fmt.Errorf("creating addition: %w", err)
+	}
+
+	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+	return addition, nil
+}
+
+func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
+	var addition Addition
+	var inventoryLotUUID pgtype.UUID
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, batch_id, occupancy_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
+		FROM addition
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&addition.ID,
+		&addition.UUID,
+		&addition.BatchID,
+		&addition.OccupancyID,
+		&addition.AdditionType,
+		&addition.Stage,
+		&inventoryLotUUID,
+		&addition.Amount,
+		&addition.AmountUnit,
+		&addition.AddedAt,
+		&addition.Notes,
+		&addition.CreatedAt,
+		&addition.UpdatedAt,
+		&addition.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Addition{}, service.ErrNotFound
+		}
+		return Addition{}, fmt.Errorf("getting addition: %w", err)
 	}
 
 	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)

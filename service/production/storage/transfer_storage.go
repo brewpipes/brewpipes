@@ -70,6 +70,38 @@ func (c *Client) CreateTransfer(ctx context.Context, transfer Transfer) (Transfe
 	return transfer, nil
 }
 
+func (c *Client) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
+	var transfer Transfer
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, source_occupancy_id, dest_occupancy_id, amount, amount_unit, loss_amount, loss_unit, started_at, ended_at, created_at, updated_at, deleted_at
+		FROM transfer
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&transfer.ID,
+		&transfer.UUID,
+		&transfer.SourceOccupancyID,
+		&transfer.DestOccupancyID,
+		&transfer.Amount,
+		&transfer.AmountUnit,
+		&transfer.LossAmount,
+		&transfer.LossUnit,
+		&transfer.StartedAt,
+		&transfer.EndedAt,
+		&transfer.CreatedAt,
+		&transfer.UpdatedAt,
+		&transfer.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Transfer{}, service.ErrNotFound
+		}
+		return Transfer{}, fmt.Errorf("getting transfer: %w", err)
+	}
+
+	return transfer, nil
+}
+
 func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Transfer, Occupancy, error) {
 	startedAt := record.StartedAt
 	if startedAt.IsZero() {

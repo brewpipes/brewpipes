@@ -2,7 +2,11 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/brewpipes/brewpipes/service"
+	"github.com/jackc/pgx/v5"
 )
 
 func (c *Client) CreateBatchRelation(ctx context.Context, relation BatchRelation) (BatchRelation, error) {
@@ -31,6 +35,34 @@ func (c *Client) CreateBatchRelation(ctx context.Context, relation BatchRelation
 	)
 	if err != nil {
 		return BatchRelation{}, fmt.Errorf("creating batch relation: %w", err)
+	}
+
+	return relation, nil
+}
+
+func (c *Client) GetBatchRelation(ctx context.Context, id int64) (BatchRelation, error) {
+	var relation BatchRelation
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, parent_batch_id, child_batch_id, relation_type, volume_id, created_at, updated_at, deleted_at
+		FROM batch_relation
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&relation.ID,
+		&relation.UUID,
+		&relation.ParentBatchID,
+		&relation.ChildBatchID,
+		&relation.RelationType,
+		&relation.VolumeID,
+		&relation.CreatedAt,
+		&relation.UpdatedAt,
+		&relation.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return BatchRelation{}, service.ErrNotFound
+		}
+		return BatchRelation{}, fmt.Errorf("getting batch relation: %w", err)
 	}
 
 	return relation, nil

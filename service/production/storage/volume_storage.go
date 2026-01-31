@@ -143,6 +143,35 @@ func (c *Client) CreateVolumeRelation(ctx context.Context, relation VolumeRelati
 	return relation, nil
 }
 
+func (c *Client) GetVolumeRelation(ctx context.Context, id int64) (VolumeRelation, error) {
+	var relation VolumeRelation
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, parent_volume_id, child_volume_id, relation_type, amount, amount_unit, created_at, updated_at, deleted_at
+		FROM volume_relation
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&relation.ID,
+		&relation.UUID,
+		&relation.ParentVolumeID,
+		&relation.ChildVolumeID,
+		&relation.RelationType,
+		&relation.Amount,
+		&relation.AmountUnit,
+		&relation.CreatedAt,
+		&relation.UpdatedAt,
+		&relation.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return VolumeRelation{}, service.ErrNotFound
+		}
+		return VolumeRelation{}, fmt.Errorf("getting volume relation: %w", err)
+	}
+
+	return relation, nil
+}
+
 func (c *Client) ListVolumeRelations(ctx context.Context, volumeID int64) ([]VolumeRelation, error) {
 	rows, err := c.db.Query(ctx, `
 		SELECT id, uuid, parent_volume_id, child_volume_id, relation_type, amount, amount_unit, created_at, updated_at, deleted_at

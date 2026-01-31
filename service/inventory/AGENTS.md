@@ -20,7 +20,7 @@ Ingredient
 Ingredient Lot
 - A lot is a specific received batch of an ingredient with its own quantity, dates, supplier reference, and originator details.
 - Lots are the unit of traceability for usage and quality (e.g., alpha acids for hops, yeast generation, moisture for grain).
-- Lot-specific quality attributes (e.g., measured alpha acids, moisture, viability) are stored on the lot.
+- Lot-specific quality attributes live in lot detail records keyed by ingredient lot ID.
 
 Supplier Reference
 - Suppliers are managed in the Procurement service; inventory records store an opaque supplier UUID.

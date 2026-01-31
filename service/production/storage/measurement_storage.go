@@ -2,8 +2,12 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/brewpipes/brewpipes/service"
+	"github.com/jackc/pgx/v5"
 )
 
 func (c *Client) CreateMeasurement(ctx context.Context, measurement Measurement) (Measurement, error) {
@@ -50,6 +54,37 @@ func (c *Client) CreateMeasurement(ctx context.Context, measurement Measurement)
 	)
 	if err != nil {
 		return Measurement{}, fmt.Errorf("creating measurement: %w", err)
+	}
+
+	return measurement, nil
+}
+
+func (c *Client) GetMeasurement(ctx context.Context, id int64) (Measurement, error) {
+	var measurement Measurement
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, batch_id, occupancy_id, kind, value, unit, observed_at, notes, created_at, updated_at, deleted_at
+		FROM measurement
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&measurement.ID,
+		&measurement.UUID,
+		&measurement.BatchID,
+		&measurement.OccupancyID,
+		&measurement.Kind,
+		&measurement.Value,
+		&measurement.Unit,
+		&measurement.ObservedAt,
+		&measurement.Notes,
+		&measurement.CreatedAt,
+		&measurement.UpdatedAt,
+		&measurement.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Measurement{}, service.ErrNotFound
+		}
+		return Measurement{}, fmt.Errorf("getting measurement: %w", err)
 	}
 
 	return measurement, nil

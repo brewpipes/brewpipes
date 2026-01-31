@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -29,4 +30,18 @@ func Migrate(from, to string) error {
 	}
 
 	return nil
+}
+
+func MigrationDSN(dsn, table string) string {
+	migrationDSN := strings.Replace(dsn, "postgres://", "pgx5://", 1)
+	if table == "" {
+		return migrationDSN
+	}
+
+	separator := "?"
+	if strings.Contains(migrationDSN, "?") {
+		separator = "&"
+	}
+
+	return migrationDSN + separator + "x-migrations-table=" + table
 }

@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS inventory_receipt (
     uuid           uuid NOT NULL DEFAULT gen_random_uuid(),
 
     supplier_uuid  uuid,
+    purchase_order_uuid uuid,
     reference_code varchar(64),
     received_at    timestamptz NOT NULL DEFAULT timezone('utc', now()),
     notes          text,
@@ -144,6 +145,7 @@ CREATE TABLE IF NOT EXISTS inventory_receipt (
 
 CREATE UNIQUE INDEX IF NOT EXISTS inventory_receipt_uuid_idx ON inventory_receipt(uuid);
 CREATE INDEX IF NOT EXISTS inventory_receipt_supplier_uuid_idx ON inventory_receipt(supplier_uuid);
+CREATE INDEX IF NOT EXISTS inventory_receipt_purchase_order_uuid_idx ON inventory_receipt(purchase_order_uuid);
 
 CREATE TABLE IF NOT EXISTS ingredient_lot (
     id                       serial PRIMARY KEY,
@@ -152,6 +154,7 @@ CREATE TABLE IF NOT EXISTS ingredient_lot (
     ingredient_id            int NOT NULL REFERENCES ingredient(id),
     receipt_id               int REFERENCES inventory_receipt(id),
     supplier_uuid            uuid,
+    purchase_order_line_uuid uuid,
     brewery_lot_code          varchar(64),
     originator_lot_code      varchar(64),
     originator_name          varchar(255),
@@ -181,6 +184,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ingredient_lot_uuid_idx ON ingredient_lot(uuid
 CREATE INDEX IF NOT EXISTS ingredient_lot_ingredient_id_idx ON ingredient_lot(ingredient_id);
 CREATE INDEX IF NOT EXISTS ingredient_lot_receipt_id_idx ON ingredient_lot(receipt_id);
 CREATE INDEX IF NOT EXISTS ingredient_lot_supplier_uuid_idx ON ingredient_lot(supplier_uuid);
+CREATE INDEX IF NOT EXISTS ingredient_lot_purchase_order_line_uuid_idx ON ingredient_lot(purchase_order_line_uuid);
 CREATE INDEX IF NOT EXISTS ingredient_lot_brewery_lot_code_idx ON ingredient_lot(brewery_lot_code);
 CREATE INDEX IF NOT EXISTS ingredient_lot_originator_lot_code_idx ON ingredient_lot(originator_lot_code);
 

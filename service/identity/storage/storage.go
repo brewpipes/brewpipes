@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,7 +34,7 @@ func (c *Client) Start(ctx context.Context) error {
 	// use the migrations from the "migrations" directory at this level
 	if err := database.Migrate(
 		"file://service/identity/storage/migrations",
-		strings.Replace(c.dsn, "postgres://", "pgx5://", 1),
+		database.MigrationDSN(c.dsn, "identity_schema_migrations"),
 	); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)
 	}

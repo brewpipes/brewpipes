@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/brewpipes/brewpipes/internal/database"
@@ -39,5 +40,16 @@ func (c *Client) Start(ctx context.Context) error {
 		return fmt.Errorf("migrating DB: %w", err)
 	}
 
+	go func() {
+		<-ctx.Done()
+		slog.Info("closing identity service DB pool")
+		c.db.Close()
+	}()
+
+	return nil
+}
+
+func (c *Client) Close() error {
+	c.db.Close()
 	return nil
 }

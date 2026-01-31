@@ -19,6 +19,9 @@ type Service interface {
 
 // RunServices starts the provided services and manages their lifecycle.
 func RunServices(ctx context.Context, services ...Service) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// Aggregate HTTP routes from all services.
 	mux := http.NewServeMux()
 	for _, svc := range services {
@@ -50,10 +53,17 @@ func RunServices(ctx context.Context, services ...Service) error {
 
 	// Wait for application to receive interrupt signal.
 	<-interrupted()
-	slog.Info("application received interrupt signal, stopping services")
+	slog.Info("application received interrupt signal")
+
+	// first, gracefully shut down HTTP server so that in-flight requests can complete
+	slog.Info("stopping HTTP server")
 	if err := httpServer.Shutdown(ctx); err != nil {
 		slog.Error("error while shutting down HTTP server", "error", err)
 	}
+
+	// cancel service contexts
+	slog.Info("stopping services")
+	cancel()
 
 	slog.Info("application terminated")
 	return nil

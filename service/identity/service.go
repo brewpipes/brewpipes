@@ -16,9 +16,14 @@ type Config struct {
 	SecretKey   string
 }
 
+type startCloser interface {
+	Start(ctx context.Context) error
+	Close() error
+}
+
 type Service struct {
-	storage   *storage.Client
-	secretKey string
+	storage startCloser
+	routes  []service.HTTPRoute
 }
 
 func NewService(ctx context.Context, cfg *Config) (*Service, error) {
@@ -28,19 +33,20 @@ func NewService(ctx context.Context, cfg *Config) (*Service, error) {
 	}
 
 	return &Service{
-		storage:   stg,
-		secretKey: cfg.SecretKey,
+		storage: stg,
+		// inject dependencies for HTTP handlers
+		routes: []service.HTTPRoute{
+			{
+				Method:  http.MethodPost,
+				Path:    "/login",
+				Handler: handler.HandleLogin(stg, cfg.SecretKey),
+			},
+		},
 	}, nil
 }
 
 func (s *Service) HTTPRoutes() []service.HTTPRoute {
-	return []service.HTTPRoute{
-		{
-			Method:  http.MethodPost,
-			Path:    "/login",
-			Handler: handler.HandleLogin(s.storage, s.secretKey),
-		},
-	}
+	return s.routes
 }
 
 func (s *Service) Start(ctx context.Context) error {

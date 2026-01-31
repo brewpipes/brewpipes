@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS purchase_order_fee CASCADE;
+DROP TABLE IF EXISTS purchase_order_line CASCADE;
+DROP TABLE IF EXISTS purchase_order CASCADE;
+DROP TABLE IF EXISTS supplier CASCADE;

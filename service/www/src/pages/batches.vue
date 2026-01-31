@@ -104,47 +104,71 @@
                       </v-row>
                       <v-divider class="my-3" />
                       <div class="text-caption text-medium-emphasis mb-2">Latest measurements</div>
-                      <div class="d-flex flex-wrap ga-2 mb-2">
-                        <v-chip
-                          size="small"
-                          color="info"
-                          :variant="latestTemperatureMeasurement ? 'tonal' : 'outlined'"
-                        >
-                          Temp
-                          {{
-                            latestTemperatureMeasurement
-                              ? formatValue(
-                                  latestTemperatureMeasurement.value,
-                                  latestTemperatureMeasurement.unit,
-                                )
-                              : 'n/a'
-                          }}
-                        </v-chip>
-                        <v-chip
-                          size="small"
-                          color="secondary"
-                          :variant="latestGravityMeasurement ? 'tonal' : 'outlined'"
-                        >
-                          Gravity
-                          {{
-                            latestGravityMeasurement
-                              ? formatValue(latestGravityMeasurement.value, latestGravityMeasurement.unit)
-                              : 'n/a'
-                          }}
-                        </v-chip>
-                        <v-chip
-                          size="small"
-                          color="warning"
-                          :variant="latestPhMeasurement ? 'tonal' : 'outlined'"
-                        >
-                          pH
-                          {{
-                            latestPhMeasurement
-                              ? formatValue(latestPhMeasurement.value, latestPhMeasurement.unit)
-                              : 'n/a'
-                          }}
-                        </v-chip>
-                      </div>
+                      <v-row dense>
+                        <v-col cols="12" md="4">
+                          <div class="spark-card" style="--spark-color: var(--v-theme-info)">
+                            <div class="spark-meta">
+                              <div class="text-caption text-medium-emphasis">Temp</div>
+                              <div class="text-body-2 font-weight-medium">
+                                {{ temperatureSeries.latestLabel }}
+                              </div>
+                            </div>
+                            <div class="spark-chart">
+                              <svg
+                                v-if="temperatureSeries.values.length"
+                                :viewBox="`0 0 ${sparklineWidth} ${sparklineHeight}`"
+                                preserveAspectRatio="none"
+                              >
+                                <path class="spark-area" :d="temperatureSeries.areaPath" />
+                                <path class="spark-line" :d="temperatureSeries.linePath" />
+                              </svg>
+                              <div v-else class="spark-placeholder">No readings</div>
+                            </div>
+                          </div>
+                        </v-col>
+                        <v-col cols="12" md="4">
+                          <div class="spark-card" style="--spark-color: var(--v-theme-secondary)">
+                            <div class="spark-meta">
+                              <div class="text-caption text-medium-emphasis">Gravity</div>
+                              <div class="text-body-2 font-weight-medium">
+                                {{ gravitySeries.latestLabel }}
+                              </div>
+                            </div>
+                            <div class="spark-chart">
+                              <svg
+                                v-if="gravitySeries.values.length"
+                                :viewBox="`0 0 ${sparklineWidth} ${sparklineHeight}`"
+                                preserveAspectRatio="none"
+                              >
+                                <path class="spark-area" :d="gravitySeries.areaPath" />
+                                <path class="spark-line" :d="gravitySeries.linePath" />
+                              </svg>
+                              <div v-else class="spark-placeholder">No readings</div>
+                            </div>
+                          </div>
+                        </v-col>
+                        <v-col cols="12" md="4">
+                          <div class="spark-card" style="--spark-color: var(--v-theme-warning)">
+                            <div class="spark-meta">
+                              <div class="text-caption text-medium-emphasis">pH</div>
+                              <div class="text-body-2 font-weight-medium">
+                                {{ phSeries.latestLabel }}
+                              </div>
+                            </div>
+                            <div class="spark-chart">
+                              <svg
+                                v-if="phSeries.values.length"
+                                :viewBox="`0 0 ${sparklineWidth} ${sparklineHeight}`"
+                                preserveAspectRatio="none"
+                              >
+                                <path class="spark-area" :d="phSeries.areaPath" />
+                                <path class="spark-line" :d="phSeries.linePath" />
+                              </svg>
+                              <div v-else class="spark-placeholder">No readings</div>
+                            </div>
+                          </div>
+                        </v-col>
+                      </v-row>
                       <div class="text-body-2 text-medium-emphasis">
                         Last updated {{ formatDateTime(selectedBatch.updated_at) }}
                       </div>
@@ -876,13 +900,18 @@ const routeBatchUuid = computed(() => {
 const latestProcessPhase = computed(() => getLatest(processPhases.value, (item) => item.phase_at))
 const latestLiquidPhase = computed(() => getLatest(batchVolumes.value, (item) => item.phase_at))
 
-const latestTemperatureMeasurement = computed(() =>
-  getLatestMeasurement(['temperature', 'temp']),
+const sparklineWidth = 120
+const sparklineHeight = 36
+
+const temperatureSeries = computed(() =>
+  buildMeasurementSeries(['temperature', 'temp'], sparklineWidth, sparklineHeight),
 )
-const latestGravityMeasurement = computed(() =>
-  getLatestMeasurement(['gravity', 'grav', 'sg']),
+const gravitySeries = computed(() =>
+  buildMeasurementSeries(['gravity', 'grav', 'sg'], sparklineWidth, sparklineHeight),
 )
-const latestPhMeasurement = computed(() => getLatestMeasurement(['ph']))
+const phSeries = computed(() =>
+  buildMeasurementSeries(['ph'], sparklineWidth, sparklineHeight),
+)
 
 const timelineObservedAtMenu = ref(false)
 const timelineObservedAtLabel = computed(() =>
@@ -1708,12 +1737,48 @@ function getLatest<T>(items: T[], selector: (item: T) => string | null | undefin
   return sorted.length > 0 ? sorted[0] : null
 }
 
-function getLatestMeasurement(kinds: string[]) {
+function buildMeasurementSeries(kinds: string[], width: number, height: number) {
   const normalizedKinds = kinds.map((kind) => normalizeMeasurementKind(kind))
   const filtered = measurements.value.filter((measurement) =>
     matchesMeasurementKind(measurement.kind, normalizedKinds),
   )
-  return getLatest(filtered, (item) => item.observed_at ?? item.created_at)
+  const ordered = [...filtered].sort(
+    (a, b) => measurementTimestamp(a) - measurementTimestamp(b),
+  )
+  const values = ordered.map((measurement) => measurement.value).filter((value) => Number.isFinite(value))
+  const latest = getLatest(filtered, (item) => item.observed_at ?? item.created_at)
+  const latestLabel = latest ? formatValue(latest.value, latest.unit) : 'n/a'
+  const { linePath, areaPath } = buildSparkline(values, width, height)
+  return {
+    values,
+    latest,
+    latestLabel,
+    linePath,
+    areaPath,
+  }
+}
+
+function buildSparkline(values: number[], width: number, height: number) {
+  if (values.length === 0) {
+    return { linePath: '', areaPath: '' }
+  }
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min
+  const step = values.length > 1 ? width / (values.length - 1) : width
+  const points = values.map((value, index) => {
+    const ratio = range === 0 ? 0.5 : (value - min) / range
+    const x = index * step
+    const y = height - ratio * height
+    return { x, y }
+  })
+  const linePath = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ')
+  const lastPoint = points[points.length - 1]
+  const firstPoint = points[0]
+  const areaPath = `${linePath} L ${lastPoint.x} ${height} L ${firstPoint.x} ${height} Z`
+  return { linePath, areaPath }
 }
 
 function matchesMeasurementKind(value: string, kinds: string[]) {
@@ -1772,5 +1837,47 @@ function isNoteMeasurement(measurement: Measurement) {
 
 .data-table :deep(td) {
   font-size: 0.85rem;
+}
+
+.spark-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-surface), 0.4);
+}
+
+.spark-meta {
+  min-width: 86px;
+}
+
+.spark-chart {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.spark-chart svg {
+  width: 100%;
+  height: 36px;
+}
+
+.spark-placeholder {
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.spark-line {
+  fill: none;
+  stroke: rgb(var(--spark-color));
+  stroke-width: 2;
+}
+
+.spark-area {
+  fill: rgba(var(--spark-color), 0.2);
 }
 </style>

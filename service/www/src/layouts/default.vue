@@ -101,7 +101,11 @@ onMounted(() => {
   const storedTheme = localStorage.getItem(themeStorageKey)
   if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
     theme.global.name.value = storedTheme
+    return
   }
+
+  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+  theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
 })
 
 watch(

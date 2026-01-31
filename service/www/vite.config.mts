@@ -50,12 +50,8 @@ export default defineConfig({
       google: {
         families: [
           {
-            name: 'Sora',
+            name: 'Manrope',
             styles: 'wght@300;400;500;600;700',
-          },
-          {
-            name: 'Fraunces',
-            styles: 'ital,wght@0,400;0,600;0,700;1,400;1,600;1,700',
           },
         ],
         display: 'swap',

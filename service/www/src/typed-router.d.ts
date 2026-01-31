@@ -19,7 +19,6 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
-    '/additions': RouteRecordInfo<'/additions', '/additions', Record<never, never>, Record<never, never>>,
     '/batches': RouteRecordInfo<'/batches', '/batches', Record<never, never>, Record<never, never>>,
     '/inventory/': RouteRecordInfo<'/inventory/', '/inventory', Record<never, never>, Record<never, never>>,
     '/inventory/adjustments': RouteRecordInfo<'/inventory/adjustments', '/inventory/adjustments', Record<never, never>, Record<never, never>>,
@@ -33,14 +32,11 @@ declare module 'vue-router/auto-routes' {
     '/inventory/receipts': RouteRecordInfo<'/inventory/receipts', '/inventory/receipts', Record<never, never>, Record<never, never>>,
     '/inventory/transfers': RouteRecordInfo<'/inventory/transfers', '/inventory/transfers', Record<never, never>, Record<never, never>>,
     '/inventory/usage': RouteRecordInfo<'/inventory/usage', '/inventory/usage', Record<never, never>, Record<never, never>>,
-    '/measurements': RouteRecordInfo<'/measurements', '/measurements', Record<never, never>, Record<never, never>>,
     '/procurement/': RouteRecordInfo<'/procurement/', '/procurement', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-fees': RouteRecordInfo<'/procurement/purchase-order-fees', '/procurement/purchase-order-fees', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-lines': RouteRecordInfo<'/procurement/purchase-order-lines', '/procurement/purchase-order-lines', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-orders': RouteRecordInfo<'/procurement/purchase-orders', '/procurement/purchase-orders', Record<never, never>, Record<never, never>>,
     '/procurement/suppliers': RouteRecordInfo<'/procurement/suppliers', '/procurement/suppliers', Record<never, never>, Record<never, never>>,
-    '/reports': RouteRecordInfo<'/reports', '/reports', Record<never, never>, Record<never, never>>,
-    '/transfers': RouteRecordInfo<'/transfers', '/transfers', Record<never, never>, Record<never, never>>,
     '/vessels': RouteRecordInfo<'/vessels', '/vessels', Record<never, never>, Record<never, never>>,
   }
 
@@ -57,10 +53,6 @@ declare module 'vue-router/auto-routes' {
   export interface _RouteFileInfoMap {
     'src/pages/index.vue': {
       routes: '/'
-      views: never
-    }
-    'src/pages/additions.vue': {
-      routes: '/additions'
       views: never
     }
     'src/pages/batches.vue': {
@@ -115,10 +107,6 @@ declare module 'vue-router/auto-routes' {
       routes: '/inventory/usage'
       views: never
     }
-    'src/pages/measurements.vue': {
-      routes: '/measurements'
-      views: never
-    }
     'src/pages/procurement/index.vue': {
       routes: '/procurement/'
       views: never
@@ -137,14 +125,6 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/procurement/suppliers.vue': {
       routes: '/procurement/suppliers'
-      views: never
-    }
-    'src/pages/reports.vue': {
-      routes: '/reports'
-      views: never
-    }
-    'src/pages/transfers.vue': {
-      routes: '/transfers'
       views: never
     }
     'src/pages/vessels.vue': {

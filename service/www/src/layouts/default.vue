@@ -96,10 +96,6 @@ const navItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
   { title: 'Batches', icon: 'mdi-barley', to: '/batches' },
   { title: 'Vessels', icon: 'mdi-silo', to: '/vessels' },
-  { title: 'Transfers', icon: 'mdi-truck-fast-outline', to: '/transfers' },
-  { title: 'Additions', icon: 'mdi-flask-outline', to: '/additions' },
-  { title: 'Measurements', icon: 'mdi-thermometer', to: '/measurements' },
-  { title: 'Reports', icon: 'mdi-chart-bar', to: '/reports' },
 ]
 
 function toggleDrawer() {

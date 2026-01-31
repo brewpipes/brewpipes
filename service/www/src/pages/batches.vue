@@ -141,13 +141,13 @@
               </v-row>
 
               <v-tabs v-model="activeTab" class="batch-tabs" color="primary" show-arrows>
+                <v-tab value="timeline">Timeline</v-tab>
                 <v-tab value="start">Start</v-tab>
                 <v-tab value="phases">Phases</v-tab>
                 <v-tab value="additions">Additions</v-tab>
                 <v-tab value="measurements">Measurements</v-tab>
                 <v-tab value="transfers">Transfers</v-tab>
                 <v-tab value="relations">Relations</v-tab>
-                <v-tab value="timeline">Timeline</v-tab>
               </v-tabs>
 
               <v-window v-model="activeTab" class="mt-4">
@@ -1018,7 +1018,7 @@ const volumeRelations = ref<VolumeRelation[]>([])
 const activeOccupancy = ref<Occupancy | null>(null)
 
 const selectedBatchId = ref<number | null>(null)
-const activeTab = ref('start')
+const activeTab = ref('timeline')
 const errorMessage = ref('')
 
 const snackbar = reactive({

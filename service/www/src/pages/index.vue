@@ -44,9 +44,7 @@
           </v-card-title>
           <v-card-text class="d-flex flex-column ga-2">
             <v-btn block color="primary" to="/batches">Create batch</v-btn>
-            <v-btn block variant="tonal" to="/additions">Record addition</v-btn>
-            <v-btn block variant="tonal" to="/measurements">Log measurement</v-btn>
-            <v-btn block variant="tonal" to="/transfers">Record transfer</v-btn>
+            <v-btn block variant="tonal" to="/batches">Manage batch workflow</v-btn>
             <v-btn :loading="loading" variant="text" @click="refreshAll">Refresh</v-btn>
             <v-alert
               v-if="errorMessage"
@@ -62,7 +60,7 @@
     </v-row>
 
     <v-row class="mt-4" align="stretch">
-      <v-col cols="12" md="4">
+      <v-col cols="12" md="6">
         <v-card class="section-card">
           <v-card-title>Vessels</v-card-title>
           <v-card-text>
@@ -73,7 +71,7 @@
           </v-card-text>
         </v-card>
       </v-col>
-      <v-col cols="12" md="4">
+      <v-col cols="12" md="6">
         <v-card class="section-card">
           <v-card-title>Workflow</v-card-title>
           <v-card-text>
@@ -81,17 +79,6 @@
               Capture transfers, additions, and measurements in one place.
             </div>
             <v-btn class="mt-3" variant="tonal" to="/batches">Go to workflow</v-btn>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" md="4">
-        <v-card class="section-card">
-          <v-card-title>Reports</v-card-title>
-          <v-card-text>
-            <div class="text-body-2 text-medium-emphasis">
-              Summaries of batch progress and quality checks.
-            </div>
-            <v-btn class="mt-3" variant="tonal" to="/reports">View reports</v-btn>
           </v-card-text>
         </v-card>
       </v-col>

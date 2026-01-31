@@ -45,18 +45,11 @@
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory" />
         </template>
-        <v-list-item to="/inventory" title="Overview" />
+        <v-list-item to="/inventory/activity" title="Activity" />
+        <v-list-item to="/inventory/product" title="Product" />
         <v-list-item to="/inventory/ingredients" title="Ingredients" />
-        <v-list-item to="/inventory/ingredient-details" title="Ingredient details" />
-        <v-list-item to="/inventory/locations" title="Stock locations" />
-        <v-list-item to="/inventory/receipts" title="Receipts" />
-        <v-list-item to="/inventory/lots" title="Ingredient lots" />
-        <v-list-item to="/inventory/lot-details" title="Lot details" />
-        <v-list-item to="/inventory/movements" title="Movements" />
-        <v-list-item to="/inventory/usage" title="Usage" />
-        <v-list-item to="/inventory/adjustments" title="Adjustments" />
-        <v-list-item to="/inventory/transfers" title="Transfers" />
-        <v-list-item to="/inventory/beer-lots" title="Beer lots" />
+        <v-list-item to="/inventory/adjustments-transfers" title="Adjustments & Transfers" />
+        <v-list-item to="/inventory/locations" title="Locations" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="procurement">

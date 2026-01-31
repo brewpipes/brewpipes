@@ -2,7 +2,7 @@
   <v-container class="inventory-page" fluid>
     <v-card class="section-card">
       <v-card-title class="d-flex align-center">
-        Inventory movements
+        Inventory activity
         <v-spacer />
         <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
           Refresh
@@ -13,7 +13,7 @@
           <v-col cols="12" md="7">
             <v-card class="sub-card" variant="outlined">
               <v-card-title class="d-flex align-center">
-                Movement list
+                Activity log
                 <v-spacer />
                 <v-btn size="small" variant="text" @click="loadMovements">Apply filter</v-btn>
               </v-card-title>
@@ -62,7 +62,7 @@
                       <td>{{ locationName(movement.stock_location_id) }}</td>
                     </tr>
                     <tr v-if="movements.length === 0">
-                      <td colspan="4">No movements yet.</td>
+                      <td colspan="4">No activity yet.</td>
                     </tr>
                   </tbody>
                 </v-table>
@@ -71,7 +71,7 @@
           </v-col>
           <v-col cols="12" md="5">
             <v-card class="sub-card" variant="tonal">
-              <v-card-title>Create movement</v-card-title>
+              <v-card-title>Log activity</v-card-title>
               <v-card-text>
                 <v-select
                   v-model="movementForm.ingredient_lot_id"
@@ -125,7 +125,7 @@
                   "
                   @click="createMovement"
                 >
-                  Add movement
+                  Log activity
                 </v-btn>
               </v-card-text>
             </v-card>
@@ -254,7 +254,7 @@ async function refreshAll() {
   try {
     await Promise.all([loadLots(), loadLocations(), loadBeerLots(), loadMovements()])
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load movements'
+    const message = error instanceof Error ? error.message : 'Unable to load activity'
     errorMessage.value = message
   } finally {
     loading.value = false
@@ -320,9 +320,9 @@ async function createMovement() {
     movementForm.transfer_id = ''
     movementForm.notes = ''
     await loadMovements()
-    showNotice('Movement created')
+    showNotice('Activity recorded')
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create movement'
+    const message = error instanceof Error ? error.message : 'Unable to log activity'
     errorMessage.value = message
     showNotice(message, 'error')
   }

@@ -21,17 +21,12 @@ declare module 'vue-router/auto-routes' {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/batches': RouteRecordInfo<'/batches', '/batches', Record<never, never>, Record<never, never>>,
     '/inventory/': RouteRecordInfo<'/inventory/', '/inventory', Record<never, never>, Record<never, never>>,
-    '/inventory/adjustments': RouteRecordInfo<'/inventory/adjustments', '/inventory/adjustments', Record<never, never>, Record<never, never>>,
-    '/inventory/beer-lots': RouteRecordInfo<'/inventory/beer-lots', '/inventory/beer-lots', Record<never, never>, Record<never, never>>,
-    '/inventory/ingredient-details': RouteRecordInfo<'/inventory/ingredient-details', '/inventory/ingredient-details', Record<never, never>, Record<never, never>>,
+    '/inventory/activity': RouteRecordInfo<'/inventory/activity', '/inventory/activity', Record<never, never>, Record<never, never>>,
+    '/inventory/adjustments-transfers': RouteRecordInfo<'/inventory/adjustments-transfers', '/inventory/adjustments-transfers', Record<never, never>, Record<never, never>>,
     '/inventory/ingredients': RouteRecordInfo<'/inventory/ingredients', '/inventory/ingredients', Record<never, never>, Record<never, never>>,
     '/inventory/locations': RouteRecordInfo<'/inventory/locations', '/inventory/locations', Record<never, never>, Record<never, never>>,
     '/inventory/lot-details': RouteRecordInfo<'/inventory/lot-details', '/inventory/lot-details', Record<never, never>, Record<never, never>>,
-    '/inventory/lots': RouteRecordInfo<'/inventory/lots', '/inventory/lots', Record<never, never>, Record<never, never>>,
-    '/inventory/movements': RouteRecordInfo<'/inventory/movements', '/inventory/movements', Record<never, never>, Record<never, never>>,
-    '/inventory/receipts': RouteRecordInfo<'/inventory/receipts', '/inventory/receipts', Record<never, never>, Record<never, never>>,
-    '/inventory/transfers': RouteRecordInfo<'/inventory/transfers', '/inventory/transfers', Record<never, never>, Record<never, never>>,
-    '/inventory/usage': RouteRecordInfo<'/inventory/usage', '/inventory/usage', Record<never, never>, Record<never, never>>,
+    '/inventory/product': RouteRecordInfo<'/inventory/product', '/inventory/product', Record<never, never>, Record<never, never>>,
     '/procurement/': RouteRecordInfo<'/procurement/', '/procurement', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-fees': RouteRecordInfo<'/procurement/purchase-order-fees', '/procurement/purchase-order-fees', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-lines': RouteRecordInfo<'/procurement/purchase-order-lines', '/procurement/purchase-order-lines', Record<never, never>, Record<never, never>>,
@@ -63,16 +58,12 @@ declare module 'vue-router/auto-routes' {
       routes: '/inventory/'
       views: never
     }
-    'src/pages/inventory/adjustments.vue': {
-      routes: '/inventory/adjustments'
+    'src/pages/inventory/activity.vue': {
+      routes: '/inventory/activity'
       views: never
     }
-    'src/pages/inventory/beer-lots.vue': {
-      routes: '/inventory/beer-lots'
-      views: never
-    }
-    'src/pages/inventory/ingredient-details.vue': {
-      routes: '/inventory/ingredient-details'
+    'src/pages/inventory/adjustments-transfers.vue': {
+      routes: '/inventory/adjustments-transfers'
       views: never
     }
     'src/pages/inventory/ingredients.vue': {
@@ -87,24 +78,8 @@ declare module 'vue-router/auto-routes' {
       routes: '/inventory/lot-details'
       views: never
     }
-    'src/pages/inventory/lots.vue': {
-      routes: '/inventory/lots'
-      views: never
-    }
-    'src/pages/inventory/movements.vue': {
-      routes: '/inventory/movements'
-      views: never
-    }
-    'src/pages/inventory/receipts.vue': {
-      routes: '/inventory/receipts'
-      views: never
-    }
-    'src/pages/inventory/transfers.vue': {
-      routes: '/inventory/transfers'
-      views: never
-    }
-    'src/pages/inventory/usage.vue': {
-      routes: '/inventory/usage'
+    'src/pages/inventory/product.vue': {
+      routes: '/inventory/product'
       views: never
     }
     'src/pages/procurement/index.vue': {

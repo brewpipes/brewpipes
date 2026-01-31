@@ -2,26 +2,91 @@
   <v-container class="inventory-page" fluid>
     <v-card class="section-card">
       <v-card-title class="d-flex align-center">
-        Inventory transfers
+        Adjustments & Transfers
         <v-spacer />
         <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
           Refresh
         </v-btn>
       </v-card-title>
       <v-card-text>
+        <div class="text-subtitle-1 font-weight-semibold mb-2">Adjustments</div>
+        <v-row align="stretch">
+          <v-col cols="12" md="7">
+            <v-card class="sub-card" variant="outlined">
+              <v-card-title>Adjustment list</v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="adjustmentErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ adjustmentErrorMessage }}
+                </v-alert>
+                <v-table class="data-table" density="compact">
+                  <thead>
+                    <tr>
+                      <th>Reason</th>
+                      <th>Adjusted at</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="adjustment in adjustments" :key="adjustment.id">
+                      <td>{{ adjustment.reason }}</td>
+                      <td>{{ formatDateTime(adjustment.adjusted_at) }}</td>
+                      <td>{{ adjustment.notes || '' }}</td>
+                    </tr>
+                    <tr v-if="adjustments.length === 0">
+                      <td colspan="3">No adjustments yet.</td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="12" md="5">
+            <v-card class="sub-card" variant="tonal">
+              <v-card-title>Create adjustment</v-card-title>
+              <v-card-text>
+                <v-text-field v-model="adjustmentForm.reason" label="Reason" />
+                <v-text-field v-model="adjustmentForm.adjusted_at" label="Adjusted at" type="datetime-local" />
+                <v-textarea
+                  v-model="adjustmentForm.notes"
+                  auto-grow
+                  label="Notes"
+                  rows="2"
+                />
+                <v-btn
+                  block
+                  color="primary"
+                  :disabled="!adjustmentForm.reason.trim()"
+                  @click="createAdjustment"
+                >
+                  Add adjustment
+                </v-btn>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <v-divider class="my-6" />
+
+        <div class="text-subtitle-1 font-weight-semibold mb-2">Transfers</div>
         <v-row align="stretch">
           <v-col cols="12" md="7">
             <v-card class="sub-card" variant="outlined">
               <v-card-title>Transfer list</v-card-title>
               <v-card-text>
                 <v-alert
-                  v-if="errorMessage"
+                  v-if="transferErrorMessage"
                   class="mb-3"
                   density="compact"
                   type="error"
                   variant="tonal"
                 >
-                  {{ errorMessage }}
+                  {{ transferErrorMessage }}
                 </v-alert>
                 <v-table class="data-table" density="compact">
                   <thead>
@@ -91,6 +156,16 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useInventoryApi } from '@/composables/useInventoryApi'
 
+type InventoryAdjustment = {
+  id: number
+  uuid: string
+  reason: string
+  adjusted_at: string
+  notes: string
+  created_at: string
+  updated_at: string
+}
+
 type StockLocation = {
   id: number
   name: string
@@ -109,10 +184,19 @@ type InventoryTransfer = {
 
 const { request, normalizeText, normalizeDateTime, formatDateTime } = useInventoryApi()
 
+const adjustments = ref<InventoryAdjustment[]>([])
 const locations = ref<StockLocation[]>([])
 const transfers = ref<InventoryTransfer[]>([])
 const loading = ref(false)
-const errorMessage = ref('')
+
+const adjustmentErrorMessage = ref('')
+const transferErrorMessage = ref('')
+
+const adjustmentForm = reactive({
+  reason: '',
+  adjusted_at: '',
+  notes: '',
+})
 
 const transferForm = reactive({
   source_location_id: null as number | null,
@@ -146,23 +230,60 @@ function showNotice(text: string, color = 'success') {
 
 async function refreshAll() {
   loading.value = true
-  errorMessage.value = ''
+  await Promise.allSettled([loadAdjustments(), loadTransfers(), loadLocations()])
+  loading.value = false
+}
+
+async function loadAdjustments() {
+  adjustmentErrorMessage.value = ''
   try {
-    await Promise.all([loadLocations(), loadTransfers()])
+    adjustments.value = await request<InventoryAdjustment[]>('/inventory-adjustments')
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load transfers'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+    const message = error instanceof Error ? error.message : 'Unable to load adjustments'
+    adjustmentErrorMessage.value = message
   }
 }
 
 async function loadLocations() {
-  locations.value = await request<StockLocation[]>('/stock-locations')
+  try {
+    locations.value = await request<StockLocation[]>('/stock-locations')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load locations'
+    transferErrorMessage.value = message
+  }
 }
 
 async function loadTransfers() {
-  transfers.value = await request<InventoryTransfer[]>('/inventory-transfers')
+  transferErrorMessage.value = ''
+  try {
+    transfers.value = await request<InventoryTransfer[]>('/inventory-transfers')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load transfers'
+    transferErrorMessage.value = message
+  }
+}
+
+async function createAdjustment() {
+  try {
+    const payload = {
+      reason: adjustmentForm.reason.trim(),
+      adjusted_at: normalizeDateTime(adjustmentForm.adjusted_at),
+      notes: normalizeText(adjustmentForm.notes),
+    }
+    await request<InventoryAdjustment>('/inventory-adjustments', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    adjustmentForm.reason = ''
+    adjustmentForm.adjusted_at = ''
+    adjustmentForm.notes = ''
+    await loadAdjustments()
+    showNotice('Adjustment created')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to create adjustment'
+    adjustmentErrorMessage.value = message
+    showNotice(message, 'error')
+  }
 }
 
 async function createTransfer() {
@@ -185,7 +306,7 @@ async function createTransfer() {
     showNotice('Transfer created')
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create transfer'
-    errorMessage.value = message
+    transferErrorMessage.value = message
     showNotice(message, 'error')
   }
 }

@@ -1,52 +1,6 @@
 <template>
   <v-container class="dashboard-page" fluid>
-    <v-row>
-      <v-col cols="12">
-        <v-card class="hero-card">
-          <v-card-text>
-            <div class="kicker">Production Overview</div>
-            <div class="text-h3 font-weight-bold mb-2">BrewPipes Production</div>
-            <div class="text-body-1 text-medium-emphasis">
-              Monitor brew day activity across batches, vessels, and volumes. Use the
-              Batches view for full workflow controls.
-            </div>
-
-            <div class="d-flex flex-wrap align-center ga-2 mt-4">
-              <v-chip color="primary" size="small" variant="tonal">
-                API: {{ apiBase }}
-              </v-chip>
-              <v-chip color="secondary" size="small" variant="tonal">
-                Batches: {{ batches.length }}
-              </v-chip>
-              <v-chip color="secondary" size="small" variant="tonal">
-                Vessels: {{ vessels.length }}
-              </v-chip>
-              <v-chip color="secondary" size="small" variant="tonal">
-                Volumes: {{ volumes.length }}
-              </v-chip>
-            </div>
-
-            <div class="d-flex flex-wrap ga-2 mt-4">
-              <v-btn color="primary" to="/batches">Manage batches</v-btn>
-              <v-btn variant="tonal" to="/transfers">Record transfer</v-btn>
-              <v-btn :loading="loading" variant="text" @click="refreshAll">Refresh</v-btn>
-            </div>
-
-            <v-alert
-              v-if="errorMessage"
-              class="mt-4"
-              density="compact"
-              type="error"
-              variant="tonal"
-            >
-              {{ errorMessage }}
-            </v-alert>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-row class="mt-4" align="stretch">
+    <v-row align="stretch">
       <v-col cols="12" md="7">
         <v-card class="section-card">
           <v-card-title class="d-flex align-center">
@@ -93,6 +47,15 @@
             <v-btn block variant="tonal" to="/additions">Record addition</v-btn>
             <v-btn block variant="tonal" to="/measurements">Log measurement</v-btn>
             <v-btn block variant="tonal" to="/transfers">Record transfer</v-btn>
+            <v-btn :loading="loading" variant="text" @click="refreshAll">Refresh</v-btn>
+            <v-alert
+              v-if="errorMessage"
+              density="compact"
+              type="error"
+              variant="tonal"
+            >
+              {{ errorMessage }}
+            </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -224,22 +187,6 @@ function formatDateTime(value: string | null | undefined) {
 <style scoped>
 .dashboard-page {
   position: relative;
-}
-
-.hero-card {
-  border: 1px solid rgba(var(--v-theme-primary), 0.25);
-  background:
-    linear-gradient(130deg, rgba(var(--v-theme-primary), 0.2), rgba(var(--v-theme-secondary), 0.18)),
-    rgba(var(--v-theme-surface), 0.9);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
-}
-
-.kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  font-size: 0.7rem;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  margin-bottom: 6px;
 }
 
 .section-card {

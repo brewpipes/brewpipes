@@ -1,54 +1,6 @@
 <template>
   <v-container class="vessels-page" fluid>
-    <v-row>
-      <v-col cols="12">
-        <v-card class="hero-card">
-          <v-card-text>
-            <v-row align="center">
-              <v-col cols="12" md="7">
-                <div class="kicker">Production Service</div>
-                <div class="text-h3 font-weight-bold mb-2">Vessel management</div>
-                <div class="text-body-1 text-medium-emphasis">
-                  Register tanks, kettles, and fermenters so production volumes can be anchored
-                  to a physical location.
-                </div>
-
-                <div class="d-flex flex-wrap align-center ga-2 mt-4">
-                  <v-chip color="primary" size="small" variant="tonal">
-                    API: {{ apiBase }}
-                  </v-chip>
-                  <v-chip color="secondary" size="small" variant="tonal">
-                    Vessels: {{ vessels.length }}
-                  </v-chip>
-                </div>
-              </v-col>
-
-              <v-col cols="12" md="5">
-                <v-card class="hero-panel" variant="tonal">
-                  <div class="text-overline">Active vessel</div>
-                  <div class="text-h5 font-weight-semibold">
-                    {{ selectedVessel ? selectedVessel.name : 'Select a vessel' }}
-                  </div>
-                  <div class="text-body-2 text-medium-emphasis mb-3">
-                    {{ selectedVessel ? selectedVessel.type : 'Choose a vessel to review details' }}
-                  </div>
-                  <div class="d-flex flex-wrap ga-2">
-                    <v-btn color="primary" size="small" :loading="loading" @click="refreshVessels">
-                      Refresh list
-                    </v-btn>
-                    <v-btn size="small" variant="tonal" @click="clearSelection">
-                      Clear selection
-                    </v-btn>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-row class="mt-4" align="stretch">
+    <v-row align="stretch">
       <v-col cols="12" md="4">
         <v-card class="section-card">
           <v-card-title class="d-flex align-center">
@@ -100,6 +52,11 @@
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-clipboard-text-outline" />
             Vessel details
+            <v-spacer />
+            <v-btn size="small" variant="text" :loading="loading" @click="refreshVessels">
+              Refresh
+            </v-btn>
+            <v-btn size="small" variant="text" @click="clearSelection">Clear</v-btn>
           </v-card-title>
           <v-card-text>
             <v-alert
@@ -359,26 +316,6 @@ function formatDateTime(value: string | null | undefined) {
 <style scoped>
 .vessels-page {
   position: relative;
-}
-
-.hero-card {
-  border: 1px solid rgba(var(--v-theme-primary), 0.25);
-  background:
-    linear-gradient(130deg, rgba(var(--v-theme-primary), 0.2), rgba(var(--v-theme-secondary), 0.18)),
-    rgba(var(--v-theme-surface), 0.9);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
-}
-
-.hero-panel {
-  border: 1px solid rgba(var(--v-theme-secondary), 0.35);
-}
-
-.kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  font-size: 0.7rem;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  margin-bottom: 6px;
 }
 
 .section-card {

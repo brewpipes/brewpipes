@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/brewpipes/brewpipes/cmd"
+	"github.com/brewpipes/brewpipes/service/inventory"
 	"github.com/brewpipes/brewpipes/service/production"
 )
 
@@ -32,5 +33,12 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("initializing production service: %w", err)
 	}
 
-	return cmd.RunServices(ctx, productionSvc)
+	inventorySvc, err := inventory.New(ctx, inventory.Config{
+		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+	})
+	if err != nil {
+		return fmt.Errorf("initializing inventory service: %w", err)
+	}
+
+	return cmd.RunServices(ctx, productionSvc, inventorySvc)
 }

@@ -1,24 +1,53 @@
 <template>
-  <v-app-bar class="app-bar" height="78" flat>
-    <v-container class="d-flex align-center">
-      <div class="brand-mark">
-        <v-avatar color="surface" size="44">
-          <v-img alt="BrewPipes" src="@/assets/logo.svg" />
-        </v-avatar>
-      </div>
+  <v-app-bar class="app-bar" height="72" flat>
+    <v-app-bar-nav-icon @click="toggleDrawer" />
 
-      <div class="brand-text">
-        <div class="text-overline">BrewPipes</div>
-        <div class="text-h6">Production Console</div>
-      </div>
+    <div class="brand-mark">
+      <v-avatar color="surface" size="38">
+        <v-img alt="BrewPipes" src="@/assets/logo.svg" />
+      </v-avatar>
+    </div>
 
-      <v-spacer />
+    <div class="brand-text">
+      <div class="text-caption text-medium-emphasis">BrewPipes</div>
+      <div class="text-subtitle-1">Production Console</div>
+    </div>
 
-      <v-chip class="text-caption" color="secondary" variant="tonal">
-        Brew Day UX
-      </v-chip>
-    </v-container>
+    <v-spacer />
+
+    <v-btn class="profile-button" icon variant="text">
+      <v-icon icon="mdi-account-circle" size="26" />
+    </v-btn>
   </v-app-bar>
+
+  <v-navigation-drawer
+    v-model="drawer"
+    class="app-drawer"
+    :permanent="!isMobile"
+    :rail="rail"
+    :temporary="isMobile"
+    width="260"
+    rail-width="78"
+  >
+    <v-list class="nav-list" density="comfortable">
+      <v-list-item
+        v-for="item in navItems"
+        :key="item.title"
+        :disabled="item.disabled"
+        :to="item.to"
+        :prepend-icon="item.icon"
+        :title="item.title"
+      />
+    </v-list>
+
+    <template #append>
+      <div class="drawer-footer">
+        <v-btn block size="small" variant="tonal" @click="toggleRail">
+          {{ rail ? 'Expand menu' : 'Collapse menu' }}
+        </v-btn>
+      </div>
+    </template>
+  </v-navigation-drawer>
 
   <v-main class="app-main">
     <router-view />
@@ -28,15 +57,42 @@
 </template>
 
 <script lang="ts" setup>
-  //
+import { computed, ref } from 'vue'
+import { useDisplay } from 'vuetify'
+
+const drawer = ref(true)
+const rail = ref(false)
+const display = useDisplay()
+const isMobile = computed(() => display.smAndDown.value)
+
+const navItems = [
+  { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
+  { title: 'Batches', icon: 'mdi-barley', to: '/', disabled: false },
+  { title: 'Vessels', icon: 'mdi-silo', to: '/', disabled: true },
+  { title: 'Transfers', icon: 'mdi-truck-fast-outline', to: '/', disabled: true },
+  { title: 'Additions', icon: 'mdi-flask-outline', to: '/', disabled: true },
+  { title: 'Measurements', icon: 'mdi-thermometer', to: '/', disabled: true },
+  { title: 'Reports', icon: 'mdi-chart-bar', to: '/', disabled: true },
+]
+
+function toggleDrawer() {
+  if (isMobile.value) {
+    drawer.value = !drawer.value
+    return
+  }
+  rail.value = !rail.value
+}
+
+function toggleRail() {
+  rail.value = !rail.value
+}
 </script>
 
 <style scoped>
 .app-bar {
-  background: rgba(253, 251, 247, 0.86);
+  background: rgba(253, 251, 247, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(28, 26, 22, 0.08);
-  position: sticky;
 }
 
 .brand-mark {
@@ -52,10 +108,27 @@
   line-height: 1.1;
 }
 
+.app-drawer {
+  background: rgba(253, 251, 247, 0.96);
+  border-right: 1px solid rgba(28, 26, 22, 0.08);
+}
+
+.nav-list :deep(.v-list-item) {
+  border-radius: 8px;
+}
+
+.drawer-footer {
+  padding: 16px;
+}
+
+.profile-button {
+  color: rgba(28, 26, 22, 0.7);
+}
+
 .app-main {
   position: relative;
   z-index: 1;
-  padding-top: 12px;
+  padding-top: 16px;
   padding-bottom: 40px;
 }
 </style>

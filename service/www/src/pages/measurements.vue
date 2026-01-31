@@ -19,8 +19,8 @@
 }
 
 .section-card {
-  background: rgba(253, 251, 247, 0.92);
-  border: 1px solid rgba(28, 26, 22, 0.08);
-  box-shadow: 0 10px 24px rgba(28, 26, 22, 0.05);
+  background: rgba(var(--v-theme-surface), 0.92);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 </style>

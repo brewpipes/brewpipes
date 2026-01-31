@@ -37,8 +37,8 @@
 
 <style scoped>
 .app-footer {
-  border-top: 1px solid rgba(28, 26, 22, 0.08);
-  background: rgba(253, 251, 247, 0.8);
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  background: rgba(var(--v-theme-surface), 0.8);
   backdrop-filter: blur(10px);
 }
 </style>

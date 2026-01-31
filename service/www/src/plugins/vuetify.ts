@@ -14,9 +14,9 @@ import { createVuetify } from 'vuetify'
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
   theme: {
-    defaultTheme: 'brew',
+    defaultTheme: 'brewDark',
     themes: {
-      brew: {
+      brewLight: {
         dark: false,
         colors: {
           background: '#f5f2ea',
@@ -27,6 +27,19 @@ export default createVuetify({
           info: '#2d5f7a',
           success: '#2f7a4a',
           warning: '#c08322',
+        },
+      },
+      brewDark: {
+        dark: true,
+        colors: {
+          background: '#12100d',
+          surface: '#1a1714',
+          primary: '#6db28f',
+          secondary: '#d39a5f',
+          error: '#e06a5a',
+          info: '#6ea0c1',
+          success: '#6fbf86',
+          warning: '#d6a34a',
         },
       },
     },

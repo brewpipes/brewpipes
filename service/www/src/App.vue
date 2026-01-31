@@ -10,12 +10,12 @@
 
 <style>
 :root {
-  --bp-ink: #1c1a16;
-  --bp-paper: #f5f2ea;
-  --bp-cream: #fdfbf7;
-  --bp-amber: #c4753c;
-  --bp-moss: #2f5d50;
-  --bp-mist: rgba(24, 22, 18, 0.06);
+  --bp-ink: rgb(var(--v-theme-on-background));
+  --bp-paper: rgb(var(--v-theme-background));
+  --bp-cream: rgb(var(--v-theme-surface));
+  --bp-amber: rgb(var(--v-theme-secondary));
+  --bp-moss: rgb(var(--v-theme-primary));
+  --bp-mist: rgba(var(--v-theme-on-background), 0.08);
 }
 
 body {
@@ -42,9 +42,9 @@ body {
 
 .app-shell::before {
   background:
-    radial-gradient(600px 300px at 12% 20%, rgba(47, 93, 80, 0.18), transparent 70%),
-    radial-gradient(520px 260px at 88% 10%, rgba(196, 117, 60, 0.18), transparent 70%),
-    linear-gradient(120deg, rgba(255, 255, 255, 0.5), rgba(245, 242, 234, 0.9));
+    radial-gradient(600px 300px at 12% 20%, rgba(var(--v-theme-primary), 0.2), transparent 70%),
+    radial-gradient(520px 260px at 88% 10%, rgba(var(--v-theme-secondary), 0.18), transparent 70%),
+    linear-gradient(120deg, rgba(var(--v-theme-surface), 0.65), rgba(var(--v-theme-background), 0.95));
 }
 
 .app-shell::after {
@@ -52,7 +52,7 @@ body {
   bottom: -20vh;
   height: 60vh;
   background:
-    radial-gradient(520px 320px at 20% 80%, rgba(45, 95, 122, 0.12), transparent 70%),
-    radial-gradient(620px 360px at 80% 70%, rgba(47, 122, 74, 0.12), transparent 70%);
+    radial-gradient(520px 320px at 20% 80%, rgba(var(--v-theme-info), 0.16), transparent 70%),
+    radial-gradient(620px 360px at 80% 70%, rgba(var(--v-theme-success), 0.16), transparent 70%);
 }
 </style>

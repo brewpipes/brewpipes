@@ -15,6 +15,9 @@
 
     <v-spacer />
 
+    <v-btn class="theme-button" icon variant="text" @click="toggleTheme">
+      <v-icon :icon="themeIcon" size="22" />
+    </v-btn>
     <v-btn class="profile-button" icon variant="text">
       <v-icon icon="mdi-account-circle" size="26" />
     </v-btn>
@@ -57,12 +60,15 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { useDisplay } from 'vuetify'
+import { useDisplay, useTheme } from 'vuetify'
 
 const drawer = ref(true)
 const rail = ref(false)
+const theme = useTheme()
 const display = useDisplay()
 const isMobile = computed(() => display.smAndDown.value)
+const isDark = computed(() => theme.global.current.value.dark)
+const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
 
 const navItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
@@ -85,13 +91,17 @@ function toggleDrawer() {
 function toggleRail() {
   rail.value = !rail.value
 }
+
+function toggleTheme() {
+  theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
+}
 </script>
 
 <style scoped>
 .app-bar {
-  background: rgba(253, 251, 247, 0.92);
+  background: rgba(var(--v-theme-surface), 0.92);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(28, 26, 22, 0.08);
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.12);
 }
 
 .brand-mark {
@@ -108,8 +118,8 @@ function toggleRail() {
 }
 
 .app-drawer {
-  background: rgba(253, 251, 247, 0.96);
-  border-right: 1px solid rgba(28, 26, 22, 0.08);
+  background: rgba(var(--v-theme-surface), 0.96);
+  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.12);
 }
 
 .nav-list :deep(.v-list-item) {
@@ -120,8 +130,12 @@ function toggleRail() {
   padding: 16px;
 }
 
+.theme-button {
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+
 .profile-button {
-  color: rgba(28, 26, 22, 0.7);
+  color: rgba(var(--v-theme-on-surface), 0.7);
 }
 
 .app-main {

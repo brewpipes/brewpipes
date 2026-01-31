@@ -77,7 +77,7 @@
                   {{ vessel.name }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ vessel.type }} • {{ formatCapacity(vessel.capacity, vessel.capacity_unit) }}
+                  {{ vessel.type }} - {{ formatCapacity(vessel.capacity, vessel.capacity_unit) }}
                 </v-list-item-subtitle>
                 <template #append>
                   <v-chip size="x-small" variant="tonal">
@@ -121,7 +121,7 @@
                         {{ selectedVessel.name }}
                       </div>
                       <div class="text-body-2 text-medium-emphasis">
-                        {{ selectedVessel.type }} • {{ selectedVessel.status }}
+                        {{ selectedVessel.type }} - {{ selectedVessel.status }}
                       </div>
                       <div class="text-body-2 text-medium-emphasis">
                         Capacity {{ formatCapacity(selectedVessel.capacity, selectedVessel.capacity_unit) }}
@@ -362,34 +362,34 @@ function formatDateTime(value: string | null | undefined) {
 }
 
 .hero-card {
-  border: 1px solid rgba(47, 93, 80, 0.16);
+  border: 1px solid rgba(var(--v-theme-primary), 0.25);
   background:
-    linear-gradient(130deg, rgba(47, 93, 80, 0.14), rgba(196, 117, 60, 0.12)),
-    rgba(253, 251, 247, 0.9);
-  box-shadow: 0 12px 28px rgba(28, 26, 22, 0.08);
+    linear-gradient(130deg, rgba(var(--v-theme-primary), 0.2), rgba(var(--v-theme-secondary), 0.18)),
+    rgba(var(--v-theme-surface), 0.9);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
 }
 
 .hero-panel {
-  border: 1px solid rgba(196, 117, 60, 0.2);
+  border: 1px solid rgba(var(--v-theme-secondary), 0.35);
 }
 
 .kicker {
   text-transform: uppercase;
   letter-spacing: 0.24em;
   font-size: 0.7rem;
-  color: rgba(28, 26, 22, 0.6);
+  color: rgba(var(--v-theme-on-surface), 0.6);
   margin-bottom: 6px;
 }
 
 .section-card {
-  background: rgba(253, 251, 247, 0.92);
-  border: 1px solid rgba(28, 26, 22, 0.08);
-  box-shadow: 0 10px 24px rgba(28, 26, 22, 0.05);
+  background: rgba(var(--v-theme-surface), 0.92);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
 .sub-card {
-  border: 1px solid rgba(28, 26, 22, 0.08);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  background: rgba(var(--v-theme-surface), 0.7);
 }
 
 .vessel-list {

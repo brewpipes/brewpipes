@@ -18,11 +18,13 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 	}
 
 	var supplierUUID pgtype.UUID
+	var purchaseOrderLineUUID pgtype.UUID
 	err := c.db.QueryRow(ctx, `
 		INSERT INTO ingredient_lot (
 			ingredient_id,
 			receipt_id,
 			supplier_uuid,
+			purchase_order_line_uuid,
 			brewery_lot_code,
 			originator_lot_code,
 			originator_name,
@@ -33,11 +35,12 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 			best_by_at,
 			expires_at,
 			notes
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id, uuid, ingredient_id, receipt_id, supplier_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		RETURNING id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at`,
 		lot.IngredientID,
 		lot.ReceiptID,
 		uuidParam(lot.SupplierUUID),
+		uuidParam(lot.PurchaseOrderLineUUID),
 		lot.BreweryLotCode,
 		lot.OriginatorLotCode,
 		lot.OriginatorName,
@@ -54,6 +57,7 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 		&lot.IngredientID,
 		&lot.ReceiptID,
 		&supplierUUID,
+		&purchaseOrderLineUUID,
 		&lot.BreweryLotCode,
 		&lot.OriginatorLotCode,
 		&lot.OriginatorName,
@@ -73,14 +77,16 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 	}
 
 	assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+	assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 	return lot, nil
 }
 
 func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot, error) {
 	var lot IngredientLot
 	var supplierUUID pgtype.UUID
+	var purchaseOrderLineUUID pgtype.UUID
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
 		FROM ingredient_lot
 		WHERE id = $1 AND deleted_at IS NULL`,
 		id,
@@ -90,6 +96,7 @@ func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot,
 		&lot.IngredientID,
 		&lot.ReceiptID,
 		&supplierUUID,
+		&purchaseOrderLineUUID,
 		&lot.BreweryLotCode,
 		&lot.OriginatorLotCode,
 		&lot.OriginatorName,
@@ -112,12 +119,13 @@ func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot,
 	}
 
 	assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+	assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 	return lot, nil
 }
 
 func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
 		FROM ingredient_lot
 		WHERE deleted_at IS NULL
 		ORDER BY received_at DESC`,
@@ -131,12 +139,14 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 	for rows.Next() {
 		var lot IngredientLot
 		var supplierUUID pgtype.UUID
+		var purchaseOrderLineUUID pgtype.UUID
 		if err := rows.Scan(
 			&lot.ID,
 			&lot.UUID,
 			&lot.IngredientID,
 			&lot.ReceiptID,
 			&supplierUUID,
+			&purchaseOrderLineUUID,
 			&lot.BreweryLotCode,
 			&lot.OriginatorLotCode,
 			&lot.OriginatorName,
@@ -154,6 +164,7 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 			return nil, fmt.Errorf("scanning ingredient lot: %w", err)
 		}
 		assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+		assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 		lots = append(lots, lot)
 	}
 	if err := rows.Err(); err != nil {
@@ -165,7 +176,7 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 
 func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientID int64) ([]IngredientLot, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
 		FROM ingredient_lot
 		WHERE ingredient_id = $1 AND deleted_at IS NULL
 		ORDER BY received_at DESC`,
@@ -180,12 +191,14 @@ func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientI
 	for rows.Next() {
 		var lot IngredientLot
 		var supplierUUID pgtype.UUID
+		var purchaseOrderLineUUID pgtype.UUID
 		if err := rows.Scan(
 			&lot.ID,
 			&lot.UUID,
 			&lot.IngredientID,
 			&lot.ReceiptID,
 			&supplierUUID,
+			&purchaseOrderLineUUID,
 			&lot.BreweryLotCode,
 			&lot.OriginatorLotCode,
 			&lot.OriginatorName,
@@ -203,6 +216,7 @@ func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientI
 			return nil, fmt.Errorf("scanning ingredient lot: %w", err)
 		}
 		assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+		assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 		lots = append(lots, lot)
 	}
 	if err := rows.Err(); err != nil {
@@ -214,7 +228,7 @@ func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientI
 
 func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptID int64) ([]IngredientLot, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
 		FROM ingredient_lot
 		WHERE receipt_id = $1 AND deleted_at IS NULL
 		ORDER BY received_at DESC`,
@@ -229,12 +243,14 @@ func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptID int6
 	for rows.Next() {
 		var lot IngredientLot
 		var supplierUUID pgtype.UUID
+		var purchaseOrderLineUUID pgtype.UUID
 		if err := rows.Scan(
 			&lot.ID,
 			&lot.UUID,
 			&lot.IngredientID,
 			&lot.ReceiptID,
 			&supplierUUID,
+			&purchaseOrderLineUUID,
 			&lot.BreweryLotCode,
 			&lot.OriginatorLotCode,
 			&lot.OriginatorName,
@@ -252,6 +268,7 @@ func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptID int6
 			return nil, fmt.Errorf("scanning ingredient lot: %w", err)
 		}
 		assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+		assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 		lots = append(lots, lot)
 	}
 	if err := rows.Err(); err != nil {

@@ -32,12 +32,15 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 
 			service.JSON(w, dto.NewBatchesResponse(batches))
 		case http.MethodPost:
+			slog.Info("create batch request", "method", r.Method, "path", r.URL.Path, "remote", r.RemoteAddr)
 			var req dto.CreateBatchRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				slog.Warn("invalid batch request body", "error", err)
 				http.Error(w, "invalid request", http.StatusBadRequest)
 				return
 			}
 			if err := req.Validate(); err != nil {
+				slog.Warn("batch validation failed", "error", err, "short_name", req.ShortName)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -54,6 +57,8 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 				service.InternalError(w, err.Error())
 				return
 			}
+
+			slog.Info("batch created", "batch_id", created.ID, "short_name", created.ShortName)
 
 			service.JSON(w, dto.NewBatchResponse(created))
 		default:

@@ -124,28 +124,30 @@ type StockLocation struct {
 
 type InventoryReceipt struct {
 	entity.Identifiers
-	SupplierUUID  *uuid.UUID
-	ReferenceCode *string
-	ReceivedAt    time.Time
-	Notes         *string
+	SupplierUUID      *uuid.UUID
+	PurchaseOrderUUID *uuid.UUID
+	ReferenceCode     *string
+	ReceivedAt        time.Time
+	Notes             *string
 	entity.Timestamps
 }
 
 type IngredientLot struct {
 	entity.Identifiers
-	IngredientID      int64
-	ReceiptID         *int64
-	SupplierUUID      *uuid.UUID
-	BreweryLotCode    *string
-	OriginatorLotCode *string
-	OriginatorName    *string
-	OriginatorType    *string
-	ReceivedAt        time.Time
-	ReceivedAmount    int64
-	ReceivedUnit      string
-	BestByAt          *time.Time
-	ExpiresAt         *time.Time
-	Notes             *string
+	IngredientID          int64
+	ReceiptID             *int64
+	SupplierUUID          *uuid.UUID
+	PurchaseOrderLineUUID *uuid.UUID
+	BreweryLotCode        *string
+	OriginatorLotCode     *string
+	OriginatorName        *string
+	OriginatorType        *string
+	ReceivedAt            time.Time
+	ReceivedAmount        int64
+	ReceivedUnit          string
+	BestByAt              *time.Time
+	ExpiresAt             *time.Time
+	Notes                 *string
 	entity.Timestamps
 }
 

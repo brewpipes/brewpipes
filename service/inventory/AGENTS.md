@@ -19,6 +19,7 @@ Ingredient
 
 Ingredient Lot
 - A lot is a specific received batch of an ingredient with its own quantity, dates, supplier reference, and originator details.
+- Lots can optionally reference the procurement purchase order line UUID for traceability.
 - Lots are the unit of traceability for usage and quality (e.g., alpha acids for hops, yeast generation, moisture for grain).
 - Lot-specific quality attributes live in lot detail records keyed by ingredient lot ID.
 
@@ -44,6 +45,7 @@ Inventory Movement
 
 Receipt
 - A receipt records receiving inventory from a supplier or a production transfer-in.
+- Receipts can optionally reference the originating procurement purchase order UUID.
 - It creates one or more lots and the corresponding movement records.
 
 Usage
@@ -86,6 +88,7 @@ In short:
 - An inventory manager can create an ingredient with a name, category, and default unit for fermentables, hops, yeast, adjuncts, and gases.
 - Category-specific ingredient details (malt, hop, yeast) can be stored without fragmenting lot or movement workflows.
 - The system can record a receipt that creates one or more ingredient lots and increases on-hand balances.
+- Receipts and lots can store procurement purchase order and line UUIDs for cross-service traceability.
 - Lots support both a brewery-assigned lot number and an originator's lot number.
 - Lots store a supplier reference UUID (Procurement) and originator details for traceability.
 - The system can record usage against a specific lot with amount, unit, time, and an optional production reference UUID.

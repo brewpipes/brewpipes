@@ -18,15 +18,18 @@ func (c *Client) CreateInventoryReceipt(ctx context.Context, receipt InventoryRe
 	}
 
 	var supplierUUID pgtype.UUID
+	var purchaseOrderUUID pgtype.UUID
 	err := c.db.QueryRow(ctx, `
 		INSERT INTO inventory_receipt (
 			supplier_uuid,
+			purchase_order_uuid,
 			reference_code,
 			received_at,
 			notes
-		) VALUES ($1, $2, $3, $4)
-		RETURNING id, uuid, supplier_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at`,
+		) VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at`,
 		uuidParam(receipt.SupplierUUID),
+		uuidParam(receipt.PurchaseOrderUUID),
 		receipt.ReferenceCode,
 		receivedAt,
 		receipt.Notes,
@@ -34,6 +37,7 @@ func (c *Client) CreateInventoryReceipt(ctx context.Context, receipt InventoryRe
 		&receipt.ID,
 		&receipt.UUID,
 		&supplierUUID,
+		&purchaseOrderUUID,
 		&receipt.ReferenceCode,
 		&receipt.ReceivedAt,
 		&receipt.Notes,
@@ -46,14 +50,16 @@ func (c *Client) CreateInventoryReceipt(ctx context.Context, receipt InventoryRe
 	}
 
 	assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+	assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 	return receipt, nil
 }
 
 func (c *Client) GetInventoryReceipt(ctx context.Context, id int64) (InventoryReceipt, error) {
 	var receipt InventoryReceipt
 	var supplierUUID pgtype.UUID
+	var purchaseOrderUUID pgtype.UUID
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, supplier_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_receipt
 		WHERE id = $1 AND deleted_at IS NULL`,
 		id,
@@ -61,6 +67,7 @@ func (c *Client) GetInventoryReceipt(ctx context.Context, id int64) (InventoryRe
 		&receipt.ID,
 		&receipt.UUID,
 		&supplierUUID,
+		&purchaseOrderUUID,
 		&receipt.ReferenceCode,
 		&receipt.ReceivedAt,
 		&receipt.Notes,
@@ -76,12 +83,13 @@ func (c *Client) GetInventoryReceipt(ctx context.Context, id int64) (InventoryRe
 	}
 
 	assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+	assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 	return receipt, nil
 }
 
 func (c *Client) ListInventoryReceipts(ctx context.Context) ([]InventoryReceipt, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, supplier_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_receipt
 		WHERE deleted_at IS NULL
 		ORDER BY received_at DESC`,
@@ -95,10 +103,12 @@ func (c *Client) ListInventoryReceipts(ctx context.Context) ([]InventoryReceipt,
 	for rows.Next() {
 		var receipt InventoryReceipt
 		var supplierUUID pgtype.UUID
+		var purchaseOrderUUID pgtype.UUID
 		if err := rows.Scan(
 			&receipt.ID,
 			&receipt.UUID,
 			&supplierUUID,
+			&purchaseOrderUUID,
 			&receipt.ReferenceCode,
 			&receipt.ReceivedAt,
 			&receipt.Notes,
@@ -109,6 +119,7 @@ func (c *Client) ListInventoryReceipts(ctx context.Context) ([]InventoryReceipt,
 			return nil, fmt.Errorf("scanning inventory receipt: %w", err)
 		}
 		assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+		assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 		receipts = append(receipts, receipt)
 	}
 	if err := rows.Err(); err != nil {

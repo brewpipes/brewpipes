@@ -28,16 +28,16 @@ CREATE TABLE IF NOT EXISTS purchase_order (
     id           serial PRIMARY KEY,
     uuid         uuid NOT NULL DEFAULT gen_random_uuid(),
 
-    supplier_uuid uuid NOT NULL,
-    order_number  varchar(64) NOT NULL,
-    status        varchar(32) NOT NULL DEFAULT 'draft',
-    ordered_at    timestamptz,
-    expected_at   timestamptz,
-    notes         text,
+    supplier_id  int NOT NULL REFERENCES supplier(id),
+    order_number varchar(64) NOT NULL,
+    status       varchar(32) NOT NULL DEFAULT 'draft',
+    ordered_at   timestamptz,
+    expected_at  timestamptz,
+    notes        text,
 
-    created_at    timestamptz NOT NULL DEFAULT timezone('utc', now()),
-    updated_at    timestamptz NOT NULL DEFAULT timezone('utc', now()),
-    deleted_at    timestamptz,
+    created_at   timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at   timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at   timestamptz,
     CONSTRAINT purchase_order_status_check CHECK (status IN (
         'draft',
         'submitted',
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS purchase_order (
 
 CREATE UNIQUE INDEX IF NOT EXISTS purchase_order_uuid_idx ON purchase_order(uuid);
 CREATE UNIQUE INDEX IF NOT EXISTS purchase_order_order_number_idx ON purchase_order(order_number);
-CREATE INDEX IF NOT EXISTS purchase_order_supplier_uuid_idx ON purchase_order(supplier_uuid);
+CREATE INDEX IF NOT EXISTS purchase_order_supplier_id_idx ON purchase_order(supplier_id);
 
 CREATE TABLE IF NOT EXISTS purchase_order_line (
     id               serial PRIMARY KEY,

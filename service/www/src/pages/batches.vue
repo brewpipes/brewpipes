@@ -167,62 +167,18 @@
 
                 <v-window-item value="additions">
                   <v-row>
-                    <v-col cols="12" md="5">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Record addition
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="additionForm.target"
-                            :items="additionTargetOptions"
-                            label="Target"
-                          />
-                          <v-text-field
-                            v-if="additionForm.target === 'occupancy'"
-                            v-model="additionForm.occupancy_id"
-                            label="Occupancy ID"
-                            type="number"
-                          />
-                          <v-select
-                            v-model="additionForm.addition_type"
-                            :items="additionTypeOptions"
-                            label="Addition type"
-                          />
-                          <v-text-field v-model="additionForm.stage" label="Stage" />
-                          <v-text-field v-model="additionForm.inventory_lot_uuid" label="Inventory lot UUID" />
-                          <v-text-field v-model="additionForm.amount" label="Amount" type="number" />
-                          <v-select
-                            v-model="additionForm.amount_unit"
-                            :items="unitOptions"
-                            label="Unit"
-                          />
-                          <v-text-field v-model="additionForm.added_at" label="Added at" type="datetime-local" />
-                          <v-textarea
-                            v-model="additionForm.notes"
-                            auto-grow
-                            label="Notes"
-                            rows="2"
-                          />
-                          <v-btn
-                            block
-                            color="primary"
-                            :disabled="
-                              !additionForm.amount ||
-                              (additionForm.target === 'occupancy' && !additionForm.occupancy_id)
-                            "
-                            @click="recordAddition"
-                          >
-                            Add addition
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="7">
+                    <v-col cols="12">
                       <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">
+                        <v-card-title class="text-subtitle-1 d-flex align-center">
                           Addition log
+                          <v-spacer />
+                          <v-btn
+                            icon="mdi-plus"
+                            size="small"
+                            variant="text"
+                            aria-label="Record addition"
+                            @click="createAdditionDialog = true"
+                          />
                         </v-card-title>
                         <v-card-text>
                           <v-table class="data-table" density="compact">
@@ -254,53 +210,18 @@
 
                 <v-window-item value="measurements">
                   <v-row>
-                    <v-col cols="12" md="5">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Record measurement
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="measurementForm.target"
-                            :items="additionTargetOptions"
-                            label="Target"
-                          />
-                          <v-text-field
-                            v-if="measurementForm.target === 'occupancy'"
-                            v-model="measurementForm.occupancy_id"
-                            label="Occupancy ID"
-                            type="number"
-                          />
-                          <v-text-field v-model="measurementForm.kind" label="Kind" placeholder="gravity" />
-                          <v-text-field v-model="measurementForm.value" label="Value" type="number" />
-                          <v-text-field v-model="measurementForm.unit" label="Unit" />
-                          <v-text-field v-model="measurementForm.observed_at" label="Observed at" type="datetime-local" />
-                          <v-textarea
-                            v-model="measurementForm.notes"
-                            auto-grow
-                            label="Notes"
-                            rows="2"
-                          />
-                          <v-btn
-                            block
-                            color="secondary"
-                            :disabled="
-                              !measurementForm.kind.trim() ||
-                              !measurementForm.value ||
-                              (measurementForm.target === 'occupancy' && !measurementForm.occupancy_id)
-                            "
-                            @click="recordMeasurement"
-                          >
-                            Add measurement
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="7">
+                    <v-col cols="12">
                       <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">
+                        <v-card-title class="text-subtitle-1 d-flex align-center">
                           Measurement log
+                          <v-spacer />
+                          <v-btn
+                            icon="mdi-plus"
+                            size="small"
+                            variant="text"
+                            aria-label="Record measurement"
+                            @click="createMeasurementDialog = true"
+                          />
                         </v-card-title>
                         <v-card-text>
                           <v-table class="data-table" density="compact">
@@ -528,6 +449,87 @@
         <v-btn variant="text" @click="createBatchDialog = false">Cancel</v-btn>
         <v-btn color="primary" :disabled="!newBatch.short_name.trim()" @click="createBatch">
           Create batch
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="createAdditionDialog" max-width="520">
+    <v-card>
+      <v-card-title class="text-h6">Record addition</v-card-title>
+      <v-card-text>
+        <v-select
+          v-model="additionForm.target"
+          :items="additionTargetOptions"
+          label="Target"
+        />
+        <v-text-field
+          v-if="additionForm.target === 'occupancy'"
+          v-model="additionForm.occupancy_id"
+          label="Occupancy ID"
+          type="number"
+        />
+        <v-select
+          v-model="additionForm.addition_type"
+          :items="additionTypeOptions"
+          label="Addition type"
+        />
+        <v-text-field v-model="additionForm.stage" label="Stage" />
+        <v-text-field v-model="additionForm.inventory_lot_uuid" label="Inventory lot UUID" />
+        <v-text-field v-model="additionForm.amount" label="Amount" type="number" />
+        <v-select v-model="additionForm.amount_unit" :items="unitOptions" label="Unit" />
+        <v-text-field v-model="additionForm.added_at" label="Added at" type="datetime-local" />
+        <v-textarea v-model="additionForm.notes" auto-grow label="Notes" rows="2" />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="createAdditionDialog = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="
+            !additionForm.amount ||
+            (additionForm.target === 'occupancy' && !additionForm.occupancy_id)
+          "
+          @click="recordAddition"
+        >
+          Add addition
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="createMeasurementDialog" max-width="520">
+    <v-card>
+      <v-card-title class="text-h6">Record measurement</v-card-title>
+      <v-card-text>
+        <v-select
+          v-model="measurementForm.target"
+          :items="additionTargetOptions"
+          label="Target"
+        />
+        <v-text-field
+          v-if="measurementForm.target === 'occupancy'"
+          v-model="measurementForm.occupancy_id"
+          label="Occupancy ID"
+          type="number"
+        />
+        <v-text-field v-model="measurementForm.kind" label="Kind" placeholder="gravity" />
+        <v-text-field v-model="measurementForm.value" label="Value" type="number" />
+        <v-text-field v-model="measurementForm.unit" label="Unit" />
+        <v-text-field v-model="measurementForm.observed_at" label="Observed at" type="datetime-local" />
+        <v-textarea v-model="measurementForm.notes" auto-grow label="Notes" rows="2" />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="createMeasurementDialog = false">Cancel</v-btn>
+        <v-btn
+          color="secondary"
+          :disabled="
+            !measurementForm.kind.trim() ||
+            !measurementForm.value ||
+            (measurementForm.target === 'occupancy' && !measurementForm.occupancy_id)
+          "
+          @click="recordMeasurement"
+        >
+          Add measurement
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -802,6 +804,8 @@ const selectedBatchId = ref<number | null>(null)
 const activeTab = ref('timeline')
 const errorMessage = ref('')
 const createBatchDialog = ref(false)
+const createAdditionDialog = ref(false)
+const createMeasurementDialog = ref(false)
 
 const snackbar = reactive({
   show: false,
@@ -1220,6 +1224,7 @@ async function recordAddition() {
     additionForm.amount = ''
     additionForm.added_at = ''
     additionForm.notes = ''
+    createAdditionDialog.value = false
     await loadBatchData(selectedBatchId.value)
   } catch (error) {
     handleError(error)
@@ -1254,6 +1259,7 @@ async function recordMeasurement() {
     measurementForm.unit = ''
     measurementForm.observed_at = ''
     measurementForm.notes = ''
+    createMeasurementDialog.value = false
     await loadBatchData(selectedBatchId.value)
   } catch (error) {
     handleError(error)

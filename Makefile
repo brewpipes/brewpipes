@@ -6,22 +6,19 @@ info:
 	@echo "  make production-service  Build the production service"
 	@echo "  make clean               Clean all built binaries"
 
-clean:
-	rm -rf bin/*
+start-postgres:
+	docker compose up -d postgres
 
-monolith:
-	go build -o bin/monolith ./cmd/monolith
+nuke:
+	docker compose down -v
 
-auth-service:
-	go build -o bin/auth-service ./cmd/auth
-
-production-service:
-	go build -o bin/production-service ./cmd/production
-
-
-run-monolith:
+run:
 	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
 	go run ./cmd/monolith
+
+run-bg:
+	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
+	go run ./cmd/monolith &
 
 # connect to the postgres container using psql
 psql:

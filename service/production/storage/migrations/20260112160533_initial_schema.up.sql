@@ -45,6 +45,70 @@ CREATE TABLE IF NOT EXISTS occupancy (
     deleted_at  timestamptz
 );
 
+CREATE TABLE IF NOT EXISTS malt_lot (
+    id                  serial PRIMARY KEY,
+    uuid                uuid NOT NULL DEFAULT gen_random_uuid(),
+
+    supplier_id         int NOT NULL REFERENCES supplier(id),
+    maltster_id         int NOT NULL REFERENCES maltster(id),
+    maltster_lot_number varchar(64),
+    variety             varchar(64),
+    year                int,
+    acquired_at         timestamptz,
+    amount              bigint NOT NULL,
+    amount_unit         varchar(7),
+
+    created_at          timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at          timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at          timestamptz
+)
+
+CREATE TABLE IF NOT EXISTS hop_lot (
+    id                      serial PRIMARY KEY,
+    uuid                    uuid NOT NULL DEFAULT gen_random_uuid(),
+
+    hop_producer_id         int NOT NULL REFERENCES hop_producer(id),
+    supplier_id             int NOT NULL REFERENCES supplier(id),
+    variety                 varchar(64),
+    year                    int,
+    hop_producer_lot_number varchar(64),
+    acquired_at             timestamptz,
+    amount                  bigint NOT NULL,
+    amount_unit             varchar(7),
+
+    created_at              timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at              timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at              timestamptz
+)
+
+CREATE TABLE IF NOT EXISTS malt_additions (
+    id             serial PRIMARY KEY,
+    uuid           uuid NOT NULL DEFAULT gen_random_uuid(),
+
+    occupancy_id   int NOT NULL REFERENCES occupancy(id),
+    malt_lot_id    int NOT NULL REFERENCES malt_lot(id),
+    amount         bigint NOT NULL,
+    amount_unit    varchar(7),
+
+    created_at     timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at     timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at     timestamptz
+)
+
+CREATE TABLE IF NOT EXISTS hop_additions (
+    id             serial PRIMARY KEY,
+    uuid           uuid NOT NULL DEFAULT gen_random_uuid(),
+
+    occupancy_id   int NOT NULL REFERENCES occupancy(id),
+    hop_lot_id     int NOT NULL REFERENCES hop_lot(id),
+    amount         bigint NOT NULL,
+    amount_unit    varchar(7),
+
+    created_at     timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at     timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at     timestamptz
+)
+
 -- A Transfer represents the movement of a specific volume of liquid from one vessel to another.
 CREATE TABLE IF NOT EXISTS transfer (
     id                   serial PRIMARY KEY,

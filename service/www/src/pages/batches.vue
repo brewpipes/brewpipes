@@ -315,7 +315,13 @@
                             <tbody>
                               <tr v-for="measurement in measurementsSorted" :key="measurement.id">
                                 <td>{{ measurement.kind }}</td>
-                                <td>{{ formatValue(measurement.value, measurement.unit) }}</td>
+                                <td>
+                                  {{
+                                    isNoteMeasurement(measurement)
+                                      ? measurement.notes ?? 'Note'
+                                      : formatValue(measurement.value, measurement.unit)
+                                  }}
+                                </td>
                                 <td>{{ measurement.occupancy_id ?? measurement.batch_id }}</td>
                                 <td>{{ formatDateTime(measurement.observed_at) }}</td>
                               </tr>
@@ -332,10 +338,101 @@
 
                 <v-window-item value="timeline">
                   <v-card class="sub-card" variant="outlined">
-                    <v-card-title class="text-subtitle-1">
-                      Brew day timeline
-                    </v-card-title>
                     <v-card-text>
+                      <v-card class="sub-card mb-4" variant="tonal">
+                        <v-card-text>
+                          <div class="d-flex flex-wrap align-center justify-space-between ga-2">
+                            <div class="text-subtitle-2 font-weight-semibold">Quick Update</div>
+                            <v-btn
+                              size="small"
+                              variant="text"
+                              append-icon="mdi-arrow-right"
+                              @click="openTimelineExtendedDialog"
+                            >
+                              More
+                            </v-btn>
+                          </div>
+                          <v-divider class="my-3" />
+
+                          <v-row dense align="center">
+                            <v-col cols="12" md="1" class="d-flex align-center justify-center">
+                              <v-menu
+                                v-model="timelineObservedAtMenu"
+                                :close-on-content-click="false"
+                                location="bottom"
+                              >
+                                <template #activator="{ props }">
+                                  <v-tooltip location="top">
+                                    <template #activator="{ props: tooltipProps }">
+                                      <v-btn
+                                        v-bind="{ ...props, ...tooltipProps }"
+                                        icon="mdi-clock-outline"
+                                        size="default"
+                                        variant="text"
+                                        :color="timelineReading.observed_at ? 'secondary' : 'primary'"
+                                        aria-label="Set observation time"
+                                      />
+                                    </template>
+                                    <span>{{ timelineObservedAtLabel }}</span>
+                                  </v-tooltip>
+                                </template>
+                                <v-card>
+                                  <v-card-text>
+                                    <v-text-field
+                                      v-model="timelineReading.observed_at"
+                                      density="compact"
+                                      label="Observed at"
+                                      type="datetime-local"
+                                    />
+                                  </v-card-text>
+                                  <v-card-actions class="justify-end">
+                                    <v-btn variant="text" @click="clearTimelineObservedAt">
+                                      Use now
+                                    </v-btn>
+                                    <v-btn variant="text" @click="timelineObservedAtMenu = false">Done</v-btn>
+                                  </v-card-actions>
+                                </v-card>
+                              </v-menu>
+                            </v-col>
+                            <v-col cols="12" md="2">
+                              <v-text-field
+                                v-model="timelineReading.temperature"
+                                density="compact"
+                                label="Temp"
+                                placeholder="67F"
+                                inputmode="decimal"
+                              />
+                            </v-col>
+                            <v-col cols="12" md="2">
+                              <v-text-field
+                                v-model="timelineReading.gravity"
+                                density="compact"
+                                label="Gravity"
+                                placeholder="1.056"
+                                inputmode="decimal"
+                              />
+                            </v-col>
+                            <v-col cols="12" md="5">
+                              <v-text-field
+                                v-model="timelineReading.notes"
+                                density="compact"
+                                label="Notes"
+                                placeholder="Aroma, flavor, observations"
+                              />
+                            </v-col>
+                            <v-col cols="12" md="1" class="d-flex align-center justify-end">
+                              <v-btn
+                                color="primary"
+                                :disabled="!timelineReadingReady"
+                                @click="recordTimelineReading"
+                              >
+                                Add
+                              </v-btn>
+                            </v-col>
+                          </v-row>
+                        </v-card-text>
+                      </v-card>
+
                       <v-timeline align="start" density="compact" side="end">
                         <v-timeline-item
                           v-for="event in timelineItems"
@@ -431,6 +528,115 @@
         <v-btn variant="text" @click="createBatchDialog = false">Cancel</v-btn>
         <v-btn color="primary" :disabled="!newBatch.short_name.trim()" @click="createBatch">
           Create batch
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="timelineExtendedDialog" max-width="720">
+    <v-card>
+      <v-card-title class="text-h6">Extended reading</v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.observed_at"
+              density="comfortable"
+              label="Observed at"
+              type="datetime-local"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.temperature"
+              density="comfortable"
+              label="Temperature"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.temperature_unit"
+              density="comfortable"
+              label="Temp unit"
+              placeholder="F"
+            />
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.gravity"
+              density="comfortable"
+              label="Gravity"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.gravity_unit"
+              density="comfortable"
+              label="Gravity unit"
+              placeholder="SG"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.ph"
+              density="comfortable"
+              label="pH"
+              type="number"
+            />
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.ph_unit"
+              density="comfortable"
+              label="pH unit"
+              placeholder="pH"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.extra_kind"
+              density="comfortable"
+              label="Other kind"
+              placeholder="CO2"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.extra_value"
+              density="comfortable"
+              label="Other value"
+              type="number"
+            />
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="timelineExtended.extra_unit"
+              density="comfortable"
+              label="Other unit"
+            />
+          </v-col>
+          <v-col cols="12" md="8">
+            <v-text-field
+              v-model="timelineExtended.notes"
+              density="comfortable"
+              label="Notes"
+              placeholder="Aroma, flavor, observations"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="timelineExtendedDialog = false">Cancel</v-btn>
+        <v-btn color="primary" :disabled="!timelineExtendedReady" @click="recordTimelineExtended">
+          Record
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -631,6 +837,29 @@ const measurementForm = reactive({
   notes: '',
 })
 
+const timelineReading = reactive({
+  observed_at: '',
+  temperature: '',
+  gravity: '',
+  notes: '',
+})
+
+const timelineExtendedDialog = ref(false)
+
+const timelineExtended = reactive({
+  observed_at: '',
+  temperature: '',
+  temperature_unit: '',
+  gravity: '',
+  gravity_unit: '',
+  ph: '',
+  ph_unit: '',
+  extra_kind: '',
+  extra_value: '',
+  extra_unit: '',
+  notes: '',
+})
+
 
 const selectedBatch = computed(() =>
   batches.value.find((batch) => batch.id === selectedBatchId.value) ?? null,
@@ -646,6 +875,32 @@ const latestGravityMeasurement = computed(() =>
   getLatestMeasurement(['gravity', 'grav', 'sg']),
 )
 const latestPhMeasurement = computed(() => getLatestMeasurement(['ph']))
+
+const timelineObservedAtMenu = ref(false)
+const timelineObservedAtLabel = computed(() =>
+  timelineReading.observed_at ? formatDateTime(timelineReading.observed_at) : 'Now',
+)
+
+const timelineReadingReady = computed(() => {
+  const hasTemperature = parseTemperatureInput(timelineReading.temperature).value !== null
+  const hasGravity = parseNumericInput(timelineReading.gravity) !== null
+  const hasNotes = timelineReading.notes.trim().length > 0
+  return hasTemperature || hasGravity || hasNotes
+})
+
+const timelineExtendedReady = computed(() => {
+  const hasTemperature = toNumber(timelineExtended.temperature) !== null
+  const hasGravity = toNumber(timelineExtended.gravity) !== null
+  const hasPh = toNumber(timelineExtended.ph) !== null
+  const hasNotes = timelineExtended.notes.trim().length > 0
+  const hasExtraKind = timelineExtended.extra_kind.trim().length > 0
+  const extraValue = toNumber(timelineExtended.extra_value)
+  if (hasExtraKind && extraValue === null) {
+    return false
+  }
+  const hasExtra = hasExtraKind && extraValue !== null
+  return hasTemperature || hasGravity || hasPh || hasExtra || hasNotes
+})
 const additionsSorted = computed(() =>
   sortByTime(additions.value, (item) => item.added_at),
 )
@@ -754,6 +1009,17 @@ const timelineItems = computed(() => {
   })
 
   measurements.value.forEach((measurement) => {
+    if (isNoteMeasurement(measurement)) {
+      items.push({
+        id: `note-${measurement.id}`,
+        title: 'Note',
+        subtitle: measurement.notes ?? 'Note added',
+        at: measurement.observed_at ?? measurement.created_at,
+        color: 'info',
+        icon: 'mdi-note-text-outline',
+      })
+      return
+    }
     items.push({
       id: `measurement-${measurement.id}`,
       title: `Measurement: ${measurement.kind}`,
@@ -792,6 +1058,12 @@ const timelineItems = computed(() => {
 watch(selectedBatchId, (value) => {
   if (value) {
     loadBatchData(value)
+  }
+})
+
+watch(timelineObservedAtMenu, (isOpen) => {
+  if (isOpen && !timelineReading.observed_at) {
+    timelineReading.observed_at = nowInputValue()
   }
 })
 
@@ -994,6 +1266,223 @@ async function recordMeasurement() {
   }
 }
 
+function openTimelineExtendedDialog() {
+  resetTimelineExtended()
+  const temperature = parseTemperatureInput(timelineReading.temperature)
+  const gravityValue = parseNumericInput(timelineReading.gravity)
+  timelineExtended.observed_at = timelineReading.observed_at || nowInputValue()
+  timelineExtended.temperature = temperature.value === null ? '' : String(temperature.value)
+  timelineExtended.temperature_unit = temperature.unit ?? ''
+  timelineExtended.gravity = gravityValue === null ? '' : String(gravityValue)
+  timelineExtended.notes = timelineReading.notes
+  timelineExtendedDialog.value = true
+}
+
+async function recordTimelineReading() {
+  if (!selectedBatchId.value) {
+    return
+  }
+
+  const temperature = parseTemperatureInput(timelineReading.temperature)
+  const gravityValue = parseNumericInput(timelineReading.gravity)
+  const noteText = normalizeText(timelineReading.notes)
+
+  if (temperature.value === null && gravityValue === null && !noteText) {
+    return
+  }
+
+  errorMessage.value = ''
+  try {
+    const observedAt = timelineReading.observed_at
+      ? normalizeDateTime(timelineReading.observed_at)
+      : new Date().toISOString()
+    const payloads: Array<{
+      batch_id: number
+      occupancy_id: null
+      kind: string
+      value: number
+      unit: string | null
+      observed_at: string | null
+      notes: string | null
+    }> = []
+
+    if (temperature.value !== null) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'temperature',
+        value: temperature.value,
+        unit: temperature.unit,
+        observed_at: observedAt,
+        notes: null,
+      })
+    }
+    if (gravityValue !== null) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'gravity',
+        value: gravityValue,
+        unit: null,
+        observed_at: observedAt,
+        notes: null,
+      })
+    }
+    if (noteText) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'note',
+        value: 0,
+        unit: null,
+        observed_at: observedAt,
+        notes: noteText,
+      })
+    }
+
+    await Promise.all(payloads.map((payload) => post<Measurement>('/measurements', payload)))
+    showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
+    resetTimelineReading()
+    await loadBatchData(selectedBatchId.value)
+  } catch (error) {
+    handleError(error)
+  }
+}
+
+async function recordTimelineExtended() {
+  if (!selectedBatchId.value) {
+    return
+  }
+
+  const temperatureValue = toNumber(timelineExtended.temperature)
+  const gravityValue = toNumber(timelineExtended.gravity)
+  const phValue = toNumber(timelineExtended.ph)
+  const extraKind = timelineExtended.extra_kind.trim()
+  const extraValue = toNumber(timelineExtended.extra_value)
+  const noteText = normalizeText(timelineExtended.notes)
+
+  if (extraKind && extraValue === null) {
+    return
+  }
+
+  if (
+    temperatureValue === null &&
+    gravityValue === null &&
+    phValue === null &&
+    !extraKind &&
+    !noteText
+  ) {
+    return
+  }
+
+  errorMessage.value = ''
+  try {
+    const observedAt = timelineExtended.observed_at
+      ? normalizeDateTime(timelineExtended.observed_at)
+      : new Date().toISOString()
+    const payloads: Array<{
+      batch_id: number
+      occupancy_id: null
+      kind: string
+      value: number
+      unit: string | null
+      observed_at: string | null
+      notes: string | null
+    }> = []
+
+    if (temperatureValue !== null) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'temperature',
+        value: temperatureValue,
+        unit: normalizeText(timelineExtended.temperature_unit),
+        observed_at: observedAt,
+        notes: null,
+      })
+    }
+    if (gravityValue !== null) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'gravity',
+        value: gravityValue,
+        unit: normalizeText(timelineExtended.gravity_unit),
+        observed_at: observedAt,
+        notes: null,
+      })
+    }
+    if (phValue !== null) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'ph',
+        value: phValue,
+        unit: normalizeText(timelineExtended.ph_unit),
+        observed_at: observedAt,
+        notes: null,
+      })
+    }
+    if (extraKind && extraValue !== null) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: extraKind,
+        value: extraValue,
+        unit: normalizeText(timelineExtended.extra_unit),
+        observed_at: observedAt,
+        notes: null,
+      })
+    }
+    if (noteText) {
+      payloads.push({
+        batch_id: selectedBatchId.value,
+        occupancy_id: null,
+        kind: 'note',
+        value: 0,
+        unit: null,
+        observed_at: observedAt,
+        notes: noteText,
+      })
+    }
+
+    await Promise.all(payloads.map((payload) => post<Measurement>('/measurements', payload)))
+    showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
+    resetTimelineReading()
+    resetTimelineExtended()
+    timelineExtendedDialog.value = false
+    await loadBatchData(selectedBatchId.value)
+  } catch (error) {
+    handleError(error)
+  }
+}
+
+function resetTimelineReading() {
+  timelineReading.observed_at = ''
+  timelineReading.temperature = ''
+  timelineReading.gravity = ''
+  timelineReading.notes = ''
+}
+
+function resetTimelineExtended() {
+  timelineExtended.observed_at = ''
+  timelineExtended.temperature = ''
+  timelineExtended.temperature_unit = ''
+  timelineExtended.gravity = ''
+  timelineExtended.gravity_unit = ''
+  timelineExtended.ph = ''
+  timelineExtended.ph_unit = ''
+  timelineExtended.extra_kind = ''
+  timelineExtended.extra_value = ''
+  timelineExtended.extra_unit = ''
+  timelineExtended.notes = ''
+}
+
+function clearTimelineObservedAt() {
+  timelineReading.observed_at = ''
+  timelineObservedAtMenu.value = false
+}
+
 function handleError(error: unknown) {
   const message = error instanceof Error ? error.message : 'Unexpected error'
   errorMessage.value = message
@@ -1003,6 +1492,42 @@ function handleError(error: unknown) {
 function normalizeText(value: string) {
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
+}
+
+function nowInputValue() {
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const year = now.getFullYear()
+  const month = pad(now.getMonth() + 1)
+  const day = pad(now.getDate())
+  const hours = pad(now.getHours())
+  const minutes = pad(now.getMinutes())
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function parseNumericInput(value: string) {
+  const normalized = value.trim().replace(/,/g, '')
+  if (!normalized) {
+    return null
+  }
+  const match = normalized.match(/-?\d*\.?\d+/)
+  if (!match) {
+    return null
+  }
+  const parsed = Number(match[0])
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseTemperatureInput(value: string) {
+  const parsedValue = parseNumericInput(value)
+  if (parsedValue === null) {
+    return { value: null, unit: null }
+  }
+  const unitMatch = value.match(/([cf])\s*$/i)
+  if (unitMatch) {
+    return { value: parsedValue, unit: unitMatch[1].toUpperCase() }
+  }
+  return { value: parsedValue, unit: null }
 }
 
 function normalizeDateOnly(value: string) {
@@ -1088,6 +1613,10 @@ function matchesMeasurementKind(value: string, kinds: string[]) {
 
 function normalizeMeasurementKind(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function isNoteMeasurement(measurement: Measurement) {
+  return matchesMeasurementKind(measurement.kind, ['note'])
 }
 </script>
 

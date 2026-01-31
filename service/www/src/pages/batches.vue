@@ -142,6 +142,7 @@
 
               <v-tabs v-model="activeTab" class="batch-tabs" color="primary" show-arrows>
                 <v-tab value="timeline">Timeline</v-tab>
+                <v-tab value="flow">Flow</v-tab>
                 <v-tab value="start">Start</v-tab>
                 <v-tab value="phases">Phases</v-tab>
                 <v-tab value="additions">Additions</v-tab>
@@ -783,6 +784,32 @@
                     </v-card-text>
                   </v-card>
                 </v-window-item>
+
+                <v-window-item value="flow">
+                  <v-card class="sub-card" variant="outlined">
+                    <v-card-title class="text-subtitle-1">Liquid flow</v-card-title>
+                    <v-card-text>
+                      <v-alert
+                        v-if="flowNotice"
+                        class="mb-3"
+                        density="compact"
+                        type="info"
+                        variant="tonal"
+                      >
+                        {{ flowNotice }}
+                      </v-alert>
+
+                      <SankeyDiagram v-if="flowLinks.length" :nodes="flowNodes" :links="flowLinks" />
+                      <div v-else class="text-body-2 text-medium-emphasis">
+                        No flow relations yet. Record a split or blend to visualize liquid movement.
+                      </div>
+
+                      <div class="text-caption text-medium-emphasis mt-3">
+                        Flow is derived from volume relations (splits and blends).
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-window-item>
               </v-window>
             </div>
           </v-card-text>
@@ -968,6 +995,18 @@ type TimelineEvent = {
   at: string
   color: string
   icon: string
+}
+
+type FlowNode = {
+  id: string
+  label: string
+}
+
+type FlowLink = {
+  source: string
+  target: string
+  value: number
+  label: string
 }
 
 const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
@@ -1168,6 +1207,92 @@ const batchRelationsSorted = computed(() =>
 const volumeRelationsSorted = computed(() =>
   sortByTime(volumeRelations.value, (item) => item.created_at),
 )
+
+const volumeNameMap = computed(
+  () =>
+    new Map(
+      volumes.value.map((volume) => [volume.id, volume.name ?? `Volume ${volume.id}`]),
+    ),
+)
+
+const flowUnit = computed<Unit | null>(() => {
+  const counts = new Map<Unit, number>()
+  volumeRelations.value.forEach((relation) => {
+    if (!relation.amount || relation.amount <= 0) {
+      return
+    }
+    counts.set(relation.amount_unit, (counts.get(relation.amount_unit) ?? 0) + 1)
+  })
+  let selected: { unit: Unit; count: number } | null = null
+  counts.forEach((count, unit) => {
+    if (!selected || count > selected.count) {
+      selected = { unit, count }
+    }
+  })
+  return selected?.unit ?? null
+})
+
+const flowRelations = computed(() => {
+  const relations = volumeRelations.value.filter((relation) => relation.amount > 0)
+  if (!flowUnit.value) {
+    return relations
+  }
+  return relations.filter((relation) => relation.amount_unit === flowUnit.value)
+})
+
+const flowNotice = computed(() => {
+  if (!flowUnit.value) {
+    return ''
+  }
+  const total = volumeRelations.value.filter((relation) => relation.amount > 0).length
+  const shown = flowRelations.value.length
+  if (total > shown) {
+    return `Showing ${shown} of ${total} relations measured in ${flowUnit.value} for consistent weights.`
+  }
+  return ''
+})
+
+const flowNodes = computed<FlowNode[]>(() => {
+  const nodes = new Map<string, FlowNode>()
+  const labelFor = (volumeId: number) => volumeNameMap.value.get(volumeId) ?? `Volume ${volumeId}`
+
+  flowRelations.value.forEach((relation) => {
+    const parentId = `volume-${relation.parent_volume_id}`
+    const childId = `volume-${relation.child_volume_id}`
+    if (!nodes.has(parentId)) {
+      nodes.set(parentId, { id: parentId, label: labelFor(relation.parent_volume_id) })
+    }
+    if (!nodes.has(childId)) {
+      nodes.set(childId, { id: childId, label: labelFor(relation.child_volume_id) })
+    }
+  })
+
+  return Array.from(nodes.values())
+})
+
+const flowLinks = computed<FlowLink[]>(() => {
+  const links = new Map<string, FlowLink>()
+
+  flowRelations.value.forEach((relation) => {
+    const source = `volume-${relation.parent_volume_id}`
+    const target = `volume-${relation.child_volume_id}`
+    const key = `${source}-${target}-${relation.amount_unit ?? ''}`
+    const existing = links.get(key)
+    if (existing) {
+      existing.value += relation.amount
+      existing.label = formatAmount(existing.value, relation.amount_unit)
+      return
+    }
+    links.set(key, {
+      source,
+      target,
+      value: relation.amount,
+      label: formatAmount(relation.amount, relation.amount_unit),
+    })
+  })
+
+  return Array.from(links.values())
+})
 
 const timelineItems = computed(() => {
   const items: TimelineEvent[] = []

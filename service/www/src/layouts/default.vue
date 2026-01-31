@@ -160,7 +160,9 @@ watch(
 .app-main {
   position: relative;
   z-index: 1;
-  padding-top: 16px;
-  padding-bottom: 40px;
+  padding-top: calc(var(--v-layout-top) + 8px);
+  padding-right: calc(var(--v-layout-right) + 8px);
+  padding-bottom: calc(var(--v-layout-bottom) + 8px);
+  padding-left: calc(var(--v-layout-left) + 8px);
 }
 </style>

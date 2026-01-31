@@ -12,13 +12,12 @@ start-postgres:
 nuke:
 	docker compose down -v
 
-run:
+run-server:
 	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
 	go run ./cmd/monolith
 
-run-bg:
-	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
-	go run ./cmd/monolith &
+run-web:
+	cd service/www && pnpm dev --force
 
 # connect to the postgres container using psql
 psql:

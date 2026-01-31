@@ -256,3 +256,109 @@ CREATE UNIQUE INDEX IF NOT EXISTS measurement_uuid_idx ON measurement(uuid);
 CREATE INDEX IF NOT EXISTS measurement_batch_id_idx ON measurement(batch_id);
 CREATE INDEX IF NOT EXISTS measurement_occupancy_id_idx ON measurement(occupancy_id);
 CREATE INDEX IF NOT EXISTS measurement_observed_at_idx ON measurement(observed_at);
+
+-- Seed data for early development.
+INSERT INTO batch (uuid, short_name, brew_date, notes)
+VALUES
+    ('90000000-0000-0000-0000-000000000001', 'IPA 24-07', '2026-01-10', 'Flagship IPA split into two fermenters.'),
+    ('90000000-0000-0000-0000-000000000002', 'IPA 24-07B', '2026-01-10', 'Split portion for dry hop trial.'),
+    ('90000000-0000-0000-0000-000000000003', 'Pilsner 24-08', '2026-01-18', 'Crisp lager pilot batch.');
+
+INSERT INTO volume (uuid, name, description, amount, amount_unit)
+VALUES
+    ('91000000-0000-0000-0000-000000000001', 'IPA 24-07 wort', 'Pre-fermentation wort.', 1200, 'l'),
+    ('91000000-0000-0000-0000-000000000002', 'IPA 24-07 split A', 'Fermenter A portion.', 600, 'l'),
+    ('91000000-0000-0000-0000-000000000003', 'IPA 24-07 split B', 'Fermenter B portion.', 590, 'l'),
+    ('91000000-0000-0000-0000-000000000004', 'Pilsner 24-08 wort', 'Pilsner wort.', 800, 'l');
+
+INSERT INTO volume_relation (uuid, parent_volume_id, child_volume_id, relation_type, amount, amount_unit)
+VALUES
+    ('92000000-0000-0000-0000-000000000001', (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000001'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000002'), 'split', 600, 'l'),
+    ('92000000-0000-0000-0000-000000000002', (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000001'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000003'), 'split', 590, 'l');
+
+INSERT INTO vessel (uuid, type, name, capacity, capacity_unit, make, model, status)
+VALUES
+    ('93000000-0000-0000-0000-000000000001', 'mash_tun', 'Mash Tun 1', 1500, 'l', 'Stout Tanks', 'MT-15', 'active'),
+    ('93000000-0000-0000-0000-000000000002', 'kettle', 'Kettle 1', 1500, 'l', 'Stout Tanks', 'K-15', 'active'),
+    ('93000000-0000-0000-0000-000000000003', 'fermenter', 'Fermenter A', 1200, 'l', 'SS Brewtech', 'FV-12', 'active'),
+    ('93000000-0000-0000-0000-000000000004', 'fermenter', 'Fermenter B', 1200, 'l', 'SS Brewtech', 'FV-12', 'active'),
+    ('93000000-0000-0000-0000-000000000005', 'fermenter', 'Fermenter C', 1000, 'l', 'SS Brewtech', 'FV-10', 'active'),
+    ('93000000-0000-0000-0000-000000000006', 'brite_tank', 'Brite Tank 1', 1000, 'l', 'Premier Stainless', 'BT-10', 'active');
+
+INSERT INTO occupancy (uuid, vessel_id, volume_id, in_at, out_at)
+VALUES
+    ('93100000-0000-0000-0000-000000000001', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000001'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000001'), '2026-01-10 08:00:00+00', '2026-01-10 10:00:00+00'),
+    ('93100000-0000-0000-0000-000000000002', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000002'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000001'), '2026-01-10 10:30:00+00', '2026-01-10 12:00:00+00'),
+    ('93100000-0000-0000-0000-000000000003', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000003'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000002'), '2026-01-10 13:00:00+00', NULL),
+    ('93100000-0000-0000-0000-000000000004', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000004'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000003'), '2026-01-10 13:15:00+00', NULL),
+    ('93100000-0000-0000-0000-000000000005', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000005'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000004'), '2026-01-18 12:00:00+00', NULL);
+
+INSERT INTO transfer (
+    uuid,
+    source_occupancy_id,
+    dest_occupancy_id,
+    amount,
+    amount_unit,
+    loss_amount,
+    loss_unit,
+    started_at,
+    ended_at
+)
+VALUES
+    ('93200000-0000-0000-0000-000000000001', (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000001'), (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000002'), 1200, 'l', 5, 'l', '2026-01-10 10:05:00+00', '2026-01-10 10:25:00+00'),
+    ('93200000-0000-0000-0000-000000000002', (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000002'), (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000003'), 600, 'l', 5, 'l', '2026-01-10 12:10:00+00', '2026-01-10 12:40:00+00'),
+    ('93200000-0000-0000-0000-000000000003', (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000002'), (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000004'), 590, 'l', 5, 'l', '2026-01-10 12:10:00+00', '2026-01-10 12:45:00+00');
+
+INSERT INTO batch_volume (uuid, batch_id, volume_id, liquid_phase, phase_at)
+VALUES
+    ('94000000-0000-0000-0000-000000000001', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000001'), 'wort', '2026-01-10 09:00:00+00'),
+    ('94000000-0000-0000-0000-000000000002', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000002'), 'beer', '2026-01-20 12:00:00+00'),
+    ('94000000-0000-0000-0000-000000000003', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000002'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000003'), 'beer', '2026-01-20 12:00:00+00'),
+    ('94000000-0000-0000-0000-000000000004', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000003'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000004'), 'wort', '2026-01-18 11:00:00+00');
+
+INSERT INTO batch_process_phase (uuid, batch_id, process_phase, phase_at)
+VALUES
+    ('95000000-0000-0000-0000-000000000001', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), 'planning', '2026-01-05 09:00:00+00'),
+    ('95000000-0000-0000-0000-000000000002', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), 'mashing', '2026-01-10 08:00:00+00'),
+    ('95000000-0000-0000-0000-000000000003', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), 'boiling', '2026-01-10 10:45:00+00'),
+    ('95000000-0000-0000-0000-000000000004', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), 'fermenting', '2026-01-10 13:30:00+00'),
+    ('95000000-0000-0000-0000-000000000005', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000002'), 'fermenting', '2026-01-10 13:45:00+00'),
+    ('95000000-0000-0000-0000-000000000006', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000003'), 'planning', '2026-01-12 09:00:00+00');
+
+INSERT INTO batch_relation (uuid, parent_batch_id, child_batch_id, relation_type, volume_id)
+VALUES
+    ('96000000-0000-0000-0000-000000000001', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000002'), 'split', (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000003'));
+
+INSERT INTO addition (
+    uuid,
+    batch_id,
+    occupancy_id,
+    addition_type,
+    stage,
+    inventory_lot_uuid,
+    amount,
+    amount_unit,
+    added_at,
+    notes
+)
+VALUES
+    ('97000000-0000-0000-0000-000000000001', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), NULL, 'malt', 'mash', '80000000-0000-0000-0000-000000000001', 220, 'kg', '2026-01-10 08:30:00+00', 'Base malt for IPA mash.'),
+    ('97000000-0000-0000-0000-000000000002', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), NULL, 'hop', 'boil', '80000000-0000-0000-0000-000000000004', 5, 'kg', '2026-01-10 11:00:00+00', 'Bittering addition.'),
+    ('97000000-0000-0000-0000-000000000003', NULL, (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000003'), 'yeast', 'fermentation', '80000000-0000-0000-0000-000000000006', 2, 'kg', '2026-01-10 13:20:00+00', 'Pitch WLP001.'),
+    ('97000000-0000-0000-0000-000000000004', NULL, (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000004'), 'hop', 'dry_hop', '80000000-0000-0000-0000-000000000005', 3, 'kg', '2026-01-14 11:00:00+00', 'Dry hop trial in split B.'),
+    ('97000000-0000-0000-0000-000000000005', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), NULL, 'water_chem', 'mash', NULL, 500, 'g', '2026-01-10 08:10:00+00', 'Gypsum addition.');
+
+INSERT INTO measurement (
+    uuid,
+    batch_id,
+    occupancy_id,
+    kind,
+    value,
+    unit,
+    observed_at,
+    notes
+)
+VALUES
+    ('98000000-0000-0000-0000-000000000001', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), NULL, 'gravity', 1.0540, 'sg', '2026-01-10 12:00:00+00', 'Pre-fermentation gravity.'),
+    ('98000000-0000-0000-0000-000000000002', NULL, (SELECT id FROM occupancy WHERE uuid = '93100000-0000-0000-0000-000000000003'), 'temperature', 20.5, 'c', '2026-01-12 09:00:00+00', 'Fermentation temp.'),
+    ('98000000-0000-0000-0000-000000000003', (SELECT id FROM batch WHERE uuid = '90000000-0000-0000-0000-000000000001'), NULL, 'ph', 5.20, NULL, '2026-01-10 09:15:00+00', 'Mash pH.');

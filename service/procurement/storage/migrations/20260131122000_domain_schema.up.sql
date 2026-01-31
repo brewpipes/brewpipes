@@ -110,12 +110,24 @@ VALUES
     ('33333333-3333-3333-3333-333333333333', 'Coastal Yeast Labs', 'Priya Shah', 'support@coastalyeast.example', '+1-619-555-0118', '405 Culture Way', 'San Diego', 'CA', '92101', 'USA'),
     ('44444444-4444-4444-4444-444444444444', 'Carbonic Gases LLC', 'Maya Reed', 'logistics@carbonicgases.example', '+1-713-555-0102', '900 Tanker Ln', 'Houston', 'TX', '77002', 'USA');
 
+INSERT INTO supplier (uuid, name, contact_name, email, phone, address_line1, city, region, postal_code, country)
+VALUES
+    ('55555555-5555-5555-5555-555555555555', 'Riverbend Packaging Co', 'Noah Brooks', 'orders@riverbendpackaging.example', '+1-414-555-0190', '72 Boxcar Blvd', 'Milwaukee', 'WI', '53202', 'USA'),
+    ('66666666-6666-6666-6666-666666666666', 'Midwest Ingredients', 'Sara Lopez', 'sales@midwestingredients.example', '+1-402-555-0185', '480 Supply Loop', 'Omaha', 'NE', '68102', 'USA'),
+    ('77777777-7777-7777-7777-777777777777', 'Alpine Yeast Labs', 'Jonas Meyer', 'support@alpineyeast.example', '+1-303-555-0177', '220 Culture Pkwy', 'Denver', 'CO', '80202', 'USA');
+
 INSERT INTO purchase_order (uuid, supplier_id, order_number, status, ordered_at, expected_at, notes)
 VALUES
     ('50000000-0000-0000-0000-000000000001', (SELECT id FROM supplier WHERE uuid = '11111111-1111-1111-1111-111111111111'), 'PO-1001', 'confirmed', '2026-01-02 10:00:00+00', '2026-01-09 10:00:00+00', 'Base and specialty malts for Q1 brews.'),
     ('50000000-0000-0000-0000-000000000002', (SELECT id FROM supplier WHERE uuid = '22222222-2222-2222-2222-222222222222'), 'PO-1002', 'received', '2026-01-03 11:00:00+00', '2026-01-10 11:00:00+00', 'Hop pellets for IPA and pale ale.'),
     ('50000000-0000-0000-0000-000000000003', (SELECT id FROM supplier WHERE uuid = '33333333-3333-3333-3333-333333333333'), 'PO-1003', 'received', '2026-01-04 12:00:00+00', '2026-01-11 12:00:00+00', 'House yeast for flagship fermentations.'),
     ('50000000-0000-0000-0000-000000000004', (SELECT id FROM supplier WHERE uuid = '44444444-4444-4444-4444-444444444444'), 'PO-1004', 'submitted', '2026-01-20 09:00:00+00', '2026-01-27 09:00:00+00', 'Bulk CO2 delivery for packaging line.');
+
+INSERT INTO purchase_order (uuid, supplier_id, order_number, status, ordered_at, expected_at, notes)
+VALUES
+    ('50000000-0000-0000-0000-000000000005', (SELECT id FROM supplier WHERE uuid = '66666666-6666-6666-6666-666666666666'), 'PO-1005', 'partially_received', '2026-01-12 10:00:00+00', '2026-01-18 10:00:00+00', 'Specialty malt, Saaz hops, and adjuncts.'),
+    ('50000000-0000-0000-0000-000000000006', (SELECT id FROM supplier WHERE uuid = '77777777-7777-7777-7777-777777777777'), 'PO-1006', 'confirmed', '2026-01-15 11:00:00+00', '2026-01-22 11:00:00+00', 'Lager yeast order for Kolsch run.'),
+    ('50000000-0000-0000-0000-000000000007', (SELECT id FROM supplier WHERE uuid = '55555555-5555-5555-5555-555555555555'), 'PO-1007', 'draft', '2026-01-28 09:30:00+00', '2026-02-04 09:30:00+00', 'Packaging materials for spring releases.');
 
 INSERT INTO purchase_order_line (
     uuid,
@@ -138,8 +150,35 @@ VALUES
     ('60000000-0000-0000-0000-000000000006', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000003'), 1, 'ingredient', 'WLP001 California Ale Yeast', '70000000-0000-0000-0000-000000000006', 10, 'kg', 12000, 'USD'),
     ('60000000-0000-0000-0000-000000000007', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000004'), 1, 'ingredient', 'CO2 Gas', '70000000-0000-0000-0000-000000000009', 500, 'lb', 35, 'USD');
 
+INSERT INTO purchase_order_line (
+    uuid,
+    purchase_order_id,
+    line_number,
+    item_type,
+    item_name,
+    inventory_item_uuid,
+    quantity,
+    quantity_unit,
+    unit_cost_cents,
+    currency
+)
+VALUES
+    ('60000000-0000-0000-0000-000000000008', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000005'), 1, 'ingredient', 'Roasted Barley', '70000000-0000-0000-0000-000000000011', 150, 'kg', 95, 'USD'),
+    ('60000000-0000-0000-0000-000000000009', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000005'), 2, 'ingredient', 'Saaz Hops', '70000000-0000-0000-0000-000000000012', 30, 'kg', 1800, 'USD'),
+    ('60000000-0000-0000-0000-000000000011', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000005'), 3, 'ingredient', 'Irish Moss', '70000000-0000-0000-0000-000000000014', 20, 'kg', 400, 'USD'),
+    ('60000000-0000-0000-0000-000000000012', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000005'), 4, 'ingredient', 'Coriander', '70000000-0000-0000-0000-000000000016', 10, 'kg', 550, 'USD'),
+    ('60000000-0000-0000-0000-000000000010', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000006'), 1, 'ingredient', 'W34/70 Lager Yeast', '70000000-0000-0000-0000-000000000013', 8, 'kg', 14000, 'USD'),
+    ('60000000-0000-0000-0000-000000000013', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000007'), 1, 'packaging', '12oz Can', NULL, 20000, 'ea', 12, 'USD'),
+    ('60000000-0000-0000-0000-000000000014', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000007'), 2, 'packaging', 'PakTech 4-pack Carrier', NULL, 5000, 'ea', 8, 'USD');
+
 INSERT INTO purchase_order_fee (uuid, purchase_order_id, fee_type, amount_cents, currency)
 VALUES
     ('61000000-0000-0000-0000-000000000001', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000001'), 'shipping', 2500, 'USD'),
     ('61000000-0000-0000-0000-000000000002', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000002'), 'freight', 1800, 'USD'),
     ('61000000-0000-0000-0000-000000000003', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000004'), 'hazmat', 500, 'USD');
+
+INSERT INTO purchase_order_fee (uuid, purchase_order_id, fee_type, amount_cents, currency)
+VALUES
+    ('61000000-0000-0000-0000-000000000004', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000005'), 'shipping', 2200, 'USD'),
+    ('61000000-0000-0000-0000-000000000005', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000006'), 'handling', 1500, 'USD'),
+    ('61000000-0000-0000-0000-000000000006', (SELECT id FROM purchase_order WHERE uuid = '50000000-0000-0000-0000-000000000007'), 'freight', 4500, 'USD');

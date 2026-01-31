@@ -385,20 +385,41 @@ VALUES
     ('70000000-0000-0000-0000-000000000009', 'CO2', 'gas', 'lb', 'Packaging and carbonation gas.'),
     ('70000000-0000-0000-0000-000000000010', 'Dextrose', 'adjunct', 'kg', 'Fermentable sugar adjunct.');
 
+INSERT INTO ingredient (uuid, name, category, default_unit, description)
+VALUES
+    ('70000000-0000-0000-0000-000000000011', 'Roasted Barley', 'fermentable', 'kg', 'Deep roast for stout color.'),
+    ('70000000-0000-0000-0000-000000000012', 'Saaz Hops', 'hop', 'kg', 'Traditional noble hop.'),
+    ('70000000-0000-0000-0000-000000000013', 'W34/70 Lager Yeast', 'yeast', 'kg', 'Clean lager strain.'),
+    ('70000000-0000-0000-0000-000000000014', 'Irish Moss', 'adjunct', 'kg', 'Kettle fining for clarity.'),
+    ('70000000-0000-0000-0000-000000000015', 'Oxygen', 'gas', 'lb', 'Wort oxygenation gas.'),
+    ('70000000-0000-0000-0000-000000000016', 'Coriander', 'adjunct', 'kg', 'Spice for farmhouse saisons.');
+
 INSERT INTO ingredient_malt_detail (ingredient_id, maltster_name, variety, lovibond, srm, diastatic_power)
 VALUES
     ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000001'), 'Great Lakes Malt Co', '2-row', 2.0, 2.0, 120.0),
     ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000002'), 'Great Lakes Malt Co', 'Pilsner', 1.6, 1.6, 110.0),
     ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000003'), 'Great Lakes Malt Co', 'Crystal', 60.0, 60.0, 0.0);
 
+INSERT INTO ingredient_malt_detail (ingredient_id, maltster_name, variety, lovibond, srm, diastatic_power)
+VALUES
+    ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000011'), 'Midwest Maltings', 'Roasted', 300.0, 300.0, 0.0);
+
 INSERT INTO ingredient_hop_detail (ingredient_id, producer_name, variety, crop_year, form, alpha_acid, beta_acid)
 VALUES
     ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000004'), 'Northwest Hop Farms', 'Cascade', 2025, 'pellet', 6.5, 4.8),
     ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000005'), 'Northwest Hop Farms', 'Citra', 2025, 'pellet', 12.0, 4.0);
 
+INSERT INTO ingredient_hop_detail (ingredient_id, producer_name, variety, crop_year, form, alpha_acid, beta_acid)
+VALUES
+    ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000012'), 'Bohemian Hop Co', 'Saaz', 2025, 'pellet', 3.5, 4.2);
+
 INSERT INTO ingredient_yeast_detail (ingredient_id, lab_name, strain, form)
 VALUES
     ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000006'), 'White Labs', 'WLP001', 'liquid');
+
+INSERT INTO ingredient_yeast_detail (ingredient_id, lab_name, strain, form)
+VALUES
+    ((SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000013'), 'Fermentis', 'W34/70', 'dry');
 
 INSERT INTO stock_location (uuid, name, location_type, description)
 VALUES
@@ -408,12 +429,23 @@ VALUES
     ('81000000-0000-0000-0000-000000000004', 'Gas Pad', 'gas', 'Bulk and cylinder gas storage.'),
     ('81000000-0000-0000-0000-000000000005', 'Brew Deck', 'other', 'Staging area for brew day picks.');
 
+INSERT INTO stock_location (uuid, name, location_type, description)
+VALUES
+    ('81000000-0000-0000-0000-000000000006', 'Packaging Warehouse', 'packaging', 'Finished goods and packaging materials.'),
+    ('81000000-0000-0000-0000-000000000007', 'Brite Cellar', 'cold', 'Cold conditioning storage.');
+
 INSERT INTO inventory_receipt (uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes)
 VALUES
     ('82000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '50000000-0000-0000-0000-000000000001', 'RCV-1001', '2026-01-09 14:00:00+00', 'Malt delivery for IPA and lager.'),
     ('82000000-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', '50000000-0000-0000-0000-000000000002', 'RCV-1002', '2026-01-10 09:30:00+00', 'Hop pellets delivered.'),
     ('82000000-0000-0000-0000-000000000003', '33333333-3333-3333-3333-333333333333', '50000000-0000-0000-0000-000000000003', 'RCV-1003', '2026-01-11 08:30:00+00', 'House yeast received.'),
     ('82000000-0000-0000-0000-000000000004', '44444444-4444-4444-4444-444444444444', '50000000-0000-0000-0000-000000000004', 'RCV-1004', '2026-01-22 15:00:00+00', 'CO2 bulk delivery.');
+
+INSERT INTO inventory_receipt (uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes)
+VALUES
+    ('82000000-0000-0000-0000-000000000005', '66666666-6666-6666-6666-666666666666', '50000000-0000-0000-0000-000000000005', 'RCV-1005', '2026-01-18 13:00:00+00', 'Specialty malt and Saaz hops received.'),
+    ('82000000-0000-0000-0000-000000000006', '77777777-7777-7777-7777-777777777777', '50000000-0000-0000-0000-000000000006', 'RCV-1006', '2026-01-22 10:00:00+00', 'Lager yeast shipment.'),
+    ('82000000-0000-0000-0000-000000000007', '66666666-6666-6666-6666-666666666666', '50000000-0000-0000-0000-000000000005', 'RCV-1007', '2026-01-18 13:10:00+00', 'Adjuncts for fining and spice.');
 
 INSERT INTO ingredient_lot (
     uuid,
@@ -440,28 +472,73 @@ VALUES
     ('80000000-0000-0000-0000-000000000006', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000006'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1003'), '33333333-3333-3333-3333-333333333333', '60000000-0000-0000-0000-000000000006', 'YEAST-WLP001-2401', 'CYL-WLP001-2401', 'Coastal Yeast Labs', 'yeast_lab', '2026-01-11 08:30:00+00', 10, 'kg', '2026-03-01 00:00:00+00', 'House ale yeast.'),
     ('80000000-0000-0000-0000-000000000007', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000009'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1004'), '44444444-4444-4444-4444-444444444444', '60000000-0000-0000-0000-000000000007', 'GAS-CO2-2401', 'CG-CO2-2401', 'Carbonic Gases LLC', 'gas_vendor', '2026-01-22 15:00:00+00', 500, 'lb', NULL, 'Bulk CO2 delivery.');
 
+INSERT INTO ingredient_lot (
+    uuid,
+    ingredient_id,
+    receipt_id,
+    supplier_uuid,
+    purchase_order_line_uuid,
+    brewery_lot_code,
+    originator_lot_code,
+    originator_name,
+    originator_type,
+    received_at,
+    received_amount,
+    received_unit,
+    best_by_at,
+    notes
+)
+VALUES
+    ('80000000-0000-0000-0000-000000000008', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000011'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1005'), '66666666-6666-6666-6666-666666666666', '60000000-0000-0000-0000-000000000008', 'MALT-ROAST-2401', 'MM-ROAST-2401', 'Midwest Maltings', 'maltster', '2026-01-18 13:00:00+00', 150, 'kg', '2026-07-15 00:00:00+00', 'Roasted barley for stouts.'),
+    ('80000000-0000-0000-0000-000000000009', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000012'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1005'), '66666666-6666-6666-6666-666666666666', '60000000-0000-0000-0000-000000000009', 'HOP-SAA-2501', 'BHC-SAA-25A', 'Bohemian Hop Co', 'hop_producer', '2026-01-18 13:00:00+00', 30, 'kg', '2026-12-31 00:00:00+00', 'Saaz crop 2025.'),
+    ('80000000-0000-0000-0000-000000000010', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000013'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1006'), '77777777-7777-7777-7777-777777777777', '60000000-0000-0000-0000-000000000010', 'YEAST-W3470-2401', 'FER-W3470-2401', 'Fermentis', 'yeast_lab', '2026-01-22 10:00:00+00', 8, 'kg', '2026-04-01 00:00:00+00', 'Lager yeast shipment.'),
+    ('80000000-0000-0000-0000-000000000011', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000014'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1007'), '66666666-6666-6666-6666-666666666666', '60000000-0000-0000-0000-000000000011', 'ADJ-IRISH-2401', 'IRISH-2401', 'Brew Supply Co', 'other', '2026-01-18 13:10:00+00', 20, 'kg', '2027-01-01 00:00:00+00', 'Irish moss for kettle finings.'),
+    ('80000000-0000-0000-0000-000000000012', (SELECT id FROM ingredient WHERE uuid = '70000000-0000-0000-0000-000000000016'), (SELECT id FROM inventory_receipt WHERE reference_code = 'RCV-1007'), '66666666-6666-6666-6666-666666666666', '60000000-0000-0000-0000-000000000012', 'ADJ-CORI-2401', 'CORI-2401', 'Spice River Co', 'other', '2026-01-18 13:10:00+00', 10, 'kg', '2027-01-01 00:00:00+00', 'Coriander for saison spice.');
+
 INSERT INTO ingredient_lot_malt_detail (ingredient_lot_id, moisture_percent)
 VALUES
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000001'), 4.2),
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000002'), 4.0),
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000003'), 3.8);
 
+INSERT INTO ingredient_lot_malt_detail (ingredient_lot_id, moisture_percent)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000008'), 4.5);
+
 INSERT INTO ingredient_lot_hop_detail (ingredient_lot_id, alpha_acid, beta_acid)
 VALUES
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000004'), 6.8, 4.9),
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000005'), 12.3, 4.1);
 
+INSERT INTO ingredient_lot_hop_detail (ingredient_lot_id, alpha_acid, beta_acid)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000009'), 3.6, 4.0);
+
 INSERT INTO ingredient_lot_yeast_detail (ingredient_lot_id, viability_percent, generation)
 VALUES
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000006'), 95.0, 0);
+
+INSERT INTO ingredient_lot_yeast_detail (ingredient_lot_id, viability_percent, generation)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000010'), 94.0, 0);
 
 INSERT INTO inventory_usage (uuid, production_ref_uuid, used_at, notes)
 VALUES
     ('83000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001', '2026-01-10 08:15:00+00', 'Brew day usage for IPA 24-07.');
 
+INSERT INTO inventory_usage (uuid, production_ref_uuid, used_at, notes)
+VALUES
+    ('83000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000004', '2026-01-22 08:25:00+00', 'Brew day usage for Stout 24-09.'),
+    ('83000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000005', '2026-01-24 08:20:00+00', 'Brew day usage for Kolsch 24-10.'),
+    ('83000000-0000-0000-0000-000000000004', '90000000-0000-0000-0000-000000000008', '2026-01-26 08:10:00+00', 'Brew day usage for Saison 24-11.');
+
 INSERT INTO inventory_adjustment (uuid, reason, adjusted_at, notes)
 VALUES
     ('84000000-0000-0000-0000-000000000001', 'cycle_count', '2026-01-15 07:00:00+00', 'Monthly inventory count adjustment.');
+
+INSERT INTO inventory_adjustment (uuid, reason, adjusted_at, notes)
+VALUES
+    ('84000000-0000-0000-0000-000000000002', 'spoilage', '2026-01-23 07:15:00+00', 'Coriander loss from torn bag.');
 
 INSERT INTO inventory_transfer (uuid, source_location_id, dest_location_id, transferred_at, notes)
 VALUES
@@ -472,9 +549,22 @@ VALUES
         'Move hops to brew deck for boil.'
     );
 
+INSERT INTO inventory_transfer (uuid, source_location_id, dest_location_id, transferred_at, notes)
+VALUES
+    ('85000000-0000-0000-0000-000000000002',
+        (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'),
+        (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000005'),
+        '2026-01-24 07:45:00+00',
+        'Move Saaz to brew deck for Kolsch kettle additions.'
+    );
+
 INSERT INTO beer_lot (uuid, production_batch_uuid, lot_code, packaged_at, notes)
 VALUES
     ('86000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001', 'IPA24-07-01', '2026-01-25 16:00:00+00', 'First packaging run.');
+
+INSERT INTO beer_lot (uuid, production_batch_uuid, lot_code, packaged_at, notes)
+VALUES
+    ('86000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000004', 'STOUT24-09-01', '2026-02-06 12:00:00+00', 'Stout packaging run.');
 
 INSERT INTO inventory_movement (
     ingredient_lot_id,
@@ -503,11 +593,48 @@ INSERT INTO inventory_movement (
     amount,
     amount_unit,
     occurred_at,
+    receipt_id
+)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000008'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'in', 'receive', 150, 'kg', '2026-01-18 13:05:00+00', (SELECT id FROM inventory_receipt WHERE uuid = '82000000-0000-0000-0000-000000000005')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000009'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'in', 'receive', 30, 'kg', '2026-01-18 13:10:00+00', (SELECT id FROM inventory_receipt WHERE uuid = '82000000-0000-0000-0000-000000000005')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000010'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'in', 'receive', 8, 'kg', '2026-01-22 10:05:00+00', (SELECT id FROM inventory_receipt WHERE uuid = '82000000-0000-0000-0000-000000000006')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000011'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'in', 'receive', 20, 'kg', '2026-01-18 13:15:00+00', (SELECT id FROM inventory_receipt WHERE uuid = '82000000-0000-0000-0000-000000000007')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000012'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'in', 'receive', 10, 'kg', '2026-01-18 13:16:00+00', (SELECT id FROM inventory_receipt WHERE uuid = '82000000-0000-0000-0000-000000000007'));
+
+INSERT INTO inventory_movement (
+    ingredient_lot_id,
+    stock_location_id,
+    direction,
+    reason,
+    amount,
+    amount_unit,
+    occurred_at,
     usage_id
 )
 VALUES
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000001'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'use', 220, 'kg', '2026-01-10 08:30:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000001')),
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000004'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'out', 'use', 5, 'kg', '2026-01-10 11:05:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000001'));
+
+INSERT INTO inventory_movement (
+    ingredient_lot_id,
+    stock_location_id,
+    direction,
+    reason,
+    amount,
+    amount_unit,
+    occurred_at,
+    usage_id
+)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000008'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'use', 50, 'kg', '2026-01-22 08:25:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000002')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000001'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'use', 180, 'kg', '2026-01-22 08:25:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000002')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000002'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'use', 180, 'kg', '2026-01-24 08:20:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000003')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000009'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'out', 'use', 4, 'kg', '2026-01-24 08:20:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000003')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000010'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'out', 'use', 3, 'kg', '2026-01-24 13:40:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000003')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000001'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'use', 190, 'kg', '2026-01-26 08:10:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000004')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000006'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'out', 'use', 2, 'kg', '2026-01-26 08:10:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000004')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000012'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'use', 1, 'kg', '2026-01-26 08:10:00+00', (SELECT id FROM inventory_usage WHERE uuid = '83000000-0000-0000-0000-000000000004'));
 
 INSERT INTO inventory_movement (
     ingredient_lot_id,
@@ -531,7 +658,34 @@ INSERT INTO inventory_movement (
     amount,
     amount_unit,
     occurred_at,
+    transfer_id
+)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000009'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000002'), 'out', 'transfer', 4, 'kg', '2026-01-24 07:45:00+00', (SELECT id FROM inventory_transfer WHERE uuid = '85000000-0000-0000-0000-000000000002')),
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000009'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000005'), 'in', 'transfer', 4, 'kg', '2026-01-24 07:45:00+00', (SELECT id FROM inventory_transfer WHERE uuid = '85000000-0000-0000-0000-000000000002'));
+
+INSERT INTO inventory_movement (
+    ingredient_lot_id,
+    stock_location_id,
+    direction,
+    reason,
+    amount,
+    amount_unit,
+    occurred_at,
     adjustment_id
 )
 VALUES
     ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000003'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'adjust', 5, 'kg', '2026-01-15 07:05:00+00', (SELECT id FROM inventory_adjustment WHERE uuid = '84000000-0000-0000-0000-000000000001'));
+
+INSERT INTO inventory_movement (
+    ingredient_lot_id,
+    stock_location_id,
+    direction,
+    reason,
+    amount,
+    amount_unit,
+    occurred_at,
+    adjustment_id
+)
+VALUES
+    ((SELECT id FROM ingredient_lot WHERE uuid = '80000000-0000-0000-0000-000000000012'), (SELECT id FROM stock_location WHERE uuid = '81000000-0000-0000-0000-000000000001'), 'out', 'adjust', 1, 'kg', '2026-01-23 07:20:00+00', (SELECT id FROM inventory_adjustment WHERE uuid = '84000000-0000-0000-0000-000000000002'));

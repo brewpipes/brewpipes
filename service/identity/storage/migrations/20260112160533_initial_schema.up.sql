@@ -33,3 +33,9 @@ CREATE TABLE IF NOT EXISTS identity.refresh_token (
 
 CREATE INDEX IF NOT EXISTS refresh_token_user_uuid_idx
     ON identity.refresh_token (user_uuid);
+
+-- Seed data for early development.
+INSERT INTO identity.user (uuid, username, password)
+VALUES
+    ('10000000-0000-0000-0000-000000000001', 'brewmaster', crypt('brewpipes', gen_salt('bf'))),
+    ('10000000-0000-0000-0000-000000000002', 'brewer', crypt('password', gen_salt('bf')));

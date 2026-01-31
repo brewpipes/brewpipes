@@ -1,22 +1,9 @@
+import { useApiClient } from '@/composables/useApiClient'
+
 const inventoryApiBase = import.meta.env.VITE_INVENTORY_API_URL ?? '/api'
 
 export function useInventoryApi() {
-  const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-    const response = await fetch(`${inventoryApiBase}${path}`, {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init.headers ?? {}),
-      },
-    })
-
-    if (!response.ok) {
-      const message = await response.text()
-      throw new Error(message || `Request failed with ${response.status}`)
-    }
-
-    return response.json() as Promise<T>
-  }
+  const { request } = useApiClient(inventoryApiBase)
 
   const normalizeText = (value: string) => {
     const trimmed = value.trim()

@@ -8,10 +8,33 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { setupLayouts } from 'virtual:generated-layouts'
 import { routes } from 'vue-router/auto-routes'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: setupLayouts(routes),
+})
+
+router.beforeEach((to) => {
+  const authStore = useAuthStore()
+  if (!authStore.hydrated) {
+    authStore.hydrateFromStorage()
+  }
+
+  const isPublic = Boolean(to.meta.public) || to.path === '/login'
+  if (!authStore.isAuthenticated && !isPublic) {
+    return {
+      path: '/login',
+      query: { redirect: to.fullPath },
+    }
+  }
+
+  if (authStore.isAuthenticated && to.path === '/login') {
+    const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/'
+    return redirect
+  }
+
+  return true
 })
 
 // Workaround for https://github.com/vitejs/vite/issues/11804

@@ -669,6 +669,7 @@
 <script lang="ts" setup>
 import { onMounted, reactive, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useApiClient } from '@/composables/useApiClient'
 
 type Unit = 'ml' | 'usfloz' | 'ukfloz'
 type LiquidPhase = 'water' | 'wort' | 'beer'
@@ -799,6 +800,7 @@ type FlowLink = {
 
 const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 const route = useRoute()
+const { request } = useApiClient(apiBase)
 
 const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz']
 const additionTypeOptions: AdditionType[] = [
@@ -1134,32 +1136,6 @@ function showNotice(text: string, color = 'success') {
   snackbar.text = text
   snackbar.color = color
   snackbar.show = true
-}
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${apiBase}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
-    },
-  })
-
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed with ${response.status}`)
-  }
-
-  if (response.status === 204) {
-    return null as T
-  }
-
-  const contentType = response.headers.get('content-type') ?? ''
-  if (contentType.includes('application/json')) {
-    return response.json() as Promise<T>
-  }
-
-  return (await response.text()) as T
 }
 
 const get = <T>(path: string) => request<T>(path)

@@ -28,6 +28,7 @@ declare module 'vue-router/auto-routes' {
     '/inventory/locations': RouteRecordInfo<'/inventory/locations', '/inventory/locations', Record<never, never>, Record<never, never>>,
     '/inventory/lot-details': RouteRecordInfo<'/inventory/lot-details', '/inventory/lot-details', Record<never, never>, Record<never, never>>,
     '/inventory/product': RouteRecordInfo<'/inventory/product', '/inventory/product', Record<never, never>, Record<never, never>>,
+    '/login': RouteRecordInfo<'/login', '/login', Record<never, never>, Record<never, never>>,
     '/procurement/': RouteRecordInfo<'/procurement/', '/procurement', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-fees': RouteRecordInfo<'/procurement/purchase-order-fees', '/procurement/purchase-order-fees', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-lines': RouteRecordInfo<'/procurement/purchase-order-lines', '/procurement/purchase-order-lines', Record<never, never>, Record<never, never>>,
@@ -85,6 +86,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/inventory/product.vue': {
       routes: '/inventory/product'
+      views: never
+    }
+    'src/pages/login.vue': {
+      routes: '/login'
       views: never
     }
     'src/pages/procurement/index.vue': {

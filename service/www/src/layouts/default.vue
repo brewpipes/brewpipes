@@ -18,9 +18,21 @@
     <v-btn class="theme-button" icon variant="text" @click="toggleTheme">
       <v-icon :icon="themeIcon" size="22" />
     </v-btn>
-    <v-btn class="profile-button" icon variant="text">
-      <v-icon icon="mdi-account-circle" size="26" />
-    </v-btn>
+    <v-menu location="bottom end" offset="8">
+      <template #activator="{ props }">
+        <v-btn class="profile-button" icon variant="text" v-bind="props">
+          <v-icon icon="mdi-account-circle" size="26" />
+        </v-btn>
+      </template>
+      <v-list density="compact">
+        <v-list-item>
+          <v-list-item-title class="text-body-2 font-weight-medium">{{ userLabel }}</v-list-item-title>
+          <v-list-item-subtitle>Signed in</v-list-item-subtitle>
+        </v-list-item>
+        <v-divider />
+        <v-list-item prepend-icon="mdi-logout" title="Logout" @click="handleLogout" />
+      </v-list>
+    </v-menu>
   </v-app-bar>
 
   <v-navigation-drawer
@@ -74,8 +86,12 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDisplay, useTheme } from 'vuetify'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
+const router = useRouter()
 const drawer = ref(true)
 const rail = ref(false)
 const theme = useTheme()
@@ -84,6 +100,7 @@ const isMobile = computed(() => display.smAndDown.value)
 const isDark = computed(() => theme.global.current.value.dark)
 const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
 const themeStorageKey = 'brewpipes:theme'
+const userLabel = computed(() => authStore.username ?? 'Account')
 
 const navItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
@@ -101,6 +118,11 @@ function toggleDrawer() {
 
 function toggleTheme() {
   theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
+}
+
+async function handleLogout() {
+  await authStore.logout()
+  await router.push('/login')
 }
 
 onMounted(() => {

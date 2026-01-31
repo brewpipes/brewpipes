@@ -1,22 +1,9 @@
+import { useApiClient } from '@/composables/useApiClient'
+
 const procurementApiBase = import.meta.env.VITE_PROCUREMENT_API_URL ?? '/api'
 
 export function useProcurementApi() {
-  const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-    const response = await fetch(`${procurementApiBase}${path}`, {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init.headers ?? {}),
-      },
-    })
-
-    if (!response.ok) {
-      const message = await response.text()
-      throw new Error(message || `Request failed with ${response.status}`)
-    }
-
-    return response.json() as Promise<T>
-  }
+  const { request } = useApiClient(procurementApiBase)
 
   const normalizeText = (value: string) => {
     const trimmed = value.trim()

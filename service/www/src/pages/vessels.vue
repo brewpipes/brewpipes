@@ -175,6 +175,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useApiClient } from '@/composables/useApiClient'
 
 type Unit = 'ml' | 'usfloz' | 'ukfloz'
 
@@ -202,6 +203,8 @@ const selectedVesselId = ref<number | null>(null)
 const errorMessage = ref('')
 const loading = ref(false)
 const createVesselDialog = ref(false)
+
+const { request } = useApiClient(apiBase)
 
 const snackbar = reactive({
   show: false,
@@ -239,23 +242,6 @@ function showNotice(text: string, color = 'success') {
   snackbar.text = text
   snackbar.color = color
   snackbar.show = true
-}
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${apiBase}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
-    },
-  })
-
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed with ${response.status}`)
-  }
-
-  return response.json() as Promise<T>
 }
 
 async function refreshVessels() {

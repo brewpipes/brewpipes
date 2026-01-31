@@ -1,0 +1,102 @@
+<route lang="yaml">
+meta:
+  layout: auth
+  public: true
+</route>
+
+<template>
+  <v-card class="login-card" elevation="12">
+    <v-card-text>
+      <div class="d-flex align-center ga-3 mb-6">
+        <v-avatar color="surface" size="42">
+          <v-img alt="BrewPipes" src="@/assets/logo.svg" />
+        </v-avatar>
+        <div>
+          <div class="text-caption text-medium-emphasis">BrewPipes</div>
+          <div class="text-h5">Sign in</div>
+        </div>
+      </div>
+
+      <v-form @submit.prevent="submit">
+        <v-text-field
+          v-model="username"
+          density="comfortable"
+          label="Username"
+          autocomplete="username"
+          autofocus
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model="password"
+          density="comfortable"
+          label="Password"
+          autocomplete="current-password"
+          :type="showPassword ? 'text' : 'password'"
+          :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+          hide-details="auto"
+          @click:append-inner="showPassword = !showPassword"
+        />
+
+        <v-btn class="mt-4" block color="primary" :loading="submitting" type="submit">
+          Sign in
+        </v-btn>
+      </v-form>
+
+      <v-alert v-if="errorMessage" class="mt-4" density="compact" type="error" variant="tonal">
+        {{ errorMessage }}
+      </v-alert>
+    </v-card-text>
+  </v-card>
+</template>
+
+<script lang="ts" setup>
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const router = useRouter()
+const route = useRoute()
+
+const username = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const submitting = ref(false)
+const errorMessage = ref('')
+
+const redirectPath = computed(() => {
+  const redirect = route.query.redirect
+  if (typeof redirect === 'string' && redirect.startsWith('/')) {
+    return redirect
+  }
+  return '/'
+})
+
+const submit = async () => {
+  const user = username.value.trim()
+  if (!user || !password.value) {
+    errorMessage.value = 'Enter both username and password to continue.'
+    return
+  }
+
+  submitting.value = true
+  errorMessage.value = ''
+  try {
+    await authStore.login(user, password.value)
+    await router.replace(redirectPath.value)
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Unable to sign in.'
+  } finally {
+    submitting.value = false
+    password.value = ''
+  }
+}
+</script>
+
+<style scoped>
+.login-card {
+  background: rgba(var(--v-theme-surface), 0.92);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+}
+</style>

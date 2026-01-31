@@ -88,6 +88,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
+import { useApiClient } from '@/composables/useApiClient'
 
 type Batch = {
   id: number
@@ -112,6 +113,8 @@ const volumes = ref<Volume[]>([])
 const errorMessage = ref('')
 const loading = ref(false)
 
+const { request } = useApiClient(apiBase)
+
 const recentBatches = computed(() =>
   [...batches.value]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -121,15 +124,6 @@ const recentBatches = computed(() =>
 onMounted(async () => {
   await refreshAll()
 })
-
-async function request<T>(path: string): Promise<T> {
-  const response = await fetch(`${apiBase}${path}`)
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed with ${response.status}`)
-  }
-  return response.json() as Promise<T>
-}
 
 async function refreshAll() {
   loading.value = true

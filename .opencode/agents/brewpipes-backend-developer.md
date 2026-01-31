@@ -1,5 +1,5 @@
 ---
-name: brewpipes-developer
+name: brewpipes-backend-developer
 description: Professional backend service developer for BrewPipes (Go/Postgres/SQL).
 mode: all
 temperature: 0.2

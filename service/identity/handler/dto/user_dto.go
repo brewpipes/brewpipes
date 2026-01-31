@@ -4,13 +4,52 @@ import (
 	"time"
 
 	"github.com/brewpipes/brewpipes/service/identity/storage"
-	"github.com/gofrs/uuid/v5"
 )
 
-// User is the DTO for queried user objects.
-type User struct {
-	ID uuid.UUID
+// CreateUserRequest is the request body [POST /users].
+type CreateUserRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
+// Validate validates the request.
+func (r CreateUserRequest) Validate() error {
+	if err := validateRequired(r.Username, "username"); err != nil {
+		return err
+	}
+
+	return validateRequired(r.Password, "password")
+}
+
+// UpdateUserRequest is the request body [PUT /users/{id}].
+type UpdateUserRequest struct {
+	Username *string `json:"username"`
+	Password *string `json:"password"`
+}
+
+// Validate validates the request.
+func (r UpdateUserRequest) Validate() error {
+	if r.Username == nil && r.Password == nil {
+		return validateRequired("", "username or password")
+	}
+	if r.Username != nil {
+		if err := validateRequired(*r.Username, "username"); err != nil {
+			return err
+		}
+	}
+	if r.Password != nil {
+		if err := validateRequired(*r.Password, "password"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// UserResponse is the DTO for queried user objects.
+type UserResponse struct {
+	ID       int64  `json:"id"`
+	UUID     string `json:"uuid"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 
@@ -19,7 +58,12 @@ type User struct {
 }
 
 type UsersResponse struct {
-	Users []User `json:"users"`
+	Users []UserResponse `json:"users"`
+}
+
+// NewUserResponse creates a new UserResponse from a user.
+func NewUserResponse(entity storage.User) UserResponse {
+	return newUser(entity)
 }
 
 // NewUsersResponse creates a new UsersResponse from a slice of users.
@@ -30,9 +74,10 @@ func NewUsersResponse(entities []storage.User) UsersResponse {
 	}
 }
 
-func newUser(u storage.User) User {
-	return User{
-		ID:        u.UUID,
+func newUser(u storage.User) UserResponse {
+	return UserResponse{
+		ID:        u.ID,
+		UUID:      u.UUID.String(),
 		Username:  u.Username,
 		Role:      "user",
 		CreatedAt: u.CreatedAt,
@@ -40,8 +85,8 @@ func newUser(u storage.User) User {
 	}
 }
 
-func newUserCollection(entities []storage.User) []User {
-	users := []User{}
+func newUserCollection(entities []storage.User) []UserResponse {
+	users := []UserResponse{}
 	for _, l := range entities {
 		users = append(users, newUser(l))
 	}

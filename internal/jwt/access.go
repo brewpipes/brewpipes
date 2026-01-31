@@ -24,7 +24,7 @@ type AccessClaims struct {
 
 // Valid returns true if the access claims are valid.
 func (c *AccessClaims) Valid() error {
-	if c.Role == "" && !(c.Role == "admin" || c.Role == "user") {
+	if c.Role != "admin" && c.Role != "user" {
 		return errors.New("invalid role")
 	}
 

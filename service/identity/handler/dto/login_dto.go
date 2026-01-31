@@ -33,6 +33,20 @@ func (r RefreshRequest) Validate() error {
 	return nil
 }
 
+// LogoutRequest is the request body [POST /logout].
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// Validate validates the request.
+func (r LogoutRequest) Validate() error {
+	if r.RefreshToken == "" {
+		return errors.New("refresh_token is required")
+	}
+
+	return nil
+}
+
 // TokenPair is the DTO for a pair of access tokens.
 type TokenPair struct {
 	AccessToken  string `json:"access_token"`

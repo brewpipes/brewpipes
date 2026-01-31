@@ -5,6 +5,7 @@ import (
 
 	"github.com/brewpipes/brewpipes/internal/database/entity"
 	bpjwt "github.com/brewpipes/brewpipes/internal/jwt"
+	"github.com/gofrs/uuid/v5"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -34,6 +35,7 @@ type User struct {
 func (u User) GenerateTokens(secret string) (string, string, error) {
 	now := time.Now()
 	issuedAt := jwt.NewNumericDate(now)
+	refreshID := uuid.Must(uuid.NewV4())
 
 	accessClaims := &bpjwt.AccessClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -53,6 +55,7 @@ func (u User) GenerateTokens(secret string) (string, string, error) {
 
 	refreshClaims := &bpjwt.RefreshClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        refreshID.String(),
 			Issuer:    Issuer,
 			Subject:   u.UUID.String(),
 			ExpiresAt: jwt.NewNumericDate(now.Add(DefaultRefreshTokenTTL)),

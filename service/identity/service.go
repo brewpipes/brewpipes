@@ -39,8 +39,23 @@ func NewService(ctx context.Context, cfg *Config) (*Service, error) {
 			{
 				Method:  http.MethodPost,
 				Path:    "/login",
-				Handler: handler.HandleLogin(stg, cfg.SecretKey),
+				Handler: handler.HandleLogin(stg, stg, cfg.SecretKey),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/refresh",
+				Handler: handler.HandleRefresh(stg, stg, cfg.SecretKey),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/logout",
+				Handler: handler.HandleLogout(stg, cfg.SecretKey),
+			},
+			{Method: http.MethodGet, Path: "/users", Handler: handler.HandleUsers(stg)},
+			{Method: http.MethodPost, Path: "/users", Handler: handler.HandleUsers(stg)},
+			{Method: http.MethodGet, Path: "/users/{id}", Handler: handler.HandleUserByID(stg)},
+			{Method: http.MethodPut, Path: "/users/{id}", Handler: handler.HandleUserByID(stg)},
+			{Method: http.MethodDelete, Path: "/users/{id}", Handler: handler.HandleUserByID(stg)},
 		},
 	}, nil
 }

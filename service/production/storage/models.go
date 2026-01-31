@@ -1,0 +1,166 @@
+package storage
+
+import (
+	"time"
+
+	"github.com/brewpipes/brewpipes/internal/database/entity"
+	"github.com/gofrs/uuid/v5"
+)
+
+const (
+	VolumeUnitML     = "ml"
+	VolumeUnitUSFlOz = "usfloz"
+	VolumeUnitUKFlOz = "ukfloz"
+)
+
+const (
+	RelationTypeSplit = "split"
+	RelationTypeBlend = "blend"
+)
+
+const (
+	VesselStatusActive   = "active"
+	VesselStatusInactive = "inactive"
+	VesselStatusRetired  = "retired"
+)
+
+const (
+	LiquidPhaseWater = "water"
+	LiquidPhaseWort  = "wort"
+	LiquidPhaseBeer  = "beer"
+)
+
+const (
+	ProcessPhasePlanning     = "planning"
+	ProcessPhaseMashing      = "mashing"
+	ProcessPhaseHeating      = "heating"
+	ProcessPhaseBoiling      = "boiling"
+	ProcessPhaseCooling      = "cooling"
+	ProcessPhaseFermenting   = "fermenting"
+	ProcessPhaseConditioning = "conditioning"
+	ProcessPhasePackaging    = "packaging"
+	ProcessPhaseFinished     = "finished"
+)
+
+const (
+	AdditionTypeMalt      = "malt"
+	AdditionTypeHop       = "hop"
+	AdditionTypeYeast     = "yeast"
+	AdditionTypeAdjunct   = "adjunct"
+	AdditionTypeWaterChem = "water_chem"
+	AdditionTypeGas       = "gas"
+	AdditionTypeOther     = "other"
+)
+
+type Batch struct {
+	entity.Identifiers
+	ShortName string
+	BrewDate  *time.Time
+	Notes     *string
+	entity.Timestamps
+}
+
+type Volume struct {
+	entity.Identifiers
+	Name        *string
+	Description *string
+	Amount      int64
+	AmountUnit  string
+	entity.Timestamps
+}
+
+type VolumeRelation struct {
+	entity.Identifiers
+	ParentVolumeID int64
+	ChildVolumeID  int64
+	RelationType   string
+	Amount         int64
+	AmountUnit     string
+	entity.Timestamps
+}
+
+type Vessel struct {
+	entity.Identifiers
+	Type         string
+	Name         string
+	Capacity     int64
+	CapacityUnit string
+	Make         *string
+	Model        *string
+	Status       string
+	entity.Timestamps
+}
+
+type Occupancy struct {
+	entity.Identifiers
+	VesselID int64
+	VolumeID int64
+	InAt     time.Time
+	OutAt    *time.Time
+	entity.Timestamps
+}
+
+type Transfer struct {
+	entity.Identifiers
+	SourceOccupancyID int64
+	DestOccupancyID   int64
+	Amount            int64
+	AmountUnit        string
+	LossAmount        *int64
+	LossUnit          *string
+	StartedAt         time.Time
+	EndedAt           *time.Time
+	entity.Timestamps
+}
+
+type BatchVolume struct {
+	entity.Identifiers
+	BatchID     int64
+	VolumeID    int64
+	LiquidPhase string
+	PhaseAt     time.Time
+	entity.Timestamps
+}
+
+type BatchProcessPhase struct {
+	entity.Identifiers
+	BatchID      int64
+	ProcessPhase string
+	PhaseAt      time.Time
+	entity.Timestamps
+}
+
+type BatchRelation struct {
+	entity.Identifiers
+	ParentBatchID int64
+	ChildBatchID  int64
+	RelationType  string
+	VolumeID      *int64
+	entity.Timestamps
+}
+
+type Addition struct {
+	entity.Identifiers
+	BatchID          *int64
+	OccupancyID      *int64
+	AdditionType     string
+	Stage            *string
+	InventoryLotUUID *uuid.UUID
+	Amount           int64
+	AmountUnit       string
+	AddedAt          time.Time
+	Notes            *string
+	entity.Timestamps
+}
+
+type Measurement struct {
+	entity.Identifiers
+	BatchID     *int64
+	OccupancyID *int64
+	Kind        string
+	Value       float64
+	Unit        *string
+	ObservedAt  time.Time
+	Notes       *string
+	entity.Timestamps
+}

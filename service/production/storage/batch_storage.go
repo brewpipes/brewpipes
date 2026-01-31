@@ -2,32 +2,100 @@ package storage
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
+	"github.com/brewpipes/brewpipes/service"
+	"github.com/jackc/pgx/v5"
 )
 
-type Batch struct {
-	ID          int
-	Name        string
-	Description string
-}
-
-func (v Batch) Validate() error {
-	return nil
-}
-
 func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
-	var id int
 	err := c.db.QueryRow(ctx, `
 		INSERT INTO batch (
-			name,
-			description
-		) VALUES ($1, $2) RETURNING id`,
-		batch.Name,
-		batch.Description,
-	).Scan(&id)
+			short_name,
+			brew_date,
+			notes
+		) VALUES ($1, $2, $3)
+		RETURNING id, uuid, short_name, brew_date, notes, created_at, updated_at, deleted_at`,
+		batch.ShortName,
+		batch.BrewDate,
+		batch.Notes,
+	).Scan(
+		&batch.ID,
+		&batch.UUID,
+		&batch.ShortName,
+		&batch.BrewDate,
+		&batch.Notes,
+		&batch.CreatedAt,
+		&batch.UpdatedAt,
+		&batch.DeletedAt,
+	)
 	if err != nil {
-		return Batch{}, err
+		return Batch{}, fmt.Errorf("creating batch: %w", err)
 	}
 
-	batch.ID = id
 	return batch, nil
+}
+
+func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
+	var batch Batch
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, short_name, brew_date, notes, created_at, updated_at, deleted_at
+		FROM batch
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(
+		&batch.ID,
+		&batch.UUID,
+		&batch.ShortName,
+		&batch.BrewDate,
+		&batch.Notes,
+		&batch.CreatedAt,
+		&batch.UpdatedAt,
+		&batch.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Batch{}, service.ErrNotFound
+		}
+		return Batch{}, fmt.Errorf("getting batch: %w", err)
+	}
+
+	return batch, nil
+}
+
+func (c *Client) ListBatches(ctx context.Context) ([]Batch, error) {
+	rows, err := c.db.Query(ctx, `
+		SELECT id, uuid, short_name, brew_date, notes, created_at, updated_at, deleted_at
+		FROM batch
+		WHERE deleted_at IS NULL
+		ORDER BY created_at DESC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing batches: %w", err)
+	}
+	defer rows.Close()
+
+	var batches []Batch
+	for rows.Next() {
+		var batch Batch
+		if err := rows.Scan(
+			&batch.ID,
+			&batch.UUID,
+			&batch.ShortName,
+			&batch.BrewDate,
+			&batch.Notes,
+			&batch.CreatedAt,
+			&batch.UpdatedAt,
+			&batch.DeletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning batch: %w", err)
+		}
+		batches = append(batches, batch)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing batches: %w", err)
+	}
+
+	return batches, nil
 }

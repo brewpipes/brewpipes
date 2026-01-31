@@ -2,7 +2,7 @@
   <v-container class="production-page" fluid>
     <v-row>
       <v-col cols="12">
-        <v-card class="hero-card" rounded="xl">
+        <v-card class="hero-card">
           <v-card-text>
             <v-row align="center">
               <v-col cols="12" md="7">
@@ -16,23 +16,23 @@
                 </div>
 
                 <div class="d-flex flex-wrap align-center ga-2 mt-4">
-                  <v-chip color="primary" variant="tonal">
+                  <v-chip color="primary" size="small" variant="tonal">
                     API: {{ apiBase }}
                   </v-chip>
-                  <v-chip color="secondary" variant="tonal">
+                  <v-chip color="secondary" size="small" variant="tonal">
                     Batches: {{ batches.length }}
                   </v-chip>
-                  <v-chip v-if="latestProcessPhase" color="primary" variant="outlined">
+                  <v-chip v-if="latestProcessPhase" color="primary" size="small" variant="outlined">
                     Process: {{ latestProcessPhase.process_phase }}
                   </v-chip>
-                  <v-chip v-if="latestLiquidPhase" color="secondary" variant="outlined">
+                  <v-chip v-if="latestLiquidPhase" color="secondary" size="small" variant="outlined">
                     Liquid: {{ latestLiquidPhase.liquid_phase }}
                   </v-chip>
                 </div>
               </v-col>
 
               <v-col cols="12" md="5">
-                <v-card class="hero-panel" rounded="xl" variant="tonal">
+                <v-card class="hero-panel" variant="tonal">
                   <div class="text-overline">Active batch</div>
                   <div class="text-h5 font-weight-semibold">
                     {{ selectedBatch ? selectedBatch.short_name : 'Select a batch' }}
@@ -58,7 +58,7 @@
 
     <v-row class="mt-4" align="stretch">
       <v-col cols="12" md="4">
-        <v-card class="section-card" rounded="xl">
+        <v-card class="section-card">
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-barley" />
             Batches
@@ -74,12 +74,11 @@
               {{ errorMessage }}
             </v-alert>
 
-            <v-list class="batch-list" lines="two">
+            <v-list class="batch-list" lines="two" active-color="primary">
               <v-list-item
                 v-for="batch in batches"
                 :key="batch.id"
                 :active="batch.id === selectedBatchId"
-                class="rounded-lg"
                 @click="selectBatch(batch.id)"
               >
                 <v-list-item-title>
@@ -138,7 +137,7 @@
       </v-col>
 
       <v-col cols="12" md="8">
-        <v-card class="section-card" rounded="xl">
+        <v-card class="section-card">
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-beaker-outline" />
             Batch details
@@ -176,13 +175,13 @@
                     <v-card-text>
                       <div class="text-overline">Latest phases</div>
                       <div class="d-flex flex-wrap ga-2 mb-2">
-                        <v-chip v-if="latestProcessPhase" color="primary" variant="tonal">
+                        <v-chip v-if="latestProcessPhase" color="primary" size="small" variant="tonal">
                           {{ latestProcessPhase.process_phase }}
                         </v-chip>
-                        <v-chip v-if="latestLiquidPhase" color="secondary" variant="tonal">
+                        <v-chip v-if="latestLiquidPhase" color="secondary" size="small" variant="tonal">
                           {{ latestLiquidPhase.liquid_phase }}
                         </v-chip>
-                        <v-chip v-if="!latestLiquidPhase && !latestProcessPhase" variant="outlined">
+                        <v-chip v-if="!latestLiquidPhase && !latestProcessPhase" size="small" variant="outlined">
                           No phases yet
                         </v-chip>
                       </div>
@@ -483,7 +482,7 @@
                           Addition log
                         </v-card-title>
                         <v-card-text>
-                          <v-table density="compact">
+                          <v-table class="data-table" density="compact">
                             <thead>
                               <tr>
                                 <th>Type</th>
@@ -561,7 +560,7 @@
                           Measurement log
                         </v-card-title>
                         <v-card-text>
-                          <v-table density="compact">
+                          <v-table class="data-table" density="compact">
                             <thead>
                               <tr>
                                 <th>Kind</th>
@@ -643,7 +642,7 @@
                           Transfer log
                         </v-card-title>
                         <v-card-text>
-                          <v-table density="compact">
+                          <v-table class="data-table" density="compact">
                             <thead>
                               <tr>
                                 <th>Source</th>
@@ -1809,7 +1808,7 @@ function getLatest<T>(items: T[], selector: (item: T) => string | null | undefin
   background:
     linear-gradient(130deg, rgba(47, 93, 80, 0.14), rgba(196, 117, 60, 0.12)),
     rgba(253, 251, 247, 0.9);
-  box-shadow: 0 20px 45px rgba(28, 26, 22, 0.08);
+  box-shadow: 0 12px 28px rgba(28, 26, 22, 0.08);
 }
 
 .hero-panel {
@@ -1827,6 +1826,7 @@ function getLatest<T>(items: T[], selector: (item: T) => string | null | undefin
 .section-card {
   background: rgba(253, 251, 247, 0.92);
   border: 1px solid rgba(28, 26, 22, 0.08);
+  box-shadow: 0 10px 24px rgba(28, 26, 22, 0.05);
 }
 
 .mini-card {
@@ -1834,7 +1834,8 @@ function getLatest<T>(items: T[], selector: (item: T) => string | null | undefin
 }
 
 .sub-card {
-  border-radius: 18px;
+  border: 1px solid rgba(28, 26, 22, 0.08);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .batch-list {
@@ -1845,5 +1846,16 @@ function getLatest<T>(items: T[], selector: (item: T) => string | null | undefin
 .batch-tabs :deep(.v-tab) {
   text-transform: none;
   font-weight: 600;
+}
+
+.data-table :deep(th) {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(28, 26, 22, 0.55);
+}
+
+.data-table :deep(td) {
+  font-size: 0.85rem;
 }
 </style>

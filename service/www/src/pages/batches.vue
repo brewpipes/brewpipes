@@ -96,7 +96,7 @@
               type="info"
               variant="tonal"
             >
-              Select a batch to manage volumes, phases, and brew day activity.
+              Select a batch to review timeline, flow, measurements, and additions.
             </v-alert>
 
             <div v-else>
@@ -120,7 +120,7 @@
                 <v-col cols="12" md="6">
                   <v-card class="mini-card" variant="tonal">
                     <v-card-text>
-                      <div class="text-overline">Latest phases</div>
+                      <div class="text-overline">Status</div>
                       <div class="d-flex flex-wrap ga-2 mb-2">
                         <v-chip v-if="latestProcessPhase" color="primary" size="small" variant="tonal">
                           {{ latestProcessPhase.process_phase }}
@@ -130,6 +130,47 @@
                         </v-chip>
                         <v-chip v-if="!latestLiquidPhase && !latestProcessPhase" size="small" variant="outlined">
                           No phases yet
+                        </v-chip>
+                      </div>
+                      <div class="d-flex flex-wrap ga-2 mb-2">
+                        <v-chip
+                          size="small"
+                          color="info"
+                          :variant="latestTemperatureMeasurement ? 'tonal' : 'outlined'"
+                        >
+                          Temp
+                          {{
+                            latestTemperatureMeasurement
+                              ? formatValue(
+                                  latestTemperatureMeasurement.value,
+                                  latestTemperatureMeasurement.unit,
+                                )
+                              : 'n/a'
+                          }}
+                        </v-chip>
+                        <v-chip
+                          size="small"
+                          color="secondary"
+                          :variant="latestGravityMeasurement ? 'tonal' : 'outlined'"
+                        >
+                          Gravity
+                          {{
+                            latestGravityMeasurement
+                              ? formatValue(latestGravityMeasurement.value, latestGravityMeasurement.unit)
+                              : 'n/a'
+                          }}
+                        </v-chip>
+                        <v-chip
+                          size="small"
+                          color="warning"
+                          :variant="latestPhMeasurement ? 'tonal' : 'outlined'"
+                        >
+                          pH
+                          {{
+                            latestPhMeasurement
+                              ? formatValue(latestPhMeasurement.value, latestPhMeasurement.unit)
+                              : 'n/a'
+                          }}
                         </v-chip>
                       </div>
                       <div class="text-body-2 text-medium-emphasis">
@@ -143,232 +184,11 @@
               <v-tabs v-model="activeTab" class="batch-tabs" color="primary" show-arrows>
                 <v-tab value="timeline">Timeline</v-tab>
                 <v-tab value="flow">Flow</v-tab>
-                <v-tab value="start">Start</v-tab>
-                <v-tab value="phases">Phases</v-tab>
-                <v-tab value="additions">Additions</v-tab>
                 <v-tab value="measurements">Measurements</v-tab>
-                <v-tab value="transfers">Transfers</v-tab>
-                <v-tab value="relations">Relations</v-tab>
+                <v-tab value="additions">Additions</v-tab>
               </v-tabs>
 
               <v-window v-model="activeTab" class="mt-4">
-                <v-window-item value="start">
-                  <v-row>
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Register vessel
-                        </v-card-title>
-                        <v-card-text>
-                          <v-text-field v-model="newVessel.type" label="Type" />
-                          <v-text-field v-model="newVessel.name" label="Name" />
-                          <v-text-field v-model="newVessel.capacity" label="Capacity" type="number" />
-                          <v-select
-                            v-model="newVessel.capacity_unit"
-                            :items="unitOptions"
-                            label="Capacity unit"
-                          />
-                          <v-select
-                            v-model="newVessel.status"
-                            :items="vesselStatusOptions"
-                            label="Status"
-                          />
-                          <v-text-field v-model="newVessel.make" label="Make" />
-                          <v-text-field v-model="newVessel.model" label="Model" />
-                          <v-btn
-                            block
-                            color="secondary"
-                            :disabled="!newVessel.type.trim() || !newVessel.name.trim() || !newVessel.capacity"
-                            @click="createVessel"
-                          >
-                            Add vessel
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Start batch volume
-                        </v-card-title>
-                        <v-card-text>
-                          <v-text-field v-model="startVolume.name" label="Volume name" />
-                          <v-text-field v-model="startVolume.description" label="Description" />
-                          <v-text-field v-model="startVolume.amount" label="Amount" type="number" />
-                          <v-select
-                            v-model="startVolume.amount_unit"
-                            :items="unitOptions"
-                            label="Amount unit"
-                          />
-                          <v-select
-                            v-model="startVolume.vessel_id"
-                            :items="vesselItems"
-                            label="Vessel"
-                          />
-                          <v-select
-                            v-model="startVolume.liquid_phase"
-                            :items="liquidPhaseOptions"
-                            label="Liquid phase"
-                          />
-                          <v-text-field v-model="startVolume.phase_at" label="Phase time" type="datetime-local" />
-                          <v-text-field v-model="startVolume.in_at" label="Vessel in time" type="datetime-local" />
-                          <v-btn
-                            block
-                            color="primary"
-                            :disabled="!startVolume.amount || !startVolume.vessel_id"
-                            @click="createStartingVolume"
-                          >
-                            Create volume + occupancy
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-
-                  <v-row class="mt-2">
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">
-                          Active occupancy lookup
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="occupancyLookup.kind"
-                            :items="occupancyLookupOptions"
-                            label="Lookup by"
-                          />
-                          <v-text-field v-model="occupancyLookup.id" label="ID" type="number" />
-                          <v-btn
-                            block
-                            color="secondary"
-                            :disabled="!occupancyLookup.id"
-                            @click="lookupActiveOccupancy"
-                          >
-                            Fetch active occupancy
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">
-                          Active occupancy
-                        </v-card-title>
-                        <v-card-text>
-                          <div v-if="activeOccupancy">
-                            <div class="text-body-2">
-                              Occupancy #{{ activeOccupancy.id }}
-                            </div>
-                            <div class="text-body-2">
-                              Vessel {{ activeOccupancy.vessel_id }}
-                            </div>
-                            <div class="text-body-2">
-                              Volume {{ activeOccupancy.volume_id }}
-                            </div>
-                            <div class="text-body-2">
-                              In: {{ formatDateTime(activeOccupancy.in_at) }}
-                            </div>
-                          </div>
-                          <div v-else class="text-body-2 text-medium-emphasis">
-                            No active occupancy loaded.
-                          </div>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-window-item>
-
-                <v-window-item value="phases">
-                  <v-row>
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Liquid phase
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="liquidPhaseForm.volume_id"
-                            :items="volumeItems"
-                            label="Volume"
-                          />
-                          <v-select
-                            v-model="liquidPhaseForm.liquid_phase"
-                            :items="liquidPhaseOptions"
-                            label="Liquid phase"
-                          />
-                          <v-text-field v-model="liquidPhaseForm.phase_at" label="Phase time" type="datetime-local" />
-                          <v-btn
-                            block
-                            color="primary"
-                            :disabled="!liquidPhaseForm.volume_id"
-                            @click="recordLiquidPhase"
-                          >
-                            Update liquid phase
-                          </v-btn>
-
-                          <v-divider class="my-4" />
-                          <div class="text-subtitle-2 mb-2">History</div>
-                          <v-list density="compact">
-                            <v-list-item
-                              v-for="phase in batchVolumesSorted"
-                              :key="phase.id"
-                            >
-                              <v-list-item-title>
-                                {{ phase.liquid_phase }}
-                              </v-list-item-title>
-                              <v-list-item-subtitle>
-                                Volume {{ phase.volume_id }} - {{ formatDateTime(phase.phase_at) }}
-                              </v-list-item-subtitle>
-                            </v-list-item>
-                            <v-list-item v-if="batchVolumesSorted.length === 0">
-                              <v-list-item-title>No liquid phases yet.</v-list-item-title>
-                            </v-list-item>
-                          </v-list>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Process phase
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="processPhaseForm.process_phase"
-                            :items="processPhaseOptions"
-                            label="Process phase"
-                          />
-                          <v-text-field v-model="processPhaseForm.phase_at" label="Phase time" type="datetime-local" />
-                          <v-btn block color="secondary" @click="recordProcessPhase">
-                            Add process phase
-                          </v-btn>
-
-                          <v-divider class="my-4" />
-                          <div class="text-subtitle-2 mb-2">History</div>
-                          <v-list density="compact">
-                            <v-list-item
-                              v-for="phase in processPhasesSorted"
-                              :key="phase.id"
-                            >
-                              <v-list-item-title>
-                                {{ phase.process_phase }}
-                              </v-list-item-title>
-                              <v-list-item-subtitle>
-                                {{ formatDateTime(phase.phase_at) }}
-                              </v-list-item-subtitle>
-                            </v-list-item>
-                            <v-list-item v-if="processPhasesSorted.length === 0">
-                              <v-list-item-title>No process phases yet.</v-list-item-title>
-                            </v-list-item>
-                          </v-list>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-window-item>
 
                 <v-window-item value="additions">
                   <v-row>
@@ -535,220 +355,6 @@
                   </v-row>
                 </v-window-item>
 
-                <v-window-item value="transfers">
-                  <v-row>
-                    <v-col cols="12" md="5">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Record transfer
-                        </v-card-title>
-                        <v-card-text>
-                          <v-text-field
-                            v-model="transferForm.source_occupancy_id"
-                            label="Source occupancy ID"
-                            type="number"
-                          />
-                          <v-select
-                            v-model="transferForm.dest_vessel_id"
-                            :items="vesselItems"
-                            label="Destination vessel"
-                          />
-                          <v-select
-                            v-model="transferForm.volume_id"
-                            :items="volumeItems"
-                            label="Volume"
-                          />
-                          <v-text-field v-model="transferForm.amount" label="Amount" type="number" />
-                          <v-select
-                            v-model="transferForm.amount_unit"
-                            :items="unitOptions"
-                            label="Amount unit"
-                          />
-                          <v-text-field v-model="transferForm.loss_amount" label="Loss amount" type="number" />
-                          <v-select
-                            v-model="transferForm.loss_unit"
-                            :items="unitOptions"
-                            label="Loss unit"
-                          />
-                          <v-text-field v-model="transferForm.started_at" label="Started at" type="datetime-local" />
-                          <v-text-field v-model="transferForm.ended_at" label="Ended at" type="datetime-local" />
-                          <v-btn
-                            block
-                            color="primary"
-                            :disabled="!transferForm.source_occupancy_id || !transferForm.dest_vessel_id || !transferForm.volume_id || !transferForm.amount"
-                            @click="recordTransfer"
-                          >
-                            Record transfer
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="7">
-                      <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">
-                          Transfer log
-                        </v-card-title>
-                        <v-card-text>
-                          <v-table class="data-table" density="compact">
-                            <thead>
-                              <tr>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Amount</th>
-                                <th>Start</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr v-for="transfer in transfersSorted" :key="transfer.id">
-                                <td>{{ transfer.source_occupancy_id }}</td>
-                                <td>{{ transfer.dest_occupancy_id }}</td>
-                                <td>{{ formatAmount(transfer.amount, transfer.amount_unit) }}</td>
-                                <td>{{ formatDateTime(transfer.started_at) }}</td>
-                              </tr>
-                              <tr v-if="transfersSorted.length === 0">
-                                <td colspan="4">No transfers recorded.</td>
-                              </tr>
-                            </tbody>
-                          </v-table>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-window-item>
-
-                <v-window-item value="relations">
-                  <v-row>
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Batch relation
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="relationForm.parent_batch_id"
-                            :items="batchItems"
-                            label="Parent batch"
-                          />
-                          <v-select
-                            v-model="relationForm.child_batch_id"
-                            :items="batchItems"
-                            label="Child batch"
-                          />
-                          <v-select
-                            v-model="relationForm.relation_type"
-                            :items="relationTypeOptions"
-                            label="Relation"
-                          />
-                          <v-select
-                            v-model="relationForm.volume_id"
-                            :items="volumeItems"
-                            label="Volume (optional)"
-                          />
-                          <v-btn
-                            block
-                            color="secondary"
-                            :disabled="!relationForm.parent_batch_id || !relationForm.child_batch_id"
-                            @click="recordBatchRelation"
-                          >
-                            Record batch relation
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="tonal">
-                        <v-card-title class="text-subtitle-1">
-                          Volume relation
-                        </v-card-title>
-                        <v-card-text>
-                          <v-select
-                            v-model="volumeRelationForm.parent_volume_id"
-                            :items="volumeItems"
-                            label="Parent volume"
-                          />
-                          <v-select
-                            v-model="volumeRelationForm.child_volume_id"
-                            :items="volumeItems"
-                            label="Child volume"
-                          />
-                          <v-select
-                            v-model="volumeRelationForm.relation_type"
-                            :items="relationTypeOptions"
-                            label="Relation"
-                          />
-                          <v-text-field v-model="volumeRelationForm.amount" label="Amount" type="number" />
-                          <v-select
-                            v-model="volumeRelationForm.amount_unit"
-                            :items="unitOptions"
-                            label="Unit"
-                          />
-                          <v-btn
-                            block
-                            color="primary"
-                            :disabled="!volumeRelationForm.parent_volume_id || !volumeRelationForm.child_volume_id || !volumeRelationForm.amount"
-                            @click="recordVolumeRelation"
-                          >
-                            Record volume relation
-                          </v-btn>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-
-                  <v-row class="mt-2">
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">Batch relations</v-card-title>
-                        <v-card-text>
-                          <v-list density="compact">
-                            <v-list-item
-                              v-for="relation in batchRelationsSorted"
-                              :key="relation.id"
-                            >
-                              <v-list-item-title>
-                                {{ relation.relation_type }}
-                              </v-list-item-title>
-                              <v-list-item-subtitle>
-                                {{ relation.parent_batch_id }} -> {{ relation.child_batch_id }}
-                              </v-list-item-subtitle>
-                            </v-list-item>
-                            <v-list-item v-if="batchRelationsSorted.length === 0">
-                              <v-list-item-title>No batch relations yet.</v-list-item-title>
-                            </v-list-item>
-                          </v-list>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-
-                    <v-col cols="12" md="6">
-                      <v-card class="sub-card" variant="outlined">
-                        <v-card-title class="text-subtitle-1">Volume relations</v-card-title>
-                        <v-card-text>
-                          <v-list density="compact">
-                            <v-list-item
-                              v-for="relation in volumeRelationsSorted"
-                              :key="relation.id"
-                            >
-                              <v-list-item-title>
-                                {{ relation.relation_type }}
-                              </v-list-item-title>
-                              <v-list-item-subtitle>
-                                {{ relation.parent_volume_id }} -> {{ relation.child_volume_id }}
-                                - {{ formatAmount(relation.amount, relation.amount_unit) }}
-                              </v-list-item-subtitle>
-                            </v-list-item>
-                            <v-list-item v-if="volumeRelationsSorted.length === 0">
-                              <v-list-item-title>No volume relations yet.</v-list-item-title>
-                            </v-list-item>
-                          </v-list>
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-window-item>
-
                 <v-window-item value="timeline">
                   <v-card class="sub-card" variant="outlined">
                     <v-card-title class="text-subtitle-1">
@@ -881,51 +487,6 @@ type VolumeRelation = {
   updated_at: string
 }
 
-type Vessel = {
-  id: number
-  uuid: string
-  type: string
-  name: string
-  capacity: number
-  capacity_unit: Unit
-  make: string | null
-  model: string | null
-  status: 'active' | 'inactive' | 'retired'
-  created_at: string
-  updated_at: string
-}
-
-type Occupancy = {
-  id: number
-  uuid: string
-  vessel_id: number
-  volume_id: number
-  in_at: string
-  out_at: string | null
-  created_at: string
-  updated_at: string
-}
-
-type Transfer = {
-  id: number
-  uuid: string
-  source_occupancy_id: number
-  dest_occupancy_id: number
-  amount: number
-  amount_unit: Unit
-  loss_amount: number | null
-  loss_unit: Unit | null
-  started_at: string
-  ended_at: string | null
-  created_at: string
-  updated_at: string
-}
-
-type TransferRecord = {
-  transfer: Transfer
-  dest_occupancy: Occupancy
-}
-
 type BatchVolume = {
   id: number
   uuid: string
@@ -943,17 +504,6 @@ type BatchProcessPhase = {
   batch_id: number
   process_phase: ProcessPhase
   phase_at: string
-  created_at: string
-  updated_at: string
-}
-
-type BatchRelation = {
-  id: number
-  uuid: string
-  parent_batch_id: number
-  child_batch_id: number
-  relation_type: RelationType
-  volume_id: number | null
   created_at: string
   updated_at: string
 }
@@ -1012,19 +562,6 @@ type FlowLink = {
 const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
 const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz']
-const liquidPhaseOptions: LiquidPhase[] = ['water', 'wort', 'beer']
-const processPhaseOptions: ProcessPhase[] = [
-  'planning',
-  'mashing',
-  'heating',
-  'boiling',
-  'cooling',
-  'fermenting',
-  'conditioning',
-  'packaging',
-  'finished',
-]
-const relationTypeOptions: RelationType[] = ['split', 'blend']
 const additionTypeOptions: AdditionType[] = [
   'malt',
   'hop',
@@ -1034,27 +571,18 @@ const additionTypeOptions: AdditionType[] = [
   'gas',
   'other',
 ]
-const vesselStatusOptions = ['active', 'inactive', 'retired']
 const additionTargetOptions = [
   { title: 'Batch', value: 'batch' },
   { title: 'Occupancy', value: 'occupancy' },
 ]
-const occupancyLookupOptions = [
-  { title: 'Vessel', value: 'vessel' },
-  { title: 'Volume', value: 'volume' },
-]
 
 const batches = ref<Batch[]>([])
-const vessels = ref<Vessel[]>([])
 const volumes = ref<Volume[]>([])
 const batchVolumes = ref<BatchVolume[]>([])
 const processPhases = ref<BatchProcessPhase[]>([])
-const transfers = ref<Transfer[]>([])
 const additions = ref<Addition[]>([])
 const measurements = ref<Measurement[]>([])
-const batchRelations = ref<BatchRelation[]>([])
 const volumeRelations = ref<VolumeRelation[]>([])
-const activeOccupancy = ref<Occupancy | null>(null)
 
 const selectedBatchId = ref<number | null>(null)
 const activeTab = ref('timeline')
@@ -1070,38 +598,6 @@ const newBatch = reactive({
   short_name: '',
   brew_date: '',
   notes: '',
-})
-
-const newVessel = reactive({
-  type: '',
-  name: '',
-  capacity: '',
-  capacity_unit: 'ml' as Unit,
-  status: 'active',
-  make: '',
-  model: '',
-})
-
-const startVolume = reactive({
-  name: '',
-  description: '',
-  amount: '',
-  amount_unit: 'ml' as Unit,
-  vessel_id: null as number | null,
-  liquid_phase: 'water' as LiquidPhase,
-  phase_at: '',
-  in_at: '',
-})
-
-const liquidPhaseForm = reactive({
-  volume_id: null as number | null,
-  liquid_phase: 'water' as LiquidPhase,
-  phase_at: '',
-})
-
-const processPhaseForm = reactive({
-  process_phase: 'planning' as ProcessPhase,
-  phase_at: '',
 })
 
 const additionForm = reactive({
@@ -1126,37 +622,6 @@ const measurementForm = reactive({
   notes: '',
 })
 
-const transferForm = reactive({
-  source_occupancy_id: '',
-  dest_vessel_id: null as number | null,
-  volume_id: null as number | null,
-  amount: '',
-  amount_unit: 'ml' as Unit,
-  loss_amount: '',
-  loss_unit: 'ml' as Unit,
-  started_at: '',
-  ended_at: '',
-})
-
-const relationForm = reactive({
-  parent_batch_id: null as number | null,
-  child_batch_id: null as number | null,
-  relation_type: 'split' as RelationType,
-  volume_id: null as number | null,
-})
-
-const volumeRelationForm = reactive({
-  parent_volume_id: null as number | null,
-  child_volume_id: null as number | null,
-  relation_type: 'split' as RelationType,
-  amount: '',
-  amount_unit: 'ml' as Unit,
-})
-
-const occupancyLookup = reactive({
-  kind: 'vessel',
-  id: '',
-})
 
 const selectedBatch = computed(() =>
   batches.value.find((batch) => batch.id === selectedBatchId.value) ?? null,
@@ -1165,47 +630,18 @@ const selectedBatch = computed(() =>
 const latestProcessPhase = computed(() => getLatest(processPhases.value, (item) => item.phase_at))
 const latestLiquidPhase = computed(() => getLatest(batchVolumes.value, (item) => item.phase_at))
 
-const vesselItems = computed(() =>
-  vessels.value.map((vessel) => ({
-    title: `${vessel.name} (${vessel.type})`,
-    value: vessel.id,
-  })),
+const latestTemperatureMeasurement = computed(() =>
+  getLatestMeasurement(['temperature', 'temp']),
 )
-
-const volumeItems = computed(() =>
-  volumes.value.map((volume) => ({
-    title: `${volume.name ?? 'Volume'} #${volume.id}`,
-    value: volume.id,
-  })),
+const latestGravityMeasurement = computed(() =>
+  getLatestMeasurement(['gravity', 'grav', 'sg']),
 )
-
-const batchItems = computed(() =>
-  batches.value.map((batch) => ({
-    title: `${batch.short_name} (#${batch.id})`,
-    value: batch.id,
-  })),
-)
-
-const batchVolumesSorted = computed(() =>
-  sortByTime(batchVolumes.value, (item) => item.phase_at),
-)
-const processPhasesSorted = computed(() =>
-  sortByTime(processPhases.value, (item) => item.phase_at),
-)
+const latestPhMeasurement = computed(() => getLatestMeasurement(['ph']))
 const additionsSorted = computed(() =>
   sortByTime(additions.value, (item) => item.added_at),
 )
 const measurementsSorted = computed(() =>
   sortByTime(measurements.value, (item) => item.observed_at),
-)
-const transfersSorted = computed(() =>
-  sortByTime(transfers.value, (item) => item.started_at),
-)
-const batchRelationsSorted = computed(() =>
-  sortByTime(batchRelations.value, (item) => item.created_at),
-)
-const volumeRelationsSorted = computed(() =>
-  sortByTime(volumeRelations.value, (item) => item.created_at),
 )
 
 const volumeNameMap = computed(
@@ -1319,17 +755,6 @@ const timelineItems = computed(() => {
     })
   })
 
-  transfers.value.forEach((transfer) => {
-    items.push({
-      id: `transfer-${transfer.id}`,
-      title: 'Transfer',
-      subtitle: `Occ ${transfer.source_occupancy_id} to ${transfer.dest_occupancy_id}`,
-      at: transfer.started_at ?? transfer.created_at,
-      color: 'info',
-      icon: 'mdi-truck-fast-outline',
-    })
-  })
-
   processPhases.value.forEach((phase) => {
     items.push({
       id: `process-${phase.id}`,
@@ -1361,26 +786,6 @@ watch(selectedBatchId, (value) => {
   }
 })
 
-watch(batchVolumes, () => {
-  if (!liquidPhaseForm.volume_id && batchVolumes.value.length > 0) {
-    const latest = batchVolumesSorted.value[0]
-    liquidPhaseForm.volume_id = latest?.volume_id ?? null
-  }
-})
-
-watch(activeOccupancy, (value) => {
-  if (value && !transferForm.source_occupancy_id) {
-    transferForm.source_occupancy_id = String(value.id)
-  }
-  if (value && !transferForm.volume_id) {
-    transferForm.volume_id = value.volume_id
-  }
-})
-
-watch(selectedBatchId, (value) => {
-  relationForm.parent_batch_id = value
-})
-
 onMounted(async () => {
   await refreshAll()
 })
@@ -1391,7 +796,6 @@ function selectBatch(id: number) {
 
 function clearSelection() {
   selectedBatchId.value = null
-  activeOccupancy.value = null
 }
 
 function showNotice(text: string, color = 'success') {
@@ -1433,7 +837,7 @@ const post = <T>(path: string, payload: unknown) =>
 async function refreshAll() {
   errorMessage.value = ''
   try {
-    await Promise.all([loadBatches(), loadVessels(), loadVolumes()])
+    await Promise.all([loadBatches(), loadVolumes()])
     if (!selectedBatchId.value && batches.value.length > 0) {
       selectedBatchId.value = batches.value[0].id
     } else if (selectedBatchId.value) {
@@ -1448,32 +852,23 @@ async function loadBatches() {
   batches.value = await get<Batch[]>('/batches')
 }
 
-async function loadVessels() {
-  vessels.value = await get<Vessel[]>('/vessels')
-}
-
 async function loadVolumes() {
   volumes.value = await get<Volume[]>('/volumes')
 }
 
 async function loadBatchData(batchId: number) {
   try {
-    const [batchVolumesData, processPhasesData, transfersData, additionsData, measurementsData, batchRelationsData] =
-      await Promise.all([
-        get<BatchVolume[]>(`/batch-volumes?batch_id=${batchId}`),
-        get<BatchProcessPhase[]>(`/batch-process-phases?batch_id=${batchId}`),
-        get<Transfer[]>(`/transfers?batch_id=${batchId}`),
-        get<Addition[]>(`/additions?batch_id=${batchId}`),
-        get<Measurement[]>(`/measurements?batch_id=${batchId}`),
-        get<BatchRelation[]>(`/batch-relations?batch_id=${batchId}`),
-      ])
+    const [batchVolumesData, processPhasesData, additionsData, measurementsData] = await Promise.all([
+      get<BatchVolume[]>(`/batch-volumes?batch_id=${batchId}`),
+      get<BatchProcessPhase[]>(`/batch-process-phases?batch_id=${batchId}`),
+      get<Addition[]>(`/additions?batch_id=${batchId}`),
+      get<Measurement[]>(`/measurements?batch_id=${batchId}`),
+    ])
 
     batchVolumes.value = batchVolumesData
     processPhases.value = processPhasesData
-    transfers.value = transfersData
     additions.value = additionsData
     measurements.value = measurementsData
-    batchRelations.value = batchRelationsData
 
     await loadVolumeRelations(batchVolumesData)
   } catch (error) {
@@ -1514,115 +909,6 @@ async function createBatch() {
     newBatch.notes = ''
     await loadBatches()
     selectedBatchId.value = created.id
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function createVessel() {
-  errorMessage.value = ''
-  try {
-    const payload = {
-      type: newVessel.type.trim(),
-      name: newVessel.name.trim(),
-      capacity: toNumber(newVessel.capacity),
-      capacity_unit: newVessel.capacity_unit,
-      status: newVessel.status,
-      make: normalizeText(newVessel.make),
-      model: normalizeText(newVessel.model),
-    }
-    await post<Vessel>('/vessels', payload)
-    showNotice('Vessel added')
-    newVessel.type = ''
-    newVessel.name = ''
-    newVessel.capacity = ''
-    newVessel.make = ''
-    newVessel.model = ''
-    await loadVessels()
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function createStartingVolume() {
-  if (!selectedBatchId.value) {
-    return
-  }
-
-  errorMessage.value = ''
-  try {
-    const volumePayload = {
-      name: normalizeText(startVolume.name),
-      description: normalizeText(startVolume.description),
-      amount: toNumber(startVolume.amount),
-      amount_unit: startVolume.amount_unit,
-    }
-    const volume = await post<Volume>('/volumes', volumePayload)
-
-    const occupancyPayload = {
-      vessel_id: startVolume.vessel_id,
-      volume_id: volume.id,
-      in_at: normalizeDateTime(startVolume.in_at),
-    }
-    const occupancy = await post<Occupancy>('/occupancies', occupancyPayload)
-    activeOccupancy.value = occupancy
-
-    const batchVolumePayload = {
-      batch_id: selectedBatchId.value,
-      volume_id: volume.id,
-      liquid_phase: startVolume.liquid_phase,
-      phase_at: normalizeDateTime(startVolume.phase_at),
-    }
-    await post<BatchVolume>('/batch-volumes', batchVolumePayload)
-
-    showNotice('Starting volume created')
-    startVolume.name = ''
-    startVolume.description = ''
-    startVolume.amount = ''
-    startVolume.phase_at = ''
-    startVolume.in_at = ''
-    await Promise.all([loadVolumes(), loadBatchData(selectedBatchId.value)])
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function recordLiquidPhase() {
-  if (!selectedBatchId.value || !liquidPhaseForm.volume_id) {
-    return
-  }
-  errorMessage.value = ''
-  try {
-    const payload = {
-      batch_id: selectedBatchId.value,
-      volume_id: liquidPhaseForm.volume_id,
-      liquid_phase: liquidPhaseForm.liquid_phase,
-      phase_at: normalizeDateTime(liquidPhaseForm.phase_at),
-    }
-    await post<BatchVolume>('/batch-volumes', payload)
-    showNotice('Liquid phase updated')
-    liquidPhaseForm.phase_at = ''
-    await loadBatchData(selectedBatchId.value)
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function recordProcessPhase() {
-  if (!selectedBatchId.value) {
-    return
-  }
-  errorMessage.value = ''
-  try {
-    const payload = {
-      batch_id: selectedBatchId.value,
-      process_phase: processPhaseForm.process_phase,
-      phase_at: normalizeDateTime(processPhaseForm.phase_at),
-    }
-    await post<BatchProcessPhase>('/batch-process-phases', payload)
-    showNotice('Process phase added')
-    processPhaseForm.phase_at = ''
-    await loadBatchData(selectedBatchId.value)
   } catch (error) {
     handleError(error)
   }
@@ -1693,101 +979,6 @@ async function recordMeasurement() {
     measurementForm.observed_at = ''
     measurementForm.notes = ''
     await loadBatchData(selectedBatchId.value)
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function recordTransfer() {
-  errorMessage.value = ''
-  try {
-    const payload = {
-      source_occupancy_id: toNumber(transferForm.source_occupancy_id),
-      dest_vessel_id: transferForm.dest_vessel_id,
-      volume_id: transferForm.volume_id,
-      amount: toNumber(transferForm.amount),
-      amount_unit: transferForm.amount_unit,
-      loss_amount: toNumber(transferForm.loss_amount),
-      loss_unit: transferForm.loss_amount ? transferForm.loss_unit : null,
-      started_at: normalizeDateTime(transferForm.started_at),
-      ended_at: normalizeDateTime(transferForm.ended_at),
-    }
-    const record = await post<TransferRecord>('/transfers', payload)
-    activeOccupancy.value = record.dest_occupancy
-    showNotice('Transfer recorded')
-    transferForm.amount = ''
-    transferForm.loss_amount = ''
-    transferForm.started_at = ''
-    transferForm.ended_at = ''
-    if (selectedBatchId.value) {
-      await loadBatchData(selectedBatchId.value)
-    }
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function recordBatchRelation() {
-  if (!relationForm.parent_batch_id || !relationForm.child_batch_id) {
-    return
-  }
-  errorMessage.value = ''
-  try {
-    const payload = {
-      parent_batch_id: relationForm.parent_batch_id,
-      child_batch_id: relationForm.child_batch_id,
-      relation_type: relationForm.relation_type,
-      volume_id: relationForm.volume_id,
-    }
-    await post<BatchRelation>('/batch-relations', payload)
-    showNotice('Batch relation recorded')
-    relationForm.child_batch_id = null
-    relationForm.volume_id = null
-    if (selectedBatchId.value) {
-      await loadBatchData(selectedBatchId.value)
-    }
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function recordVolumeRelation() {
-  if (!volumeRelationForm.parent_volume_id || !volumeRelationForm.child_volume_id) {
-    return
-  }
-  errorMessage.value = ''
-  try {
-    const payload = {
-      parent_volume_id: volumeRelationForm.parent_volume_id,
-      child_volume_id: volumeRelationForm.child_volume_id,
-      relation_type: volumeRelationForm.relation_type,
-      amount: toNumber(volumeRelationForm.amount),
-      amount_unit: volumeRelationForm.amount_unit,
-    }
-    await post<VolumeRelation>('/volume-relations', payload)
-    showNotice('Volume relation recorded')
-    volumeRelationForm.amount = ''
-    if (selectedBatchId.value) {
-      await loadBatchData(selectedBatchId.value)
-    }
-  } catch (error) {
-    handleError(error)
-  }
-}
-
-async function lookupActiveOccupancy() {
-  errorMessage.value = ''
-  try {
-    const id = toNumber(occupancyLookup.id)
-    if (!id) {
-      return
-    }
-    const query =
-      occupancyLookup.kind === 'vessel'
-        ? `active_vessel_id=${id}`
-        : `active_volume_id=${id}`
-    activeOccupancy.value = await get<Occupancy>(`/occupancies/active?${query}`)
-    showNotice('Active occupancy loaded')
   } catch (error) {
     handleError(error)
   }
@@ -1867,6 +1058,26 @@ function sortByTime<T>(items: T[], selector: (item: T) => string | null | undefi
 function getLatest<T>(items: T[], selector: (item: T) => string | null | undefined) {
   const sorted = sortByTime(items, selector)
   return sorted.length > 0 ? sorted[0] : null
+}
+
+function getLatestMeasurement(kinds: string[]) {
+  const normalizedKinds = kinds.map((kind) => normalizeMeasurementKind(kind))
+  const filtered = measurements.value.filter((measurement) =>
+    matchesMeasurementKind(measurement.kind, normalizedKinds),
+  )
+  return getLatest(filtered, (item) => item.observed_at ?? item.created_at)
+}
+
+function matchesMeasurementKind(value: string, kinds: string[]) {
+  const normalized = normalizeMeasurementKind(value)
+  if (!normalized) {
+    return false
+  }
+  return kinds.some((kind) => normalized.includes(kind))
+}
+
+function normalizeMeasurementKind(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 </script>
 

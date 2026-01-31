@@ -6,6 +6,14 @@
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-barley" />
             Batches
+            <v-spacer />
+            <v-btn
+              icon="mdi-plus"
+              size="small"
+              variant="text"
+              aria-label="Create batch"
+              @click="createBatchDialog = true"
+            />
           </v-card-title>
           <v-card-text>
             <v-alert
@@ -40,42 +48,9 @@
 
               <v-list-item v-if="batches.length === 0">
                 <v-list-item-title>No batches yet</v-list-item-title>
-                <v-list-item-subtitle>Create the first batch below.</v-list-item-subtitle>
+                <v-list-item-subtitle>Use + to add the first batch.</v-list-item-subtitle>
               </v-list-item>
             </v-list>
-
-            <v-divider class="my-4" />
-
-            <div class="text-subtitle-1 font-weight-semibold mb-2">
-              Create batch
-            </div>
-            <v-text-field
-              v-model="newBatch.short_name"
-              density="comfortable"
-              label="Short name"
-              placeholder="IPA 24-07"
-            />
-            <v-text-field
-              v-model="newBatch.brew_date"
-              density="comfortable"
-              label="Brew date"
-              type="date"
-            />
-            <v-textarea
-              v-model="newBatch.notes"
-              auto-grow
-              density="comfortable"
-              label="Notes"
-              rows="2"
-            />
-            <v-btn
-              block
-              color="primary"
-              :disabled="!newBatch.short_name.trim()"
-              @click="createBatch"
-            >
-              Create batch
-            </v-btn>
           </v-card-text>
         </v-card>
       </v-col>
@@ -427,6 +402,39 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
+
+  <v-dialog v-model="createBatchDialog" max-width="520">
+    <v-card>
+      <v-card-title class="text-h6">Create batch</v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="newBatch.short_name"
+          density="comfortable"
+          label="Short name"
+          placeholder="IPA 24-07"
+        />
+        <v-text-field
+          v-model="newBatch.brew_date"
+          density="comfortable"
+          label="Brew date"
+          type="date"
+        />
+        <v-textarea
+          v-model="newBatch.notes"
+          auto-grow
+          density="comfortable"
+          label="Notes"
+          rows="2"
+        />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="createBatchDialog = false">Cancel</v-btn>
+        <v-btn color="primary" :disabled="!newBatch.short_name.trim()" @click="createBatch">
+          Create batch
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -587,6 +595,7 @@ const volumeRelations = ref<VolumeRelation[]>([])
 const selectedBatchId = ref<number | null>(null)
 const activeTab = ref('timeline')
 const errorMessage = ref('')
+const createBatchDialog = ref(false)
 
 const snackbar = reactive({
   show: false,
@@ -909,6 +918,7 @@ async function createBatch() {
     newBatch.notes = ''
     await loadBatches()
     selectedBatchId.value = created.id
+    createBatchDialog.value = false
   } catch (error) {
     handleError(error)
   }

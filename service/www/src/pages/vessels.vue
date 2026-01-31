@@ -6,6 +6,14 @@
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-silo" />
             Vessel list
+            <v-spacer />
+            <v-btn
+              icon="mdi-plus"
+              size="small"
+              variant="text"
+              aria-label="Register vessel"
+              @click="createVesselDialog = true"
+            />
           </v-card-title>
           <v-card-text>
             <v-alert
@@ -40,7 +48,7 @@
 
               <v-list-item v-if="vessels.length === 0">
                 <v-list-item-title>No vessels yet</v-list-item-title>
-                <v-list-item-subtitle>Register one using the form.</v-list-item-subtitle>
+                <v-list-item-subtitle>Use + to register the first vessel.</v-list-item-subtitle>
               </v-list-item>
             </v-list>
           </v-card-text>
@@ -105,47 +113,6 @@
               </v-row>
             </div>
 
-            <v-divider class="my-6" />
-
-            <div class="text-subtitle-1 font-weight-semibold mb-2">Register vessel</div>
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="newVessel.type" label="Type" placeholder="Fermenter" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="newVessel.name" label="Name" placeholder="FV-01" />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field v-model="newVessel.capacity" label="Capacity" type="number" />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-select
-                  v-model="newVessel.capacity_unit"
-                  :items="unitOptions"
-                  label="Capacity unit"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-select
-                  v-model="newVessel.status"
-                  :items="vesselStatusOptions"
-                  label="Status"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="newVessel.make" label="Make" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="newVessel.model" label="Model" />
-              </v-col>
-            </v-row>
-            <v-btn
-              color="primary"
-              :disabled="!newVessel.type.trim() || !newVessel.name.trim() || !newVessel.capacity"
-              @click="createVessel"
-            >
-              Add vessel
-            </v-btn>
           </v-card-text>
         </v-card>
       </v-col>
@@ -155,6 +122,55 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
+
+  <v-dialog v-model="createVesselDialog" max-width="640">
+    <v-card>
+      <v-card-title class="text-h6">Register vessel</v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="newVessel.type" label="Type" placeholder="Fermenter" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="newVessel.name" label="Name" placeholder="FV-01" />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field v-model="newVessel.capacity" label="Capacity" type="number" />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-select
+              v-model="newVessel.capacity_unit"
+              :items="unitOptions"
+              label="Capacity unit"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-select
+              v-model="newVessel.status"
+              :items="vesselStatusOptions"
+              label="Status"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="newVessel.make" label="Make" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="newVessel.model" label="Model" />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="createVesselDialog = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!newVessel.type.trim() || !newVessel.name.trim() || !newVessel.capacity"
+          @click="createVessel"
+        >
+          Add vessel
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -185,6 +201,7 @@ const vessels = ref<Vessel[]>([])
 const selectedVesselId = ref<number | null>(null)
 const errorMessage = ref('')
 const loading = ref(false)
+const createVesselDialog = ref(false)
 
 const snackbar = reactive({
   show: false,
@@ -278,6 +295,7 @@ async function createVessel() {
     newVessel.make = ''
     newVessel.model = ''
     await refreshVessels()
+    createVesselDialog.value = false
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create vessel'
     errorMessage.value = message

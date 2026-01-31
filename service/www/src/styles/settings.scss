@@ -5,6 +5,10 @@
  */
 
 // https://vuetifyjs.com/features/sass-variables/`
-// @use 'vuetify/settings' with (
-//   $color-pack: false
-// );
+@use 'vuetify/settings' with (
+  $body-font-family: ('Sora', sans-serif),
+  $heading-font-family: ('Fraunces', serif),
+  $border-radius-root: 18px,
+  $button-text-transform: none,
+  $button-font-weight: 600,
+);

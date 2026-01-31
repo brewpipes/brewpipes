@@ -40,15 +40,25 @@
         :prepend-icon="item.icon"
         :title="item.title"
       />
-    </v-list>
 
-    <template #append>
-      <div class="drawer-footer">
-        <v-btn block size="small" variant="tonal" @click="toggleRail">
-          {{ rail ? 'Expand menu' : 'Collapse menu' }}
-        </v-btn>
-      </div>
-    </template>
+      <v-list-group class="nav-group" value="inventory">
+        <template #activator="{ props }">
+          <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory" />
+        </template>
+        <v-list-item to="/inventory" title="Overview" prepend-icon="mdi-view-dashboard-outline" />
+        <v-list-item to="/inventory/ingredients" title="Ingredients" prepend-icon="mdi-seed-outline" />
+        <v-list-item to="/inventory/ingredient-details" title="Ingredient details" prepend-icon="mdi-flask-outline" />
+        <v-list-item to="/inventory/locations" title="Stock locations" prepend-icon="mdi-map-marker-outline" />
+        <v-list-item to="/inventory/receipts" title="Receipts" prepend-icon="mdi-invoice-text-outline" />
+        <v-list-item to="/inventory/lots" title="Ingredient lots" prepend-icon="mdi-archive-outline" />
+        <v-list-item to="/inventory/lot-details" title="Lot details" prepend-icon="mdi-clipboard-text-outline" />
+        <v-list-item to="/inventory/movements" title="Movements" prepend-icon="mdi-swap-horizontal" />
+        <v-list-item to="/inventory/usage" title="Usage" prepend-icon="mdi-fire" />
+        <v-list-item to="/inventory/adjustments" title="Adjustments" prepend-icon="mdi-tune-vertical" />
+        <v-list-item to="/inventory/transfers" title="Transfers" prepend-icon="mdi-truck-fast-outline" />
+        <v-list-item to="/inventory/beer-lots" title="Beer lots" prepend-icon="mdi-beer-outline" />
+      </v-list-group>
+    </v-list>
   </v-navigation-drawer>
 
   <v-main class="app-main">
@@ -86,10 +96,6 @@ function toggleDrawer() {
     drawer.value = !drawer.value
     return
   }
-  rail.value = !rail.value
-}
-
-function toggleRail() {
   rail.value = !rail.value
 }
 
@@ -145,8 +151,23 @@ watch(
   border-radius: 8px;
 }
 
-.drawer-footer {
-  padding: 16px;
+.nav-group :deep(.v-list-group__items .v-list-item) {
+  padding-inline-start: 12px !important;
+}
+
+.nav-group :deep(.v-list-group__items) {
+  padding-inline-start: 4px;
+}
+
+.nav-group {
+  --v-list-indent: 0px;
+  --list-indent-size: 0px;
+}
+
+.app-drawer.v-navigation-drawer--rail :deep(.v-list-item__content) {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .theme-button {

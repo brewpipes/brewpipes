@@ -7,22 +7,12 @@ CREATE TABLE IF NOT EXISTS batch (
     uuid         uuid NOT NULL DEFAULT gen_random_uuid(),
 
     short_name   varchar(255) NOT NULL,
-    status       varchar(32) NOT NULL DEFAULT 'planned',
     brew_date    date,
     notes        text,
 
     created_at   timestamptz NOT NULL DEFAULT timezone('utc', now()),
     updated_at   timestamptz NOT NULL DEFAULT timezone('utc', now()),
-    deleted_at   timestamptz,
-    CONSTRAINT batch_status_check CHECK (status IN (
-        'planned',
-        'brewing',
-        'fermenting',
-        'conditioning',
-        'packaging',
-        'completed',
-        'archived'
-    ))
+    deleted_at   timestamptz
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS batch_uuid_idx ON batch(uuid);
@@ -35,7 +25,6 @@ CREATE TABLE IF NOT EXISTS volume (
     description      text,
     amount           bigint NOT NULL,
     amount_unit      varchar(7) NOT NULL,
-    parent_volume_id int REFERENCES volume(id),
 
     created_at       timestamptz NOT NULL DEFAULT timezone('utc', now()),
     updated_at       timestamptz NOT NULL DEFAULT timezone('utc', now()),
@@ -43,7 +32,28 @@ CREATE TABLE IF NOT EXISTS volume (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS volume_uuid_idx ON volume(uuid);
-CREATE INDEX IF NOT EXISTS volume_parent_id_idx ON volume(parent_volume_id);
+
+CREATE TABLE IF NOT EXISTS volume_relation (
+    id               serial PRIMARY KEY,
+    uuid             uuid NOT NULL DEFAULT gen_random_uuid(),
+
+    parent_volume_id int NOT NULL REFERENCES volume(id),
+    child_volume_id  int NOT NULL REFERENCES volume(id),
+    relation_type    varchar(16) NOT NULL,
+    amount           bigint NOT NULL,
+    amount_unit      varchar(7) NOT NULL,
+
+    created_at       timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at       timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at       timestamptz,
+    CONSTRAINT volume_relation_parent_child_check CHECK (parent_volume_id <> child_volume_id),
+    CONSTRAINT volume_relation_type_check CHECK (relation_type IN ('split', 'blend')),
+    CONSTRAINT volume_relation_amount_check CHECK (amount > 0)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS volume_relation_uuid_idx ON volume_relation(uuid);
+CREATE INDEX IF NOT EXISTS volume_relation_parent_volume_id_idx ON volume_relation(parent_volume_id);
+CREATE INDEX IF NOT EXISTS volume_relation_child_volume_id_idx ON volume_relation(child_volume_id);
 
 CREATE TABLE IF NOT EXISTS vessel (
     id             serial PRIMARY KEY,
@@ -116,24 +126,50 @@ CREATE TABLE IF NOT EXISTS batch_volume (
 
     batch_id    int NOT NULL REFERENCES batch(id),
     volume_id   int NOT NULL REFERENCES volume(id),
-    phase       varchar(32) NOT NULL,
+    liquid_phase varchar(16) NOT NULL,
     phase_at    timestamptz NOT NULL DEFAULT timezone('utc', now()),
 
     created_at  timestamptz NOT NULL DEFAULT timezone('utc', now()),
     updated_at  timestamptz NOT NULL DEFAULT timezone('utc', now()),
     deleted_at  timestamptz,
-    CONSTRAINT batch_volume_phase_check CHECK (phase IN (
+    CONSTRAINT batch_volume_liquid_phase_check CHECK (liquid_phase IN (
+        'water',
         'wort',
-        'beer',
-        'brite',
-        'packaging',
-        'finished'
+        'beer'
     ))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS batch_volume_uuid_idx ON batch_volume(uuid);
 CREATE INDEX IF NOT EXISTS batch_volume_batch_id_idx ON batch_volume(batch_id);
 CREATE INDEX IF NOT EXISTS batch_volume_volume_id_idx ON batch_volume(volume_id);
+
+CREATE TABLE IF NOT EXISTS batch_process_phase (
+    id            serial PRIMARY KEY,
+    uuid          uuid NOT NULL DEFAULT gen_random_uuid(),
+
+    batch_id      int NOT NULL REFERENCES batch(id),
+    process_phase varchar(32) NOT NULL,
+    phase_at      timestamptz NOT NULL DEFAULT timezone('utc', now()),
+
+    created_at    timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    updated_at    timestamptz NOT NULL DEFAULT timezone('utc', now()),
+    deleted_at    timestamptz,
+    CONSTRAINT batch_process_phase_check CHECK (process_phase IN (
+        'planning',
+        'mashing',
+        'heating',
+        'boiling',
+        'cooling',
+        'fermenting',
+        'conditioning',
+        'packaging',
+        'finished'
+    ))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS batch_process_phase_uuid_idx ON batch_process_phase(uuid);
+CREATE INDEX IF NOT EXISTS batch_process_phase_batch_id_idx ON batch_process_phase(batch_id);
+CREATE INDEX IF NOT EXISTS batch_process_phase_phase_at_idx ON batch_process_phase(phase_at);
 
 CREATE TABLE IF NOT EXISTS batch_relation (
     id               serial PRIMARY KEY,
@@ -162,7 +198,7 @@ CREATE TABLE IF NOT EXISTS addition (
     occupancy_id        int REFERENCES occupancy(id),
     addition_type       varchar(32) NOT NULL,
     stage               varchar(32),
-    inventory_lot_uuid  uuid NOT NULL,
+    inventory_lot_uuid  uuid,
     amount              bigint NOT NULL,
     amount_unit         varchar(7) NOT NULL,
     added_at            timestamptz NOT NULL DEFAULT timezone('utc', now()),
@@ -183,7 +219,11 @@ CREATE TABLE IF NOT EXISTS addition (
         'water_chem',
         'gas',
         'other'
-    ))
+    )),
+    CONSTRAINT addition_inventory_lot_check CHECK (
+        (addition_type IN ('malt', 'hop', 'yeast', 'adjunct') AND inventory_lot_uuid IS NOT NULL)
+        OR (addition_type NOT IN ('malt', 'hop', 'yeast', 'adjunct'))
+    )
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS addition_uuid_idx ON addition(uuid);

@@ -45,18 +45,18 @@
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory" />
         </template>
-        <v-list-item to="/inventory" title="Overview" prepend-icon="mdi-view-dashboard-outline" />
-        <v-list-item to="/inventory/ingredients" title="Ingredients" prepend-icon="mdi-seed-outline" />
-        <v-list-item to="/inventory/ingredient-details" title="Ingredient details" prepend-icon="mdi-flask-outline" />
-        <v-list-item to="/inventory/locations" title="Stock locations" prepend-icon="mdi-map-marker-outline" />
-        <v-list-item to="/inventory/receipts" title="Receipts" prepend-icon="mdi-invoice-text-outline" />
-        <v-list-item to="/inventory/lots" title="Ingredient lots" prepend-icon="mdi-archive-outline" />
-        <v-list-item to="/inventory/lot-details" title="Lot details" prepend-icon="mdi-clipboard-text-outline" />
-        <v-list-item to="/inventory/movements" title="Movements" prepend-icon="mdi-swap-horizontal" />
-        <v-list-item to="/inventory/usage" title="Usage" prepend-icon="mdi-fire" />
-        <v-list-item to="/inventory/adjustments" title="Adjustments" prepend-icon="mdi-tune-vertical" />
-        <v-list-item to="/inventory/transfers" title="Transfers" prepend-icon="mdi-truck-fast-outline" />
-        <v-list-item to="/inventory/beer-lots" title="Beer lots" prepend-icon="mdi-beer-outline" />
+        <v-list-item to="/inventory" title="Overview" />
+        <v-list-item to="/inventory/ingredients" title="Ingredients" />
+        <v-list-item to="/inventory/ingredient-details" title="Ingredient details" />
+        <v-list-item to="/inventory/locations" title="Stock locations" />
+        <v-list-item to="/inventory/receipts" title="Receipts" />
+        <v-list-item to="/inventory/lots" title="Ingredient lots" />
+        <v-list-item to="/inventory/lot-details" title="Lot details" />
+        <v-list-item to="/inventory/movements" title="Movements" />
+        <v-list-item to="/inventory/usage" title="Usage" />
+        <v-list-item to="/inventory/adjustments" title="Adjustments" />
+        <v-list-item to="/inventory/transfers" title="Transfers" />
+        <v-list-item to="/inventory/beer-lots" title="Beer lots" />
       </v-list-group>
     </v-list>
   </v-navigation-drawer>
@@ -152,7 +152,7 @@ watch(
 }
 
 .nav-group :deep(.v-list-group__items .v-list-item) {
-  padding-inline-start: 12px !important;
+  padding-inline-start: 60px !important;
 }
 
 .nav-group :deep(.v-list-group__items) {

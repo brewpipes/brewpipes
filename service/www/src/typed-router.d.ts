@@ -19,8 +19,10 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
-    '/batches': RouteRecordInfo<'/batches', '/batches', Record<never, never>, Record<never, never>, '/batches/[uuid]'>,
-    '/batches/[uuid]': RouteRecordInfo<'/batches/[uuid]', '/batches/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
+    '/batches/': RouteRecordInfo<'/batches/', '/batches', Record<never, never>, Record<never, never>>,
+    '/batches/[uuid]/': RouteRecordInfo<'/batches/[uuid]/', '/batches/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
+    '/batches/all': RouteRecordInfo<'/batches/all', '/batches/all', Record<never, never>, Record<never, never>>,
+    '/batches/in-progress': RouteRecordInfo<'/batches/in-progress', '/batches/in-progress', Record<never, never>, Record<never, never>>,
     '/inventory/': RouteRecordInfo<'/inventory/', '/inventory', Record<never, never>, Record<never, never>>,
     '/inventory/activity': RouteRecordInfo<'/inventory/activity', '/inventory/activity', Record<never, never>, Record<never, never>>,
     '/inventory/adjustments-transfers': RouteRecordInfo<'/inventory/adjustments-transfers', '/inventory/adjustments-transfers', Record<never, never>, Record<never, never>>,
@@ -55,12 +57,20 @@ declare module 'vue-router/auto-routes' {
       routes: '/'
       views: never
     }
-    'src/pages/batches.vue': {
-      routes: '/batches' | '/batches/[uuid]'
-      views: 'default'
+    'src/pages/batches/index.vue': {
+      routes: '/batches/'
+      views: never
     }
-    'src/pages/batches/[uuid].vue': {
-      routes: '/batches/[uuid]'
+    'src/pages/batches/[uuid]/index.vue': {
+      routes: '/batches/[uuid]/'
+      views: never
+    }
+    'src/pages/batches/all.vue': {
+      routes: '/batches/all'
+      views: never
+    }
+    'src/pages/batches/in-progress.vue': {
+      routes: '/batches/in-progress'
       views: never
     }
     'src/pages/inventory/index.vue': {

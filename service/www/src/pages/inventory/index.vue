@@ -1,7 +1,7 @@
 <template>
   <v-container class="inventory-page" fluid>
     <v-row align="stretch">
-      <v-col cols="12" md="6" lg="4">
+      <v-col cols="12" lg="4" md="6">
         <v-card class="section-card">
           <v-card-title>Activity</v-card-title>
           <v-card-text>
@@ -12,7 +12,7 @@
           </v-card-actions>
         </v-card>
       </v-col>
-      <v-col cols="12" md="6" lg="4">
+      <v-col cols="12" lg="4" md="6">
         <v-card class="section-card">
           <v-card-title>Product</v-card-title>
           <v-card-text>
@@ -23,7 +23,7 @@
           </v-card-actions>
         </v-card>
       </v-col>
-      <v-col cols="12" md="6" lg="4">
+      <v-col cols="12" lg="4" md="6">
         <v-card class="section-card">
           <v-card-title>Ingredients</v-card-title>
           <v-card-text>
@@ -34,7 +34,7 @@
           </v-card-actions>
         </v-card>
       </v-col>
-      <v-col cols="12" md="6" lg="4">
+      <v-col cols="12" lg="4" md="6">
         <v-card class="section-card">
           <v-card-title>Adjustments & Transfers</v-card-title>
           <v-card-text>
@@ -45,7 +45,7 @@
           </v-card-actions>
         </v-card>
       </v-col>
-      <v-col cols="12" md="6" lg="4">
+      <v-col cols="12" lg="4" md="6">
         <v-card class="section-card">
           <v-card-title>Locations</v-card-title>
           <v-card-text>

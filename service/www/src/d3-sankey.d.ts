@@ -28,16 +28,15 @@ declare module 'd3-sankey' {
     width?: number
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export function sankey<N = any, L = any>(): SankeyGenerator<N, L>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export function sankeyLinkHorizontal<L = any>(): (link: L) => string | null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export function sankeyLeft<N = any>(node: N, n: number): number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export function sankeyRight<N = any>(node: N, n: number): number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export function sankeyCenter<N = any>(node: N, n: number): number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export function sankeyJustify<N = any>(node: N, n: number): number
+  export function sankey<N = any, L = any> (): SankeyGenerator<N, L>
+
+  export function sankeyLinkHorizontal<L = any> (): (link: L) => string | null
+
+  export function sankeyLeft<N = any> (node: N, n: number): number
+
+  export function sankeyRight<N = any> (node: N, n: number): number
+
+  export function sankeyCenter<N = any> (node: N, n: number): number
+
+  export function sankeyJustify<N = any> (node: N, n: number): number
 }

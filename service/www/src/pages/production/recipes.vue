@@ -16,10 +16,22 @@
           single-line
           variant="outlined"
         />
-        <v-btn class="ml-2" size="small" variant="text" :loading="loading" @click="loadRecipes">
+        <v-btn
+          class="ml-2"
+          :loading="loading"
+          size="small"
+          variant="text"
+          @click="loadRecipes"
+        >
           Refresh
         </v-btn>
-        <v-btn class="ml-2" color="primary" size="small" variant="text" @click="openCreateDialog">
+        <v-btn
+          class="ml-2"
+          color="primary"
+          size="small"
+          variant="text"
+          @click="openCreateDialog"
+        >
           New recipe
         </v-btn>
       </v-card-title>
@@ -35,12 +47,12 @@
         </v-alert>
 
         <v-data-table
-          :headers="headers"
-          :items="filteredRecipes"
-          :loading="loading"
           class="data-table"
           density="compact"
+          :headers="headers"
           item-value="id"
+          :items="filteredRecipes"
+          :loading="loading"
         >
           <template #item.style_name="{ item }">
             <v-chip v-if="item.style_name" size="small" variant="tonal">
@@ -76,7 +88,13 @@
           <template #no-data>
             <div class="text-center py-4">
               <div class="text-body-2 text-medium-emphasis">No recipes yet.</div>
-              <v-btn class="mt-2" color="primary" size="small" variant="text" @click="openCreateDialog">
+              <v-btn
+                class="mt-2"
+                color="primary"
+                size="small"
+                variant="text"
+                @click="openCreateDialog"
+              >
                 Create your first recipe
               </v-btn>
             </div>
@@ -132,21 +150,21 @@
         <v-form ref="formRef" @submit.prevent="saveRecipe">
           <v-text-field
             v-model="recipeForm.name"
-            :rules="[rules.required]"
             density="comfortable"
             label="Name"
             placeholder="West Coast IPA"
+            :rules="[rules.required]"
           />
 
           <v-combobox
             v-model="recipeForm.style"
-            :items="styleItems"
-            :loading="stylesLoading"
             density="comfortable"
             hint="Select an existing style or type a new one"
             item-title="name"
             item-value="id"
+            :items="styleItems"
             label="Style"
+            :loading="stylesLoading"
             persistent-hint
             return-object
             @update:search="onStyleSearch"
@@ -191,219 +209,219 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useProductionApi, type Recipe, type Style } from '@/composables/useProductionApi'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { type Recipe, type Style, useProductionApi } from '@/composables/useProductionApi'
 
-const {
-  getRecipes,
-  getStyles,
-  createRecipe,
-  updateRecipe,
-  normalizeText,
-  formatDateTime,
-} = useProductionApi()
+  const {
+    getRecipes,
+    getStyles,
+    createRecipe,
+    updateRecipe,
+    normalizeText,
+    formatDateTime,
+  } = useProductionApi()
 
-// State
-const recipes = ref<Recipe[]>([])
-const styles = ref<Style[]>([])
-const loading = ref(false)
-const stylesLoading = ref(false)
-const saving = ref(false)
-const errorMessage = ref('')
-const search = ref('')
+  // State
+  const recipes = ref<Recipe[]>([])
+  const styles = ref<Style[]>([])
+  const loading = ref(false)
+  const stylesLoading = ref(false)
+  const saving = ref(false)
+  const errorMessage = ref('')
+  const search = ref('')
 
-// Dialogs
-const viewDialog = ref(false)
-const recipeDialog = ref(false)
-const selectedRecipe = ref<Recipe | null>(null)
-const editingRecipeId = ref<number | null>(null)
+  // Dialogs
+  const viewDialog = ref(false)
+  const recipeDialog = ref(false)
+  const selectedRecipe = ref<Recipe | null>(null)
+  const editingRecipeId = ref<number | null>(null)
 
-// Form
-const formRef = ref()
-const styleSearchQuery = ref('')
-const recipeForm = reactive({
-  name: '',
-  style: null as Style | string | null,
-  notes: '',
-})
+  // Form
+  const formRef = ref()
+  const styleSearchQuery = ref('')
+  const recipeForm = reactive({
+    name: '',
+    style: null as Style | string | null,
+    notes: '',
+  })
 
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
 
-const rules = {
-  required: (v: string) => !!v?.trim() || 'Required',
-}
-
-// Table configuration
-const headers = [
-  { title: 'Name', key: 'name', sortable: true },
-  { title: 'Style', key: 'style_name', sortable: true },
-  { title: 'Notes', key: 'notes', sortable: false },
-  { title: 'Updated', key: 'updated_at', sortable: true },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
-]
-
-// Computed
-const isEditing = computed(() => editingRecipeId.value !== null)
-
-const isFormValid = computed(() => {
-  return recipeForm.name.trim().length > 0
-})
-
-const filteredRecipes = computed(() => {
-  if (!search.value) {
-    return recipes.value
-  }
-  const query = search.value.toLowerCase()
-  return recipes.value.filter(
-    (recipe) =>
-      recipe.name.toLowerCase().includes(query) ||
-      (recipe.style_name?.toLowerCase().includes(query) ?? false) ||
-      (recipe.notes?.toLowerCase().includes(query) ?? false),
-  )
-})
-
-const styleItems = computed(() => styles.value)
-
-// Lifecycle
-onMounted(async () => {
-  await Promise.all([loadRecipes(), loadStyles()])
-})
-
-// Methods
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function loadRecipes() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    recipes.value = await getRecipes()
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load recipes'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadStyles() {
-  stylesLoading.value = true
-  try {
-    styles.value = await getStyles()
-  } catch (error) {
-    // Styles loading failure is non-critical, user can still type new styles
-    console.error('Failed to load styles:', error)
-  } finally {
-    stylesLoading.value = false
-  }
-}
-
-function onStyleSearch(query: string) {
-  styleSearchQuery.value = query
-}
-
-function openCreateDialog() {
-  editingRecipeId.value = null
-  recipeForm.name = ''
-  recipeForm.style = null
-  recipeForm.notes = ''
-  styleSearchQuery.value = ''
-  recipeDialog.value = true
-}
-
-function openViewDialog(recipe: Recipe) {
-  selectedRecipe.value = recipe
-  viewDialog.value = true
-}
-
-function openEditDialog(recipe: Recipe) {
-  editingRecipeId.value = recipe.id
-  recipeForm.name = recipe.name
-  recipeForm.notes = recipe.notes ?? ''
-
-  // Set the style - find matching style object or use the name as string
-  if (recipe.style_id) {
-    const matchingStyle = styles.value.find((s) => s.id === recipe.style_id)
-    recipeForm.style = matchingStyle ?? recipe.style_name
-  } else if (recipe.style_name) {
-    recipeForm.style = recipe.style_name
-  } else {
-    recipeForm.style = null
+  const rules = {
+    required: (v: string) => !!v?.trim() || 'Required',
   }
 
-  styleSearchQuery.value = ''
-  recipeDialog.value = true
-}
+  // Table configuration
+  const headers = [
+    { title: 'Name', key: 'name', sortable: true },
+    { title: 'Style', key: 'style_name', sortable: true },
+    { title: 'Notes', key: 'notes', sortable: false },
+    { title: 'Updated', key: 'updated_at', sortable: true },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  ]
 
-function openEditDialogFromView() {
-  if (selectedRecipe.value) {
-    viewDialog.value = false
-    openEditDialog(selectedRecipe.value)
-  }
-}
+  // Computed
+  const isEditing = computed(() => editingRecipeId.value !== null)
 
-function closeRecipeDialog() {
-  recipeDialog.value = false
-  editingRecipeId.value = null
-}
+  const isFormValid = computed(() => {
+    return recipeForm.name.trim().length > 0
+  })
 
-async function saveRecipe() {
-  if (!isFormValid.value) {
-    return
-  }
-
-  saving.value = true
-  errorMessage.value = ''
-
-  try {
-    // Determine style_id and style_name from the form value
-    let styleId: number | null = null
-    let styleName: string | null = null
-
-    if (recipeForm.style) {
-      if (typeof recipeForm.style === 'object' && recipeForm.style.id) {
-        // User selected an existing style
-        styleId = recipeForm.style.id
-        styleName = recipeForm.style.name
-      } else if (typeof recipeForm.style === 'string') {
-        // User typed a new style name
-        styleName = recipeForm.style.trim() || null
-      }
+  const filteredRecipes = computed(() => {
+    if (!search.value) {
+      return recipes.value
     }
+    const query = search.value.toLowerCase()
+    return recipes.value.filter(
+      recipe =>
+        recipe.name.toLowerCase().includes(query)
+        || (recipe.style_name?.toLowerCase().includes(query) ?? false)
+        || (recipe.notes?.toLowerCase().includes(query) ?? false),
+    )
+  })
 
-    const payload = {
-      name: recipeForm.name.trim(),
-      style_id: styleId,
-      style_name: styleName,
-      notes: normalizeText(recipeForm.notes),
-    }
+  const styleItems = computed(() => styles.value)
 
-    if (isEditing.value && editingRecipeId.value) {
-      await updateRecipe(editingRecipeId.value, payload)
-      showNotice('Recipe updated')
-    } else {
-      await createRecipe(payload)
-      showNotice('Recipe created')
-    }
-
-    closeRecipeDialog()
+  // Lifecycle
+  onMounted(async () => {
     await Promise.all([loadRecipes(), loadStyles()])
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to save recipe'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  } finally {
-    saving.value = false
+  })
+
+  // Methods
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
   }
-}
+
+  async function loadRecipes () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      recipes.value = await getRecipes()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load recipes'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadStyles () {
+    stylesLoading.value = true
+    try {
+      styles.value = await getStyles()
+    } catch (error) {
+      // Styles loading failure is non-critical, user can still type new styles
+      console.error('Failed to load styles:', error)
+    } finally {
+      stylesLoading.value = false
+    }
+  }
+
+  function onStyleSearch (query: string) {
+    styleSearchQuery.value = query
+  }
+
+  function openCreateDialog () {
+    editingRecipeId.value = null
+    recipeForm.name = ''
+    recipeForm.style = null
+    recipeForm.notes = ''
+    styleSearchQuery.value = ''
+    recipeDialog.value = true
+  }
+
+  function openViewDialog (recipe: Recipe) {
+    selectedRecipe.value = recipe
+    viewDialog.value = true
+  }
+
+  function openEditDialog (recipe: Recipe) {
+    editingRecipeId.value = recipe.id
+    recipeForm.name = recipe.name
+    recipeForm.notes = recipe.notes ?? ''
+
+    // Set the style - find matching style object or use the name as string
+    if (recipe.style_id) {
+      const matchingStyle = styles.value.find(s => s.id === recipe.style_id)
+      recipeForm.style = matchingStyle ?? recipe.style_name
+    } else if (recipe.style_name) {
+      recipeForm.style = recipe.style_name
+    } else {
+      recipeForm.style = null
+    }
+
+    styleSearchQuery.value = ''
+    recipeDialog.value = true
+  }
+
+  function openEditDialogFromView () {
+    if (selectedRecipe.value) {
+      viewDialog.value = false
+      openEditDialog(selectedRecipe.value)
+    }
+  }
+
+  function closeRecipeDialog () {
+    recipeDialog.value = false
+    editingRecipeId.value = null
+  }
+
+  async function saveRecipe () {
+    if (!isFormValid.value) {
+      return
+    }
+
+    saving.value = true
+    errorMessage.value = ''
+
+    try {
+      // Determine style_id and style_name from the form value
+      let styleId: number | null = null
+      let styleName: string | null = null
+
+      if (recipeForm.style) {
+        if (typeof recipeForm.style === 'object' && recipeForm.style.id) {
+          // User selected an existing style
+          styleId = recipeForm.style.id
+          styleName = recipeForm.style.name
+        } else if (typeof recipeForm.style === 'string') {
+          // User typed a new style name
+          styleName = recipeForm.style.trim() || null
+        }
+      }
+
+      const payload = {
+        name: recipeForm.name.trim(),
+        style_id: styleId,
+        style_name: styleName,
+        notes: normalizeText(recipeForm.notes),
+      }
+
+      if (isEditing.value && editingRecipeId.value) {
+        await updateRecipe(editingRecipeId.value, payload)
+        showNotice('Recipe updated')
+      } else {
+        await createRecipe(payload)
+        showNotice('Recipe created')
+      }
+
+      closeRecipeDialog()
+      await Promise.all([loadRecipes(), loadStyles()])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to save recipe'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    } finally {
+      saving.value = false
+    }
+  }
 </script>
 
 <style scoped>

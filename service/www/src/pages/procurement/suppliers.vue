@@ -4,10 +4,16 @@
       <v-card-title class="d-flex align-center">
         Suppliers
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="loadSuppliers">
+        <v-btn :loading="loading" size="small" variant="text" @click="loadSuppliers">
           Refresh
         </v-btn>
-        <v-btn class="ml-2" color="primary" size="small" variant="text" @click="createSupplierDialog = true">
+        <v-btn
+          class="ml-2"
+          color="primary"
+          size="small"
+          variant="text"
+          @click="createSupplierDialog = true"
+        >
           New supplier
         </v-btn>
       </v-card-title>
@@ -107,112 +113,112 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue'
-import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { onMounted, reactive, ref } from 'vue'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
 
-type Supplier = {
-  id: number
-  uuid: string
-  name: string
-  contact_name: string | null
-  email: string | null
-  phone: string | null
-  address_line1: string | null
-  address_line2: string | null
-  city: string | null
-  region: string | null
-  postal_code: string | null
-  country: string | null
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, formatDateTime } = useProcurementApi()
-
-const suppliers = ref<Supplier[]>([])
-const loading = ref(false)
-const errorMessage = ref('')
-const createSupplierDialog = ref(false)
-
-const supplierForm = reactive({
-  name: '',
-  contact_name: '',
-  email: '',
-  phone: '',
-  address_line1: '',
-  address_line2: '',
-  city: '',
-  region: '',
-  postal_code: '',
-  country: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-onMounted(async () => {
-  await loadSuppliers()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function loadSuppliers() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    suppliers.value = await request<Supplier[]>('/suppliers')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load suppliers'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type Supplier = {
+    id: number
+    uuid: string
+    name: string
+    contact_name: string | null
+    email: string | null
+    phone: string | null
+    address_line1: string | null
+    address_line2: string | null
+    city: string | null
+    region: string | null
+    postal_code: string | null
+    country: string | null
+    created_at: string
+    updated_at: string
   }
-}
 
-async function createSupplier() {
-  try {
-    const payload = {
-      name: supplierForm.name.trim(),
-      contact_name: normalizeText(supplierForm.contact_name),
-      email: normalizeText(supplierForm.email),
-      phone: normalizeText(supplierForm.phone),
-      address_line1: normalizeText(supplierForm.address_line1),
-      address_line2: normalizeText(supplierForm.address_line2),
-      city: normalizeText(supplierForm.city),
-      region: normalizeText(supplierForm.region),
-      postal_code: normalizeText(supplierForm.postal_code),
-      country: normalizeText(supplierForm.country),
-    }
-    await request<Supplier>('/suppliers', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    supplierForm.name = ''
-    supplierForm.contact_name = ''
-    supplierForm.email = ''
-    supplierForm.phone = ''
-    supplierForm.address_line1 = ''
-    supplierForm.address_line2 = ''
-    supplierForm.city = ''
-    supplierForm.region = ''
-    supplierForm.postal_code = ''
-    supplierForm.country = ''
+  const { request, normalizeText, formatDateTime } = useProcurementApi()
+
+  const suppliers = ref<Supplier[]>([])
+  const loading = ref(false)
+  const errorMessage = ref('')
+  const createSupplierDialog = ref(false)
+
+  const supplierForm = reactive({
+    name: '',
+    contact_name: '',
+    email: '',
+    phone: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    region: '',
+    postal_code: '',
+    country: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  onMounted(async () => {
     await loadSuppliers()
-    createSupplierDialog.value = false
-    showNotice('Supplier created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create supplier'
-    errorMessage.value = message
-    showNotice(message, 'error')
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
   }
-}
+
+  async function loadSuppliers () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      suppliers.value = await request<Supplier[]>('/suppliers')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load suppliers'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createSupplier () {
+    try {
+      const payload = {
+        name: supplierForm.name.trim(),
+        contact_name: normalizeText(supplierForm.contact_name),
+        email: normalizeText(supplierForm.email),
+        phone: normalizeText(supplierForm.phone),
+        address_line1: normalizeText(supplierForm.address_line1),
+        address_line2: normalizeText(supplierForm.address_line2),
+        city: normalizeText(supplierForm.city),
+        region: normalizeText(supplierForm.region),
+        postal_code: normalizeText(supplierForm.postal_code),
+        country: normalizeText(supplierForm.country),
+      }
+      await request<Supplier>('/suppliers', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      supplierForm.name = ''
+      supplierForm.contact_name = ''
+      supplierForm.email = ''
+      supplierForm.phone = ''
+      supplierForm.address_line1 = ''
+      supplierForm.address_line2 = ''
+      supplierForm.city = ''
+      supplierForm.region = ''
+      supplierForm.postal_code = ''
+      supplierForm.country = ''
+      await loadSuppliers()
+      createSupplierDialog.value = false
+      showNotice('Supplier created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create supplier'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
 </script>
 
 <style scoped>

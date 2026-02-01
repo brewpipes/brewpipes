@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         Product
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="loadBeerLots">
+        <v-btn :loading="loading" size="small" variant="text" @click="loadBeerLots">
           Refresh
         </v-btn>
       </v-card-title>
@@ -88,87 +88,87 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue'
-import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { onMounted, reactive, ref } from 'vue'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
 
-type BeerLot = {
-  id: number
-  uuid: string
-  production_batch_uuid: string
-  lot_code: string
-  packaged_at: string
-  notes: string
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, normalizeDateTime, formatDateTime } = useInventoryApi()
-
-const beerLots = ref<BeerLot[]>([])
-const errorMessage = ref('')
-const loading = ref(false)
-const activeTab = ref('stock')
-
-const beerLotForm = reactive({
-  production_batch_uuid: '',
-  lot_code: '',
-  packaged_at: '',
-  notes: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-onMounted(async () => {
-  await loadBeerLots()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function loadBeerLots() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    beerLots.value = await request<BeerLot[]>('/beer-lots')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load product lots'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type BeerLot = {
+    id: number
+    uuid: string
+    production_batch_uuid: string
+    lot_code: string
+    packaged_at: string
+    notes: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function createBeerLot() {
-  try {
-    const payload = {
-      production_batch_uuid: beerLotForm.production_batch_uuid.trim(),
-      lot_code: normalizeText(beerLotForm.lot_code),
-      packaged_at: normalizeDateTime(beerLotForm.packaged_at),
-      notes: normalizeText(beerLotForm.notes),
-    }
-    await request<BeerLot>('/beer-lots', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    beerLotForm.production_batch_uuid = ''
-    beerLotForm.lot_code = ''
-    beerLotForm.packaged_at = ''
-    beerLotForm.notes = ''
+  const { request, normalizeText, normalizeDateTime, formatDateTime } = useInventoryApi()
+
+  const beerLots = ref<BeerLot[]>([])
+  const errorMessage = ref('')
+  const loading = ref(false)
+  const activeTab = ref('stock')
+
+  const beerLotForm = reactive({
+    production_batch_uuid: '',
+    lot_code: '',
+    packaged_at: '',
+    notes: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  onMounted(async () => {
     await loadBeerLots()
-    showNotice('Product lot created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create product lot'
-    errorMessage.value = message
-    showNotice(message, 'error')
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
   }
-}
+
+  async function loadBeerLots () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      beerLots.value = await request<BeerLot[]>('/beer-lots')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load product lots'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createBeerLot () {
+    try {
+      const payload = {
+        production_batch_uuid: beerLotForm.production_batch_uuid.trim(),
+        lot_code: normalizeText(beerLotForm.lot_code),
+        packaged_at: normalizeDateTime(beerLotForm.packaged_at),
+        notes: normalizeText(beerLotForm.notes),
+      }
+      await request<BeerLot>('/beer-lots', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      beerLotForm.production_batch_uuid = ''
+      beerLotForm.lot_code = ''
+      beerLotForm.packaged_at = ''
+      beerLotForm.notes = ''
+      await loadBeerLots()
+      showNotice('Product lot created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create product lot'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
 </script>
 
 <style scoped>

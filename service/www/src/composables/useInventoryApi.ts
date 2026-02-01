@@ -2,7 +2,7 @@ import { useApiClient } from '@/composables/useApiClient'
 
 const inventoryApiBase = import.meta.env.VITE_INVENTORY_API_URL ?? '/api'
 
-export function useInventoryApi() {
+export function useInventoryApi () {
   const { request } = useApiClient(inventoryApiBase)
 
   const normalizeText = (value: string) => {

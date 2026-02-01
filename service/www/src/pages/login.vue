@@ -20,29 +20,41 @@ meta:
       <v-form @submit.prevent="submit">
         <v-text-field
           v-model="username"
-          density="comfortable"
-          label="Username"
           autocomplete="username"
           autofocus
+          density="comfortable"
           hide-details="auto"
+          label="Username"
         />
         <v-text-field
           v-model="password"
-          density="comfortable"
-          label="Password"
-          autocomplete="current-password"
-          :type="showPassword ? 'text' : 'password'"
           :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+          autocomplete="current-password"
+          density="comfortable"
           hide-details="auto"
+          label="Password"
+          :type="showPassword ? 'text' : 'password'"
           @click:append-inner="showPassword = !showPassword"
         />
 
-        <v-btn class="mt-4" block color="primary" :loading="submitting" type="submit">
+        <v-btn
+          block
+          class="mt-4"
+          color="primary"
+          :loading="submitting"
+          type="submit"
+        >
           Sign in
         </v-btn>
       </v-form>
 
-      <v-alert v-if="errorMessage" class="mt-4" density="compact" type="error" variant="tonal">
+      <v-alert
+        v-if="errorMessage"
+        class="mt-4"
+        density="compact"
+        type="error"
+        variant="tonal"
+      >
         {{ errorMessage }}
       </v-alert>
     </v-card-text>
@@ -50,47 +62,47 @@ meta:
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+  import { computed, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
-const router = useRouter()
-const route = useRoute()
+  const authStore = useAuthStore()
+  const router = useRouter()
+  const route = useRoute()
 
-const username = ref('')
-const password = ref('')
-const showPassword = ref(false)
-const submitting = ref(false)
-const errorMessage = ref('')
+  const username = ref('')
+  const password = ref('')
+  const showPassword = ref(false)
+  const submitting = ref(false)
+  const errorMessage = ref('')
 
-const redirectPath = computed(() => {
-  const redirect = route.query.redirect
-  if (typeof redirect === 'string' && redirect.startsWith('/')) {
-    return redirect
+  const redirectPath = computed(() => {
+    const redirect = route.query.redirect
+    if (typeof redirect === 'string' && redirect.startsWith('/')) {
+      return redirect
+    }
+    return '/'
+  })
+
+  async function submit () {
+    const user = username.value.trim()
+    if (!user || !password.value) {
+      errorMessage.value = 'Enter both username and password to continue.'
+      return
+    }
+
+    submitting.value = true
+    errorMessage.value = ''
+    try {
+      await authStore.login(user, password.value)
+      await router.replace(redirectPath.value)
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : 'Unable to sign in.'
+    } finally {
+      submitting.value = false
+      password.value = ''
+    }
   }
-  return '/'
-})
-
-const submit = async () => {
-  const user = username.value.trim()
-  if (!user || !password.value) {
-    errorMessage.value = 'Enter both username and password to continue.'
-    return
-  }
-
-  submitting.value = true
-  errorMessage.value = ''
-  try {
-    await authStore.login(user, password.value)
-    await router.replace(redirectPath.value)
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Unable to sign in.'
-  } finally {
-    submitting.value = false
-    password.value = ''
-  }
-}
 </script>
 
 <style scoped>

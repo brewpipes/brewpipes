@@ -8,10 +8,10 @@
             Vessel list
             <v-spacer />
             <v-btn
+              aria-label="Register vessel"
               icon="mdi-plus"
               size="small"
               variant="text"
-              aria-label="Register vessel"
               @click="createVesselDialog = true"
             />
           </v-card-title>
@@ -26,7 +26,7 @@
               {{ errorMessage }}
             </v-alert>
 
-            <v-list class="vessel-list" lines="two" active-color="primary">
+            <v-list active-color="primary" class="vessel-list" lines="two">
               <v-list-item
                 v-for="vessel in vessels"
                 :key="vessel.id"
@@ -61,7 +61,7 @@
             <v-icon class="mr-2" icon="mdi-clipboard-text-outline" />
             Vessel details
             <v-spacer />
-            <v-btn size="small" variant="text" :loading="loading" @click="refreshVessels">
+            <v-btn :loading="loading" size="small" variant="text" @click="refreshVessels">
               Refresh
             </v-btn>
             <v-btn size="small" variant="text" @click="clearSelection">Clear</v-btn>
@@ -91,7 +91,7 @@
                       <div class="text-body-2 text-medium-emphasis">
                         Capacity {{ formatVolumePreferred(selectedVessel.capacity, selectedVessel.capacity_unit) }}
                       </div>
-                      <div class="text-body-2 text-medium-emphasis" v-if="selectedVessel.make || selectedVessel.model">
+                      <div v-if="selectedVessel.make || selectedVessel.model" class="text-body-2 text-medium-emphasis">
                         {{ selectedVessel.make ?? 'Make not set' }} {{ selectedVessel.model ?? '' }}
                       </div>
                     </v-card-text>
@@ -120,19 +120,19 @@
                       <div class="text-overline mb-2">Current Occupancy</div>
 
                       <div v-if="selectedVesselOccupancy">
-                        <v-row dense align="center">
+                        <v-row align="center" dense>
                           <v-col cols="12" md="4">
                             <div class="text-caption text-medium-emphasis">Status</div>
                             <v-menu location="bottom">
                               <template #activator="{ props }">
                                 <v-chip
                                   v-bind="props"
-                                  :color="getOccupancyStatusColor(selectedVesselOccupancy.status)"
-                                  variant="tonal"
-                                  size="small"
-                                  class="mt-1 cursor-pointer"
                                   append-icon="mdi-menu-down"
+                                  class="mt-1 cursor-pointer"
+                                  :color="getOccupancyStatusColor(selectedVesselOccupancy.status)"
                                   :loading="updatingOccupancyStatus"
+                                  size="small"
+                                  variant="tonal"
                                 >
                                   {{ formatOccupancyStatus(selectedVesselOccupancy.status) }}
                                 </v-chip>
@@ -147,9 +147,9 @@
                                 >
                                   <template #prepend>
                                     <v-avatar
+                                      class="mr-2"
                                       :color="getOccupancyStatusColor(statusOption.value)"
                                       size="24"
-                                      class="mr-2"
                                     >
                                       <v-icon :icon="getOccupancyStatusIcon(statusOption.value)" size="14" />
                                     </v-avatar>
@@ -249,249 +249,249 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useApiClient } from '@/composables/useApiClient'
-import {
-  useProductionApi,
-  type OccupancyStatus,
-  type Occupancy,
-  OCCUPANCY_STATUS_VALUES,
-} from '@/composables/useProductionApi'
-import { useUnitPreferences, volumeOptions, type VolumeUnit } from '@/composables/useUnitPreferences'
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { useApiClient } from '@/composables/useApiClient'
+  import {
+    type Occupancy,
+    OCCUPANCY_STATUS_VALUES,
+    type OccupancyStatus,
+    useProductionApi,
+  } from '@/composables/useProductionApi'
+  import { useUnitPreferences, volumeOptions, type VolumeUnit } from '@/composables/useUnitPreferences'
 
-type Vessel = {
-  id: number
-  uuid: string
-  type: string
-  name: string
-  capacity: number
-  capacity_unit: VolumeUnit
-  make: string | null
-  model: string | null
-  status: 'active' | 'inactive' | 'retired'
-  created_at: string
-  updated_at: string
-}
-
-const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-
-const unitOptions = volumeOptions.map((opt) => opt.value)
-const vesselStatusOptions = ['active', 'inactive', 'retired']
-
-const vessels = ref<Vessel[]>([])
-const occupancies = ref<Occupancy[]>([])
-const selectedVesselId = ref<number | null>(null)
-const errorMessage = ref('')
-const loading = ref(false)
-const createVesselDialog = ref(false)
-const updatingOccupancyStatus = ref(false)
-
-const { request } = useApiClient(apiBase)
-const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
-const { formatVolumePreferred } = useUnitPreferences()
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const newVessel = reactive({
-  type: '',
-  name: '',
-  capacity: '',
-  capacity_unit: 'ml' as VolumeUnit,
-  status: 'active',
-  make: '',
-  model: '',
-})
-
-const selectedVessel = computed(() =>
-  vessels.value.find((vessel) => vessel.id === selectedVesselId.value) ?? null,
-)
-
-const occupancyMap = computed(
-  () => new Map(occupancies.value.map((occupancy) => [occupancy.vessel_id, occupancy])),
-)
-
-const selectedVesselOccupancy = computed(() => {
-  if (!selectedVesselId.value) return null
-  return occupancyMap.value.get(selectedVesselId.value) ?? null
-})
-
-const occupancyStatusOptions = computed(() =>
-  OCCUPANCY_STATUS_VALUES.map((status) => ({
-    value: status,
-    title: formatOccupancyStatus(status),
-  }))
-)
-
-onMounted(async () => {
-  await refreshVessels()
-})
-
-watch(selectedVesselId, async () => {
-  // Refresh occupancies when vessel selection changes
-  await loadOccupancies()
-})
-
-function selectVessel(id: number) {
-  selectedVesselId.value = id
-}
-
-function clearSelection() {
-  selectedVesselId.value = null
-}
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshVessels() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    const [vesselData] = await Promise.all([
-      request<Vessel[]>('/vessels'),
-      loadOccupancies(),
-    ])
-    vessels.value = vesselData
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load vessels'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  } finally {
-    loading.value = false
+  type Vessel = {
+    id: number
+    uuid: string
+    type: string
+    name: string
+    capacity: number
+    capacity_unit: VolumeUnit
+    make: string | null
+    model: string | null
+    status: 'active' | 'inactive' | 'retired'
+    created_at: string
+    updated_at: string
   }
-}
 
-async function loadOccupancies() {
-  try {
-    occupancies.value = await getActiveOccupancies()
-  } catch (error) {
-    console.error('Failed to load occupancies:', error)
-  }
-}
+  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
-async function createVessel() {
-  errorMessage.value = ''
-  try {
-    const payload = {
-      type: newVessel.type.trim(),
-      name: newVessel.name.trim(),
-      capacity: toNumber(newVessel.capacity),
-      capacity_unit: newVessel.capacity_unit,
-      status: newVessel.status,
-      make: normalizeText(newVessel.make),
-      model: normalizeText(newVessel.model),
-    }
-    await request<Vessel>('/vessels', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    showNotice('Vessel registered')
-    newVessel.type = ''
-    newVessel.name = ''
-    newVessel.capacity = ''
-    newVessel.make = ''
-    newVessel.model = ''
+  const unitOptions = volumeOptions.map(opt => opt.value)
+  const vesselStatusOptions = ['active', 'inactive', 'retired']
+
+  const vessels = ref<Vessel[]>([])
+  const occupancies = ref<Occupancy[]>([])
+  const selectedVesselId = ref<number | null>(null)
+  const errorMessage = ref('')
+  const loading = ref(false)
+  const createVesselDialog = ref(false)
+  const updatingOccupancyStatus = ref(false)
+
+  const { request } = useApiClient(apiBase)
+  const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
+  const { formatVolumePreferred } = useUnitPreferences()
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const newVessel = reactive({
+    type: '',
+    name: '',
+    capacity: '',
+    capacity_unit: 'ml' as VolumeUnit,
+    status: 'active',
+    make: '',
+    model: '',
+  })
+
+  const selectedVessel = computed(() =>
+    vessels.value.find(vessel => vessel.id === selectedVesselId.value) ?? null,
+  )
+
+  const occupancyMap = computed(
+    () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_id, occupancy])),
+  )
+
+  const selectedVesselOccupancy = computed(() => {
+    if (!selectedVesselId.value) return null
+    return occupancyMap.value.get(selectedVesselId.value) ?? null
+  })
+
+  const occupancyStatusOptions = computed(() =>
+    OCCUPANCY_STATUS_VALUES.map(status => ({
+      value: status,
+      title: formatOccupancyStatus(status),
+    })),
+  )
+
+  onMounted(async () => {
     await refreshVessels()
-    createVesselDialog.value = false
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create vessel'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  })
 
-function normalizeText(value: string) {
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
-
-function toNumber(value: string | number | null) {
-  if (value === null || value === undefined || value === '') {
-    return null
-  }
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return 'Unknown'
-  }
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-function formatOccupancyStatus(status: string | null | undefined): string {
-  if (!status) {
-    return 'No status'
-  }
-  const statusLabels: Record<string, string> = {
-    fermenting: 'Fermenting',
-    conditioning: 'Conditioning',
-    cold_crashing: 'Cold Crashing',
-    dry_hopping: 'Dry Hopping',
-    carbonating: 'Carbonating',
-    holding: 'Holding',
-    packaging: 'Packaging',
-  }
-  return statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
-}
-
-function getOccupancyStatusColor(status: string | null | undefined): string {
-  if (!status) {
-    return 'grey'
-  }
-  const statusColors: Record<string, string> = {
-    fermenting: 'orange',
-    conditioning: 'blue',
-    cold_crashing: 'cyan',
-    dry_hopping: 'green',
-    carbonating: 'purple',
-    holding: 'grey',
-    packaging: 'teal',
-  }
-  return statusColors[status] ?? 'secondary'
-}
-
-function getOccupancyStatusIcon(status: string | null | undefined): string {
-  if (!status) {
-    return 'mdi-help-circle-outline'
-  }
-  const statusIcons: Record<string, string> = {
-    fermenting: 'mdi-molecule',
-    conditioning: 'mdi-clock-outline',
-    cold_crashing: 'mdi-snowflake',
-    dry_hopping: 'mdi-leaf',
-    carbonating: 'mdi-shimmer',
-    holding: 'mdi-pause-circle-outline',
-    packaging: 'mdi-package-variant',
-  }
-  return statusIcons[status] ?? 'mdi-circle'
-}
-
-async function changeOccupancyStatus(occupancyId: number, status: OccupancyStatus) {
-  updatingOccupancyStatus.value = true
-  errorMessage.value = ''
-  try {
-    await updateOccupancyStatus(occupancyId, status)
-    showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
+  watch(selectedVesselId, async () => {
+    // Refresh occupancies when vessel selection changes
     await loadOccupancies()
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update status'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  } finally {
-    updatingOccupancyStatus.value = false
+  })
+
+  function selectVessel (id: number) {
+    selectedVesselId.value = id
   }
-}
+
+  function clearSelection () {
+    selectedVesselId.value = null
+  }
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshVessels () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      const [vesselData] = await Promise.all([
+        request<Vessel[]>('/vessels'),
+        loadOccupancies(),
+      ])
+      vessels.value = vesselData
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load vessels'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadOccupancies () {
+    try {
+      occupancies.value = await getActiveOccupancies()
+    } catch (error) {
+      console.error('Failed to load occupancies:', error)
+    }
+  }
+
+  async function createVessel () {
+    errorMessage.value = ''
+    try {
+      const payload = {
+        type: newVessel.type.trim(),
+        name: newVessel.name.trim(),
+        capacity: toNumber(newVessel.capacity),
+        capacity_unit: newVessel.capacity_unit,
+        status: newVessel.status,
+        make: normalizeText(newVessel.make),
+        model: normalizeText(newVessel.model),
+      }
+      await request<Vessel>('/vessels', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      showNotice('Vessel registered')
+      newVessel.type = ''
+      newVessel.name = ''
+      newVessel.capacity = ''
+      newVessel.make = ''
+      newVessel.model = ''
+      await refreshVessels()
+      createVesselDialog.value = false
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create vessel'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function normalizeText (value: string) {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+
+  function toNumber (value: string | number | null) {
+    if (value === null || value === undefined || value === '') {
+      return null
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  function formatDateTime (value: string | null | undefined) {
+    if (!value) {
+      return 'Unknown'
+    }
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(value))
+  }
+
+  function formatOccupancyStatus (status: string | null | undefined): string {
+    if (!status) {
+      return 'No status'
+    }
+    const statusLabels: Record<string, string> = {
+      fermenting: 'Fermenting',
+      conditioning: 'Conditioning',
+      cold_crashing: 'Cold Crashing',
+      dry_hopping: 'Dry Hopping',
+      carbonating: 'Carbonating',
+      holding: 'Holding',
+      packaging: 'Packaging',
+    }
+    return statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
+  }
+
+  function getOccupancyStatusColor (status: string | null | undefined): string {
+    if (!status) {
+      return 'grey'
+    }
+    const statusColors: Record<string, string> = {
+      fermenting: 'orange',
+      conditioning: 'blue',
+      cold_crashing: 'cyan',
+      dry_hopping: 'green',
+      carbonating: 'purple',
+      holding: 'grey',
+      packaging: 'teal',
+    }
+    return statusColors[status] ?? 'secondary'
+  }
+
+  function getOccupancyStatusIcon (status: string | null | undefined): string {
+    if (!status) {
+      return 'mdi-help-circle-outline'
+    }
+    const statusIcons: Record<string, string> = {
+      fermenting: 'mdi-molecule',
+      conditioning: 'mdi-clock-outline',
+      cold_crashing: 'mdi-snowflake',
+      dry_hopping: 'mdi-leaf',
+      carbonating: 'mdi-shimmer',
+      holding: 'mdi-pause-circle-outline',
+      packaging: 'mdi-package-variant',
+    }
+    return statusIcons[status] ?? 'mdi-circle'
+  }
+
+  async function changeOccupancyStatus (occupancyId: number, status: OccupancyStatus) {
+    updatingOccupancyStatus.value = true
+    errorMessage.value = ''
+    try {
+      await updateOccupancyStatus(occupancyId, status)
+      showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
+      await loadOccupancies()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update status'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    } finally {
+      updatingOccupancyStatus.value = false
+    }
+  }
 </script>
 
 <style scoped>

@@ -10,7 +10,7 @@
           <v-card-text>
             <v-row>
               <v-col cols="12" md="4">
-                <v-card variant="tonal" to="/production/recipes">
+                <v-card to="/production/recipes" variant="tonal">
                   <v-card-title>
                     <v-icon class="mr-2" icon="mdi-book-open-page-variant" />
                     Recipes

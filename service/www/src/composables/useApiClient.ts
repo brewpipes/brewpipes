@@ -1,24 +1,24 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const isJsonResponse = (response: Response) => {
+function isJsonResponse (response: Response) {
   const contentType = response.headers.get('content-type') ?? ''
   return contentType.includes('application/json')
 }
 
-const readErrorMessage = async (response: Response) => {
+async function readErrorMessage (response: Response) {
   const message = await response.text()
   return message || `Request failed with ${response.status}`
 }
 
-export function useApiClient(baseUrl: string) {
+export function useApiClient (baseUrl: string) {
   const authStore = useAuthStore()
   const router = useRouter()
 
   const buildHeaders = (init: RequestInit, token: string | null) => {
     const headers = new Headers(init.headers ?? {})
-    const isFormData =
-      typeof FormData !== 'undefined' && init.body instanceof FormData
+    const isFormData
+      = typeof FormData !== 'undefined' && init.body instanceof FormData
     if (init.body && !headers.has('Content-Type') && !isFormData) {
       headers.set('Content-Type', 'application/json')
     }

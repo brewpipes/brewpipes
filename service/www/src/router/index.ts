@@ -4,9 +4,9 @@
  * Automatic routes for `./src/pages/*.vue`
  */
 
+import { setupLayouts } from 'virtual:generated-layouts'
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
-import { setupLayouts } from 'virtual:generated-layouts'
 import { routes } from 'vue-router/auto-routes'
 import { useAuthStore } from '@/stores/auth'
 
@@ -15,7 +15,7 @@ const router = createRouter({
   routes: setupLayouts(routes),
 })
 
-router.beforeEach((to) => {
+router.beforeEach(to => {
   const authStore = useAuthStore()
   if (!authStore.hydrated) {
     authStore.hydrateFromStorage()

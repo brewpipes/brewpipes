@@ -2,7 +2,7 @@ import { useApiClient } from '@/composables/useApiClient'
 
 const procurementApiBase = import.meta.env.VITE_PROCUREMENT_API_URL ?? '/api'
 
-export function useProcurementApi() {
+export function useProcurementApi () {
   const { request } = useApiClient(procurementApiBase)
 
   const normalizeText = (value: string) => {

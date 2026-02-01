@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         Inventory activity
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
+        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
           Refresh
         </v-btn>
       </v-card-title>
@@ -31,17 +31,17 @@
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="filters.ingredient_lot_id"
+                      clearable
                       :items="lotSelectItems"
                       label="Filter by ingredient lot"
-                      clearable
                     />
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="filters.beer_lot_id"
+                      clearable
                       :items="beerLotSelectItems"
                       label="Filter by beer lot"
-                      clearable
                     />
                   </v-col>
                 </v-row>
@@ -75,15 +75,15 @@
               <v-card-text>
                 <v-select
                   v-model="movementForm.ingredient_lot_id"
+                  clearable
                   :items="lotSelectItems"
                   label="Ingredient lot (optional)"
-                  clearable
                 />
                 <v-select
                   v-model="movementForm.beer_lot_id"
+                  clearable
                   :items="beerLotSelectItems"
                   label="Beer lot (optional)"
-                  clearable
                 />
                 <v-select
                   v-model="movementForm.stock_location_id"
@@ -118,10 +118,10 @@
                   color="primary"
                   :disabled="
                     !movementForm.stock_location_id ||
-                    !movementForm.direction ||
-                    !movementForm.reason.trim() ||
-                    !movementForm.amount ||
-                    !movementForm.amount_unit
+                      !movementForm.direction ||
+                      !movementForm.reason.trim() ||
+                      !movementForm.amount ||
+                      !movementForm.amount_unit
                   "
                   @click="createMovement"
                 >
@@ -141,198 +141,198 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useInventoryApi } from '@/composables/useInventoryApi'
-import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
-type IngredientLot = {
-  id: number
-  ingredient_id: number
-  received_amount: number
-  received_unit: string
-}
-
-type StockLocation = {
-  id: number
-  name: string
-}
-
-type BeerLot = {
-  id: number
-  lot_code: string
-}
-
-type InventoryMovement = {
-  id: number
-  ingredient_lot_id: number | null
-  beer_lot_id: number | null
-  stock_location_id: number
-  direction: string
-  reason: string
-  amount: number
-  amount_unit: string
-  occurred_at: string
-  receipt_id: number | null
-  usage_id: number | null
-  adjustment_id: number | null
-  transfer_id: number | null
-  notes: string
-}
-
-const { request, normalizeText, normalizeDateTime, toNumber } = useInventoryApi()
-const { formatAmountPreferred } = useUnitPreferences()
-
-const lots = ref<IngredientLot[]>([])
-const locations = ref<StockLocation[]>([])
-const beerLots = ref<BeerLot[]>([])
-const movements = ref<InventoryMovement[]>([])
-const loading = ref(false)
-const errorMessage = ref('')
-
-const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
-const movementDirectionOptions = ['in', 'out']
-
-const filters = reactive({
-  ingredient_lot_id: null as number | null,
-  beer_lot_id: null as number | null,
-})
-
-const movementForm = reactive({
-  ingredient_lot_id: null as number | null,
-  beer_lot_id: null as number | null,
-  stock_location_id: null as number | null,
-  direction: '',
-  reason: '',
-  amount: '',
-  amount_unit: '',
-  occurred_at: '',
-  receipt_id: '',
-  usage_id: '',
-  adjustment_id: '',
-  transfer_id: '',
-  notes: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const lotSelectItems = computed(() =>
-  lots.value.map((lot) => ({
-    title: `Lot ${lot.id} (${lot.received_amount} ${lot.received_unit})`,
-    value: lot.id,
-  })),
-)
-
-const locationSelectItems = computed(() =>
-  locations.value.map((location) => ({
-    title: location.name,
-    value: location.id,
-  })),
-)
-
-const beerLotSelectItems = computed(() =>
-  beerLots.value.map((lot) => ({
-    title: lot.lot_code || `Beer lot ${lot.id}`,
-    value: lot.id,
-  })),
-)
-
-onMounted(async () => {
-  await refreshAll()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshAll() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    await Promise.all([loadLots(), loadLocations(), loadBeerLots(), loadMovements()])
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load activity'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type IngredientLot = {
+    id: number
+    ingredient_id: number
+    received_amount: number
+    received_unit: string
   }
-}
 
-async function loadLots() {
-  lots.value = await request<IngredientLot[]>('/ingredient-lots')
-}
-
-async function loadLocations() {
-  locations.value = await request<StockLocation[]>('/stock-locations')
-}
-
-async function loadBeerLots() {
-  beerLots.value = await request<BeerLot[]>('/beer-lots')
-}
-
-async function loadMovements() {
-  const query = new URLSearchParams()
-  if (filters.ingredient_lot_id) {
-    query.set('ingredient_lot_id', String(filters.ingredient_lot_id))
+  type StockLocation = {
+    id: number
+    name: string
   }
-  if (filters.beer_lot_id) {
-    query.set('beer_lot_id', String(filters.beer_lot_id))
-  }
-  const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
-  movements.value = await request<InventoryMovement[]>(path)
-}
 
-async function createMovement() {
-  try {
-    const payload = {
-      ingredient_lot_id: movementForm.ingredient_lot_id,
-      beer_lot_id: movementForm.beer_lot_id,
-      stock_location_id: movementForm.stock_location_id,
-      direction: movementForm.direction,
-      reason: movementForm.reason.trim(),
-      amount: toNumber(movementForm.amount),
-      amount_unit: movementForm.amount_unit,
-      occurred_at: normalizeDateTime(movementForm.occurred_at),
-      receipt_id: toNumber(movementForm.receipt_id),
-      usage_id: toNumber(movementForm.usage_id),
-      adjustment_id: toNumber(movementForm.adjustment_id),
-      transfer_id: toNumber(movementForm.transfer_id),
-      notes: normalizeText(movementForm.notes),
+  type BeerLot = {
+    id: number
+    lot_code: string
+  }
+
+  type InventoryMovement = {
+    id: number
+    ingredient_lot_id: number | null
+    beer_lot_id: number | null
+    stock_location_id: number
+    direction: string
+    reason: string
+    amount: number
+    amount_unit: string
+    occurred_at: string
+    receipt_id: number | null
+    usage_id: number | null
+    adjustment_id: number | null
+    transfer_id: number | null
+    notes: string
+  }
+
+  const { request, normalizeText, normalizeDateTime, toNumber } = useInventoryApi()
+  const { formatAmountPreferred } = useUnitPreferences()
+
+  const lots = ref<IngredientLot[]>([])
+  const locations = ref<StockLocation[]>([])
+  const beerLots = ref<BeerLot[]>([])
+  const movements = ref<InventoryMovement[]>([])
+  const loading = ref(false)
+  const errorMessage = ref('')
+
+  const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
+  const movementDirectionOptions = ['in', 'out']
+
+  const filters = reactive({
+    ingredient_lot_id: null as number | null,
+    beer_lot_id: null as number | null,
+  })
+
+  const movementForm = reactive({
+    ingredient_lot_id: null as number | null,
+    beer_lot_id: null as number | null,
+    stock_location_id: null as number | null,
+    direction: '',
+    reason: '',
+    amount: '',
+    amount_unit: '',
+    occurred_at: '',
+    receipt_id: '',
+    usage_id: '',
+    adjustment_id: '',
+    transfer_id: '',
+    notes: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const lotSelectItems = computed(() =>
+    lots.value.map(lot => ({
+      title: `Lot ${lot.id} (${lot.received_amount} ${lot.received_unit})`,
+      value: lot.id,
+    })),
+  )
+
+  const locationSelectItems = computed(() =>
+    locations.value.map(location => ({
+      title: location.name,
+      value: location.id,
+    })),
+  )
+
+  const beerLotSelectItems = computed(() =>
+    beerLots.value.map(lot => ({
+      title: lot.lot_code || `Beer lot ${lot.id}`,
+      value: lot.id,
+    })),
+  )
+
+  onMounted(async () => {
+    await refreshAll()
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshAll () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      await Promise.all([loadLots(), loadLocations(), loadBeerLots(), loadMovements()])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load activity'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
     }
-    await request<InventoryMovement>('/inventory-movements', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    movementForm.ingredient_lot_id = null
-    movementForm.beer_lot_id = null
-    movementForm.stock_location_id = null
-    movementForm.direction = ''
-    movementForm.reason = ''
-    movementForm.amount = ''
-    movementForm.amount_unit = ''
-    movementForm.occurred_at = ''
-    movementForm.receipt_id = ''
-    movementForm.usage_id = ''
-    movementForm.adjustment_id = ''
-    movementForm.transfer_id = ''
-    movementForm.notes = ''
-    await loadMovements()
-    showNotice('Activity recorded')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to log activity'
-    errorMessage.value = message
-    showNotice(message, 'error')
   }
-}
 
-function locationName(locationId: number) {
-  return locations.value.find((location) => location.id === locationId)?.name ?? `Location ${locationId}`
-}
+  async function loadLots () {
+    lots.value = await request<IngredientLot[]>('/ingredient-lots')
+  }
+
+  async function loadLocations () {
+    locations.value = await request<StockLocation[]>('/stock-locations')
+  }
+
+  async function loadBeerLots () {
+    beerLots.value = await request<BeerLot[]>('/beer-lots')
+  }
+
+  async function loadMovements () {
+    const query = new URLSearchParams()
+    if (filters.ingredient_lot_id) {
+      query.set('ingredient_lot_id', String(filters.ingredient_lot_id))
+    }
+    if (filters.beer_lot_id) {
+      query.set('beer_lot_id', String(filters.beer_lot_id))
+    }
+    const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
+    movements.value = await request<InventoryMovement[]>(path)
+  }
+
+  async function createMovement () {
+    try {
+      const payload = {
+        ingredient_lot_id: movementForm.ingredient_lot_id,
+        beer_lot_id: movementForm.beer_lot_id,
+        stock_location_id: movementForm.stock_location_id,
+        direction: movementForm.direction,
+        reason: movementForm.reason.trim(),
+        amount: toNumber(movementForm.amount),
+        amount_unit: movementForm.amount_unit,
+        occurred_at: normalizeDateTime(movementForm.occurred_at),
+        receipt_id: toNumber(movementForm.receipt_id),
+        usage_id: toNumber(movementForm.usage_id),
+        adjustment_id: toNumber(movementForm.adjustment_id),
+        transfer_id: toNumber(movementForm.transfer_id),
+        notes: normalizeText(movementForm.notes),
+      }
+      await request<InventoryMovement>('/inventory-movements', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      movementForm.ingredient_lot_id = null
+      movementForm.beer_lot_id = null
+      movementForm.stock_location_id = null
+      movementForm.direction = ''
+      movementForm.reason = ''
+      movementForm.amount = ''
+      movementForm.amount_unit = ''
+      movementForm.occurred_at = ''
+      movementForm.receipt_id = ''
+      movementForm.usage_id = ''
+      movementForm.adjustment_id = ''
+      movementForm.transfer_id = ''
+      movementForm.notes = ''
+      await loadMovements()
+      showNotice('Activity recorded')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to log activity'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function locationName (locationId: number) {
+    return locations.value.find(location => location.id === locationId)?.name ?? `Location ${locationId}`
+  }
 </script>
 
 <style scoped>

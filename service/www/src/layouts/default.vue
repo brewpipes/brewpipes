@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar class="app-bar" height="72" flat>
+  <v-app-bar class="app-bar" flat height="72">
     <v-app-bar-nav-icon @click="toggleDrawer" />
 
     <div class="brand-mark">
@@ -41,43 +41,51 @@
     class="app-drawer"
     :permanent="!isMobile"
     :rail="rail"
+    rail-width="78"
     :temporary="isMobile"
     width="260"
-    rail-width="78"
   >
     <v-list class="nav-list" density="comfortable" nav>
       <v-list-item
         v-for="item in navItems"
         :key="item.title"
-        :to="item.to"
         :prepend-icon="item.icon"
         :title="item.title"
+        :to="item.to"
       />
+
+      <v-list-group class="nav-group" value="batches">
+        <template #activator="{ props }">
+          <v-list-item v-bind="props" prepend-icon="mdi-barley" title="Batches" />
+        </template>
+        <v-list-item title="In Progress" to="/batches/in-progress" />
+        <v-list-item title="All Batches" to="/batches/all" />
+      </v-list-group>
 
       <v-list-group class="nav-group" value="production">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
         </template>
-        <v-list-item to="/production/recipes" title="Recipes" />
+        <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="inventory">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory" />
         </template>
-        <v-list-item to="/inventory/activity" title="Activity" />
-        <v-list-item to="/inventory/product" title="Product" />
-        <v-list-item to="/inventory/ingredients" title="Ingredients" />
-        <v-list-item to="/inventory/adjustments-transfers" title="Adjustments & Transfers" />
-        <v-list-item to="/inventory/locations" title="Locations" />
+        <v-list-item title="Activity" to="/inventory/activity" />
+        <v-list-item title="Product" to="/inventory/product" />
+        <v-list-item title="Ingredients" to="/inventory/ingredients" />
+        <v-list-item title="Adjustments & Transfers" to="/inventory/adjustments-transfers" />
+        <v-list-item title="Locations" to="/inventory/locations" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="procurement">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-clipboard-text" title="Procurement" />
         </template>
-        <v-list-item to="/procurement/purchase-orders" title="Purchase orders" />
-        <v-list-item to="/procurement/suppliers" title="Suppliers" />
+        <v-list-item title="Purchase orders" to="/procurement/purchase-orders" />
+        <v-list-item title="Suppliers" to="/procurement/suppliers" />
       </v-list-group>
     </v-list>
   </v-navigation-drawer>
@@ -90,63 +98,62 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useDisplay, useTheme } from 'vuetify'
-import { useAuthStore } from '@/stores/auth'
+  import { computed, onMounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useDisplay, useTheme } from 'vuetify'
+  import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
-const router = useRouter()
-const drawer = ref(true)
-const rail = ref(false)
-const theme = useTheme()
-const display = useDisplay()
-const isMobile = computed(() => display.smAndDown.value)
-const isDark = computed(() => theme.global.current.value.dark)
-const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
-const themeStorageKey = 'brewpipes:theme'
-const userLabel = computed(() => authStore.username ?? 'Account')
+  const authStore = useAuthStore()
+  const router = useRouter()
+  const drawer = ref(true)
+  const rail = ref(false)
+  const theme = useTheme()
+  const display = useDisplay()
+  const isMobile = computed(() => display.smAndDown.value)
+  const isDark = computed(() => theme.global.current.value.dark)
+  const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
+  const themeStorageKey = 'brewpipes:theme'
+  const userLabel = computed(() => authStore.username ?? 'Account')
 
-const navItems = [
-  { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
-  { title: 'Batches', icon: 'mdi-barley', to: '/batches' },
-  { title: 'Vessels', icon: 'mdi-silo', to: '/vessels' },
-]
+  const navItems = [
+    { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
+    { title: 'Vessels', icon: 'mdi-silo', to: '/vessels' },
+  ]
 
-function toggleDrawer() {
-  if (isMobile.value) {
-    drawer.value = !drawer.value
-    return
-  }
-  rail.value = !rail.value
-}
-
-function toggleTheme() {
-  theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
-}
-
-async function handleLogout() {
-  await authStore.logout()
-  await router.push('/login')
-}
-
-onMounted(() => {
-  const storedTheme = localStorage.getItem(themeStorageKey)
-  if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
-    theme.global.name.value = storedTheme
-    return
+  function toggleDrawer () {
+    if (isMobile.value) {
+      drawer.value = !drawer.value
+      return
+    }
+    rail.value = !rail.value
   }
 
-  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
-  theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
-})
+  function toggleTheme () {
+    theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
+  }
 
-watch(
-  () => theme.global.name.value,
-  (value) => {
-    localStorage.setItem(themeStorageKey, value)
-  },
-)
+  async function handleLogout () {
+    await authStore.logout()
+    await router.push('/login')
+  }
+
+  onMounted(() => {
+    const storedTheme = localStorage.getItem(themeStorageKey)
+    if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
+      theme.global.name.value = storedTheme
+      return
+    }
+
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
+  })
+
+  watch(
+    () => theme.global.name.value,
+    value => {
+      localStorage.setItem(themeStorageKey, value)
+    },
+  )
 </script>
 
 <style scoped>

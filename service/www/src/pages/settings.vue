@@ -10,76 +10,76 @@
       </v-card-subtitle>
       <v-card-text>
         <v-row>
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" md="4" sm="6">
             <v-select
               v-model="preferences.temperature"
-              :items="temperatureOptions"
+              density="comfortable"
+              hide-details
               item-title="label"
               item-value="value"
+              :items="temperatureOptions"
               label="Temperature"
               variant="outlined"
-              density="comfortable"
-              hide-details
             />
           </v-col>
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" md="4" sm="6">
             <v-select
               v-model="preferences.gravity"
-              :items="gravityOptions"
+              density="comfortable"
+              hide-details
               item-title="label"
               item-value="value"
+              :items="gravityOptions"
               label="Gravity"
               variant="outlined"
-              density="comfortable"
-              hide-details
             />
           </v-col>
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" md="4" sm="6">
             <v-select
               v-model="preferences.volume"
-              :items="volumeOptions"
+              density="comfortable"
+              hide-details
               item-title="label"
               item-value="value"
+              :items="volumeOptions"
               label="Volume"
               variant="outlined"
-              density="comfortable"
-              hide-details
             />
           </v-col>
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" md="4" sm="6">
             <v-select
               v-model="preferences.mass"
-              :items="massOptions"
+              density="comfortable"
+              hide-details
               item-title="label"
               item-value="value"
+              :items="massOptions"
               label="Mass"
               variant="outlined"
-              density="comfortable"
-              hide-details
             />
           </v-col>
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" md="4" sm="6">
             <v-select
               v-model="preferences.pressure"
-              :items="pressureOptions"
+              density="comfortable"
+              hide-details
               item-title="label"
               item-value="value"
+              :items="pressureOptions"
               label="Pressure"
               variant="outlined"
-              density="comfortable"
-              hide-details
             />
           </v-col>
-          <v-col cols="12" sm="6" md="4">
+          <v-col cols="12" md="4" sm="6">
             <v-select
               v-model="preferences.color"
-              :items="colorOptions"
-              item-title="label"
-              item-value="value"
-              label="Color"
-              variant="outlined"
               density="comfortable"
               hide-details
+              item-title="label"
+              item-value="value"
+              :items="colorOptions"
+              label="Color"
+              variant="outlined"
             />
           </v-col>
         </v-row>
@@ -92,16 +92,16 @@
 </template>
 
 <script lang="ts" setup>
-import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
-const {
-  preferences,
-  resetToDefaults,
-  temperatureOptions,
-  gravityOptions,
-  volumeOptions,
-  massOptions,
-  pressureOptions,
-  colorOptions,
-} = useUnitPreferences()
+  const {
+    preferences,
+    resetToDefaults,
+    temperatureOptions,
+    gravityOptions,
+    volumeOptions,
+    massOptions,
+    pressureOptions,
+    colorOptions,
+  } = useUnitPreferences()
 </script>

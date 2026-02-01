@@ -1,23 +1,23 @@
 import { ref, watch } from 'vue'
 import {
-  type TemperatureUnit,
-  type GravityUnit,
-  type VolumeUnit,
-  type MassUnit,
-  type PressureUnit,
-  type ColorUnit,
-  temperatureLabels,
-  gravityLabels,
-  volumeLabels,
-  massLabels,
-  pressureLabels,
   colorLabels,
-  formatTemperature,
+  type ColorUnit,
+  formatColor,
   formatGravity,
-  formatVolume,
   formatMass,
   formatPressure,
-  formatColor,
+  formatTemperature,
+  formatVolume,
+  gravityLabels,
+  type GravityUnit,
+  massLabels,
+  type MassUnit,
+  pressureLabels,
+  type PressureUnit,
+  temperatureLabels,
+  type TemperatureUnit,
+  volumeLabels,
+  type VolumeUnit,
 } from './useUnitConversion'
 
 // ==================== Unit Type Detection ====================
@@ -34,14 +34,14 @@ const MASS_UNITS = new Set<string>(['g', 'kg', 'oz', 'lb'])
 /**
  * Check if a unit string represents a volume unit.
  */
-export function isVolumeUnit(unit: string): boolean {
+export function isVolumeUnit (unit: string): boolean {
   return VOLUME_UNITS.has(unit.toLowerCase())
 }
 
 /**
  * Check if a unit string represents a mass unit.
  */
-export function isMassUnit(unit: string): boolean {
+export function isMassUnit (unit: string): boolean {
   return MASS_UNITS.has(unit.toLowerCase())
 }
 
@@ -49,28 +49,22 @@ export function isMassUnit(unit: string): boolean {
  * Normalize a unit string to a typed VolumeUnit.
  * Maps common shorthand variants (e.g., 'gal' -> 'usgal').
  */
-export function normalizeVolumeUnit(unit: string): VolumeUnit {
+export function normalizeVolumeUnit (unit: string): VolumeUnit {
   const lower = unit.toLowerCase()
-  if (lower === 'gal') return 'usgal'
+  if (lower === 'gal') {
+    return 'usgal'
+  }
   return lower as VolumeUnit
 }
 
 /**
  * Normalize a unit string to a typed MassUnit.
  */
-export function normalizeMassUnit(unit: string): MassUnit {
+export function normalizeMassUnit (unit: string): MassUnit {
   return unit.toLowerCase() as MassUnit
 }
 
 // Re-export unit types for convenience
-export type {
-  TemperatureUnit,
-  GravityUnit,
-  VolumeUnit,
-  MassUnit,
-  PressureUnit,
-  ColorUnit,
-}
 
 export interface UnitPreferences {
   temperature: TemperatureUnit
@@ -94,17 +88,17 @@ const DEFAULT_PREFERENCES: UnitPreferences = {
 }
 
 // Options arrays for building select dropdowns
-export const temperatureOptions: Array<{ value: TemperatureUnit; label: string }> = [
+export const temperatureOptions: Array<{ value: TemperatureUnit, label: string }> = [
   { value: 'c', label: 'Celsius (°C)' },
   { value: 'f', label: 'Fahrenheit (°F)' },
 ]
 
-export const gravityOptions: Array<{ value: GravityUnit; label: string }> = [
+export const gravityOptions: Array<{ value: GravityUnit, label: string }> = [
   { value: 'sg', label: 'Specific Gravity (SG)' },
   { value: 'plato', label: 'Degrees Plato (°P)' },
 ]
 
-export const volumeOptions: Array<{ value: VolumeUnit; label: string }> = [
+export const volumeOptions: Array<{ value: VolumeUnit, label: string }> = [
   { value: 'ml', label: 'Milliliters (mL)' },
   { value: 'l', label: 'Liters (L)' },
   { value: 'hl', label: 'Hectoliters (hL)' },
@@ -116,20 +110,20 @@ export const volumeOptions: Array<{ value: VolumeUnit; label: string }> = [
   { value: 'ukbbl', label: 'Barrels (UK)' },
 ]
 
-export const massOptions: Array<{ value: MassUnit; label: string }> = [
+export const massOptions: Array<{ value: MassUnit, label: string }> = [
   { value: 'g', label: 'Grams (g)' },
   { value: 'kg', label: 'Kilograms (kg)' },
   { value: 'oz', label: 'Ounces (oz)' },
   { value: 'lb', label: 'Pounds (lb)' },
 ]
 
-export const pressureOptions: Array<{ value: PressureUnit; label: string }> = [
+export const pressureOptions: Array<{ value: PressureUnit, label: string }> = [
   { value: 'kpa', label: 'Kilopascals (kPa)' },
   { value: 'psi', label: 'PSI' },
   { value: 'bar', label: 'Bar' },
 ]
 
-export const colorOptions: Array<{ value: ColorUnit; label: string }> = [
+export const colorOptions: Array<{ value: ColorUnit, label: string }> = [
   { value: 'srm', label: 'SRM' },
   { value: 'ebc', label: 'EBC' },
 ]
@@ -140,7 +134,7 @@ const preferences = ref<UnitPreferences>(loadPreferences())
 /**
  * Load preferences from localStorage, falling back to defaults on error.
  */
-function loadPreferences(): UnitPreferences {
+function loadPreferences (): UnitPreferences {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
@@ -176,7 +170,7 @@ function loadPreferences(): UnitPreferences {
 /**
  * Save preferences to localStorage.
  */
-function savePreferences(prefs: UnitPreferences): void {
+function savePreferences (prefs: UnitPreferences): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
   } catch {
@@ -185,75 +179,75 @@ function savePreferences(prefs: UnitPreferences): void {
 }
 
 // Validation helpers
-function isValidTemperatureUnit(value: unknown): value is TemperatureUnit {
+function isValidTemperatureUnit (value: unknown): value is TemperatureUnit {
   return value === 'c' || value === 'f'
 }
 
-function isValidGravityUnit(value: unknown): value is GravityUnit {
+function isValidGravityUnit (value: unknown): value is GravityUnit {
   return value === 'sg' || value === 'plato'
 }
 
-function isValidVolumeUnit(value: unknown): value is VolumeUnit {
+function isValidVolumeUnit (value: unknown): value is VolumeUnit {
   return ['ml', 'l', 'hl', 'usfloz', 'ukfloz', 'usgal', 'ukgal', 'bbl', 'ukbbl'].includes(
-    value as string
+    value as string,
   )
 }
 
-function isValidMassUnit(value: unknown): value is MassUnit {
+function isValidMassUnit (value: unknown): value is MassUnit {
   return ['g', 'kg', 'oz', 'lb'].includes(value as string)
 }
 
-function isValidPressureUnit(value: unknown): value is PressureUnit {
+function isValidPressureUnit (value: unknown): value is PressureUnit {
   return value === 'kpa' || value === 'psi' || value === 'bar'
 }
 
-function isValidColorUnit(value: unknown): value is ColorUnit {
+function isValidColorUnit (value: unknown): value is ColorUnit {
   return value === 'srm' || value === 'ebc'
 }
 
 // Watch for changes and persist to localStorage
 watch(
   preferences,
-  (newPrefs) => {
+  newPrefs => {
     savePreferences(newPrefs)
   },
-  { deep: true }
+  { deep: true },
 )
 
 /**
  * Composable for managing user unit preferences with localStorage persistence.
  * Returns singleton state shared across all component instances.
  */
-export function useUnitPreferences() {
+export function useUnitPreferences () {
   // Setters for individual preferences
-  function setTemperatureUnit(unit: TemperatureUnit): void {
+  function setTemperatureUnit (unit: TemperatureUnit): void {
     preferences.value = { ...preferences.value, temperature: unit }
   }
 
-  function setGravityUnit(unit: GravityUnit): void {
+  function setGravityUnit (unit: GravityUnit): void {
     preferences.value = { ...preferences.value, gravity: unit }
   }
 
-  function setVolumeUnit(unit: VolumeUnit): void {
+  function setVolumeUnit (unit: VolumeUnit): void {
     preferences.value = { ...preferences.value, volume: unit }
   }
 
-  function setMassUnit(unit: MassUnit): void {
+  function setMassUnit (unit: MassUnit): void {
     preferences.value = { ...preferences.value, mass: unit }
   }
 
-  function setPressureUnit(unit: PressureUnit): void {
+  function setPressureUnit (unit: PressureUnit): void {
     preferences.value = { ...preferences.value, pressure: unit }
   }
 
-  function setColorUnit(unit: ColorUnit): void {
+  function setColorUnit (unit: ColorUnit): void {
     preferences.value = { ...preferences.value, color: unit }
   }
 
   /**
    * Reset all preferences to US-centric defaults.
    */
-  function resetToDefaults(): void {
+  function resetToDefaults (): void {
     preferences.value = { ...DEFAULT_PREFERENCES }
   }
 
@@ -262,9 +256,9 @@ export function useUnitPreferences() {
   /**
    * Format temperature value to user's preferred unit.
    */
-  function formatTemperaturePreferred(
+  function formatTemperaturePreferred (
     value: number | null | undefined,
-    fromUnit: TemperatureUnit
+    fromUnit: TemperatureUnit,
   ): string {
     return formatTemperature(value, fromUnit, preferences.value.temperature)
   }
@@ -272,9 +266,9 @@ export function useUnitPreferences() {
   /**
    * Format gravity value to user's preferred unit.
    */
-  function formatGravityPreferred(
+  function formatGravityPreferred (
     value: number | null | undefined,
-    fromUnit: GravityUnit
+    fromUnit: GravityUnit,
   ): string {
     return formatGravity(value, fromUnit, preferences.value.gravity)
   }
@@ -282,9 +276,9 @@ export function useUnitPreferences() {
   /**
    * Format volume value to user's preferred unit.
    */
-  function formatVolumePreferred(
+  function formatVolumePreferred (
     value: number | null | undefined,
-    fromUnit: VolumeUnit
+    fromUnit: VolumeUnit,
   ): string {
     return formatVolume(value, fromUnit, preferences.value.volume)
   }
@@ -292,9 +286,9 @@ export function useUnitPreferences() {
   /**
    * Format mass value to user's preferred unit.
    */
-  function formatMassPreferred(
+  function formatMassPreferred (
     value: number | null | undefined,
-    fromUnit: MassUnit
+    fromUnit: MassUnit,
   ): string {
     return formatMass(value, fromUnit, preferences.value.mass)
   }
@@ -302,9 +296,9 @@ export function useUnitPreferences() {
   /**
    * Format pressure value to user's preferred unit.
    */
-  function formatPressurePreferred(
+  function formatPressurePreferred (
     value: number | null | undefined,
-    fromUnit: PressureUnit
+    fromUnit: PressureUnit,
   ): string {
     return formatPressure(value, fromUnit, preferences.value.pressure)
   }
@@ -312,9 +306,9 @@ export function useUnitPreferences() {
   /**
    * Format color value to user's preferred unit.
    */
-  function formatColorPreferred(
+  function formatColorPreferred (
     value: number | null | undefined,
-    fromUnit: ColorUnit
+    fromUnit: ColorUnit,
   ): string {
     return formatColor(value, fromUnit, preferences.value.color)
   }
@@ -327,12 +321,16 @@ export function useUnitPreferences() {
    * @param unit - The source unit as a string (e.g., 'kg', 'gal', 'lb')
    * @returns Formatted string with value converted to preferred unit, or fallback
    */
-  function formatAmountPreferred(
+  function formatAmountPreferred (
     value: number | null | undefined,
-    unit: string | null | undefined
+    unit: string | null | undefined,
   ): string {
-    if (value === null || value === undefined) return '—'
-    if (!unit) return `${value}`
+    if (value === null || value === undefined) {
+      return '—'
+    }
+    if (!unit) {
+      return `${value}`
+    }
 
     const lowerUnit = unit.toLowerCase()
     if (isVolumeUnit(lowerUnit)) {
@@ -390,3 +388,5 @@ export function useUnitPreferences() {
     colorLabels,
   }
 }
+
+export { type ColorUnit, type GravityUnit, type MassUnit, type PressureUnit, type TemperatureUnit, type VolumeUnit } from './useUnitConversion'

@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         Stock locations
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="loadLocations">
+        <v-btn :loading="loading" size="small" variant="text" @click="loadLocations">
           Refresh
         </v-btn>
       </v-card-title>
@@ -79,82 +79,82 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue'
-import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { onMounted, reactive, ref } from 'vue'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
 
-type StockLocation = {
-  id: number
-  uuid: string
-  name: string
-  location_type: string
-  description: string
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, formatDateTime } = useInventoryApi()
-
-const locations = ref<StockLocation[]>([])
-const errorMessage = ref('')
-const loading = ref(false)
-
-const locationForm = reactive({
-  name: '',
-  location_type: '',
-  description: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-onMounted(async () => {
-  await loadLocations()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function loadLocations() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    locations.value = await request<StockLocation[]>('/stock-locations')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load locations'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type StockLocation = {
+    id: number
+    uuid: string
+    name: string
+    location_type: string
+    description: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function createLocation() {
-  try {
-    const payload = {
-      name: locationForm.name.trim(),
-      location_type: normalizeText(locationForm.location_type),
-      description: normalizeText(locationForm.description),
-    }
-    await request<StockLocation>('/stock-locations', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    locationForm.name = ''
-    locationForm.location_type = ''
-    locationForm.description = ''
+  const { request, normalizeText, formatDateTime } = useInventoryApi()
+
+  const locations = ref<StockLocation[]>([])
+  const errorMessage = ref('')
+  const loading = ref(false)
+
+  const locationForm = reactive({
+    name: '',
+    location_type: '',
+    description: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  onMounted(async () => {
     await loadLocations()
-    showNotice('Stock location created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create location'
-    errorMessage.value = message
-    showNotice(message, 'error')
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
   }
-}
+
+  async function loadLocations () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      locations.value = await request<StockLocation[]>('/stock-locations')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load locations'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createLocation () {
+    try {
+      const payload = {
+        name: locationForm.name.trim(),
+        location_type: normalizeText(locationForm.location_type),
+        description: normalizeText(locationForm.description),
+      }
+      await request<StockLocation>('/stock-locations', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      locationForm.name = ''
+      locationForm.location_type = ''
+      locationForm.description = ''
+      await loadLocations()
+      showNotice('Stock location created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create location'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
 </script>
 
 <style scoped>

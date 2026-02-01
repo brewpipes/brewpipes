@@ -2,7 +2,7 @@ import { useApiClient } from '@/composables/useApiClient'
 
 const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
-export function useProductionApi() {
+export function useProductionApi () {
   const { request } = useApiClient(productionApiBase)
 
   const normalizeText = (value: string) => {
@@ -270,14 +270,14 @@ export type UpdateBrewSessionRequest = {
 }
 
 // Addition types
-export type AdditionType =
-  | 'malt'
-  | 'hop'
-  | 'yeast'
-  | 'adjunct'
-  | 'water_chem'
-  | 'gas'
-  | 'other'
+export type AdditionType
+  = | 'malt'
+    | 'hop'
+    | 'yeast'
+    | 'adjunct'
+    | 'water_chem'
+    | 'gas'
+    | 'other'
 
 export type Addition = {
   id: number
@@ -375,14 +375,14 @@ export type BatchSummary = {
 }
 
 // Occupancy types
-export type OccupancyStatus =
-  | 'fermenting'
-  | 'conditioning'
-  | 'cold_crashing'
-  | 'dry_hopping'
-  | 'carbonating'
-  | 'holding'
-  | 'packaging'
+export type OccupancyStatus
+  = | 'fermenting'
+    | 'conditioning'
+    | 'cold_crashing'
+    | 'dry_hopping'
+    | 'carbonating'
+    | 'holding'
+    | 'packaging'
 
 export const OCCUPANCY_STATUS_VALUES: OccupancyStatus[] = [
   'fermenting',

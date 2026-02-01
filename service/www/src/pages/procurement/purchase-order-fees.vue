@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         Purchase order fees
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
+        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
           Refresh
         </v-btn>
       </v-card-title>
@@ -29,9 +29,9 @@
                 </v-alert>
                 <v-select
                   v-model="filters.purchase_order_id"
+                  clearable
                   :items="orderSelectItems"
                   label="Filter by purchase order"
-                  clearable
                 />
                 <v-table class="data-table" density="compact">
                   <thead>
@@ -95,129 +95,129 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
 
-type PurchaseOrder = {
-  id: number
-  order_number: string
-}
-
-type PurchaseOrderFee = {
-  id: number
-  uuid: string
-  purchase_order_id: number
-  fee_type: string
-  amount_cents: number
-  currency: string
-  created_at: string
-  updated_at: string
-}
-
-const { request, toNumber, formatDateTime, formatCurrency } = useProcurementApi()
-const route = useRoute()
-
-const orders = ref<PurchaseOrder[]>([])
-const fees = ref<PurchaseOrderFee[]>([])
-const loading = ref(false)
-const errorMessage = ref('')
-
-const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
-
-const filters = reactive({
-  purchase_order_id: null as number | null,
-})
-
-const feeForm = reactive({
-  purchase_order_id: null as number | null,
-  fee_type: '',
-  amount_cents: '',
-  currency: 'USD',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const orderSelectItems = computed(() =>
-  orders.value.map((order) => ({
-    title: order.order_number,
-    value: order.id,
-  })),
-)
-
-onMounted(async () => {
-  await refreshAll()
-  const queryId = route.query.purchase_order_id
-  if (typeof queryId === 'string') {
-    filters.purchase_order_id = Number(queryId)
-    await loadFees()
+  type PurchaseOrder = {
+    id: number
+    order_number: string
   }
-})
 
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshAll() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    await Promise.all([loadOrders(), loadFees()])
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load fees'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type PurchaseOrderFee = {
+    id: number
+    uuid: string
+    purchase_order_id: number
+    fee_type: string
+    amount_cents: number
+    currency: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function loadOrders() {
-  orders.value = await request<PurchaseOrder[]>('/purchase-orders')
-}
+  const { request, toNumber, formatDateTime, formatCurrency } = useProcurementApi()
+  const route = useRoute()
 
-async function loadFees() {
-  const query = new URLSearchParams()
-  if (filters.purchase_order_id) {
-    query.set('purchase_order_id', String(filters.purchase_order_id))
-  }
-  const path = query.toString() ? `/purchase-order-fees?${query.toString()}` : '/purchase-order-fees'
-  fees.value = await request<PurchaseOrderFee[]>(path)
-}
+  const orders = ref<PurchaseOrder[]>([])
+  const fees = ref<PurchaseOrderFee[]>([])
+  const loading = ref(false)
+  const errorMessage = ref('')
 
-async function createFee() {
-  try {
-    const payload = {
-      purchase_order_id: feeForm.purchase_order_id,
-      fee_type: feeForm.fee_type.trim(),
-      amount_cents: toNumber(feeForm.amount_cents),
-      currency: feeForm.currency,
+  const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
+
+  const filters = reactive({
+    purchase_order_id: null as number | null,
+  })
+
+  const feeForm = reactive({
+    purchase_order_id: null as number | null,
+    fee_type: '',
+    amount_cents: '',
+    currency: 'USD',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const orderSelectItems = computed(() =>
+    orders.value.map(order => ({
+      title: order.order_number,
+      value: order.id,
+    })),
+  )
+
+  onMounted(async () => {
+    await refreshAll()
+    const queryId = route.query.purchase_order_id
+    if (typeof queryId === 'string') {
+      filters.purchase_order_id = Number(queryId)
+      await loadFees()
     }
-    await request<PurchaseOrderFee>('/purchase-order-fees', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    feeForm.purchase_order_id = null
-    feeForm.fee_type = ''
-    feeForm.amount_cents = ''
-    feeForm.currency = 'USD'
-    await loadFees()
-    showNotice('Fee created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create fee'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  })
 
-function orderNumber(orderId: number) {
-  return orders.value.find((order) => order.id === orderId)?.order_number ?? `PO ${orderId}`
-}
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshAll () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      await Promise.all([loadOrders(), loadFees()])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load fees'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadOrders () {
+    orders.value = await request<PurchaseOrder[]>('/purchase-orders')
+  }
+
+  async function loadFees () {
+    const query = new URLSearchParams()
+    if (filters.purchase_order_id) {
+      query.set('purchase_order_id', String(filters.purchase_order_id))
+    }
+    const path = query.toString() ? `/purchase-order-fees?${query.toString()}` : '/purchase-order-fees'
+    fees.value = await request<PurchaseOrderFee[]>(path)
+  }
+
+  async function createFee () {
+    try {
+      const payload = {
+        purchase_order_id: feeForm.purchase_order_id,
+        fee_type: feeForm.fee_type.trim(),
+        amount_cents: toNumber(feeForm.amount_cents),
+        currency: feeForm.currency,
+      }
+      await request<PurchaseOrderFee>('/purchase-order-fees', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      feeForm.purchase_order_id = null
+      feeForm.fee_type = ''
+      feeForm.amount_cents = ''
+      feeForm.currency = 'USD'
+      await loadFees()
+      showNotice('Fee created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create fee'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function orderNumber (orderId: number) {
+    return orders.value.find(order => order.id === orderId)?.order_number ?? `PO ${orderId}`
+  }
 </script>
 
 <style scoped>

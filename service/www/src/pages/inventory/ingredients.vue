@@ -17,7 +17,7 @@
                   <v-card-title class="d-flex align-center">
                     Receipts
                     <v-spacer />
-                    <v-btn size="small" variant="text" :loading="receiptLoading" @click="loadReceipts">
+                    <v-btn :loading="receiptLoading" size="small" variant="text" @click="loadReceipts">
                       Refresh
                     </v-btn>
                   </v-card-title>
@@ -82,7 +82,7 @@
                   <v-card-title class="d-flex align-center">
                     Ingredient lots
                     <v-spacer />
-                    <v-btn size="small" variant="text" :loading="lotLoading" @click="loadLots">
+                    <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
                       Apply filter
                     </v-btn>
                   </v-card-title>
@@ -100,17 +100,17 @@
                       <v-col cols="12" md="6">
                         <v-select
                           v-model="lotFilters.ingredient_id"
+                          clearable
                           :items="ingredientSelectItems"
                           label="Filter by ingredient"
-                          clearable
                         />
                       </v-col>
                       <v-col cols="12" md="6">
                         <v-select
                           v-model="lotFilters.receipt_id"
+                          clearable
                           :items="receiptSelectItems"
                           label="Filter by receipt"
-                          clearable
                         />
                       </v-col>
                     </v-row>
@@ -121,7 +121,7 @@
                           <th>Received</th>
                           <th>Best by</th>
                           <th>Expires</th>
-                          <th></th>
+                          <th />
                         </tr>
                       </thead>
                       <tbody>
@@ -155,9 +155,9 @@
                     />
                     <v-select
                       v-model="lotForm.receipt_id"
+                      clearable
                       :items="receiptSelectItems"
                       label="Receipt (optional)"
-                      clearable
                     />
                     <v-text-field v-model="lotForm.supplier_uuid" label="Supplier UUID" />
                     <v-text-field v-model="lotForm.brewery_lot_code" label="Brewery lot code" />
@@ -200,7 +200,7 @@
                   <v-card-title class="d-flex align-center">
                     Usage log
                     <v-spacer />
-                    <v-btn size="small" variant="text" :loading="usageLoading" @click="loadUsage">
+                    <v-btn :loading="usageLoading" size="small" variant="text" @click="loadUsage">
                       Refresh
                     </v-btn>
                   </v-card-title>
@@ -264,7 +264,7 @@
                   <v-card-title class="d-flex align-center">
                     Ingredient types
                     <v-spacer />
-                    <v-btn size="small" variant="text" :loading="ingredientLoading" @click="loadIngredients">
+                    <v-btn :loading="ingredientLoading" size="small" variant="text" @click="loadIngredients">
                       Refresh
                     </v-btn>
                   </v-card-title>
@@ -328,8 +328,8 @@
                       color="primary"
                       :disabled="
                         !ingredientForm.name.trim() ||
-                        !ingredientForm.category ||
-                        !ingredientForm.default_unit
+                          !ingredientForm.category ||
+                          !ingredientForm.default_unit
                       "
                       @click="createIngredient"
                     >
@@ -351,345 +351,345 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useInventoryApi } from '@/composables/useInventoryApi'
-import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
-type Ingredient = {
-  id: number
-  uuid: string
-  name: string
-  category: string
-  default_unit: string
-  description: string
-  created_at: string
-  updated_at: string
-}
-
-type InventoryReceipt = {
-  id: number
-  uuid: string
-  supplier_uuid: string
-  reference_code: string
-  received_at: string
-  notes: string
-  created_at: string
-  updated_at: string
-}
-
-type IngredientLot = {
-  id: number
-  ingredient_id: number
-  receipt_id: number | null
-  received_amount: number
-  received_unit: string
-  best_by_at: string
-  expires_at: string
-  supplier_uuid: string
-  brewery_lot_code: string
-  originator_lot_code: string
-  originator_name: string
-  originator_type: string
-  received_at: string
-  notes: string
-}
-
-type InventoryUsage = {
-  id: number
-  uuid: string
-  production_ref_uuid: string
-  used_at: string
-  notes: string
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, normalizeDateTime, toNumber, formatDateTime } = useInventoryApi()
-const { formatAmountPreferred } = useUnitPreferences()
-const router = useRouter()
-
-const activeTab = ref('stock')
-
-const ingredients = ref<Ingredient[]>([])
-const receipts = ref<InventoryReceipt[]>([])
-const lots = ref<IngredientLot[]>([])
-const usages = ref<InventoryUsage[]>([])
-
-const ingredientLoading = ref(false)
-const receiptLoading = ref(false)
-const lotLoading = ref(false)
-const usageLoading = ref(false)
-
-const ingredientErrorMessage = ref('')
-const receiptErrorMessage = ref('')
-const lotErrorMessage = ref('')
-const usageErrorMessage = ref('')
-
-const ingredientCategoryOptions = ['malt', 'hop', 'yeast', 'adjunct', 'water_chem', 'gas', 'other']
-const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
-
-const ingredientForm = reactive({
-  name: '',
-  category: '',
-  default_unit: '',
-  description: '',
-})
-
-const receiptForm = reactive({
-  supplier_uuid: '',
-  reference_code: '',
-  received_at: '',
-  notes: '',
-})
-
-const lotFilters = reactive({
-  ingredient_id: null as number | null,
-  receipt_id: null as number | null,
-})
-
-const lotForm = reactive({
-  ingredient_id: null as number | null,
-  receipt_id: null as number | null,
-  supplier_uuid: '',
-  brewery_lot_code: '',
-  originator_lot_code: '',
-  originator_name: '',
-  originator_type: '',
-  received_at: '',
-  received_amount: '',
-  received_unit: '',
-  best_by_at: '',
-  expires_at: '',
-  notes: '',
-})
-
-const usageForm = reactive({
-  production_ref_uuid: '',
-  used_at: '',
-  notes: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const ingredientSelectItems = computed(() =>
-  ingredients.value.map((ingredient) => ({
-    title: ingredient.name,
-    value: ingredient.id,
-  })),
-)
-
-const receiptSelectItems = computed(() =>
-  receipts.value.map((receipt) => ({
-    title: receipt.reference_code || `Receipt ${receipt.id}`,
-    value: receipt.id,
-  })),
-)
-
-onMounted(async () => {
-  await refreshAll()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshAll() {
-  await Promise.allSettled([loadIngredients(), loadReceipts(), loadLots(), loadUsage()])
-}
-
-async function loadIngredients() {
-  ingredientLoading.value = true
-  ingredientErrorMessage.value = ''
-  try {
-    ingredients.value = await request<Ingredient[]>('/ingredients')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load ingredients'
-    ingredientErrorMessage.value = message
-  } finally {
-    ingredientLoading.value = false
+  type Ingredient = {
+    id: number
+    uuid: string
+    name: string
+    category: string
+    default_unit: string
+    description: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function loadReceipts() {
-  receiptLoading.value = true
-  receiptErrorMessage.value = ''
-  try {
-    receipts.value = await request<InventoryReceipt[]>('/inventory-receipts')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load receipts'
-    receiptErrorMessage.value = message
-  } finally {
-    receiptLoading.value = false
+  type InventoryReceipt = {
+    id: number
+    uuid: string
+    supplier_uuid: string
+    reference_code: string
+    received_at: string
+    notes: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function loadLots() {
-  lotLoading.value = true
-  lotErrorMessage.value = ''
-  try {
-    const query = new URLSearchParams()
-    if (lotFilters.ingredient_id) {
-      query.set('ingredient_id', String(lotFilters.ingredient_id))
-    }
-    if (lotFilters.receipt_id) {
-      query.set('receipt_id', String(lotFilters.receipt_id))
-    }
-    const path = query.toString() ? `/ingredient-lots?${query.toString()}` : '/ingredient-lots'
-    lots.value = await request<IngredientLot[]>(path)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load lots'
-    lotErrorMessage.value = message
-  } finally {
-    lotLoading.value = false
+  type IngredientLot = {
+    id: number
+    ingredient_id: number
+    receipt_id: number | null
+    received_amount: number
+    received_unit: string
+    best_by_at: string
+    expires_at: string
+    supplier_uuid: string
+    brewery_lot_code: string
+    originator_lot_code: string
+    originator_name: string
+    originator_type: string
+    received_at: string
+    notes: string
   }
-}
 
-async function loadUsage() {
-  usageLoading.value = true
-  usageErrorMessage.value = ''
-  try {
-    usages.value = await request<InventoryUsage[]>('/inventory-usage')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load usage'
-    usageErrorMessage.value = message
-  } finally {
-    usageLoading.value = false
+  type InventoryUsage = {
+    id: number
+    uuid: string
+    production_ref_uuid: string
+    used_at: string
+    notes: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function createIngredient() {
-  try {
-    const payload = {
-      name: ingredientForm.name.trim(),
-      category: ingredientForm.category,
-      default_unit: ingredientForm.default_unit,
-      description: normalizeText(ingredientForm.description),
-    }
-    await request<Ingredient>('/ingredients', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    ingredientForm.name = ''
-    ingredientForm.category = ''
-    ingredientForm.default_unit = ''
-    ingredientForm.description = ''
-    await loadIngredients()
-    showNotice('Ingredient created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create ingredient'
-    ingredientErrorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  const { request, normalizeText, normalizeDateTime, toNumber, formatDateTime } = useInventoryApi()
+  const { formatAmountPreferred } = useUnitPreferences()
+  const router = useRouter()
 
-async function createReceipt() {
-  try {
-    const payload = {
-      supplier_uuid: normalizeText(receiptForm.supplier_uuid),
-      reference_code: normalizeText(receiptForm.reference_code),
-      received_at: normalizeDateTime(receiptForm.received_at),
-      notes: normalizeText(receiptForm.notes),
-    }
-    await request<InventoryReceipt>('/inventory-receipts', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    receiptForm.supplier_uuid = ''
-    receiptForm.reference_code = ''
-    receiptForm.received_at = ''
-    receiptForm.notes = ''
-    await loadReceipts()
-    showNotice('Receipt created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create receipt'
-    receiptErrorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  const activeTab = ref('stock')
 
-async function createLot() {
-  try {
-    const payload = {
-      ingredient_id: lotForm.ingredient_id,
-      receipt_id: lotForm.receipt_id,
-      supplier_uuid: normalizeText(lotForm.supplier_uuid),
-      brewery_lot_code: normalizeText(lotForm.brewery_lot_code),
-      originator_lot_code: normalizeText(lotForm.originator_lot_code),
-      originator_name: normalizeText(lotForm.originator_name),
-      originator_type: normalizeText(lotForm.originator_type),
-      received_at: normalizeDateTime(lotForm.received_at),
-      received_amount: toNumber(lotForm.received_amount),
-      received_unit: lotForm.received_unit,
-      best_by_at: normalizeDateTime(lotForm.best_by_at),
-      expires_at: normalizeDateTime(lotForm.expires_at),
-      notes: normalizeText(lotForm.notes),
-    }
-    await request<IngredientLot>('/ingredient-lots', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    lotForm.ingredient_id = null
-    lotForm.receipt_id = null
-    lotForm.supplier_uuid = ''
-    lotForm.brewery_lot_code = ''
-    lotForm.originator_lot_code = ''
-    lotForm.originator_name = ''
-    lotForm.originator_type = ''
-    lotForm.received_at = ''
-    lotForm.received_amount = ''
-    lotForm.received_unit = ''
-    lotForm.best_by_at = ''
-    lotForm.expires_at = ''
-    lotForm.notes = ''
-    await loadLots()
-    showNotice('Lot created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create lot'
-    lotErrorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  const ingredients = ref<Ingredient[]>([])
+  const receipts = ref<InventoryReceipt[]>([])
+  const lots = ref<IngredientLot[]>([])
+  const usages = ref<InventoryUsage[]>([])
 
-async function createUsage() {
-  try {
-    const payload = {
-      production_ref_uuid: normalizeText(usageForm.production_ref_uuid),
-      used_at: normalizeDateTime(usageForm.used_at),
-      notes: normalizeText(usageForm.notes),
-    }
-    await request<InventoryUsage>('/inventory-usage', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    usageForm.production_ref_uuid = ''
-    usageForm.used_at = ''
-    usageForm.notes = ''
-    await loadUsage()
-    showNotice('Usage created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create usage'
-    usageErrorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  const ingredientLoading = ref(false)
+  const receiptLoading = ref(false)
+  const lotLoading = ref(false)
+  const usageLoading = ref(false)
 
-function ingredientName(ingredientId: number) {
-  return ingredients.value.find((ingredient) => ingredient.id === ingredientId)?.name ?? `Ingredient ${ingredientId}`
-}
+  const ingredientErrorMessage = ref('')
+  const receiptErrorMessage = ref('')
+  const lotErrorMessage = ref('')
+  const usageErrorMessage = ref('')
 
-function openLotDetails(lotId: number) {
-  router.push({
-    path: '/inventory/lot-details',
-    query: { lot_id: String(lotId) },
+  const ingredientCategoryOptions = ['malt', 'hop', 'yeast', 'adjunct', 'water_chem', 'gas', 'other']
+  const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
+
+  const ingredientForm = reactive({
+    name: '',
+    category: '',
+    default_unit: '',
+    description: '',
   })
-}
+
+  const receiptForm = reactive({
+    supplier_uuid: '',
+    reference_code: '',
+    received_at: '',
+    notes: '',
+  })
+
+  const lotFilters = reactive({
+    ingredient_id: null as number | null,
+    receipt_id: null as number | null,
+  })
+
+  const lotForm = reactive({
+    ingredient_id: null as number | null,
+    receipt_id: null as number | null,
+    supplier_uuid: '',
+    brewery_lot_code: '',
+    originator_lot_code: '',
+    originator_name: '',
+    originator_type: '',
+    received_at: '',
+    received_amount: '',
+    received_unit: '',
+    best_by_at: '',
+    expires_at: '',
+    notes: '',
+  })
+
+  const usageForm = reactive({
+    production_ref_uuid: '',
+    used_at: '',
+    notes: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const ingredientSelectItems = computed(() =>
+    ingredients.value.map(ingredient => ({
+      title: ingredient.name,
+      value: ingredient.id,
+    })),
+  )
+
+  const receiptSelectItems = computed(() =>
+    receipts.value.map(receipt => ({
+      title: receipt.reference_code || `Receipt ${receipt.id}`,
+      value: receipt.id,
+    })),
+  )
+
+  onMounted(async () => {
+    await refreshAll()
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshAll () {
+    await Promise.allSettled([loadIngredients(), loadReceipts(), loadLots(), loadUsage()])
+  }
+
+  async function loadIngredients () {
+    ingredientLoading.value = true
+    ingredientErrorMessage.value = ''
+    try {
+      ingredients.value = await request<Ingredient[]>('/ingredients')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load ingredients'
+      ingredientErrorMessage.value = message
+    } finally {
+      ingredientLoading.value = false
+    }
+  }
+
+  async function loadReceipts () {
+    receiptLoading.value = true
+    receiptErrorMessage.value = ''
+    try {
+      receipts.value = await request<InventoryReceipt[]>('/inventory-receipts')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load receipts'
+      receiptErrorMessage.value = message
+    } finally {
+      receiptLoading.value = false
+    }
+  }
+
+  async function loadLots () {
+    lotLoading.value = true
+    lotErrorMessage.value = ''
+    try {
+      const query = new URLSearchParams()
+      if (lotFilters.ingredient_id) {
+        query.set('ingredient_id', String(lotFilters.ingredient_id))
+      }
+      if (lotFilters.receipt_id) {
+        query.set('receipt_id', String(lotFilters.receipt_id))
+      }
+      const path = query.toString() ? `/ingredient-lots?${query.toString()}` : '/ingredient-lots'
+      lots.value = await request<IngredientLot[]>(path)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load lots'
+      lotErrorMessage.value = message
+    } finally {
+      lotLoading.value = false
+    }
+  }
+
+  async function loadUsage () {
+    usageLoading.value = true
+    usageErrorMessage.value = ''
+    try {
+      usages.value = await request<InventoryUsage[]>('/inventory-usage')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load usage'
+      usageErrorMessage.value = message
+    } finally {
+      usageLoading.value = false
+    }
+  }
+
+  async function createIngredient () {
+    try {
+      const payload = {
+        name: ingredientForm.name.trim(),
+        category: ingredientForm.category,
+        default_unit: ingredientForm.default_unit,
+        description: normalizeText(ingredientForm.description),
+      }
+      await request<Ingredient>('/ingredients', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      ingredientForm.name = ''
+      ingredientForm.category = ''
+      ingredientForm.default_unit = ''
+      ingredientForm.description = ''
+      await loadIngredients()
+      showNotice('Ingredient created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create ingredient'
+      ingredientErrorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  async function createReceipt () {
+    try {
+      const payload = {
+        supplier_uuid: normalizeText(receiptForm.supplier_uuid),
+        reference_code: normalizeText(receiptForm.reference_code),
+        received_at: normalizeDateTime(receiptForm.received_at),
+        notes: normalizeText(receiptForm.notes),
+      }
+      await request<InventoryReceipt>('/inventory-receipts', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      receiptForm.supplier_uuid = ''
+      receiptForm.reference_code = ''
+      receiptForm.received_at = ''
+      receiptForm.notes = ''
+      await loadReceipts()
+      showNotice('Receipt created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create receipt'
+      receiptErrorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  async function createLot () {
+    try {
+      const payload = {
+        ingredient_id: lotForm.ingredient_id,
+        receipt_id: lotForm.receipt_id,
+        supplier_uuid: normalizeText(lotForm.supplier_uuid),
+        brewery_lot_code: normalizeText(lotForm.brewery_lot_code),
+        originator_lot_code: normalizeText(lotForm.originator_lot_code),
+        originator_name: normalizeText(lotForm.originator_name),
+        originator_type: normalizeText(lotForm.originator_type),
+        received_at: normalizeDateTime(lotForm.received_at),
+        received_amount: toNumber(lotForm.received_amount),
+        received_unit: lotForm.received_unit,
+        best_by_at: normalizeDateTime(lotForm.best_by_at),
+        expires_at: normalizeDateTime(lotForm.expires_at),
+        notes: normalizeText(lotForm.notes),
+      }
+      await request<IngredientLot>('/ingredient-lots', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      lotForm.ingredient_id = null
+      lotForm.receipt_id = null
+      lotForm.supplier_uuid = ''
+      lotForm.brewery_lot_code = ''
+      lotForm.originator_lot_code = ''
+      lotForm.originator_name = ''
+      lotForm.originator_type = ''
+      lotForm.received_at = ''
+      lotForm.received_amount = ''
+      lotForm.received_unit = ''
+      lotForm.best_by_at = ''
+      lotForm.expires_at = ''
+      lotForm.notes = ''
+      await loadLots()
+      showNotice('Lot created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create lot'
+      lotErrorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  async function createUsage () {
+    try {
+      const payload = {
+        production_ref_uuid: normalizeText(usageForm.production_ref_uuid),
+        used_at: normalizeDateTime(usageForm.used_at),
+        notes: normalizeText(usageForm.notes),
+      }
+      await request<InventoryUsage>('/inventory-usage', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      usageForm.production_ref_uuid = ''
+      usageForm.used_at = ''
+      usageForm.notes = ''
+      await loadUsage()
+      showNotice('Usage created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create usage'
+      usageErrorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function ingredientName (ingredientId: number) {
+    return ingredients.value.find(ingredient => ingredient.id === ingredientId)?.name ?? `Ingredient ${ingredientId}`
+  }
+
+  function openLotDetails (lotId: number) {
+    router.push({
+      path: '/inventory/lot-details',
+      query: { lot_id: String(lotId) },
+    })
+  }
 </script>
 
 <style scoped>

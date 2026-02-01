@@ -52,13 +52,13 @@ export const colorLabels: Record<ColorUnit, string> = {
 const volumeToMl: Record<VolumeUnit, number> = {
   ml: 1,
   l: 1000,
-  hl: 100000,
+  hl: 100_000,
   usfloz: 29.5735,
   ukfloz: 28.4131,
   usgal: 3785.41,
   ukgal: 4546.09,
-  bbl: 117347.77, // 31 * 3785.41
-  ukbbl: 163659.24, // 36 * 4546.09
+  bbl: 117_347.77, // 31 * 3785.41
+  ukbbl: 163_659.24, // 36 * 4546.09
 }
 
 // Mass: base unit is grams
@@ -72,7 +72,7 @@ const massToGrams: Record<MassUnit, number> = {
 // Pressure: base unit is kPa
 const pressureToKpa: Record<PressureUnit, number> = {
   kpa: 1,
-  psi: 6.89476,
+  psi: 6.894_76,
   bar: 100,
 }
 
@@ -118,28 +118,52 @@ export const colorPrecision: Record<ColorUnit, number> = {
 }
 
 // Helper to get precision for any unit type
-export function getPrecision(
-  unit: TemperatureUnit | GravityUnit | VolumeUnit | MassUnit | PressureUnit | ColorUnit
+export function getPrecision (
+  unit: TemperatureUnit | GravityUnit | VolumeUnit | MassUnit | PressureUnit | ColorUnit,
 ): number {
-  if (unit in temperaturePrecision) return temperaturePrecision[unit as TemperatureUnit]
-  if (unit in gravityPrecision) return gravityPrecision[unit as GravityUnit]
-  if (unit in volumePrecision) return volumePrecision[unit as VolumeUnit]
-  if (unit in massPrecision) return massPrecision[unit as MassUnit]
-  if (unit in pressurePrecision) return pressurePrecision[unit as PressureUnit]
-  if (unit in colorPrecision) return colorPrecision[unit as ColorUnit]
+  if (unit in temperaturePrecision) {
+    return temperaturePrecision[unit as TemperatureUnit]
+  }
+  if (unit in gravityPrecision) {
+    return gravityPrecision[unit as GravityUnit]
+  }
+  if (unit in volumePrecision) {
+    return volumePrecision[unit as VolumeUnit]
+  }
+  if (unit in massPrecision) {
+    return massPrecision[unit as MassUnit]
+  }
+  if (unit in pressurePrecision) {
+    return pressurePrecision[unit as PressureUnit]
+  }
+  if (unit in colorPrecision) {
+    return colorPrecision[unit as ColorUnit]
+  }
   return 2 // default
 }
 
 // Helper to get label for any unit type
-export function getUnitLabel(
-  unit: TemperatureUnit | GravityUnit | VolumeUnit | MassUnit | PressureUnit | ColorUnit
+export function getUnitLabel (
+  unit: TemperatureUnit | GravityUnit | VolumeUnit | MassUnit | PressureUnit | ColorUnit,
 ): string {
-  if (unit in temperatureLabels) return temperatureLabels[unit as TemperatureUnit]
-  if (unit in gravityLabels) return gravityLabels[unit as GravityUnit]
-  if (unit in volumeLabels) return volumeLabels[unit as VolumeUnit]
-  if (unit in massLabels) return massLabels[unit as MassUnit]
-  if (unit in pressureLabels) return pressureLabels[unit as PressureUnit]
-  if (unit in colorLabels) return colorLabels[unit as ColorUnit]
+  if (unit in temperatureLabels) {
+    return temperatureLabels[unit as TemperatureUnit]
+  }
+  if (unit in gravityLabels) {
+    return gravityLabels[unit as GravityUnit]
+  }
+  if (unit in volumeLabels) {
+    return volumeLabels[unit as VolumeUnit]
+  }
+  if (unit in massLabels) {
+    return massLabels[unit as MassUnit]
+  }
+  if (unit in pressureLabels) {
+    return pressureLabels[unit as PressureUnit]
+  }
+  if (unit in colorLabels) {
+    return colorLabels[unit as ColorUnit]
+  }
   return unit
 }
 
@@ -148,10 +172,10 @@ export function getUnitLabel(
 /**
  * Convert temperature between Celsius and Fahrenheit.
  */
-export function convertTemperature(
+export function convertTemperature (
   value: number | null | undefined,
   from: TemperatureUnit,
-  to: TemperatureUnit
+  to: TemperatureUnit,
 ): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -171,10 +195,10 @@ export function convertTemperature(
 /**
  * Convert gravity between Specific Gravity and Degrees Plato.
  */
-export function convertGravity(
+export function convertGravity (
   value: number | null | undefined,
   from: GravityUnit,
-  to: GravityUnit
+  to: GravityUnit,
 ): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -196,10 +220,10 @@ export function convertGravity(
 /**
  * Convert volume between supported units.
  */
-export function convertVolume(
+export function convertVolume (
   value: number | null | undefined,
   from: VolumeUnit,
-  to: VolumeUnit
+  to: VolumeUnit,
 ): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -216,10 +240,10 @@ export function convertVolume(
 /**
  * Convert mass/weight between supported units.
  */
-export function convertMass(
+export function convertMass (
   value: number | null | undefined,
   from: MassUnit,
-  to: MassUnit
+  to: MassUnit,
 ): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -236,10 +260,10 @@ export function convertMass(
 /**
  * Convert pressure between supported units.
  */
-export function convertPressure(
+export function convertPressure (
   value: number | null | undefined,
   from: PressureUnit,
-  to: PressureUnit
+  to: PressureUnit,
 ): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -256,10 +280,10 @@ export function convertPressure(
 /**
  * Convert color between SRM and EBC.
  */
-export function convertColor(
+export function convertColor (
   value: number | null | undefined,
   from: ColorUnit,
-  to: ColorUnit
+  to: ColorUnit,
 ): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -281,10 +305,10 @@ export function convertColor(
 /**
  * Convert temperature and format with unit label.
  */
-export function formatTemperature(
+export function formatTemperature (
   value: number | null | undefined,
   fromUnit: TemperatureUnit,
-  toUnit: TemperatureUnit
+  toUnit: TemperatureUnit,
 ): string {
   const converted = convertTemperature(value, fromUnit, toUnit)
   if (converted === null) {
@@ -297,10 +321,10 @@ export function formatTemperature(
 /**
  * Convert gravity and format with unit label.
  */
-export function formatGravity(
+export function formatGravity (
   value: number | null | undefined,
   fromUnit: GravityUnit,
-  toUnit: GravityUnit
+  toUnit: GravityUnit,
 ): string {
   const converted = convertGravity(value, fromUnit, toUnit)
   if (converted === null) {
@@ -313,10 +337,10 @@ export function formatGravity(
 /**
  * Convert volume and format with unit label.
  */
-export function formatVolume(
+export function formatVolume (
   value: number | null | undefined,
   fromUnit: VolumeUnit,
-  toUnit: VolumeUnit
+  toUnit: VolumeUnit,
 ): string {
   const converted = convertVolume(value, fromUnit, toUnit)
   if (converted === null) {
@@ -329,10 +353,10 @@ export function formatVolume(
 /**
  * Convert mass and format with unit label.
  */
-export function formatMass(
+export function formatMass (
   value: number | null | undefined,
   fromUnit: MassUnit,
-  toUnit: MassUnit
+  toUnit: MassUnit,
 ): string {
   const converted = convertMass(value, fromUnit, toUnit)
   if (converted === null) {
@@ -345,10 +369,10 @@ export function formatMass(
 /**
  * Convert pressure and format with unit label.
  */
-export function formatPressure(
+export function formatPressure (
   value: number | null | undefined,
   fromUnit: PressureUnit,
-  toUnit: PressureUnit
+  toUnit: PressureUnit,
 ): string {
   const converted = convertPressure(value, fromUnit, toUnit)
   if (converted === null) {
@@ -361,10 +385,10 @@ export function formatPressure(
 /**
  * Convert color and format with unit label.
  */
-export function formatColor(
+export function formatColor (
   value: number | null | undefined,
   fromUnit: ColorUnit,
-  toUnit: ColorUnit
+  toUnit: ColorUnit,
 ): string {
   const converted = convertColor(value, fromUnit, toUnit)
   if (converted === null) {
@@ -377,7 +401,7 @@ export function formatColor(
 /**
  * Composable providing unit conversion utilities.
  */
-export function useUnitConversion() {
+export function useUnitConversion () {
   return {
     // Labels
     temperatureLabels,

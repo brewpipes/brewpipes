@@ -3,14 +3,14 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+  import { onMounted } from 'vue'
+  import { useRouter } from 'vue-router'
 
-const router = useRouter()
+  const router = useRouter()
 
-onMounted(() => {
-  router.replace('/procurement/purchase-orders')
-})
+  onMounted(() => {
+    router.replace('/procurement/purchase-orders')
+  })
 </script>
 
 <style scoped>

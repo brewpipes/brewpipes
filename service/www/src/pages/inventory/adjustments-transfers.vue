@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         Adjustments & Transfers
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
+        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
           Refresh
         </v-btn>
       </v-card-title>
@@ -153,167 +153,167 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
 
-type InventoryAdjustment = {
-  id: number
-  uuid: string
-  reason: string
-  adjusted_at: string
-  notes: string
-  created_at: string
-  updated_at: string
-}
-
-type StockLocation = {
-  id: number
-  name: string
-}
-
-type InventoryTransfer = {
-  id: number
-  uuid: string
-  source_location_id: number
-  dest_location_id: number
-  transferred_at: string
-  notes: string
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, normalizeDateTime, formatDateTime } = useInventoryApi()
-
-const adjustments = ref<InventoryAdjustment[]>([])
-const locations = ref<StockLocation[]>([])
-const transfers = ref<InventoryTransfer[]>([])
-const loading = ref(false)
-
-const adjustmentErrorMessage = ref('')
-const transferErrorMessage = ref('')
-
-const adjustmentForm = reactive({
-  reason: '',
-  adjusted_at: '',
-  notes: '',
-})
-
-const transferForm = reactive({
-  source_location_id: null as number | null,
-  dest_location_id: null as number | null,
-  transferred_at: '',
-  notes: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const locationSelectItems = computed(() =>
-  locations.value.map((location) => ({
-    title: location.name,
-    value: location.id,
-  })),
-)
-
-onMounted(async () => {
-  await refreshAll()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshAll() {
-  loading.value = true
-  await Promise.allSettled([loadAdjustments(), loadTransfers(), loadLocations()])
-  loading.value = false
-}
-
-async function loadAdjustments() {
-  adjustmentErrorMessage.value = ''
-  try {
-    adjustments.value = await request<InventoryAdjustment[]>('/inventory-adjustments')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load adjustments'
-    adjustmentErrorMessage.value = message
+  type InventoryAdjustment = {
+    id: number
+    uuid: string
+    reason: string
+    adjusted_at: string
+    notes: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function loadLocations() {
-  try {
-    locations.value = await request<StockLocation[]>('/stock-locations')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load locations'
-    transferErrorMessage.value = message
+  type StockLocation = {
+    id: number
+    name: string
   }
-}
 
-async function loadTransfers() {
-  transferErrorMessage.value = ''
-  try {
-    transfers.value = await request<InventoryTransfer[]>('/inventory-transfers')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load transfers'
-    transferErrorMessage.value = message
+  type InventoryTransfer = {
+    id: number
+    uuid: string
+    source_location_id: number
+    dest_location_id: number
+    transferred_at: string
+    notes: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function createAdjustment() {
-  try {
-    const payload = {
-      reason: adjustmentForm.reason.trim(),
-      adjusted_at: normalizeDateTime(adjustmentForm.adjusted_at),
-      notes: normalizeText(adjustmentForm.notes),
+  const { request, normalizeText, normalizeDateTime, formatDateTime } = useInventoryApi()
+
+  const adjustments = ref<InventoryAdjustment[]>([])
+  const locations = ref<StockLocation[]>([])
+  const transfers = ref<InventoryTransfer[]>([])
+  const loading = ref(false)
+
+  const adjustmentErrorMessage = ref('')
+  const transferErrorMessage = ref('')
+
+  const adjustmentForm = reactive({
+    reason: '',
+    adjusted_at: '',
+    notes: '',
+  })
+
+  const transferForm = reactive({
+    source_location_id: null as number | null,
+    dest_location_id: null as number | null,
+    transferred_at: '',
+    notes: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const locationSelectItems = computed(() =>
+    locations.value.map(location => ({
+      title: location.name,
+      value: location.id,
+    })),
+  )
+
+  onMounted(async () => {
+    await refreshAll()
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshAll () {
+    loading.value = true
+    await Promise.allSettled([loadAdjustments(), loadTransfers(), loadLocations()])
+    loading.value = false
+  }
+
+  async function loadAdjustments () {
+    adjustmentErrorMessage.value = ''
+    try {
+      adjustments.value = await request<InventoryAdjustment[]>('/inventory-adjustments')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load adjustments'
+      adjustmentErrorMessage.value = message
     }
-    await request<InventoryAdjustment>('/inventory-adjustments', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    adjustmentForm.reason = ''
-    adjustmentForm.adjusted_at = ''
-    adjustmentForm.notes = ''
-    await loadAdjustments()
-    showNotice('Adjustment created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create adjustment'
-    adjustmentErrorMessage.value = message
-    showNotice(message, 'error')
   }
-}
 
-async function createTransfer() {
-  try {
-    const payload = {
-      source_location_id: transferForm.source_location_id,
-      dest_location_id: transferForm.dest_location_id,
-      transferred_at: normalizeDateTime(transferForm.transferred_at),
-      notes: normalizeText(transferForm.notes),
+  async function loadLocations () {
+    try {
+      locations.value = await request<StockLocation[]>('/stock-locations')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load locations'
+      transferErrorMessage.value = message
     }
-    await request<InventoryTransfer>('/inventory-transfers', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    transferForm.source_location_id = null
-    transferForm.dest_location_id = null
-    transferForm.transferred_at = ''
-    transferForm.notes = ''
-    await loadTransfers()
-    showNotice('Transfer created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create transfer'
-    transferErrorMessage.value = message
-    showNotice(message, 'error')
   }
-}
 
-function locationName(locationId: number) {
-  return locations.value.find((location) => location.id === locationId)?.name ?? `Location ${locationId}`
-}
+  async function loadTransfers () {
+    transferErrorMessage.value = ''
+    try {
+      transfers.value = await request<InventoryTransfer[]>('/inventory-transfers')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load transfers'
+      transferErrorMessage.value = message
+    }
+  }
+
+  async function createAdjustment () {
+    try {
+      const payload = {
+        reason: adjustmentForm.reason.trim(),
+        adjusted_at: normalizeDateTime(adjustmentForm.adjusted_at),
+        notes: normalizeText(adjustmentForm.notes),
+      }
+      await request<InventoryAdjustment>('/inventory-adjustments', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      adjustmentForm.reason = ''
+      adjustmentForm.adjusted_at = ''
+      adjustmentForm.notes = ''
+      await loadAdjustments()
+      showNotice('Adjustment created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create adjustment'
+      adjustmentErrorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  async function createTransfer () {
+    try {
+      const payload = {
+        source_location_id: transferForm.source_location_id,
+        dest_location_id: transferForm.dest_location_id,
+        transferred_at: normalizeDateTime(transferForm.transferred_at),
+        notes: normalizeText(transferForm.notes),
+      }
+      await request<InventoryTransfer>('/inventory-transfers', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      transferForm.source_location_id = null
+      transferForm.dest_location_id = null
+      transferForm.transferred_at = ''
+      transferForm.notes = ''
+      await loadTransfers()
+      showNotice('Transfer created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create transfer'
+      transferErrorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function locationName (locationId: number) {
+    return locations.value.find(location => location.id === locationId)?.name ?? `Location ${locationId}`
+  }
 </script>
 
 <style scoped>

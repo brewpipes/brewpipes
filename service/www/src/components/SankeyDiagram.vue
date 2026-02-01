@@ -6,10 +6,10 @@
     <div v-else-if="!layout" class="sankey-empty">Sizing diagram...</div>
     <svg
       v-else
-      :width="layoutWidth"
       :height="height"
-      :viewBox="`0 0 ${layoutWidth} ${height}`"
       role="img"
+      :viewBox="`0 0 ${layoutWidth} ${height}`"
+      :width="layoutWidth"
     >
       <g class="sankey-links">
         <path
@@ -30,18 +30,18 @@
         >
           <rect
             class="sankey-node"
-            :width="nodeWidth(node)"
-            :height="nodeHeight(node)"
             :fill="nodeColor(node)"
+            :height="nodeHeight(node)"
             rx="6"
             ry="6"
+            :width="nodeWidth(node)"
           />
           <text
             class="sankey-label"
+            dominant-baseline="middle"
+            :text-anchor="nodeLabelAnchor(node)"
             :x="nodeLabelX(node)"
             :y="nodeHeight(node) / 2"
-            :text-anchor="nodeLabelAnchor(node)"
-            dominant-baseline="middle"
           >
             {{ node.label }}
           </text>
@@ -53,151 +53,151 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { sankey, sankeyLinkHorizontal } from 'd3-sankey'
+  import { sankey, sankeyLinkHorizontal } from 'd3-sankey'
+  import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-type SankeyNodeInput = {
-  id: string
-  label: string
-}
-
-type SankeyLinkInput = {
-  source: string
-  target: string
-  value: number
-  label?: string
-}
-
-type SankeyNodeDatum = SankeyNodeInput & {
-  index?: number
-  value?: number
-  x0?: number
-  x1?: number
-  y0?: number
-  y1?: number
-}
-
-type SankeyLinkDatum = Omit<SankeyLinkInput, 'source' | 'target'> & {
-  index?: number
-  width?: number
-  source: SankeyNodeDatum
-  target: SankeyNodeDatum
-}
-
-type SankeyLayout = {
-  nodes: SankeyNodeDatum[]
-  links: SankeyLinkDatum[]
-}
-
-const props = withDefaults(
-  defineProps<{
-    nodes: SankeyNodeInput[]
-    links: SankeyLinkInput[]
-    height?: number
-    nodeWidth?: number
-    nodePadding?: number
-  }>(),
-  {
-    height: 360,
-    nodeWidth: 14,
-    nodePadding: 16,
-  },
-)
-
-const container = ref<HTMLElement | null>(null)
-const width = ref(0)
-let observer: ResizeObserver | null = null
-
-const hasData = computed(() => props.nodes.length > 0 && props.links.length > 0)
-const layoutWidth = computed(() => Math.max(width.value, 480))
-
-const layout = computed(() => {
-  if (!hasData.value || layoutWidth.value === 0) {
-    return null
+  type SankeyNodeInput = {
+    id: string
+    label: string
   }
 
-  const layoutEngine = sankey<SankeyNodeDatum, SankeyLinkInput>()
-    .nodeId((node: SankeyNodeDatum) => node.id)
-    .nodeWidth(props.nodeWidth)
-    .nodePadding(props.nodePadding)
-    .extent([
-      [0, 0],
-      [layoutWidth.value, props.height],
-    ])
-
-  return layoutEngine({
-    nodes: props.nodes.map((node) => ({ ...node })),
-    links: props.links.map((link) => ({ ...link })),
-  }) as unknown as SankeyLayout
-})
-
-const linkPath = sankeyLinkHorizontal<SankeyLinkDatum>()
-const nodePalette = [
-  'rgb(var(--v-theme-primary))',
-  'rgb(var(--v-theme-secondary))',
-  'rgb(var(--v-theme-info))',
-  'rgb(var(--v-theme-success))',
-  'rgb(var(--v-theme-warning))',
-]
-
-onMounted(() => {
-  if (!container.value) {
-    return
+  type SankeyLinkInput = {
+    source: string
+    target: string
+    value: number
+    label?: string
   }
-  width.value = container.value.clientWidth
-  observer = new ResizeObserver((entries) => {
-    const entry = entries[0]
-    if (!entry) {
+
+  type SankeyNodeDatum = SankeyNodeInput & {
+    index?: number
+    value?: number
+    x0?: number
+    x1?: number
+    y0?: number
+    y1?: number
+  }
+
+  type SankeyLinkDatum = Omit<SankeyLinkInput, 'source' | 'target'> & {
+    index?: number
+    width?: number
+    source: SankeyNodeDatum
+    target: SankeyNodeDatum
+  }
+
+  type SankeyLayout = {
+    nodes: SankeyNodeDatum[]
+    links: SankeyLinkDatum[]
+  }
+
+  const props = withDefaults(
+    defineProps<{
+      nodes: SankeyNodeInput[]
+      links: SankeyLinkInput[]
+      height?: number
+      nodeWidth?: number
+      nodePadding?: number
+    }>(),
+    {
+      height: 360,
+      nodeWidth: 14,
+      nodePadding: 16,
+    },
+  )
+
+  const container = ref<HTMLElement | null>(null)
+  const width = ref(0)
+  let observer: ResizeObserver | null = null
+
+  const hasData = computed(() => props.nodes.length > 0 && props.links.length > 0)
+  const layoutWidth = computed(() => Math.max(width.value, 480))
+
+  const layout = computed(() => {
+    if (!hasData.value || layoutWidth.value === 0) {
+      return null
+    }
+
+    const layoutEngine = sankey<SankeyNodeDatum, SankeyLinkInput>()
+      .nodeId((node: SankeyNodeDatum) => node.id)
+      .nodeWidth(props.nodeWidth)
+      .nodePadding(props.nodePadding)
+      .extent([
+        [0, 0],
+        [layoutWidth.value, props.height],
+      ])
+
+    return layoutEngine({
+      nodes: props.nodes.map(node => ({ ...node })),
+      links: props.links.map(link => ({ ...link })),
+    }) as unknown as SankeyLayout
+  })
+
+  const linkPath = sankeyLinkHorizontal<SankeyLinkDatum>()
+  const nodePalette = [
+    'rgb(var(--v-theme-primary))',
+    'rgb(var(--v-theme-secondary))',
+    'rgb(var(--v-theme-info))',
+    'rgb(var(--v-theme-success))',
+    'rgb(var(--v-theme-warning))',
+  ]
+
+  onMounted(() => {
+    if (!container.value) {
       return
     }
-    width.value = entry.contentRect.width
+    width.value = container.value.clientWidth
+    observer = new ResizeObserver(entries => {
+      const entry = entries[0]
+      if (!entry) {
+        return
+      }
+      width.value = entry.contentRect.width
+    })
+    observer.observe(container.value)
   })
-  observer.observe(container.value)
-})
 
-onBeforeUnmount(() => {
-  observer?.disconnect()
-})
+  onBeforeUnmount(() => {
+    observer?.disconnect()
+  })
 
-function nodeWidth(node: SankeyNodeDatum) {
-  return Math.max((node.x1 ?? 0) - (node.x0 ?? 0), 0)
-}
-
-function nodeHeight(node: SankeyNodeDatum) {
-  return Math.max((node.y1 ?? 0) - (node.y0 ?? 0), 0)
-}
-
-function nodeLabelX(node: SankeyNodeDatum) {
-  const widthValue = nodeWidth(node)
-  return (node.x0 ?? 0) < layoutWidth.value / 2 ? widthValue + 8 : -8
-}
-
-function nodeLabelAnchor(node: SankeyNodeDatum) {
-  return (node.x0 ?? 0) < layoutWidth.value / 2 ? 'start' : 'end'
-}
-
-function nodeColor(node: SankeyNodeDatum) {
-  const index = node.index ?? 0
-  return nodePalette[index % nodePalette.length]
-}
-
-function formatValue(value: number | undefined) {
-  if (value === undefined) {
-    return 'n/a'
+  function nodeWidth (node: SankeyNodeDatum) {
+    return Math.max((node.x1 ?? 0) - (node.x0 ?? 0), 0)
   }
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value)
-}
 
-function linkTitle(link: SankeyLinkDatum) {
-  return link.label ?? formatValue(link.value)
-}
-
-function linkKey(link: SankeyLinkDatum) {
-  if (link.index !== undefined) {
-    return `link-${link.index}`
+  function nodeHeight (node: SankeyNodeDatum) {
+    return Math.max((node.y1 ?? 0) - (node.y0 ?? 0), 0)
   }
-  return `link-${link.source.id}-${link.target.id}`
-}
+
+  function nodeLabelX (node: SankeyNodeDatum) {
+    const widthValue = nodeWidth(node)
+    return (node.x0 ?? 0) < layoutWidth.value / 2 ? widthValue + 8 : -8
+  }
+
+  function nodeLabelAnchor (node: SankeyNodeDatum) {
+    return (node.x0 ?? 0) < layoutWidth.value / 2 ? 'start' : 'end'
+  }
+
+  function nodeColor (node: SankeyNodeDatum) {
+    const index = node.index ?? 0
+    return nodePalette[index % nodePalette.length]
+  }
+
+  function formatValue (value: number | undefined) {
+    if (value === undefined) {
+      return 'n/a'
+    }
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value)
+  }
+
+  function linkTitle (link: SankeyLinkDatum) {
+    return link.label ?? formatValue(link.value)
+  }
+
+  function linkKey (link: SankeyLinkDatum) {
+    if (link.index !== undefined) {
+      return `link-${link.index}`
+    }
+    return `link-${link.source.id}-${link.target.id}`
+  }
 </script>
 
 <style scoped>

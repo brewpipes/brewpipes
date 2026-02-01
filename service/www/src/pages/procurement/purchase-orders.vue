@@ -4,10 +4,16 @@
       <v-card-title class="d-flex align-center">
         Purchase orders
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
+        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
           Refresh
         </v-btn>
-        <v-btn class="ml-2" color="primary" size="small" variant="text" @click="createOrderDialog = true">
+        <v-btn
+          class="ml-2"
+          color="primary"
+          size="small"
+          variant="text"
+          @click="createOrderDialog = true"
+        >
           New order
         </v-btn>
       </v-card-title>
@@ -32,9 +38,9 @@
                 </v-alert>
                 <v-select
                   v-model="filters.supplier_id"
+                  clearable
                   :items="supplierSelectItems"
                   label="Filter by supplier"
-                  clearable
                 />
                 <v-table class="data-table" density="compact">
                   <thead>
@@ -43,7 +49,7 @@
                       <th>Supplier</th>
                       <th>Status</th>
                       <th>Expected</th>
-                      <th></th>
+                      <th />
                     </tr>
                   </thead>
                   <tbody>
@@ -102,7 +108,7 @@
             <v-text-field v-model="orderForm.order_number" label="Order number" />
           </v-col>
           <v-col cols="12" md="6">
-            <v-select v-model="orderForm.status" :items="statusOptions" label="Status" clearable />
+            <v-select v-model="orderForm.status" clearable :items="statusOptions" label="Status" />
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field v-model="orderForm.ordered_at" label="Ordered at" type="datetime-local" />
@@ -130,155 +136,155 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
 
-type Supplier = {
-  id: number
-  name: string
-}
-
-type PurchaseOrder = {
-  id: number
-  uuid: string
-  supplier_id: number
-  order_number: string
-  status: string
-  ordered_at: string | null
-  expected_at: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, normalizeDateTime, formatDateTime } = useProcurementApi()
-const router = useRouter()
-
-const suppliers = ref<Supplier[]>([])
-const orders = ref<PurchaseOrder[]>([])
-const loading = ref(false)
-const errorMessage = ref('')
-const createOrderDialog = ref(false)
-
-const statusOptions = [
-  'draft',
-  'submitted',
-  'confirmed',
-  'partially_received',
-  'received',
-  'cancelled',
-]
-
-const filters = reactive({
-  supplier_id: null as number | null,
-})
-
-const orderForm = reactive({
-  supplier_id: null as number | null,
-  order_number: '',
-  status: '',
-  ordered_at: '',
-  expected_at: '',
-  notes: '',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const supplierSelectItems = computed(() =>
-  suppliers.value.map((supplier) => ({
-    title: supplier.name,
-    value: supplier.id,
-  })),
-)
-
-onMounted(async () => {
-  await refreshAll()
-})
-
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshAll() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    await Promise.all([loadSuppliers(), loadOrders()])
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load purchase orders'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type Supplier = {
+    id: number
+    name: string
   }
-}
 
-async function loadSuppliers() {
-  suppliers.value = await request<Supplier[]>('/suppliers')
-}
-
-async function loadOrders() {
-  const query = new URLSearchParams()
-  if (filters.supplier_id) {
-    query.set('supplier_id', String(filters.supplier_id))
+  type PurchaseOrder = {
+    id: number
+    uuid: string
+    supplier_id: number
+    order_number: string
+    status: string
+    ordered_at: string | null
+    expected_at: string | null
+    notes: string | null
+    created_at: string
+    updated_at: string
   }
-  const path = query.toString() ? `/purchase-orders?${query.toString()}` : '/purchase-orders'
-  orders.value = await request<PurchaseOrder[]>(path)
-}
 
-async function createOrder() {
-  try {
-    const payload = {
-      supplier_id: orderForm.supplier_id,
-      order_number: orderForm.order_number.trim(),
-      status: normalizeText(orderForm.status),
-      ordered_at: normalizeDateTime(orderForm.ordered_at),
-      expected_at: normalizeDateTime(orderForm.expected_at),
-      notes: normalizeText(orderForm.notes),
+  const { request, normalizeText, normalizeDateTime, formatDateTime } = useProcurementApi()
+  const router = useRouter()
+
+  const suppliers = ref<Supplier[]>([])
+  const orders = ref<PurchaseOrder[]>([])
+  const loading = ref(false)
+  const errorMessage = ref('')
+  const createOrderDialog = ref(false)
+
+  const statusOptions = [
+    'draft',
+    'submitted',
+    'confirmed',
+    'partially_received',
+    'received',
+    'cancelled',
+  ]
+
+  const filters = reactive({
+    supplier_id: null as number | null,
+  })
+
+  const orderForm = reactive({
+    supplier_id: null as number | null,
+    order_number: '',
+    status: '',
+    ordered_at: '',
+    expected_at: '',
+    notes: '',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const supplierSelectItems = computed(() =>
+    suppliers.value.map(supplier => ({
+      title: supplier.name,
+      value: supplier.id,
+    })),
+  )
+
+  onMounted(async () => {
+    await refreshAll()
+  })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshAll () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      await Promise.all([loadSuppliers(), loadOrders()])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load purchase orders'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
     }
-    await request<PurchaseOrder>('/purchase-orders', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    orderForm.supplier_id = null
-    orderForm.order_number = ''
-    orderForm.status = ''
-    orderForm.ordered_at = ''
-    orderForm.expected_at = ''
-    orderForm.notes = ''
-    await loadOrders()
-    createOrderDialog.value = false
-    showNotice('Purchase order created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create purchase order'
-    errorMessage.value = message
-    showNotice(message, 'error')
   }
-}
 
-function supplierName(supplierId: number) {
-  return suppliers.value.find((supplier) => supplier.id === supplierId)?.name ?? `Supplier ${supplierId}`
-}
+  async function loadSuppliers () {
+    suppliers.value = await request<Supplier[]>('/suppliers')
+  }
 
-function openLines(orderId: number) {
-  router.push({
-    path: '/procurement/purchase-order-lines',
-    query: { purchase_order_id: String(orderId) },
-  })
-}
+  async function loadOrders () {
+    const query = new URLSearchParams()
+    if (filters.supplier_id) {
+      query.set('supplier_id', String(filters.supplier_id))
+    }
+    const path = query.toString() ? `/purchase-orders?${query.toString()}` : '/purchase-orders'
+    orders.value = await request<PurchaseOrder[]>(path)
+  }
 
-function openFees(orderId: number) {
-  router.push({
-    path: '/procurement/purchase-order-fees',
-    query: { purchase_order_id: String(orderId) },
-  })
-}
+  async function createOrder () {
+    try {
+      const payload = {
+        supplier_id: orderForm.supplier_id,
+        order_number: orderForm.order_number.trim(),
+        status: normalizeText(orderForm.status),
+        ordered_at: normalizeDateTime(orderForm.ordered_at),
+        expected_at: normalizeDateTime(orderForm.expected_at),
+        notes: normalizeText(orderForm.notes),
+      }
+      await request<PurchaseOrder>('/purchase-orders', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      orderForm.supplier_id = null
+      orderForm.order_number = ''
+      orderForm.status = ''
+      orderForm.ordered_at = ''
+      orderForm.expected_at = ''
+      orderForm.notes = ''
+      await loadOrders()
+      createOrderDialog.value = false
+      showNotice('Purchase order created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create purchase order'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function supplierName (supplierId: number) {
+    return suppliers.value.find(supplier => supplier.id === supplierId)?.name ?? `Supplier ${supplierId}`
+  }
+
+  function openLines (orderId: number) {
+    router.push({
+      path: '/procurement/purchase-order-lines',
+      query: { purchase_order_id: String(orderId) },
+    })
+  }
+
+  function openFees (orderId: number) {
+    router.push({
+      path: '/procurement/purchase-order-fees',
+      query: { purchase_order_id: String(orderId) },
+    })
+  }
 </script>
 
 <style scoped>

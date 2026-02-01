@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         Purchase order lines
         <v-spacer />
-        <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
+        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
           Refresh
         </v-btn>
       </v-card-title>
@@ -29,9 +29,9 @@
                 </v-alert>
                 <v-select
                   v-model="filters.purchase_order_id"
+                  clearable
                   :items="orderSelectItems"
                   label="Filter by purchase order"
-                  clearable
                 />
                 <v-table class="data-table" density="compact">
                   <thead>
@@ -93,13 +93,13 @@
                   color="primary"
                   :disabled="
                     !lineForm.purchase_order_id ||
-                    !lineForm.line_number ||
-                    !lineForm.item_type ||
-                    !lineForm.item_name.trim() ||
-                    !lineForm.quantity ||
-                    !lineForm.quantity_unit ||
-                    !lineForm.unit_cost_cents ||
-                    !lineForm.currency
+                      !lineForm.line_number ||
+                      !lineForm.item_type ||
+                      !lineForm.item_name.trim() ||
+                      !lineForm.quantity ||
+                      !lineForm.quantity_unit ||
+                      !lineForm.unit_cost_cents ||
+                      !lineForm.currency
                   "
                   @click="createLine"
                 >
@@ -119,151 +119,151 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
 
-type PurchaseOrder = {
-  id: number
-  order_number: string
-}
-
-type PurchaseOrderLine = {
-  id: number
-  uuid: string
-  purchase_order_id: number
-  line_number: number
-  item_type: string
-  item_name: string
-  inventory_item_uuid: string | null
-  quantity: number
-  quantity_unit: string
-  unit_cost_cents: number
-  currency: string
-  created_at: string
-  updated_at: string
-}
-
-const { request, normalizeText, toNumber, formatCurrency } = useProcurementApi()
-const route = useRoute()
-
-const orders = ref<PurchaseOrder[]>([])
-const lines = ref<PurchaseOrderLine[]>([])
-const loading = ref(false)
-const errorMessage = ref('')
-
-const itemTypeOptions = ['ingredient', 'packaging', 'service', 'equipment', 'other']
-const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
-const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
-
-const filters = reactive({
-  purchase_order_id: null as number | null,
-})
-
-const lineForm = reactive({
-  purchase_order_id: null as number | null,
-  line_number: '',
-  item_type: '',
-  item_name: '',
-  inventory_item_uuid: '',
-  quantity: '',
-  quantity_unit: '',
-  unit_cost_cents: '',
-  currency: 'USD',
-})
-
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'success',
-})
-
-const orderSelectItems = computed(() =>
-  orders.value.map((order) => ({
-    title: order.order_number,
-    value: order.id,
-  })),
-)
-
-onMounted(async () => {
-  await refreshAll()
-  const queryId = route.query.purchase_order_id
-  if (typeof queryId === 'string') {
-    filters.purchase_order_id = Number(queryId)
-    await loadLines()
+  type PurchaseOrder = {
+    id: number
+    order_number: string
   }
-})
 
-function showNotice(text: string, color = 'success') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.show = true
-}
-
-async function refreshAll() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    await Promise.all([loadOrders(), loadLines()])
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load order lines'
-    errorMessage.value = message
-  } finally {
-    loading.value = false
+  type PurchaseOrderLine = {
+    id: number
+    uuid: string
+    purchase_order_id: number
+    line_number: number
+    item_type: string
+    item_name: string
+    inventory_item_uuid: string | null
+    quantity: number
+    quantity_unit: string
+    unit_cost_cents: number
+    currency: string
+    created_at: string
+    updated_at: string
   }
-}
 
-async function loadOrders() {
-  orders.value = await request<PurchaseOrder[]>('/purchase-orders')
-}
+  const { request, normalizeText, toNumber, formatCurrency } = useProcurementApi()
+  const route = useRoute()
 
-async function loadLines() {
-  const query = new URLSearchParams()
-  if (filters.purchase_order_id) {
-    query.set('purchase_order_id', String(filters.purchase_order_id))
-  }
-  const path = query.toString() ? `/purchase-order-lines?${query.toString()}` : '/purchase-order-lines'
-  lines.value = await request<PurchaseOrderLine[]>(path)
-}
+  const orders = ref<PurchaseOrder[]>([])
+  const lines = ref<PurchaseOrderLine[]>([])
+  const loading = ref(false)
+  const errorMessage = ref('')
 
-async function createLine() {
-  try {
-    const payload = {
-      purchase_order_id: lineForm.purchase_order_id,
-      line_number: toNumber(lineForm.line_number),
-      item_type: lineForm.item_type,
-      item_name: lineForm.item_name.trim(),
-      inventory_item_uuid: normalizeText(lineForm.inventory_item_uuid),
-      quantity: toNumber(lineForm.quantity),
-      quantity_unit: lineForm.quantity_unit,
-      unit_cost_cents: toNumber(lineForm.unit_cost_cents),
-      currency: lineForm.currency,
+  const itemTypeOptions = ['ingredient', 'packaging', 'service', 'equipment', 'other']
+  const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
+  const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
+
+  const filters = reactive({
+    purchase_order_id: null as number | null,
+  })
+
+  const lineForm = reactive({
+    purchase_order_id: null as number | null,
+    line_number: '',
+    item_type: '',
+    item_name: '',
+    inventory_item_uuid: '',
+    quantity: '',
+    quantity_unit: '',
+    unit_cost_cents: '',
+    currency: 'USD',
+  })
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  const orderSelectItems = computed(() =>
+    orders.value.map(order => ({
+      title: order.order_number,
+      value: order.id,
+    })),
+  )
+
+  onMounted(async () => {
+    await refreshAll()
+    const queryId = route.query.purchase_order_id
+    if (typeof queryId === 'string') {
+      filters.purchase_order_id = Number(queryId)
+      await loadLines()
     }
-    await request<PurchaseOrderLine>('/purchase-order-lines', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    lineForm.purchase_order_id = null
-    lineForm.line_number = ''
-    lineForm.item_type = ''
-    lineForm.item_name = ''
-    lineForm.inventory_item_uuid = ''
-    lineForm.quantity = ''
-    lineForm.quantity_unit = ''
-    lineForm.unit_cost_cents = ''
-    lineForm.currency = 'USD'
-    await loadLines()
-    showNotice('Order line created')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create order line'
-    errorMessage.value = message
-    showNotice(message, 'error')
-  }
-}
+  })
 
-function orderNumber(orderId: number) {
-  return orders.value.find((order) => order.id === orderId)?.order_number ?? `PO ${orderId}`
-}
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshAll () {
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      await Promise.all([loadOrders(), loadLines()])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load order lines'
+      errorMessage.value = message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadOrders () {
+    orders.value = await request<PurchaseOrder[]>('/purchase-orders')
+  }
+
+  async function loadLines () {
+    const query = new URLSearchParams()
+    if (filters.purchase_order_id) {
+      query.set('purchase_order_id', String(filters.purchase_order_id))
+    }
+    const path = query.toString() ? `/purchase-order-lines?${query.toString()}` : '/purchase-order-lines'
+    lines.value = await request<PurchaseOrderLine[]>(path)
+  }
+
+  async function createLine () {
+    try {
+      const payload = {
+        purchase_order_id: lineForm.purchase_order_id,
+        line_number: toNumber(lineForm.line_number),
+        item_type: lineForm.item_type,
+        item_name: lineForm.item_name.trim(),
+        inventory_item_uuid: normalizeText(lineForm.inventory_item_uuid),
+        quantity: toNumber(lineForm.quantity),
+        quantity_unit: lineForm.quantity_unit,
+        unit_cost_cents: toNumber(lineForm.unit_cost_cents),
+        currency: lineForm.currency,
+      }
+      await request<PurchaseOrderLine>('/purchase-order-lines', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      lineForm.purchase_order_id = null
+      lineForm.line_number = ''
+      lineForm.item_type = ''
+      lineForm.item_name = ''
+      lineForm.inventory_item_uuid = ''
+      lineForm.quantity = ''
+      lineForm.quantity_unit = ''
+      lineForm.unit_cost_cents = ''
+      lineForm.currency = 'USD'
+      await loadLines()
+      showNotice('Order line created')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create order line'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    }
+  }
+
+  function orderNumber (orderId: number) {
+    return orders.value.find(order => order.id === orderId)?.order_number ?? `PO ${orderId}`
+  }
 </script>
 
 <style scoped>

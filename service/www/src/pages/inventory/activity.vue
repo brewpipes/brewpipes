@@ -58,7 +58,7 @@
                     <tr v-for="movement in movements" :key="movement.id">
                       <td>{{ movement.direction }}</td>
                       <td>{{ movement.reason }}</td>
-                      <td>{{ formatAmount(movement.amount, movement.amount_unit) }}</td>
+                      <td>{{ formatAmountPreferred(movement.amount, movement.amount_unit) }}</td>
                       <td>{{ locationName(movement.stock_location_id) }}</td>
                     </tr>
                     <tr v-if="movements.length === 0">
@@ -143,6 +143,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useInventoryApi } from '@/composables/useInventoryApi'
+import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
 type IngredientLot = {
   id: number
@@ -178,7 +179,8 @@ type InventoryMovement = {
   notes: string
 }
 
-const { request, normalizeText, normalizeDateTime, toNumber, formatAmount } = useInventoryApi()
+const { request, normalizeText, normalizeDateTime, toNumber } = useInventoryApi()
+const { formatAmountPreferred } = useUnitPreferences()
 
 const lots = ref<IngredientLot[]>([])
 const locations = ref<StockLocation[]>([])

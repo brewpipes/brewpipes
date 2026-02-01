@@ -144,7 +144,7 @@
                   </v-chip>
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ item.vessel.type }} · {{ formatCapacity(item.vessel.capacity, item.vessel.capacity_unit) }}
+                  {{ item.vessel.type }} · {{ formatVolumePreferred(item.vessel.capacity, item.vessel.capacity_unit) }}
                 </v-list-item-subtitle>
                 <div class="text-caption text-medium-emphasis">
                   {{ item.occupancyDetail }}
@@ -171,8 +171,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
 import { useApiClient } from '@/composables/useApiClient'
-
-type Unit = 'ml' | 'usfloz' | 'ukfloz'
+import { useUnitPreferences, type VolumeUnit } from '@/composables/useUnitPreferences'
 
 type ProcessPhase =
   | 'planning'
@@ -207,7 +206,7 @@ type Vessel = {
   type: string
   name: string
   capacity: number
-  capacity_unit: Unit
+  capacity_unit: VolumeUnit
   status: 'active' | 'inactive' | 'retired'
   updated_at: string
 }
@@ -218,7 +217,7 @@ type Volume = {
   name: string | null
   description: string | null
   amount: number
-  amount_unit: Unit
+  amount_unit: VolumeUnit
   updated_at: string
 }
 
@@ -266,6 +265,7 @@ const errorMessage = ref('')
 const loading = ref(false)
 
 const { request } = useApiClient(apiBase)
+const { formatVolumePreferred } = useUnitPreferences()
 
 const volumeNameMap = computed(
   () => new Map(volumes.value.map((volume) => [volume.id, volume.name ?? `Volume ${volume.id}`])),
@@ -558,10 +558,6 @@ function getOccupancyStatusColor(status: string | null | undefined): string {
     packaging: 'teal',
   }
   return statusColors[status] ?? 'secondary'
-}
-
-function formatCapacity(amount: number, unit: Unit) {
-  return `${amount} ${unit}`
 }
 
 function formatDate(value: string | null | undefined) {

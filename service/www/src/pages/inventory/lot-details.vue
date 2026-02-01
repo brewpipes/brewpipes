@@ -123,6 +123,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInventoryApi } from '@/composables/useInventoryApi'
+import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
 type Ingredient = {
   id: number
@@ -157,6 +158,7 @@ type IngredientLotYeastDetail = {
 }
 
 const { request, toNumber } = useInventoryApi()
+const { formatAmountPreferred } = useUnitPreferences()
 const route = useRoute()
 
 const ingredients = ref<Ingredient[]>([])
@@ -190,7 +192,7 @@ const snackbar = reactive({
 
 const lotSelectItems = computed(() =>
   lots.value.map((lot) => ({
-    title: `${ingredientName(lot.ingredient_id)} (${lot.received_amount} ${lot.received_unit})`,
+    title: `${ingredientName(lot.ingredient_id)} (${formatAmountPreferred(lot.received_amount, lot.received_unit)})`,
     value: lot.id,
   })),
 )

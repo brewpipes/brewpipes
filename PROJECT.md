@@ -109,3 +109,40 @@ New `GET /batches/{id}/summary` endpoint aggregates:
 4. UI - Brew Session Tracking: create/edit, hot-side additions/measurements
 5. UI - Enhanced Batch Views: spreadsheet-style list, batch detail timeline
 6. UI - Occupancy Status: status display and change workflow
+
+## Implemented: User Display Preferences
+
+### Overview
+
+Users can customize their preferred units for displaying measurements throughout the app. Values are stored in their original units on the backend and converted to the user's preferred units for display.
+
+### Supported unit types
+
+- **Temperature**: Celsius (°C), Fahrenheit (°F)
+- **Gravity**: Specific Gravity (SG), Degrees Plato (°P)
+- **Volume**: mL, L, hL, US fl oz, UK fl oz, US gal, UK gal, US bbl (31 gal), UK bbl (36 gal)
+- **Mass/Weight**: g, kg, oz, lb
+- **Pressure**: kPa, PSI, bar
+- **Color**: SRM, EBC
+
+### Default preferences
+
+Defaults are US-centric (first customer is US-based):
+- Temperature: Fahrenheit
+- Gravity: Specific Gravity
+- Volume: US Barrels (bbl)
+- Mass: Pounds (lb)
+- Pressure: PSI
+- Color: SRM
+
+### Storage approach
+
+- **Backend**: Stores values in their original recorded unit (preserves measurement fidelity)
+- **Frontend**: Converts to user-preferred units on display
+- **Preferences**: Persisted in browser localStorage (`brewpipes:unitPreferences`)
+
+### Implementation
+
+- Settings page accessible via user dropdown menu → "Settings"
+- Composables: `useUnitConversion.ts` (pure conversion functions), `useUnitPreferences.ts` (preferences state and formatting)
+- Applied across: Batches (sparklines, metrics), Vessels (capacity), Inventory (amounts), Dashboard

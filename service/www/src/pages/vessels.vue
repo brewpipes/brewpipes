@@ -37,7 +37,7 @@
                   {{ vessel.name }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ vessel.type }} - {{ formatCapacity(vessel.capacity, vessel.capacity_unit) }}
+                  {{ vessel.type }} - {{ formatVolumePreferred(vessel.capacity, vessel.capacity_unit) }}
                 </v-list-item-subtitle>
                 <template #append>
                   <v-chip size="x-small" variant="tonal">
@@ -89,7 +89,7 @@
                         {{ selectedVessel.type }} - {{ selectedVessel.status }}
                       </div>
                       <div class="text-body-2 text-medium-emphasis">
-                        Capacity {{ formatCapacity(selectedVessel.capacity, selectedVessel.capacity_unit) }}
+                        Capacity {{ formatVolumePreferred(selectedVessel.capacity, selectedVessel.capacity_unit) }}
                       </div>
                       <div class="text-body-2 text-medium-emphasis" v-if="selectedVessel.make || selectedVessel.model">
                         {{ selectedVessel.make ?? 'Make not set' }} {{ selectedVessel.model ?? '' }}
@@ -257,8 +257,7 @@ import {
   type Occupancy,
   OCCUPANCY_STATUS_VALUES,
 } from '@/composables/useProductionApi'
-
-type Unit = 'ml' | 'usfloz' | 'ukfloz'
+import { useUnitPreferences, volumeOptions, type VolumeUnit } from '@/composables/useUnitPreferences'
 
 type Vessel = {
   id: number
@@ -266,7 +265,7 @@ type Vessel = {
   type: string
   name: string
   capacity: number
-  capacity_unit: Unit
+  capacity_unit: VolumeUnit
   make: string | null
   model: string | null
   status: 'active' | 'inactive' | 'retired'
@@ -276,7 +275,7 @@ type Vessel = {
 
 const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
-const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz']
+const unitOptions = volumeOptions.map((opt) => opt.value)
 const vesselStatusOptions = ['active', 'inactive', 'retired']
 
 const vessels = ref<Vessel[]>([])
@@ -289,6 +288,7 @@ const updatingOccupancyStatus = ref(false)
 
 const { request } = useApiClient(apiBase)
 const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
+const { formatVolumePreferred } = useUnitPreferences()
 
 const snackbar = reactive({
   show: false,
@@ -300,7 +300,7 @@ const newVessel = reactive({
   type: '',
   name: '',
   capacity: '',
-  capacity_unit: 'ml' as Unit,
+  capacity_unit: 'ml' as VolumeUnit,
   status: 'active',
   make: '',
   model: '',
@@ -417,10 +417,6 @@ function toNumber(value: string | number | null) {
   }
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
-}
-
-function formatCapacity(amount: number, unit: Unit) {
-  return `${amount} ${unit}`
 }
 
 function formatDateTime(value: string | null | undefined) {

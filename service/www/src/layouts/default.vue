@@ -30,6 +30,7 @@
           <v-list-item-subtitle>Signed in</v-list-item-subtitle>
         </v-list-item>
         <v-divider />
+        <v-list-item prepend-icon="mdi-cog" title="Settings" to="/settings" />
         <v-list-item prepend-icon="mdi-logout" title="Logout" @click="handleLogout" />
       </v-list>
     </v-menu>

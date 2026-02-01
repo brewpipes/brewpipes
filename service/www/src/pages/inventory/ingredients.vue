@@ -127,7 +127,7 @@
                       <tbody>
                         <tr v-for="lot in lots" :key="lot.id">
                           <td>{{ ingredientName(lot.ingredient_id) }}</td>
-                          <td>{{ formatAmount(lot.received_amount, lot.received_unit) }}</td>
+                          <td>{{ formatAmountPreferred(lot.received_amount, lot.received_unit) }}</td>
                           <td>{{ formatDateTime(lot.best_by_at) }}</td>
                           <td>{{ formatDateTime(lot.expires_at) }}</td>
                           <td>
@@ -354,6 +354,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInventoryApi } from '@/composables/useInventoryApi'
+import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
 type Ingredient = {
   id: number
@@ -404,7 +405,8 @@ type InventoryUsage = {
   updated_at: string
 }
 
-const { request, normalizeText, normalizeDateTime, toNumber, formatDateTime, formatAmount } = useInventoryApi()
+const { request, normalizeText, normalizeDateTime, toNumber, formatDateTime } = useInventoryApi()
+const { formatAmountPreferred } = useUnitPreferences()
 const router = useRouter()
 
 const activeTab = ref('stock')

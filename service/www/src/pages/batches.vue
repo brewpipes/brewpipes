@@ -292,7 +292,7 @@
                             <div class="metric-card">
                               <div class="metric-label">OG</div>
                               <div class="metric-value">
-                                {{ formatDecimal(batchSummary.original_gravity, 3) }}
+                                {{ formatGravityPreferred(batchSummary.original_gravity, 'sg') }}
                               </div>
                             </div>
                           </v-col>
@@ -300,7 +300,7 @@
                             <div class="metric-card">
                               <div class="metric-label">FG</div>
                               <div class="metric-value">
-                                {{ formatDecimal(batchSummary.final_gravity, 3) }}
+                                {{ formatGravityPreferred(batchSummary.final_gravity, 'sg') }}
                               </div>
                             </div>
                           </v-col>
@@ -364,25 +364,25 @@
                         <v-row class="mb-4">
                           <v-col cols="6" md="3">
                             <div class="metric-card">
-                              <div class="metric-label">Starting BBLs</div>
+                              <div class="metric-label">Starting</div>
                               <div class="metric-value">
-                                {{ formatDecimal(batchSummary.starting_volume_bbl, 1) }}
+                                {{ formatVolumePreferred(batchSummary.starting_volume_bbl, 'bbl') }}
                               </div>
                             </div>
                           </v-col>
                           <v-col cols="6" md="3">
                             <div class="metric-card">
-                              <div class="metric-label">Current BBLs</div>
+                              <div class="metric-label">Current</div>
                               <div class="metric-value">
-                                {{ formatDecimal(batchSummary.current_volume_bbl, 1) }}
+                                {{ formatVolumePreferred(batchSummary.current_volume_bbl, 'bbl') }}
                               </div>
                             </div>
                           </v-col>
                           <v-col cols="6" md="3">
                             <div class="metric-card">
-                              <div class="metric-label">Loss BBLs</div>
+                              <div class="metric-label">Total Loss</div>
                               <div class="metric-value">
-                                {{ formatDecimal(batchSummary.total_loss_bbl, 2) }}
+                                {{ formatVolumePreferred(batchSummary.total_loss_bbl, 'bbl') }}
                               </div>
                             </div>
                           </v-col>
@@ -800,7 +800,7 @@
                                 v-model="timelineReading.temperature"
                                 density="compact"
                                 label="Temp"
-                                placeholder="67F"
+                                :placeholder="preferences.temperature === 'f' ? '67F' : '19C'"
                                 inputmode="decimal"
                               />
                             </v-col>
@@ -809,7 +809,7 @@
                                 v-model="timelineReading.gravity"
                                 density="compact"
                                 label="Gravity"
-                                placeholder="1.056"
+                                :placeholder="preferences.gravity === 'sg' ? '1.056' : '13.8'"
                                 inputmode="decimal"
                               />
                             </v-col>
@@ -1129,7 +1129,7 @@
               v-model="timelineExtended.temperature_unit"
               density="comfortable"
               label="Temp unit"
-              placeholder="F"
+              :placeholder="preferences.temperature === 'f' ? 'F' : 'C'"
             />
           </v-col>
         </v-row>
@@ -1147,7 +1147,7 @@
               v-model="timelineExtended.gravity_unit"
               density="comfortable"
               label="Gravity unit"
-              placeholder="SG"
+              :placeholder="preferences.gravity === 'sg' ? 'SG' : 'Plato'"
             />
           </v-col>
           <v-col cols="12" md="4">
@@ -1510,6 +1510,13 @@ import {
   type OccupancyStatus,
   OCCUPANCY_STATUS_VALUES,
 } from '@/composables/useProductionApi'
+import { useUnitPreferences } from '@/composables/useUnitPreferences'
+import {
+  convertTemperature,
+  convertGravity,
+  type TemperatureUnit,
+  type GravityUnit,
+} from '@/composables/useUnitConversion'
 
 type Unit = 'ml' | 'usfloz' | 'ukfloz' | 'bbl'
 type LiquidPhase = 'water' | 'wort' | 'beer'
@@ -1686,6 +1693,13 @@ const {
   normalizeDateTime: apiNormalizeDateTime,
   toNumber: apiToNumber,
 } = useProductionApi()
+
+const {
+  preferences,
+  formatTemperaturePreferred,
+  formatGravityPreferred,
+  formatVolumePreferred,
+} = useUnitPreferences()
 
 const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz', 'bbl']
 const volumeUnitOptions: VolumeUnit[] = ['ml', 'usfloz', 'ukfloz', 'bbl']
@@ -3327,9 +3341,51 @@ function buildMeasurementSeries(kinds: string[], width: number, height: number) 
   const ordered = [...filtered].sort(
     (a, b) => measurementTimestamp(a) - measurementTimestamp(b),
   )
-  const values = ordered.map((measurement) => measurement.value).filter((value) => Number.isFinite(value))
+
+  // Determine if this is temperature or gravity series for unit conversion
+  const isTemperature = normalizedKinds.some((k) => k === 'temperature' || k === 'temp')
+  const isGravity = normalizedKinds.some((k) => k === 'gravity' || k === 'grav' || k === 'sg')
+
+  // Convert values to preferred units for sparkline display
+  const values = ordered
+    .map((measurement) => {
+      if (!Number.isFinite(measurement.value)) {
+        return null
+      }
+
+      if (isTemperature) {
+        // Determine source unit from measurement - default to Fahrenheit if not specified
+        const sourceUnit = normalizeTemperatureUnit(measurement.unit)
+        return convertTemperature(measurement.value, sourceUnit, preferences.value.temperature)
+      }
+
+      if (isGravity) {
+        // Determine source unit from measurement - default to SG if not specified
+        const sourceUnit = normalizeGravityUnit(measurement.unit)
+        return convertGravity(measurement.value, sourceUnit, preferences.value.gravity)
+      }
+
+      // For other measurements (like pH), no conversion needed
+      return measurement.value
+    })
+    .filter((value): value is number => value !== null && Number.isFinite(value))
+
   const latest = getLatest(filtered, (item) => item.observed_at ?? item.created_at)
-  const latestLabel = latest ? formatValue(latest.value, latest.unit) : 'n/a'
+
+  // Format latest label using preferred units
+  let latestLabel = 'n/a'
+  if (latest && Number.isFinite(latest.value)) {
+    if (isTemperature) {
+      const sourceUnit = normalizeTemperatureUnit(latest.unit)
+      latestLabel = formatTemperaturePreferred(latest.value, sourceUnit)
+    } else if (isGravity) {
+      const sourceUnit = normalizeGravityUnit(latest.unit)
+      latestLabel = formatGravityPreferred(latest.value, sourceUnit)
+    } else {
+      latestLabel = formatValue(latest.value, latest.unit)
+    }
+  }
+
   const { linePath, areaPath } = buildSparkline(values, width, height)
   return {
     values,
@@ -3338,6 +3394,32 @@ function buildMeasurementSeries(kinds: string[], width: number, height: number) 
     linePath,
     areaPath,
   }
+}
+
+/**
+ * Normalize a temperature unit string to a TemperatureUnit type.
+ * Defaults to 'f' (Fahrenheit) if not recognized.
+ */
+function normalizeTemperatureUnit(unit: string | null | undefined): TemperatureUnit {
+  if (!unit) return 'f' // Default to Fahrenheit
+  const normalized = unit.trim().toLowerCase()
+  if (normalized === 'c' || normalized === 'celsius' || normalized === '°c') {
+    return 'c'
+  }
+  return 'f' // Default to Fahrenheit for 'f', 'fahrenheit', '°f', or unknown
+}
+
+/**
+ * Normalize a gravity unit string to a GravityUnit type.
+ * Defaults to 'sg' if not recognized.
+ */
+function normalizeGravityUnit(unit: string | null | undefined): GravityUnit {
+  if (!unit) return 'sg' // Default to SG
+  const normalized = unit.trim().toLowerCase()
+  if (normalized === 'plato' || normalized === '°p' || normalized === 'p') {
+    return 'plato'
+  }
+  return 'sg' // Default to SG for 'sg', or unknown
 }
 
 function buildSparkline(values: number[], width: number, height: number) {

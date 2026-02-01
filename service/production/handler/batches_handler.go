@@ -49,6 +49,7 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 				ShortName: req.ShortName,
 				BrewDate:  req.BrewDate,
 				Notes:     req.Notes,
+				RecipeID:  req.RecipeID,
 			}
 
 			created, err := db.CreateBatch(r.Context(), batch)

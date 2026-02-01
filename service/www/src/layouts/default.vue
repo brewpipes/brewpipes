@@ -53,6 +53,13 @@
         :title="item.title"
       />
 
+      <v-list-group class="nav-group" value="production">
+        <template #activator="{ props }">
+          <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
+        </template>
+        <v-list-item to="/production/recipes" title="Recipes" />
+      </v-list-group>
+
       <v-list-group class="nav-group" value="inventory">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory" />

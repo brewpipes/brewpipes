@@ -10,6 +10,7 @@ import (
 type CreateAdditionRequest struct {
 	BatchID          *int64     `json:"batch_id"`
 	OccupancyID      *int64     `json:"occupancy_id"`
+	VolumeID         *int64     `json:"volume_id"`
 	AdditionType     string     `json:"addition_type"`
 	Stage            *string    `json:"stage"`
 	InventoryLotUUID *string    `json:"inventory_lot_uuid"`
@@ -20,8 +21,18 @@ type CreateAdditionRequest struct {
 }
 
 func (r CreateAdditionRequest) Validate() error {
-	if (r.BatchID == nil && r.OccupancyID == nil) || (r.BatchID != nil && r.OccupancyID != nil) {
-		return fmt.Errorf("batch_id or occupancy_id is required")
+	targetCount := 0
+	if r.BatchID != nil {
+		targetCount++
+	}
+	if r.OccupancyID != nil {
+		targetCount++
+	}
+	if r.VolumeID != nil {
+		targetCount++
+	}
+	if targetCount != 1 {
+		return fmt.Errorf("exactly one of batch_id, occupancy_id, or volume_id is required")
 	}
 	if err := validateAdditionType(r.AdditionType); err != nil {
 		return err
@@ -44,6 +55,7 @@ type AdditionResponse struct {
 	UUID             string     `json:"uuid"`
 	BatchID          *int64     `json:"batch_id,omitempty"`
 	OccupancyID      *int64     `json:"occupancy_id,omitempty"`
+	VolumeID         *int64     `json:"volume_id,omitempty"`
 	AdditionType     string     `json:"addition_type"`
 	Stage            *string    `json:"stage,omitempty"`
 	InventoryLotUUID *string    `json:"inventory_lot_uuid,omitempty"`
@@ -62,6 +74,7 @@ func NewAdditionResponse(addition storage.Addition) AdditionResponse {
 		UUID:             addition.UUID.String(),
 		BatchID:          addition.BatchID,
 		OccupancyID:      addition.OccupancyID,
+		VolumeID:         addition.VolumeID,
 		AdditionType:     addition.AdditionType,
 		Stage:            addition.Stage,
 		InventoryLotUUID: uuidToStringPointer(addition.InventoryLotUUID),

@@ -20,6 +20,7 @@ type OccupancyStore interface {
 	GetActiveOccupancyByVessel(context.Context, int64) (storage.Occupancy, error)
 	GetActiveOccupancyByVolume(context.Context, int64) (storage.Occupancy, error)
 	ListActiveOccupancies(context.Context) ([]storage.Occupancy, error)
+	UpdateOccupancyStatus(context.Context, int64, *string) (storage.Occupancy, error)
 }
 
 // HandleOccupancies handles [GET /occupancies].
@@ -83,6 +84,7 @@ func HandleCreateOccupancy(db OccupancyStore) http.HandlerFunc {
 			VesselID: req.VesselID,
 			VolumeID: req.VolumeID,
 			InAt:     inAt,
+			Status:   req.Status,
 		}
 
 		created, err := db.CreateOccupancy(r.Context(), occupancy)
@@ -184,6 +186,51 @@ func HandleActiveOccupancy(db OccupancyStore) http.HandlerFunc {
 			service.InternalError(w, err.Error())
 			return
 		}
+
+		service.JSON(w, dto.NewOccupancyResponse(occupancy))
+	}
+}
+
+// HandleOccupancyStatus handles [PATCH /occupancies/{id}/status].
+func HandleOccupancyStatus(db OccupancyStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			methodNotAllowed(w)
+			return
+		}
+
+		idValue := r.PathValue("id")
+		if idValue == "" {
+			http.Error(w, "invalid id", http.StatusBadRequest)
+			return
+		}
+		occupancyID, err := parseInt64Param(idValue)
+		if err != nil {
+			http.Error(w, "invalid id", http.StatusBadRequest)
+			return
+		}
+
+		var req dto.UpdateOccupancyStatusRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+		if err := req.Validate(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		occupancy, err := db.UpdateOccupancyStatus(r.Context(), occupancyID, req.Status)
+		if errors.Is(err, service.ErrNotFound) {
+			http.Error(w, "occupancy not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			slog.Error("error updating occupancy status", "error", err)
+			service.InternalError(w, err.Error())
+			return
+		}
+
+		slog.Info("occupancy status updated", "occupancy_id", occupancyID, "status", req.Status)
 
 		service.JSON(w, dto.NewOccupancyResponse(occupancy))
 	}

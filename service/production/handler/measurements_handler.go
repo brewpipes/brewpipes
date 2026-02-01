@@ -18,6 +18,7 @@ type MeasurementStore interface {
 	GetMeasurement(context.Context, int64) (storage.Measurement, error)
 	ListMeasurementsByBatch(context.Context, int64) ([]storage.Measurement, error)
 	ListMeasurementsByOccupancy(context.Context, int64) ([]storage.Measurement, error)
+	ListMeasurementsByVolume(context.Context, int64) ([]storage.Measurement, error)
 }
 
 // HandleMeasurements handles [GET /measurements] and [POST /measurements].
@@ -61,7 +62,25 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 				return
 			}
 
-			http.Error(w, "batch_id or occupancy_id is required", http.StatusBadRequest)
+			if volumeValue := r.URL.Query().Get("volume_id"); volumeValue != "" {
+				volumeID, err := parseInt64Param(volumeValue)
+				if err != nil {
+					http.Error(w, "invalid volume_id", http.StatusBadRequest)
+					return
+				}
+
+				measurements, err := db.ListMeasurementsByVolume(r.Context(), volumeID)
+				if err != nil {
+					slog.Error("error listing measurements", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+
+				service.JSON(w, dto.NewMeasurementsResponse(measurements))
+				return
+			}
+
+			http.Error(w, "batch_id, occupancy_id, or volume_id is required", http.StatusBadRequest)
 		case http.MethodPost:
 			var req dto.CreateMeasurementRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,6 +100,7 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 			measurement := storage.Measurement{
 				BatchID:     req.BatchID,
 				OccupancyID: req.OccupancyID,
+				VolumeID:    req.VolumeID,
 				Kind:        req.Kind,
 				Value:       req.Value,
 				Unit:        req.Unit,

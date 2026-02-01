@@ -11,6 +11,7 @@ const (
 	VolumeUnitML     = "ml"
 	VolumeUnitUSFlOz = "usfloz"
 	VolumeUnitUKFlOz = "ukfloz"
+	VolumeUnitBBL    = "bbl"
 )
 
 const (
@@ -52,11 +53,22 @@ const (
 	AdditionTypeOther     = "other"
 )
 
+const (
+	OccupancyStatusFermenting   = "fermenting"
+	OccupancyStatusConditioning = "conditioning"
+	OccupancyStatusColdCrashing = "cold_crashing"
+	OccupancyStatusDryHopping   = "dry_hopping"
+	OccupancyStatusCarbonating  = "carbonating"
+	OccupancyStatusHolding      = "holding"
+	OccupancyStatusPackaging    = "packaging"
+)
+
 type Batch struct {
 	entity.Identifiers
 	ShortName string
 	BrewDate  *time.Time
 	Notes     *string
+	RecipeID  *int64
 	entity.Timestamps
 }
 
@@ -97,6 +109,7 @@ type Occupancy struct {
 	VolumeID int64
 	InAt     time.Time
 	OutAt    *time.Time
+	Status   *string
 	entity.Timestamps
 }
 
@@ -143,6 +156,7 @@ type Addition struct {
 	entity.Identifiers
 	BatchID          *int64
 	OccupancyID      *int64
+	VolumeID         *int64
 	AdditionType     string
 	Stage            *string
 	InventoryLotUUID *uuid.UUID
@@ -157,10 +171,37 @@ type Measurement struct {
 	entity.Identifiers
 	BatchID     *int64
 	OccupancyID *int64
+	VolumeID    *int64
 	Kind        string
 	Value       float64
 	Unit        *string
 	ObservedAt  time.Time
 	Notes       *string
+	entity.Timestamps
+}
+
+type Style struct {
+	entity.Identifiers
+	Name string
+	entity.Timestamps
+}
+
+type Recipe struct {
+	entity.Identifiers
+	Name      string
+	StyleID   *int64
+	StyleName *string
+	Notes     *string
+	entity.Timestamps
+}
+
+type BrewSession struct {
+	entity.Identifiers
+	BatchID      *int64
+	WortVolumeID *int64
+	MashVesselID *int64
+	BoilVesselID *int64
+	BrewedAt     time.Time
+	Notes        *string
 	entity.Timestamps
 }

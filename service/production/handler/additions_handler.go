@@ -19,6 +19,7 @@ type AdditionStore interface {
 	GetAddition(context.Context, int64) (storage.Addition, error)
 	ListAdditionsByBatch(context.Context, int64) ([]storage.Addition, error)
 	ListAdditionsByOccupancy(context.Context, int64) ([]storage.Addition, error)
+	ListAdditionsByVolume(context.Context, int64) ([]storage.Addition, error)
 }
 
 // HandleAdditions handles [GET /additions] and [POST /additions].
@@ -62,7 +63,25 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 				return
 			}
 
-			http.Error(w, "batch_id or occupancy_id is required", http.StatusBadRequest)
+			if volumeValue := r.URL.Query().Get("volume_id"); volumeValue != "" {
+				volumeID, err := parseInt64Param(volumeValue)
+				if err != nil {
+					http.Error(w, "invalid volume_id", http.StatusBadRequest)
+					return
+				}
+
+				additions, err := db.ListAdditionsByVolume(r.Context(), volumeID)
+				if err != nil {
+					slog.Error("error listing additions", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+
+				service.JSON(w, dto.NewAdditionsResponse(additions))
+				return
+			}
+
+			http.Error(w, "batch_id, occupancy_id, or volume_id is required", http.StatusBadRequest)
 		case http.MethodPost:
 			var req dto.CreateAdditionRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -92,6 +111,7 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 			addition := storage.Addition{
 				BatchID:          req.BatchID,
 				OccupancyID:      req.OccupancyID,
+				VolumeID:         req.VolumeID,
 				AdditionType:     req.AdditionType,
 				Stage:            req.Stage,
 				InventoryLotUUID: inventoryUUID,

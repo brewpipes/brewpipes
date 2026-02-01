@@ -14,18 +14,21 @@ func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
 		INSERT INTO batch (
 			short_name,
 			brew_date,
-			notes
-		) VALUES ($1, $2, $3)
-		RETURNING id, uuid, short_name, brew_date, notes, created_at, updated_at, deleted_at`,
+			notes,
+			recipe_id
+		) VALUES ($1, $2, $3, $4)
+		RETURNING id, uuid, short_name, brew_date, notes, recipe_id, created_at, updated_at, deleted_at`,
 		batch.ShortName,
 		batch.BrewDate,
 		batch.Notes,
+		batch.RecipeID,
 	).Scan(
 		&batch.ID,
 		&batch.UUID,
 		&batch.ShortName,
 		&batch.BrewDate,
 		&batch.Notes,
+		&batch.RecipeID,
 		&batch.CreatedAt,
 		&batch.UpdatedAt,
 		&batch.DeletedAt,
@@ -40,7 +43,7 @@ func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
 func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
 	var batch Batch
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, short_name, brew_date, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, short_name, brew_date, notes, recipe_id, created_at, updated_at, deleted_at
 		FROM batch
 		WHERE id = $1 AND deleted_at IS NULL`,
 		id,
@@ -50,6 +53,7 @@ func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
 		&batch.ShortName,
 		&batch.BrewDate,
 		&batch.Notes,
+		&batch.RecipeID,
 		&batch.CreatedAt,
 		&batch.UpdatedAt,
 		&batch.DeletedAt,
@@ -66,7 +70,7 @@ func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
 
 func (c *Client) ListBatches(ctx context.Context) ([]Batch, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, short_name, brew_date, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, short_name, brew_date, notes, recipe_id, created_at, updated_at, deleted_at
 		FROM batch
 		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC`,
@@ -85,6 +89,7 @@ func (c *Client) ListBatches(ctx context.Context) ([]Batch, error) {
 			&batch.ShortName,
 			&batch.BrewDate,
 			&batch.Notes,
+			&batch.RecipeID,
 			&batch.CreatedAt,
 			&batch.UpdatedAt,
 			&batch.DeletedAt,

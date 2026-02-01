@@ -34,6 +34,8 @@ declare module 'vue-router/auto-routes' {
     '/procurement/purchase-order-lines': RouteRecordInfo<'/procurement/purchase-order-lines', '/procurement/purchase-order-lines', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-orders': RouteRecordInfo<'/procurement/purchase-orders', '/procurement/purchase-orders', Record<never, never>, Record<never, never>>,
     '/procurement/suppliers': RouteRecordInfo<'/procurement/suppliers', '/procurement/suppliers', Record<never, never>, Record<never, never>>,
+    '/production/': RouteRecordInfo<'/production/', '/production', Record<never, never>, Record<never, never>>,
+    '/production/recipes': RouteRecordInfo<'/production/recipes', '/production/recipes', Record<never, never>, Record<never, never>>,
     '/vessels': RouteRecordInfo<'/vessels', '/vessels', Record<never, never>, Record<never, never>>,
   }
 
@@ -110,6 +112,14 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/procurement/suppliers.vue': {
       routes: '/procurement/suppliers'
+      views: never
+    }
+    'src/pages/production/index.vue': {
+      routes: '/production/'
+      views: never
+    }
+    'src/pages/production/recipes.vue': {
+      routes: '/production/recipes'
       views: never
     }
     'src/pages/vessels.vue': {

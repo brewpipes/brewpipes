@@ -111,6 +111,81 @@
                   </v-card>
                 </v-col>
               </v-row>
+
+              <!-- Occupancy Section -->
+              <v-row class="mt-2">
+                <v-col cols="12">
+                  <v-card class="sub-card" variant="outlined">
+                    <v-card-text>
+                      <div class="text-overline mb-2">Current Occupancy</div>
+
+                      <div v-if="selectedVesselOccupancy">
+                        <v-row dense align="center">
+                          <v-col cols="12" md="4">
+                            <div class="text-caption text-medium-emphasis">Status</div>
+                            <v-menu location="bottom">
+                              <template #activator="{ props }">
+                                <v-chip
+                                  v-bind="props"
+                                  :color="getOccupancyStatusColor(selectedVesselOccupancy.status)"
+                                  variant="tonal"
+                                  size="small"
+                                  class="mt-1 cursor-pointer"
+                                  append-icon="mdi-menu-down"
+                                  :loading="updatingOccupancyStatus"
+                                >
+                                  {{ formatOccupancyStatus(selectedVesselOccupancy.status) }}
+                                </v-chip>
+                              </template>
+                              <v-list density="compact" nav>
+                                <v-list-subheader>Change status</v-list-subheader>
+                                <v-list-item
+                                  v-for="statusOption in occupancyStatusOptions"
+                                  :key="statusOption.value"
+                                  :active="statusOption.value === selectedVesselOccupancy.status"
+                                  @click="changeOccupancyStatus(selectedVesselOccupancy.id, statusOption.value)"
+                                >
+                                  <template #prepend>
+                                    <v-avatar
+                                      :color="getOccupancyStatusColor(statusOption.value)"
+                                      size="24"
+                                      class="mr-2"
+                                    >
+                                      <v-icon :icon="getOccupancyStatusIcon(statusOption.value)" size="14" />
+                                    </v-avatar>
+                                  </template>
+                                  <v-list-item-title>{{ statusOption.title }}</v-list-item-title>
+                                </v-list-item>
+                              </v-list>
+                            </v-menu>
+                          </v-col>
+                          <v-col cols="12" md="4">
+                            <div class="text-caption text-medium-emphasis">Occupied Since</div>
+                            <div class="text-body-2 font-weight-medium mt-1">
+                              {{ formatDateTime(selectedVesselOccupancy.in_at) }}
+                            </div>
+                          </v-col>
+                          <v-col cols="12" md="4">
+                            <div class="text-caption text-medium-emphasis">Volume ID</div>
+                            <div class="text-body-2 font-weight-medium mt-1">
+                              {{ selectedVesselOccupancy.volume_id }}
+                            </div>
+                          </v-col>
+                        </v-row>
+                      </div>
+
+                      <v-alert
+                        v-else
+                        density="compact"
+                        type="success"
+                        variant="tonal"
+                      >
+                        This vessel is currently available.
+                      </v-alert>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
             </div>
 
           </v-card-text>
@@ -174,8 +249,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useApiClient } from '@/composables/useApiClient'
+import {
+  useProductionApi,
+  type OccupancyStatus,
+  type Occupancy,
+  OCCUPANCY_STATUS_VALUES,
+} from '@/composables/useProductionApi'
 
 type Unit = 'ml' | 'usfloz' | 'ukfloz'
 
@@ -199,12 +280,15 @@ const unitOptions: Unit[] = ['ml', 'usfloz', 'ukfloz']
 const vesselStatusOptions = ['active', 'inactive', 'retired']
 
 const vessels = ref<Vessel[]>([])
+const occupancies = ref<Occupancy[]>([])
 const selectedVesselId = ref<number | null>(null)
 const errorMessage = ref('')
 const loading = ref(false)
 const createVesselDialog = ref(false)
+const updatingOccupancyStatus = ref(false)
 
 const { request } = useApiClient(apiBase)
+const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
 
 const snackbar = reactive({
   show: false,
@@ -226,8 +310,29 @@ const selectedVessel = computed(() =>
   vessels.value.find((vessel) => vessel.id === selectedVesselId.value) ?? null,
 )
 
+const occupancyMap = computed(
+  () => new Map(occupancies.value.map((occupancy) => [occupancy.vessel_id, occupancy])),
+)
+
+const selectedVesselOccupancy = computed(() => {
+  if (!selectedVesselId.value) return null
+  return occupancyMap.value.get(selectedVesselId.value) ?? null
+})
+
+const occupancyStatusOptions = computed(() =>
+  OCCUPANCY_STATUS_VALUES.map((status) => ({
+    value: status,
+    title: formatOccupancyStatus(status),
+  }))
+)
+
 onMounted(async () => {
   await refreshVessels()
+})
+
+watch(selectedVesselId, async () => {
+  // Refresh occupancies when vessel selection changes
+  await loadOccupancies()
 })
 
 function selectVessel(id: number) {
@@ -248,13 +353,25 @@ async function refreshVessels() {
   loading.value = true
   errorMessage.value = ''
   try {
-    vessels.value = await request<Vessel[]>('/vessels')
+    const [vesselData] = await Promise.all([
+      request<Vessel[]>('/vessels'),
+      loadOccupancies(),
+    ])
+    vessels.value = vesselData
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load vessels'
     errorMessage.value = message
     showNotice(message, 'error')
   } finally {
     loading.value = false
+  }
+}
+
+async function loadOccupancies() {
+  try {
+    occupancies.value = await getActiveOccupancies()
+  } catch (error) {
+    console.error('Failed to load occupancies:', error)
   }
 }
 
@@ -315,6 +432,70 @@ function formatDateTime(value: string | null | undefined) {
     timeStyle: 'short',
   }).format(new Date(value))
 }
+
+function formatOccupancyStatus(status: string | null | undefined): string {
+  if (!status) {
+    return 'No status'
+  }
+  const statusLabels: Record<string, string> = {
+    fermenting: 'Fermenting',
+    conditioning: 'Conditioning',
+    cold_crashing: 'Cold Crashing',
+    dry_hopping: 'Dry Hopping',
+    carbonating: 'Carbonating',
+    holding: 'Holding',
+    packaging: 'Packaging',
+  }
+  return statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
+}
+
+function getOccupancyStatusColor(status: string | null | undefined): string {
+  if (!status) {
+    return 'grey'
+  }
+  const statusColors: Record<string, string> = {
+    fermenting: 'orange',
+    conditioning: 'blue',
+    cold_crashing: 'cyan',
+    dry_hopping: 'green',
+    carbonating: 'purple',
+    holding: 'grey',
+    packaging: 'teal',
+  }
+  return statusColors[status] ?? 'secondary'
+}
+
+function getOccupancyStatusIcon(status: string | null | undefined): string {
+  if (!status) {
+    return 'mdi-help-circle-outline'
+  }
+  const statusIcons: Record<string, string> = {
+    fermenting: 'mdi-molecule',
+    conditioning: 'mdi-clock-outline',
+    cold_crashing: 'mdi-snowflake',
+    dry_hopping: 'mdi-leaf',
+    carbonating: 'mdi-shimmer',
+    holding: 'mdi-pause-circle-outline',
+    packaging: 'mdi-package-variant',
+  }
+  return statusIcons[status] ?? 'mdi-circle'
+}
+
+async function changeOccupancyStatus(occupancyId: number, status: OccupancyStatus) {
+  updatingOccupancyStatus.value = true
+  errorMessage.value = ''
+  try {
+    await updateOccupancyStatus(occupancyId, status)
+    showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
+    await loadOccupancies()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update status'
+    errorMessage.value = message
+    showNotice(message, 'error')
+  } finally {
+    updatingOccupancyStatus.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -336,5 +517,9 @@ function formatDateTime(value: string | null | undefined) {
 .vessel-list {
   max-height: 420px;
   overflow: auto;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

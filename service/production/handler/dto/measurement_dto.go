@@ -10,6 +10,7 @@ import (
 type CreateMeasurementRequest struct {
 	BatchID     *int64     `json:"batch_id"`
 	OccupancyID *int64     `json:"occupancy_id"`
+	VolumeID    *int64     `json:"volume_id"`
 	Kind        string     `json:"kind"`
 	Value       float64    `json:"value"`
 	Unit        *string    `json:"unit"`
@@ -18,8 +19,18 @@ type CreateMeasurementRequest struct {
 }
 
 func (r CreateMeasurementRequest) Validate() error {
-	if (r.BatchID == nil && r.OccupancyID == nil) || (r.BatchID != nil && r.OccupancyID != nil) {
-		return fmt.Errorf("batch_id or occupancy_id is required")
+	targetCount := 0
+	if r.BatchID != nil {
+		targetCount++
+	}
+	if r.OccupancyID != nil {
+		targetCount++
+	}
+	if r.VolumeID != nil {
+		targetCount++
+	}
+	if targetCount != 1 {
+		return fmt.Errorf("exactly one of batch_id, occupancy_id, or volume_id is required")
 	}
 	if err := validateRequired(r.Kind, "kind"); err != nil {
 		return err
@@ -33,6 +44,7 @@ type MeasurementResponse struct {
 	UUID        string     `json:"uuid"`
 	BatchID     *int64     `json:"batch_id,omitempty"`
 	OccupancyID *int64     `json:"occupancy_id,omitempty"`
+	VolumeID    *int64     `json:"volume_id,omitempty"`
 	Kind        string     `json:"kind"`
 	Value       float64    `json:"value"`
 	Unit        *string    `json:"unit,omitempty"`
@@ -49,6 +61,7 @@ func NewMeasurementResponse(measurement storage.Measurement) MeasurementResponse
 		UUID:        measurement.UUID.String(),
 		BatchID:     measurement.BatchID,
 		OccupancyID: measurement.OccupancyID,
+		VolumeID:    measurement.VolumeID,
 		Kind:        measurement.Kind,
 		Value:       measurement.Value,
 		Unit:        measurement.Unit,

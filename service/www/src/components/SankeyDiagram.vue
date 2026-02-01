@@ -16,7 +16,7 @@
           v-for="link in layout.links"
           :key="linkKey(link)"
           class="sankey-link"
-          :d="linkPath(link)"
+          :d="linkPath(link) ?? ''"
           :style="{ strokeWidth: `${Math.max(link.width ?? 1, 1)}px` }"
         >
           <title>{{ linkTitle(link) }}</title>
@@ -117,7 +117,7 @@ const layout = computed(() => {
   }
 
   const layoutEngine = sankey<SankeyNodeDatum, SankeyLinkInput>()
-    .nodeId((node) => node.id)
+    .nodeId((node: SankeyNodeDatum) => node.id)
     .nodeWidth(props.nodeWidth)
     .nodePadding(props.nodePadding)
     .extent([
@@ -128,10 +128,10 @@ const layout = computed(() => {
   return layoutEngine({
     nodes: props.nodes.map((node) => ({ ...node })),
     links: props.links.map((link) => ({ ...link })),
-  }) as SankeyLayout
+  }) as unknown as SankeyLayout
 })
 
-const linkPath = sankeyLinkHorizontal<SankeyNodeDatum, SankeyLinkDatum>()
+const linkPath = sankeyLinkHorizontal<SankeyLinkDatum>()
 const nodePalette = [
   'rgb(var(--v-theme-primary))',
   'rgb(var(--v-theme-secondary))',

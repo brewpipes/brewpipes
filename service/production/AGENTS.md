@@ -70,6 +70,64 @@ Measurement
 - They can be tied to the batch overall or to a specific vessel occupancy.
 - This lets you track fermentation and quality over time.
 
+Style
+- A reference table for beer styles with case-insensitive unique names.
+- Enables autocomplete while allowing free-form entry.
+
+Recipe
+- A beer formulation with name and optional style reference.
+- Batches can reference a recipe via `recipe_id`.
+- Future: target ABV/IBU, ingredient bills, process steps.
+
+Brew Session
+- Captures hot-side wort production (mash → boil → knockout).
+- Points to the wort volume produced via `wort_volume_id`.
+- A batch can have multiple brew sessions (double batching).
+- References mash and boil vessels for traceability.
+
+## Batch Summary
+
+The `GET /batches/{id}/summary` endpoint provides an aggregated view of a batch with derived metrics:
+
+### Core batch info
+- `id`, `uuid`, `short_name`, `brew_date`, `notes`
+
+### Recipe and style
+- `recipe_name`, `style_name` (from linked recipe)
+
+### Brew sessions
+- Array of `brew_sessions` with `id`, `brewed_at`, `notes`
+
+### Current state
+- `current_phase` (most recent process phase)
+- `current_vessel` (from active occupancy)
+- `current_occupancy_status` (fermenting, conditioning, etc.)
+
+### Key measurements
+- `original_gravity` (first OG measurement)
+- `final_gravity` (most recent FG measurement)
+- `abv` (manual measurement or calculated from OG/FG)
+- `abv_calculated` (true if ABV was auto-calculated using `(OG - FG) × 131.25`)
+- `ibu` (most recent IBU measurement)
+
+### Duration metrics (in days)
+- `days_in_fermenter` (total time in fermenter vessels)
+- `days_in_brite` (total time in brite vessels)
+- `days_grain_to_glass` (from first brew date to now or completion)
+
+### Volume and loss metrics
+- `starting_volume_bbl` (earliest batch volume, converted to BBL)
+- `current_volume_bbl` (latest batch volume, converted to BBL)
+- `total_loss_bbl` (sum of transfer losses, converted to BBL)
+- `loss_percentage` (total loss / starting volume × 100)
+
+### Volume unit conversions
+The summary converts volumes to US barrels (BBL = 31 gallons) from:
+- `bbl` (US barrels, direct)
+- `ml` (milliliters)
+- `usfloz` (US fluid ounces)
+- `ukfloz` (UK fluid ounces)
+
 ## User Journey: Brewer
 
 Here’s a simple "brewer's story" that follows the production records, told in brewery terms.
@@ -110,3 +168,5 @@ In short:
 - Splits and blends are represented so a brewmaster can see parent/child batch relationships and the related volume changes.
 - Production records retain traceability to inventory/procurement via opaque UUIDs, without requiring shared tables or foreign keys.
 - The full brew‑day flow can be reconstructed chronologically from additions, measurements, transfers, and phase changes for a given batch.
+- A brewmaster can view a batch summary with aggregated metrics including recipe/style, brew sessions, current state, OG/FG/ABV/IBU, duration metrics, and loss calculations via `GET /batches/{id}/summary`.
+- ABV is auto-calculated from OG and FG measurements using `(OG - FG) × 131.25` when no manual ABV measurement exists.

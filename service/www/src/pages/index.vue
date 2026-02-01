@@ -129,10 +129,18 @@
 
             <v-list class="vessel-list" lines="two">
               <v-list-item v-for="item in vesselCards" :key="item.vessel.id">
-                <v-list-item-title class="d-flex align-center">
+                <v-list-item-title class="d-flex align-center flex-wrap ga-1">
                   {{ item.vessel.name }}
                   <v-chip class="ml-2" size="x-small" variant="tonal" :color="item.occupancyTone">
                     {{ item.occupancyLabel }}
+                  </v-chip>
+                  <v-chip
+                    v-if="item.occupancyStatus"
+                    size="x-small"
+                    variant="flat"
+                    :color="item.occupancyStatusColor"
+                  >
+                    {{ item.occupancyStatusLabel }}
                   </v-chip>
                 </v-list-item-title>
                 <v-list-item-subtitle>
@@ -218,6 +226,7 @@ type Occupancy = {
   id: number
   vessel_id: number
   volume_id: number
+  status: string | null
   in_at: string
   out_at: string | null
   created_at: string
@@ -239,6 +248,9 @@ type VesselCard = {
   occupancyLabel: string
   occupancyTone: string
   occupancyDetail: string
+  occupancyStatus: string | null
+  occupancyStatusLabel: string
+  occupancyStatusColor: string
   vesselStatusLabel: string
   sortOrder: number
 }
@@ -327,9 +339,12 @@ const vesselCards = computed<VesselCard[]>(() => {
         sortOrder = 3
       } else if (hasOccupancy && occupancy) {
         const occupiedAt = normalizeTimestamp(occupancy.in_at, occupancy.created_at)
+        const statusLabel = formatOccupancyStatusLabel(occupancy.status)
         occupancyLabel = 'Occupied'
         occupancyTone = 'primary'
-        occupancyDetail = `Holding ${volumeName} since ${formatDateTime(occupiedAt)}`
+        occupancyDetail = statusLabel
+          ? `${volumeName} · ${statusLabel} since ${formatDateTime(occupiedAt)}`
+          : `Holding ${volumeName} since ${formatDateTime(occupiedAt)}`
         sortOrder = 1
       }
 
@@ -339,6 +354,9 @@ const vesselCards = computed<VesselCard[]>(() => {
         occupancyLabel,
         occupancyTone,
         occupancyDetail,
+        occupancyStatus: occupancy?.status ?? null,
+        occupancyStatusLabel: formatOccupancyStatusLabel(occupancy?.status),
+        occupancyStatusColor: getOccupancyStatusColor(occupancy?.status),
         vesselStatusLabel: formatVesselStatus(vessel.status),
         sortOrder,
       }
@@ -403,8 +421,8 @@ async function loadProcessPhases() {
       phases.push(...result.value)
     }
   })
-  if (errors.length) {
-    throw errors[0].reason
+  if (errors.length > 0) {
+    throw errors[0]!.reason
   }
   processPhases.value = phases
 }
@@ -508,6 +526,38 @@ function formatVesselStatus(status: Vessel['status']) {
     return 'Retired'
   }
   return 'Active'
+}
+
+function formatOccupancyStatusLabel(status: string | null | undefined): string {
+  if (!status) {
+    return ''
+  }
+  const statusLabels: Record<string, string> = {
+    fermenting: 'Fermenting',
+    conditioning: 'Conditioning',
+    cold_crashing: 'Cold Crashing',
+    dry_hopping: 'Dry Hopping',
+    carbonating: 'Carbonating',
+    holding: 'Holding',
+    packaging: 'Packaging',
+  }
+  return statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
+}
+
+function getOccupancyStatusColor(status: string | null | undefined): string {
+  if (!status) {
+    return 'grey'
+  }
+  const statusColors: Record<string, string> = {
+    fermenting: 'orange',
+    conditioning: 'blue',
+    cold_crashing: 'cyan',
+    dry_hopping: 'green',
+    carbonating: 'purple',
+    holding: 'grey',
+    packaging: 'teal',
+  }
+  return statusColors[status] ?? 'secondary'
 }
 
 function formatCapacity(amount: number, unit: Unit) {

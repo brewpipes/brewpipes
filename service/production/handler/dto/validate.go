@@ -17,7 +17,7 @@ func validateRequired(value, field string) error {
 
 func validateVolumeUnit(unit string) error {
 	switch unit {
-	case storage.VolumeUnitML, storage.VolumeUnitUSFlOz, storage.VolumeUnitUKFlOz:
+	case storage.VolumeUnitML, storage.VolumeUnitUSFlOz, storage.VolumeUnitUKFlOz, storage.VolumeUnitBBL:
 		return nil
 	default:
 		return fmt.Errorf("invalid amount_unit")
@@ -92,5 +92,20 @@ func additionTypeRequiresInventory(additionType string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func validateOccupancyStatus(status string) error {
+	switch status {
+	case storage.OccupancyStatusFermenting,
+		storage.OccupancyStatusConditioning,
+		storage.OccupancyStatusColdCrashing,
+		storage.OccupancyStatusDryHopping,
+		storage.OccupancyStatusCarbonating,
+		storage.OccupancyStatusHolding,
+		storage.OccupancyStatusPackaging:
+		return nil
+	default:
+		return fmt.Errorf("invalid status")
 	}
 }

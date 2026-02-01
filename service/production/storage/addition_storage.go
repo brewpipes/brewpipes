@@ -13,8 +13,18 @@ import (
 )
 
 func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Addition, error) {
-	if (addition.BatchID == nil && addition.OccupancyID == nil) || (addition.BatchID != nil && addition.OccupancyID != nil) {
-		return Addition{}, fmt.Errorf("addition must reference batch or occupancy")
+	targetCount := 0
+	if addition.BatchID != nil {
+		targetCount++
+	}
+	if addition.OccupancyID != nil {
+		targetCount++
+	}
+	if addition.VolumeID != nil {
+		targetCount++
+	}
+	if targetCount != 1 {
+		return Addition{}, fmt.Errorf("addition must reference exactly one of batch, occupancy, or volume")
 	}
 
 	addedAt := addition.AddedAt
@@ -32,6 +42,7 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 		INSERT INTO addition (
 			batch_id,
 			occupancy_id,
+			volume_id,
 			addition_type,
 			stage,
 			inventory_lot_uuid,
@@ -39,10 +50,11 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 			amount_unit,
 			added_at,
 			notes
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, uuid, batch_id, occupancy_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at`,
 		addition.BatchID,
 		addition.OccupancyID,
+		addition.VolumeID,
 		addition.AdditionType,
 		addition.Stage,
 		inventoryLot,
@@ -55,6 +67,7 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 		&addition.UUID,
 		&addition.BatchID,
 		&addition.OccupancyID,
+		&addition.VolumeID,
 		&addition.AdditionType,
 		&addition.Stage,
 		&inventoryLotUUID,
@@ -78,7 +91,7 @@ func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
 	var addition Addition
 	var inventoryLotUUID pgtype.UUID
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, batch_id, occupancy_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
 		FROM addition
 		WHERE id = $1 AND deleted_at IS NULL`,
 		id,
@@ -87,6 +100,7 @@ func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
 		&addition.UUID,
 		&addition.BatchID,
 		&addition.OccupancyID,
+		&addition.VolumeID,
 		&addition.AdditionType,
 		&addition.Stage,
 		&inventoryLotUUID,
@@ -111,7 +125,7 @@ func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
 
 func (c *Client) ListAdditionsByBatch(ctx context.Context, batchID int64) ([]Addition, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT a.id, a.uuid, a.batch_id, a.occupancy_id, a.addition_type, a.stage, a.inventory_lot_uuid, a.amount, a.amount_unit, a.added_at, a.notes, a.created_at, a.updated_at, a.deleted_at
+		SELECT a.id, a.uuid, a.batch_id, a.occupancy_id, a.volume_id, a.addition_type, a.stage, a.inventory_lot_uuid, a.amount, a.amount_unit, a.added_at, a.notes, a.created_at, a.updated_at, a.deleted_at
 		FROM addition a
 		WHERE a.deleted_at IS NULL
 		AND (
@@ -122,6 +136,13 @@ func (c *Client) ListAdditionsByBatch(ctx context.Context, batchID int64) ([]Add
 				JOIN batch_volume bv ON bv.volume_id = o.volume_id
 				WHERE o.id = a.occupancy_id
 				AND o.deleted_at IS NULL
+				AND bv.deleted_at IS NULL
+				AND bv.batch_id = $1
+			) OR
+			EXISTS (
+				SELECT 1
+				FROM batch_volume bv
+				WHERE bv.volume_id = a.volume_id
 				AND bv.deleted_at IS NULL
 				AND bv.batch_id = $1
 			)
@@ -143,6 +164,7 @@ func (c *Client) ListAdditionsByBatch(ctx context.Context, batchID int64) ([]Add
 			&addition.UUID,
 			&addition.BatchID,
 			&addition.OccupancyID,
+			&addition.VolumeID,
 			&addition.AdditionType,
 			&addition.Stage,
 			&inventoryLotUUID,
@@ -168,7 +190,7 @@ func (c *Client) ListAdditionsByBatch(ctx context.Context, batchID int64) ([]Add
 
 func (c *Client) ListAdditionsByOccupancy(ctx context.Context, occupancyID int64) ([]Addition, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, batch_id, occupancy_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
+		SELECT id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
 		FROM addition
 		WHERE occupancy_id = $1 AND deleted_at IS NULL
 		ORDER BY added_at ASC`,
@@ -188,6 +210,7 @@ func (c *Client) ListAdditionsByOccupancy(ctx context.Context, occupancyID int64
 			&addition.UUID,
 			&addition.BatchID,
 			&addition.OccupancyID,
+			&addition.VolumeID,
 			&addition.AdditionType,
 			&addition.Stage,
 			&inventoryLotUUID,
@@ -206,6 +229,52 @@ func (c *Client) ListAdditionsByOccupancy(ctx context.Context, occupancyID int64
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("listing additions by occupancy: %w", err)
+	}
+
+	return additions, nil
+}
+
+func (c *Client) ListAdditionsByVolume(ctx context.Context, volumeID int64) ([]Addition, error) {
+	rows, err := c.db.Query(ctx, `
+		SELECT id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
+		FROM addition
+		WHERE volume_id = $1 AND deleted_at IS NULL
+		ORDER BY added_at ASC`,
+		volumeID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing additions by volume: %w", err)
+	}
+	defer rows.Close()
+
+	var additions []Addition
+	for rows.Next() {
+		var addition Addition
+		var inventoryLotUUID pgtype.UUID
+		if err := rows.Scan(
+			&addition.ID,
+			&addition.UUID,
+			&addition.BatchID,
+			&addition.OccupancyID,
+			&addition.VolumeID,
+			&addition.AdditionType,
+			&addition.Stage,
+			&inventoryLotUUID,
+			&addition.Amount,
+			&addition.AmountUnit,
+			&addition.AddedAt,
+			&addition.Notes,
+			&addition.CreatedAt,
+			&addition.UpdatedAt,
+			&addition.DeletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning addition: %w", err)
+		}
+		assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+		additions = append(additions, addition)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing additions by volume: %w", err)
 	}
 
 	return additions, nil

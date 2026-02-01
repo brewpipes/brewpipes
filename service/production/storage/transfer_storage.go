@@ -143,7 +143,7 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 			volume_id,
 			in_at
 		) VALUES ($1, $2, $3)
-		RETURNING id, uuid, vessel_id, volume_id, in_at, out_at, created_at, updated_at, deleted_at`,
+		RETURNING id, uuid, vessel_id, volume_id, in_at, out_at, status, created_at, updated_at, deleted_at`,
 		record.DestVesselID,
 		record.VolumeID,
 		startedAt,
@@ -154,6 +154,7 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 		&dest.VolumeID,
 		&dest.InAt,
 		&dest.OutAt,
+		&dest.Status,
 		&dest.CreatedAt,
 		&dest.UpdatedAt,
 		&dest.DeletedAt,

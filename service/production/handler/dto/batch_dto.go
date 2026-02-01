@@ -10,6 +10,7 @@ type CreateBatchRequest struct {
 	ShortName string     `json:"short_name"`
 	BrewDate  *time.Time `json:"brew_date"`
 	Notes     *string    `json:"notes"`
+	RecipeID  *int64     `json:"recipe_id"`
 }
 
 func (r CreateBatchRequest) Validate() error {
@@ -22,6 +23,7 @@ type BatchResponse struct {
 	ShortName string     `json:"short_name"`
 	BrewDate  *time.Time `json:"brew_date,omitempty"`
 	Notes     *string    `json:"notes,omitempty"`
+	RecipeID  *int64     `json:"recipe_id,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
@@ -34,6 +36,7 @@ func NewBatchResponse(batch storage.Batch) BatchResponse {
 		ShortName: batch.ShortName,
 		BrewDate:  batch.BrewDate,
 		Notes:     batch.Notes,
+		RecipeID:  batch.RecipeID,
 		CreatedAt: batch.CreatedAt,
 		UpdatedAt: batch.UpdatedAt,
 		DeletedAt: batch.DeletedAt,

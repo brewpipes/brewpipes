@@ -50,6 +50,7 @@ You are ultimately responsible for delivering the final work on the overall feat
 - If unsure about a requirement or user workflow, ask a targeted question and recommend a default.
 - Do not change core workflows (batch tracking, inventory integrity, procurement traceability, auth) without strong justification.
 - Prefer backward-compatible changes and minimal risk.
+- If you or any agents you delegate to spin up the backend or frontend servers for testing/verification purposes, you must ensure that those processes are stopped and that the ports are freed back up, so that the user may use them locally.
 - Keep `PROJECT.md` accurate and up to date with any clarified requirements.
 
 ## Tone

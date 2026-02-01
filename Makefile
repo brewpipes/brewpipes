@@ -18,7 +18,6 @@ run-server:
 	go run ./cmd/monolith
 
 run-web:
-	nvm use && \
 	cd service/www && \
 	pnpm dev --force
 

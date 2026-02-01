@@ -52,6 +52,16 @@
               </v-list-item>
             </v-list>
           </v-card-text>
+          <v-card-actions class="justify-end">
+            <v-btn
+              size="small"
+              variant="text"
+              prepend-icon="mdi-upload"
+              @click="bulkImportDialog = true"
+            >
+              Bulk import
+            </v-btn>
+          </v-card-actions>
         </v-card>
       </v-col>
 
@@ -475,6 +485,74 @@
     </v-card>
   </v-dialog>
 
+  <v-dialog v-model="bulkImportDialog" max-width="720">
+    <v-card>
+      <v-card-title class="text-h6">Bulk import batches</v-card-title>
+      <v-card-text>
+        <v-alert density="compact" type="info" variant="tonal" class="mb-4">
+          Expected columns: short_name (required), brew_date (optional), notes (optional).
+        </v-alert>
+
+        <v-file-input
+          v-model="importFile"
+          accept=".csv,text/csv"
+          density="comfortable"
+          label="CSV file"
+          placeholder="Select batch import CSV"
+          prepend-icon="mdi-file-delimited-outline"
+          show-size
+        />
+
+        <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
+          <div class="text-caption text-medium-emphasis">
+            Brew date format: YYYY-MM-DD.
+          </div>
+          <v-btn size="small" variant="text" prepend-icon="mdi-download" @click="downloadBatchTemplate">
+            Download template
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="importSummary"
+          class="mb-3"
+          density="compact"
+          :type="importSummary.type"
+          variant="tonal"
+        >
+          {{ importSummary.message }}
+        </v-alert>
+
+        <v-table v-if="importErrors.length" class="data-table" density="compact">
+          <thead>
+            <tr>
+              <th>Row</th>
+              <th>Issue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(rowError, index) in importErrors" :key="index">
+              <td>{{ rowError.row ?? '-' }}</td>
+              <td>{{ rowError.message }}</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" :disabled="importUploading" @click="bulkImportDialog = false">
+          Close
+        </v-btn>
+        <v-btn
+          color="primary"
+          :loading="importUploading"
+          :disabled="!canImport"
+          @click="uploadBatchImport"
+        >
+          Upload
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
   <v-dialog v-model="createAdditionDialog" max-width="520">
     <v-card>
       <v-card-title class="text-h6">Record addition</v-card-title>
@@ -798,6 +876,32 @@ type FlowLink = {
   label: string
 }
 
+type ImportRowError = {
+  row: number | null
+  message: string
+}
+
+type BatchImportRowResult = {
+  row: number
+  status: 'created' | 'error'
+  error?: string | null
+  batch?: Batch
+}
+
+type BatchImportResponse = {
+  totals: {
+    total_rows: number
+    created: number
+    failed: number
+  }
+  results: BatchImportRowResult[]
+}
+
+type ImportSummary = {
+  message: string
+  type: 'success' | 'warning' | 'error'
+}
+
 const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 const route = useRoute()
 const { request } = useApiClient(apiBase)
@@ -831,6 +935,7 @@ const errorMessage = ref('')
 const createBatchDialog = ref(false)
 const createAdditionDialog = ref(false)
 const createMeasurementDialog = ref(false)
+const bulkImportDialog = ref(false)
 
 const snackbar = reactive({
   show: false,
@@ -865,6 +970,11 @@ const measurementForm = reactive({
   observed_at: '',
   notes: '',
 })
+
+const importFile = ref<File | File[] | null>(null)
+const importUploading = ref(false)
+const importResult = ref<BatchImportResponse | null>(null)
+const importErrors = ref<ImportRowError[]>([])
 
 const timelineReading = reactive({
   observed_at: '',
@@ -925,6 +1035,28 @@ const timelineReadingReady = computed(() => {
   const hasGravity = parseNumericInput(timelineReading.gravity) !== null
   const hasNotes = timelineReading.notes.trim().length > 0
   return hasTemperature || hasGravity || hasNotes
+})
+
+const canImport = computed(() => Boolean(getSelectedImportFile()) && !importUploading.value)
+
+const importSummary = computed<ImportSummary | null>(() => {
+  if (!importResult.value) {
+    return null
+  }
+  const successCount = getImportSuccessCount(importResult.value)
+  const failureCount = getImportFailureCount(importResult.value, importErrors.value)
+  const total = successCount + failureCount
+  const message =
+    total > 0
+      ? `Imported ${successCount} ${successCount === 1 ? 'batch' : 'batches'}, ${failureCount} failed.`
+      : 'Import completed.'
+  if (failureCount > 0 && successCount === 0) {
+    return { message, type: 'error' }
+  }
+  if (failureCount > 0) {
+    return { message, type: 'warning' }
+  }
+  return { message, type: 'success' }
 })
 
 const timelineExtendedReady = computed(() => {
@@ -1106,6 +1238,19 @@ watch(timelineObservedAtMenu, (isOpen) => {
   }
 })
 
+watch(bulkImportDialog, (isOpen) => {
+  if (!isOpen) {
+    resetImportState()
+  }
+})
+
+watch(importFile, (value) => {
+  if (value) {
+    importResult.value = null
+    importErrors.value = []
+  }
+})
+
 onMounted(async () => {
   await refreshAll()
 })
@@ -1141,6 +1286,8 @@ function showNotice(text: string, color = 'success') {
 const get = <T>(path: string) => request<T>(path)
 const post = <T>(path: string, payload: unknown) =>
   request<T>(path, { method: 'POST', body: JSON.stringify(payload) })
+const postForm = <T>(path: string, payload: FormData) =>
+  request<T>(path, { method: 'POST', body: payload, headers: new Headers() })
 
 async function refreshAll() {
   errorMessage.value = ''
@@ -1224,6 +1371,48 @@ async function createBatch() {
   } catch (error) {
     handleError(error)
   }
+}
+
+async function uploadBatchImport() {
+  const file = getSelectedImportFile()
+  if (!file) {
+    return
+  }
+  errorMessage.value = ''
+  importUploading.value = true
+  importResult.value = null
+  importErrors.value = []
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await postForm<BatchImportResponse>('/batches/import', form)
+    importResult.value = response
+    importErrors.value = parseImportErrors(response)
+    const successCount = getImportSuccessCount(response)
+    const failureCount = getImportFailureCount(response, importErrors.value)
+    if (failureCount > 0) {
+      const color = successCount > 0 ? 'warning' : 'error'
+      showNotice(`Imported ${successCount} batches, ${failureCount} failed`, color)
+    } else {
+      showNotice(`Imported ${successCount} ${successCount === 1 ? 'batch' : 'batches'}`)
+    }
+    await loadBatches()
+  } catch (error) {
+    handleError(error)
+  } finally {
+    importUploading.value = false
+  }
+}
+
+function downloadBatchTemplate() {
+  const header = 'short_name,brew_date,notes\n'
+  const blob = new Blob([header], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'batch-import-template.csv'
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 async function recordAddition() {
@@ -1513,6 +1702,38 @@ function resetTimelineExtended() {
 function clearTimelineObservedAt() {
   timelineReading.observed_at = ''
   timelineObservedAtMenu.value = false
+}
+
+function getSelectedImportFile() {
+  const fileValue = importFile.value
+  if (!fileValue) {
+    return null
+  }
+  return Array.isArray(fileValue) ? fileValue[0] ?? null : fileValue
+}
+
+function resetImportState() {
+  importFile.value = null
+  importResult.value = null
+  importErrors.value = []
+  importUploading.value = false
+}
+
+function getImportSuccessCount(result: BatchImportResponse) {
+  return result.totals?.created ?? 0
+}
+
+function getImportFailureCount(result: BatchImportResponse, errors: ImportRowError[]) {
+  return result.totals?.failed ?? errors.length
+}
+
+function parseImportErrors(result: BatchImportResponse) {
+  return (result.results ?? [])
+    .filter((entry) => entry.status === 'error')
+    .map((entry) => ({
+      row: entry.row ?? null,
+      message: entry.error ?? 'Import failed',
+    }))
 }
 
 function handleError(error: unknown) {

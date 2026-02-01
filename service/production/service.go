@@ -39,6 +39,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 	return []service.HTTPRoute{
 		{Method: http.MethodGet, Path: "/batches", Handler: auth(handler.HandleBatches(s.storage))},
 		{Method: http.MethodPost, Path: "/batches", Handler: auth(handler.HandleBatches(s.storage))},
+		{Method: http.MethodPost, Path: "/batches/import", Handler: auth(handler.HandleBatchImport(s.storage))},
 		{Method: http.MethodGet, Path: "/batches/{id}", Handler: auth(handler.HandleBatchByID(s.storage))},
 		{Method: http.MethodGet, Path: "/volumes", Handler: auth(handler.HandleVolumes(s.storage))},
 		{Method: http.MethodPost, Path: "/volumes", Handler: auth(handler.HandleVolumes(s.storage))},

@@ -100,6 +100,7 @@ In short:
 ## Acceptance Criteria
 
 - A brewmaster can create a new production batch with a short name, and the batch appears in the production list.
+- A brewmaster can bulk import batches from CSV via `POST /batches/import` with per-row results.
 - The system can record a starting volume for a batch and place it into a specific vessel as an active occupancy.
 - Transfers between vessels are captured with source, destination, amount, and timestamps, and the active occupancy updates accordingly.
 - Ingredient, chemical, and gas additions can be recorded against a batch or a specific vessel occupancy with amount, unit, time, and an external inventory lot UUID.

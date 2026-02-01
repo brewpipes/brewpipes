@@ -19,6 +19,7 @@ BrewPipes is an open source brewery management system focused on day-to-day prod
 - Manage suppliers and create purchase orders with line items and fees.
 - Receive ingredients into inventory, creating lots and tracking movements.
 - Plan and run production batches, tracking volumes through vessels and transfers.
+- Bulk import planned batches via CSV for rapid setup.
 - Record additions and measurements during production phases.
 - Reconcile inventory usage, adjustments, and transfers tied to real operations.
 - Maintain traceability across procurement, inventory, and production using UUID references.
@@ -49,4 +50,4 @@ BrewPipes is an open source brewery management system focused on day-to-day prod
 
 ## Open questions
 
-- None yet. Add clarifications here when user guidance is required.
+- Bulk batch import: confirm required CSV columns beyond `short_name` (default: `short_name` required, `brew_date` and `notes` optional) and whether duplicate `short_name` values should be rejected.

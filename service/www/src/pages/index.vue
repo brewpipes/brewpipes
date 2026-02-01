@@ -5,14 +5,12 @@
         <div class="dashboard-hero">
           <div>
             <div class="text-overline text-medium-emphasis">Dashboard</div>
-            <div class="text-h4 font-weight-semibold">Brew day overview</div>
+            <div class="text-h4 font-weight-semibold">{{ breweryName }}</div>
             <div class="text-body-2 text-medium-emphasis">
               Track in-progress batches, upcoming brew days, and vessel readiness.
             </div>
           </div>
           <div class="hero-actions">
-            <v-btn color="primary" to="/batches">Start batch</v-btn>
-            <v-btn to="/batches" variant="tonal">Open workflow</v-btn>
             <v-btn :loading="loading" variant="text" @click="refreshAll">Refresh</v-btn>
           </div>
         </div>
@@ -178,6 +176,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { useApiClient } from '@/composables/useApiClient'
   import { useUnitPreferences, type VolumeUnit } from '@/composables/useUnitPreferences'
+  import { useUserSettings } from '@/composables/useUserSettings'
 
   type ProcessPhase
     = | 'planning'
@@ -272,6 +271,7 @@
 
   const { request } = useApiClient(apiBase)
   const { formatVolumePreferred } = useUnitPreferences()
+  const { breweryName } = useUserSettings()
 
   const volumeNameMap = computed(
     () => new Map(volumes.value.map(volume => [volume.id, volume.name ?? `Volume ${volume.id}`])),

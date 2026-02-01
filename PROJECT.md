@@ -55,6 +55,49 @@ BrewPipes is an open source brewery management system focused on day-to-day prod
 - Procurement purchase order numbers: confirm default generated format when a custom ID is not provided (recommend `PO-YYYYMMDD-###`).
 - Procurement updates: confirm whether to add backend support for updating purchase orders and modifying/removing line items and fees.
 
+## Implemented: Vessels Navigation Restructure
+
+### Overview
+
+The Vessels section now mirrors the Batches navigation pattern with two sub-views: Active (master/detail) and All Vessels (data table).
+
+### Navigation structure
+
+- **Vessels** (collapsible group)
+  - **Active** (`/vessels/active`) - Master/detail view of active vessels
+  - **All Vessels** (`/vessels/all`) - Data table view of all vessels
+
+### Active Vessels page
+
+- Shows only vessels with `status === 'active'`
+- Sorted with occupied vessels first, then unoccupied, alphabetically by name within each group
+- Master/detail layout with vessel list on left, details panel on right
+- Details panel shows vessel info, metadata, and current occupancy with status management
+
+### All Vessels page
+
+- Data table with columns: ID, Name, Type, Capacity, Status, Occupancy, Updated
+- Search filtering across all columns
+- Status chips with colors: active (green), inactive (grey), retired (red)
+- Occupancy column shows batch short_name as link when occupied, "Unoccupied" otherwise
+- Default sorting: active first, then inactive, then retired; occupied before unoccupied within each status
+- "New Vessel" button with create dialog
+- Double-click row to navigate to vessel detail page
+
+### Vessel detail page
+
+- Barebones page at `/vessels/:uuid` showing vessel information
+- Displays: name, type, status, capacity, make/model, timestamps
+- Shows current occupancy section if vessel is occupied
+- Foundation for future enhancements (occupancy history, cleaning logs, etc.)
+
+### Shared utilities
+
+- `useFormatters.ts` composable provides shared formatting functions:
+  - `useFormatters()` - date/time formatting
+  - `useVesselStatusFormatters()` - vessel status formatting and colors
+  - `useOccupancyStatusFormatters()` - occupancy status formatting, colors, and icons
+
 ## Planned: Enhanced Batch Tracking
 
 ### Overview
@@ -109,6 +152,29 @@ New `GET /batches/{id}/summary` endpoint aggregates:
 4. UI - Brew Session Tracking: create/edit, hot-side additions/measurements
 5. UI - Enhanced Batch Views: spreadsheet-style list, batch detail timeline
 6. UI - Occupancy Status: status display and change workflow
+
+## Implemented: User Settings (Brewery Name)
+
+### Overview
+
+Users can configure their brewery name, which is displayed prominently throughout the app. This setting is persisted in localStorage and defaults to "Acme Brewing" if not set.
+
+### Display locations
+
+- **Dashboard**: The brewery name appears as the main heading in the hero section
+- **App Bar**: The brewery name appears below "BrewPipes" in the header
+
+### Storage approach
+
+- **Preferences**: Persisted in browser localStorage (`brewpipes:userSettings`)
+- **Default**: "Acme Brewing"
+- **Validation**: Empty/whitespace-only values are rejected; the field reverts to the last valid value
+
+### Implementation
+
+- Settings page accessible via user dropdown menu → "Settings"
+- Composable: `useUserSettings.ts` (singleton state with localStorage persistence)
+- Uses blur-based validation to prevent empty brewery names
 
 ## Implemented: User Display Preferences
 

@@ -18,5 +18,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SankeyDiagram: typeof import('./components/SankeyDiagram.vue')['default']
+    VesselDetails: typeof import('./components/VesselDetails.vue')['default']
+    VesselList: typeof import('./components/VesselList.vue')['default']
   }
 }

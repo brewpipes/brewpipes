@@ -45,6 +45,7 @@ type OccupancyResponse struct {
 	UUID      string     `json:"uuid"`
 	VesselID  int64      `json:"vessel_id"`
 	VolumeID  int64      `json:"volume_id"`
+	BatchID   *int64     `json:"batch_id,omitempty"`
 	InAt      time.Time  `json:"in_at"`
 	OutAt     *time.Time `json:"out_at,omitempty"`
 	Status    *string    `json:"status,omitempty"`
@@ -59,6 +60,7 @@ func NewOccupancyResponse(occupancy storage.Occupancy) OccupancyResponse {
 		UUID:      occupancy.UUID.String(),
 		VesselID:  occupancy.VesselID,
 		VolumeID:  occupancy.VolumeID,
+		BatchID:   occupancy.BatchID,
 		InAt:      occupancy.InAt,
 		OutAt:     occupancy.OutAt,
 		Status:    occupancy.Status,

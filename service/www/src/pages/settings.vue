@@ -3,6 +3,30 @@
     <h1 class="text-h4 mb-6">Settings</h1>
 
     <v-card class="mb-6">
+      <v-card-title>Brewery Settings</v-card-title>
+      <v-card-subtitle>
+        Configure your brewery identity and branding.
+      </v-card-subtitle>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="breweryNameInput"
+              density="comfortable"
+              hide-details
+              label="Brewery Name"
+              variant="outlined"
+              @blur="handleBreweryNameBlur"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn variant="text" @click="resetBrewerySettings">Reset to Default</v-btn>
+      </v-card-actions>
+    </v-card>
+
+    <v-card class="mb-6">
       <v-card-title>Display Units</v-card-title>
       <v-card-subtitle>
         Choose your preferred units for displaying measurements throughout the app.
@@ -92,7 +116,9 @@
 </template>
 
 <script lang="ts" setup>
+  import { ref, watch } from 'vue'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { useUserSettings } from '@/composables/useUserSettings'
 
   const {
     preferences,
@@ -104,4 +130,28 @@
     pressureOptions,
     colorOptions,
   } = useUnitPreferences()
+
+  const {
+    breweryName,
+    setBreweryName,
+    resetToDefaults: resetBrewerySettings,
+  } = useUserSettings()
+
+  // Local ref for text field editing; syncs on blur to allow validation
+  const breweryNameInput = ref(breweryName.value)
+
+  // Keep local input in sync if external changes occur (e.g., reset)
+  watch(breweryName, value => {
+    breweryNameInput.value = value
+  })
+
+  function handleBreweryNameBlur () {
+    const trimmed = breweryNameInput.value.trim()
+    if (trimmed) {
+      setBreweryName(trimmed)
+    } else {
+      // Revert to current valid value if input is empty
+      breweryNameInput.value = breweryName.value
+    }
+  }
 </script>

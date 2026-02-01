@@ -10,7 +10,7 @@
 
     <div class="brand-text">
       <div class="text-caption text-medium-emphasis">BrewPipes</div>
-      <div class="text-subtitle-1">Production Console</div>
+      <div class="text-subtitle-1">{{ breweryName }}</div>
     </div>
 
     <v-spacer />
@@ -109,6 +109,7 @@
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useDisplay, useTheme } from 'vuetify'
+  import { useUserSettings } from '@/composables/useUserSettings'
   import { useAuthStore } from '@/stores/auth'
 
   const authStore = useAuthStore()
@@ -117,6 +118,7 @@
   const rail = ref(false)
   const theme = useTheme()
   const display = useDisplay()
+  const { breweryName } = useUserSettings()
   const isMobile = computed(() => display.smAndDown.value)
   const isDark = computed(() => theme.global.current.value.dark)
   const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))

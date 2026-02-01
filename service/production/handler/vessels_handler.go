@@ -15,6 +15,7 @@ import (
 type VesselStore interface {
 	CreateVessel(context.Context, storage.Vessel) (storage.Vessel, error)
 	GetVessel(context.Context, int64) (storage.Vessel, error)
+	GetVesselByUUID(context.Context, string) (storage.Vessel, error)
 	ListVessels(context.Context) ([]storage.Vessel, error)
 }
 
@@ -96,6 +97,40 @@ func HandleVesselByID(db VesselStore) http.HandlerFunc {
 			return
 		} else if err != nil {
 			slog.Error("error getting vessel", "error", err)
+			service.InternalError(w, err.Error())
+			return
+		}
+
+		service.JSON(w, dto.NewVesselResponse(vessel))
+	}
+}
+
+// HandleVesselByUUID handles [GET /vessels/uuid/{uuid}].
+func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+
+		uuidValue := r.PathValue("uuid")
+		if uuidValue == "" {
+			http.Error(w, "uuid is required", http.StatusBadRequest)
+			return
+		}
+
+		parsedUUID, err := parseUUIDParam(uuidValue)
+		if err != nil {
+			http.Error(w, "invalid uuid format", http.StatusBadRequest)
+			return
+		}
+
+		vessel, err := db.GetVesselByUUID(r.Context(), parsedUUID.String())
+		if errors.Is(err, service.ErrNotFound) {
+			http.Error(w, "vessel not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			slog.Error("error getting vessel by uuid", "error", err, "uuid", uuidValue)
 			service.InternalError(w, err.Error())
 			return
 		}

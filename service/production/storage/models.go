@@ -110,6 +110,7 @@ type Occupancy struct {
 	InAt     time.Time
 	OutAt    *time.Time
 	Status   *string
+	BatchID  *int64 // Derived from batch_volume join, not stored in occupancy table
 	entity.Timestamps
 }
 

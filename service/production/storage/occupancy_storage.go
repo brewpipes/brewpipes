@@ -137,11 +137,20 @@ func (c *Client) GetActiveOccupancyByVolume(ctx context.Context, volumeID int64)
 }
 
 func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error) {
+	// Use a subquery to get the most recent batch_id for each volume.
+	// A volume can have multiple batch_volume records (e.g., wort -> beer phase transitions),
+	// so we select the one with the latest phase_at to avoid duplicate occupancy rows.
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, vessel_id, volume_id, in_at, out_at, status, created_at, updated_at, deleted_at
-		FROM occupancy
-		WHERE out_at IS NULL AND deleted_at IS NULL
-		ORDER BY in_at DESC`,
+		SELECT o.id, o.uuid, o.vessel_id, o.volume_id, o.in_at, o.out_at, o.status,
+		       o.created_at, o.updated_at, o.deleted_at,
+		       (SELECT bv.batch_id
+		        FROM batch_volume bv
+		        WHERE bv.volume_id = o.volume_id AND bv.deleted_at IS NULL
+		        ORDER BY bv.phase_at DESC
+		        LIMIT 1) AS batch_id
+		FROM occupancy o
+		WHERE o.out_at IS NULL AND o.deleted_at IS NULL
+		ORDER BY o.in_at DESC`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("listing active occupancies: %w", err)
@@ -162,6 +171,7 @@ func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error)
 			&occupancy.CreatedAt,
 			&occupancy.UpdatedAt,
 			&occupancy.DeletedAt,
+			&occupancy.BatchID,
 		); err != nil {
 			return nil, fmt.Errorf("scanning occupancy: %w", err)
 		}

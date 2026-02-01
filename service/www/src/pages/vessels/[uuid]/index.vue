@@ -186,29 +186,19 @@
     useVesselStatusFormatters,
   } from '@/composables/useFormatters'
   import {
+    type Batch,
     type Occupancy,
     useProductionApi,
     type Vessel,
   } from '@/composables/useProductionApi'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
-  type Batch = {
-    id: number
-    uuid: string
-    short_name: string
-    brew_date: string | null
-    recipe_id: number | null
-    notes: string | null
-    created_at: string
-    updated_at: string
-  }
-
   const route = useRoute()
   const router = useRouter()
 
   const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const { request } = useApiClient(productionApiBase)
-  const { getActiveOccupancies } = useProductionApi()
+  const { getActiveOccupancies, getVesselByUUID } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
@@ -253,26 +243,21 @@
       loading.value = true
       error.value = null
 
-      // Fetch all data in parallel
-      const [vesselData, occupancyData, batchData] = await Promise.all([
-        request<Vessel[]>('/vessels'),
+      // Fetch vessel by UUID directly, then fetch related data
+      const vesselData = await getVesselByUUID(uuid)
+      vessel.value = vesselData
+
+      // Fetch occupancies and batches in parallel
+      const [occupancyData, batchData] = await Promise.all([
         getActiveOccupancies(),
         request<Batch[]>('/batches'),
       ])
 
-      // Find the vessel matching the UUID
-      const found = vesselData.find(v => v.uuid === uuid)
-
-      if (found) {
-        vessel.value = found
-        occupancies.value = occupancyData
-        batches.value = batchData
-      } else {
-        error.value = 'Vessel not found'
-      }
+      occupancies.value = occupancyData
+      batches.value = batchData
     } catch (error_) {
       console.error('Failed to load vessel:', error_)
-      error.value = 'Failed to load vessel. Please try again.'
+      error.value = error_ instanceof Error && error_.message.includes('404') ? 'Vessel not found' : 'Failed to load vessel. Please try again.'
     } finally {
       loading.value = false
     }

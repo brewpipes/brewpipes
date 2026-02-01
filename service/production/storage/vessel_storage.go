@@ -124,3 +124,34 @@ func (c *Client) ListVessels(ctx context.Context) ([]Vessel, error) {
 
 	return vessels, nil
 }
+
+func (c *Client) GetVesselByUUID(ctx context.Context, uuid string) (Vessel, error) {
+	var vessel Vessel
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, type, name, capacity, capacity_unit, make, model, status, created_at, updated_at, deleted_at
+		FROM vessel
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		uuid,
+	).Scan(
+		&vessel.ID,
+		&vessel.UUID,
+		&vessel.Type,
+		&vessel.Name,
+		&vessel.Capacity,
+		&vessel.CapacityUnit,
+		&vessel.Make,
+		&vessel.Model,
+		&vessel.Status,
+		&vessel.CreatedAt,
+		&vessel.UpdatedAt,
+		&vessel.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Vessel{}, service.ErrNotFound
+		}
+		return Vessel{}, fmt.Errorf("getting vessel by uuid: %w", err)
+	}
+
+	return vessel, nil
+}

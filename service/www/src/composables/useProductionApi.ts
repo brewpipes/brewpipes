@@ -58,6 +58,7 @@ export function useProductionApi () {
   // Vessels API
   const getVessels = () => request<Vessel[]>('/vessels')
   const getVessel = (id: number) => request<Vessel>(`/vessels/${id}`)
+  const getVesselByUUID = (uuid: string) => request<Vessel>(`/vessels/uuid/${uuid}`)
 
   // Volumes API
   const getVolumes = () => request<Volume[]>('/volumes')
@@ -136,6 +137,7 @@ export function useProductionApi () {
     // Vessels
     getVessels,
     getVessel,
+    getVesselByUUID,
     // Volumes
     getVolumes,
     getVolume,
@@ -169,8 +171,16 @@ export type Style = {
   updated_at: string
 }
 
-export type CreateStyleRequest = {
-  name: string
+// Batch types
+export type Batch = {
+  id: number
+  uuid: string
+  short_name: string
+  brew_date: string | null
+  recipe_id: number | null
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type Recipe = {

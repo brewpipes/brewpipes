@@ -36,11 +36,13 @@ Modeling blends
 Vessel
 - A vessel is any physical container (mash tun, kettle, fermenter, brite tank).
 - It has a capacity and type so the system knows what it can hold.
+- Vessels can be looked up by internal ID (`GET /vessels/{id}`) or by UUID (`GET /vessels/uuid/{uuid}`).
 
 Occupancy
-- Occupancy is the idea of “this volume is in this vessel during this time.”
+- Occupancy is the idea of "this volume is in this vessel during this time."
 - When you move beer from one vessel to another, the occupancy changes to reflect where the liquid is now.
 - Active occupancies are listed with `GET /occupancies?active=true`; single active lookups use `GET /occupancies/active` with `active_vessel_id` or `active_volume_id`.
+- Active occupancy responses include a derived `batch_id` field (from the most recent batch_volume record for that volume) to help clients display which batch is in each vessel.
 
 Transfer
 - A transfer records a move from one occupancy to another (e.g., fermenter A to brite tank B).

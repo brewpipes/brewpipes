@@ -49,6 +49,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/vessels", Handler: auth(handler.HandleVessels(s.storage))},
 		{Method: http.MethodPost, Path: "/vessels", Handler: auth(handler.HandleVessels(s.storage))},
 		{Method: http.MethodGet, Path: "/vessels/{id}", Handler: auth(handler.HandleVesselByID(s.storage))},
+		{Method: http.MethodGet, Path: "/occupancies", Handler: auth(handler.HandleOccupancies(s.storage))},
 		{Method: http.MethodPost, Path: "/occupancies", Handler: auth(handler.HandleCreateOccupancy(s.storage))},
 		{Method: http.MethodGet, Path: "/occupancies/{id}", Handler: auth(handler.HandleOccupancyByID(s.storage))},
 		{Method: http.MethodGet, Path: "/occupancies/active", Handler: auth(handler.HandleActiveOccupancy(s.storage))},

@@ -414,31 +414,7 @@ async function loadOccupancies() {
     occupancies.value = []
     return
   }
-  const results = await Promise.allSettled(
-    vessels.value.map((vessel) => requestActiveOccupancy(vessel.id)),
-  )
-  const active: Occupancy[] = []
-  const errors = results.filter((result) => result.status === 'rejected') as PromiseRejectedResult[]
-  results.forEach((result) => {
-    if (result.status === 'fulfilled' && result.value) {
-      active.push(result.value)
-    }
-  })
-  if (errors.length) {
-    throw errors[0].reason
-  }
-  occupancies.value = active
-}
-
-async function requestActiveOccupancy(vesselId: number) {
-  try {
-    return await request<Occupancy>(`/occupancies/active?active_vessel_id=${vesselId}`)
-  } catch (error) {
-    if (error instanceof Error && error.message.toLowerCase().includes('occupancy not found')) {
-      return null
-    }
-    throw error
-  }
+  occupancies.value = await request<Occupancy[]>('/occupancies?active=true')
 }
 
 function isBatchInProgress(batch: Batch, phase: BatchProcessPhase | null) {

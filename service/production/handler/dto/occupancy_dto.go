@@ -46,3 +46,11 @@ func NewOccupancyResponse(occupancy storage.Occupancy) OccupancyResponse {
 		DeletedAt: occupancy.DeletedAt,
 	}
 }
+
+func NewOccupanciesResponse(occupancies []storage.Occupancy) []OccupancyResponse {
+	resp := make([]OccupancyResponse, 0, len(occupancies))
+	for _, occupancy := range occupancies {
+		resp = append(resp, NewOccupancyResponse(occupancy))
+	}
+	return resp
+}

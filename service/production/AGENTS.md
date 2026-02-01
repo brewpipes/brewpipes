@@ -40,6 +40,7 @@ Vessel
 Occupancy
 - Occupancy is the idea of “this volume is in this vessel during this time.”
 - When you move beer from one vessel to another, the occupancy changes to reflect where the liquid is now.
+- Active occupancies are listed with `GET /occupancies?active=true`; single active lookups use `GET /occupancies/active` with `active_vessel_id` or `active_volume_id`.
 
 Transfer
 - A transfer records a move from one occupancy to another (e.g., fermenter A to brite tank B).

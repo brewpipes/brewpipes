@@ -130,6 +130,43 @@ func (c *Client) GetActiveOccupancyByVolume(ctx context.Context, volumeID int64)
 	return occupancy, nil
 }
 
+func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error) {
+	rows, err := c.db.Query(ctx, `
+		SELECT id, uuid, vessel_id, volume_id, in_at, out_at, created_at, updated_at, deleted_at
+		FROM occupancy
+		WHERE out_at IS NULL AND deleted_at IS NULL
+		ORDER BY in_at DESC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing active occupancies: %w", err)
+	}
+	defer rows.Close()
+
+	var occupancies []Occupancy
+	for rows.Next() {
+		var occupancy Occupancy
+		if err := rows.Scan(
+			&occupancy.ID,
+			&occupancy.UUID,
+			&occupancy.VesselID,
+			&occupancy.VolumeID,
+			&occupancy.InAt,
+			&occupancy.OutAt,
+			&occupancy.CreatedAt,
+			&occupancy.UpdatedAt,
+			&occupancy.DeletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning occupancy: %w", err)
+		}
+		occupancies = append(occupancies, occupancy)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing active occupancies: %w", err)
+	}
+
+	return occupancies, nil
+}
+
 func (c *Client) CloseOccupancy(ctx context.Context, occupancyID int64, outAt time.Time) error {
 	var id int64
 	err := c.db.QueryRow(ctx, `

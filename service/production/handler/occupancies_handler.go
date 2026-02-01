@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -18,6 +19,41 @@ type OccupancyStore interface {
 	GetOccupancy(context.Context, int64) (storage.Occupancy, error)
 	GetActiveOccupancyByVessel(context.Context, int64) (storage.Occupancy, error)
 	GetActiveOccupancyByVolume(context.Context, int64) (storage.Occupancy, error)
+	ListActiveOccupancies(context.Context) ([]storage.Occupancy, error)
+}
+
+// HandleOccupancies handles [GET /occupancies].
+func HandleOccupancies(db OccupancyStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+
+		activeValue := r.URL.Query().Get("active")
+		if activeValue == "" {
+			http.Error(w, "active is required", http.StatusBadRequest)
+			return
+		}
+		active, err := strconv.ParseBool(activeValue)
+		if err != nil {
+			http.Error(w, "invalid active", http.StatusBadRequest)
+			return
+		}
+		if !active {
+			http.Error(w, "active must be true", http.StatusBadRequest)
+			return
+		}
+
+		occupancies, err := db.ListActiveOccupancies(r.Context())
+		if err != nil {
+			slog.Error("error listing active occupancies", "error", err)
+			service.InternalError(w, err.Error())
+			return
+		}
+
+		service.JSON(w, dto.NewOccupanciesResponse(occupancies))
+	}
 }
 
 // HandleCreateOccupancy handles [POST /occupancies].

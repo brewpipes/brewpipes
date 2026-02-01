@@ -258,6 +258,11 @@ CREATE INDEX IF NOT EXISTS measurement_occupancy_id_idx ON measurement(occupancy
 CREATE INDEX IF NOT EXISTS measurement_observed_at_idx ON measurement(observed_at);
 
 -- Seed data for early development.
+
+-- NOTE: style, recipe, brew_session, and related columns (batch.recipe_id, occupancy.status,
+-- addition.volume_id, measurement.volume_id) are added by the enhanced_batch_tracking migration.
+-- Seed data for those tables and columns is defined in that migration file.
+
 INSERT INTO batch (uuid, short_name, brew_date, notes)
 VALUES
     ('90000000-0000-0000-0000-000000000001', 'IPA 24-07', '2026-01-10', 'Flagship IPA split into two fermenters.'),
@@ -326,8 +331,11 @@ VALUES
 
 INSERT INTO occupancy (uuid, vessel_id, volume_id, in_at, out_at)
 VALUES
-    ('93100000-0000-0000-0000-000000000006', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000007'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000006'), '2026-01-22 18:00:00+00', '2026-02-02 10:00:00+00'),
+    -- Stout beer in fermenter D, ends before Saison starts (was incorrectly overlapping)
+    ('93100000-0000-0000-0000-000000000006', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000007'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000006'), '2026-01-22 18:00:00+00', '2026-01-26 10:00:00+00'),
+    -- Saison beer in fermenter D after Stout moved to brite tank
     ('93100000-0000-0000-0000-000000000007', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000007'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000012'), '2026-01-26 19:00:00+00', NULL),
+    -- Kolsch blend in brite tank 2
     ('93100000-0000-0000-0000-000000000008', (SELECT id FROM vessel WHERE uuid = '93000000-0000-0000-0000-000000000008'), (SELECT id FROM volume WHERE uuid = '91000000-0000-0000-0000-000000000010'), '2026-02-05 09:00:00+00', NULL);
 
 INSERT INTO transfer (

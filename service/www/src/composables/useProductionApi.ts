@@ -33,86 +33,86 @@ export function useProductionApi() {
   }
 
   // Styles API
-  const getStyles = () => request<Style[]>('/production/styles')
-  const getStyle = (id: number) => request<Style>(`/production/styles/${id}`)
+  const getStyles = () => request<Style[]>('/styles')
+  const getStyle = (id: number) => request<Style>(`/styles/${id}`)
   const createStyle = (data: CreateStyleRequest) =>
-    request<Style>('/production/styles', {
+    request<Style>('/styles', {
       method: 'POST',
       body: JSON.stringify(data),
     })
 
   // Recipes API
-  const getRecipes = () => request<Recipe[]>('/production/recipes')
-  const getRecipe = (id: number) => request<Recipe>(`/production/recipes/${id}`)
+  const getRecipes = () => request<Recipe[]>('/recipes')
+  const getRecipe = (id: number) => request<Recipe>(`/recipes/${id}`)
   const createRecipe = (data: CreateRecipeRequest) =>
-    request<Recipe>('/production/recipes', {
+    request<Recipe>('/recipes', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   const updateRecipe = (id: number, data: UpdateRecipeRequest) =>
-    request<Recipe>(`/production/recipes/${id}`, {
+    request<Recipe>(`/recipes/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
 
   // Vessels API
-  const getVessels = () => request<Vessel[]>('/production/vessels')
-  const getVessel = (id: number) => request<Vessel>(`/production/vessels/${id}`)
+  const getVessels = () => request<Vessel[]>('/vessels')
+  const getVessel = (id: number) => request<Vessel>(`/vessels/${id}`)
 
   // Volumes API
-  const getVolumes = () => request<Volume[]>('/production/volumes')
-  const getVolume = (id: number) => request<Volume>(`/production/volumes/${id}`)
+  const getVolumes = () => request<Volume[]>('/volumes')
+  const getVolume = (id: number) => request<Volume>(`/volumes/${id}`)
   const createVolume = (data: CreateVolumeRequest) =>
-    request<Volume>('/production/volumes', {
+    request<Volume>('/volumes', {
       method: 'POST',
       body: JSON.stringify(data),
     })
 
   // Brew Sessions API
   const getBrewSessions = (batchId: number) =>
-    request<BrewSession[]>(`/production/brew-sessions?batch_id=${batchId}`)
+    request<BrewSession[]>(`/brew-sessions?batch_id=${batchId}`)
   const getBrewSession = (id: number) =>
-    request<BrewSession>(`/production/brew-sessions/${id}`)
+    request<BrewSession>(`/brew-sessions/${id}`)
   const createBrewSession = (data: CreateBrewSessionRequest) =>
-    request<BrewSession>('/production/brew-sessions', {
+    request<BrewSession>('/brew-sessions', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   const updateBrewSession = (id: number, data: UpdateBrewSessionRequest) =>
-    request<BrewSession>(`/production/brew-sessions/${id}`, {
+    request<BrewSession>(`/brew-sessions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
 
   // Additions API (volume-targeted)
   const getAdditionsByVolume = (volumeId: number) =>
-    request<Addition[]>(`/production/additions?volume_id=${volumeId}`)
+    request<Addition[]>(`/additions?volume_id=${volumeId}`)
   const createAddition = (data: CreateAdditionRequest) =>
-    request<Addition>('/production/additions', {
+    request<Addition>('/additions', {
       method: 'POST',
       body: JSON.stringify(data),
     })
 
   // Measurements API (volume-targeted)
   const getMeasurementsByVolume = (volumeId: number) =>
-    request<Measurement[]>(`/production/measurements?volume_id=${volumeId}`)
+    request<Measurement[]>(`/measurements?volume_id=${volumeId}`)
   const createMeasurement = (data: CreateMeasurementRequest) =>
-    request<Measurement>('/production/measurements', {
+    request<Measurement>('/measurements', {
       method: 'POST',
       body: JSON.stringify(data),
     })
 
   // Batch Summary API
   const getBatchSummary = (id: number) =>
-    request<BatchSummary>(`/production/batches/${id}/summary`)
+    request<BatchSummary>(`/batches/${id}/summary`)
 
   // Occupancy API
   const getActiveOccupancies = () =>
-    request<Occupancy[]>('/production/occupancies?active=true')
+    request<Occupancy[]>('/occupancies?active=true')
   const getOccupancy = (id: number) =>
-    request<Occupancy>(`/production/occupancies/${id}`)
+    request<Occupancy>(`/occupancies/${id}`)
   const updateOccupancyStatus = (id: number, status: OccupancyStatus) =>
-    request<Occupancy>(`/production/occupancies/${id}/status`, {
+    request<Occupancy>(`/occupancies/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     })

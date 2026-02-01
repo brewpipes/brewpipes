@@ -292,7 +292,7 @@
                             <div class="metric-card">
                               <div class="metric-label">OG</div>
                               <div class="metric-value">
-                                {{ batchSummary.original_gravity ? batchSummary.original_gravity.toFixed(3) : '—' }}
+                                {{ formatDecimal(batchSummary.original_gravity, 3) }}
                               </div>
                             </div>
                           </v-col>
@@ -300,7 +300,7 @@
                             <div class="metric-card">
                               <div class="metric-label">FG</div>
                               <div class="metric-value">
-                                {{ batchSummary.final_gravity ? batchSummary.final_gravity.toFixed(3) : '—' }}
+                                {{ formatDecimal(batchSummary.final_gravity, 3) }}
                               </div>
                             </div>
                           </v-col>
@@ -308,9 +308,9 @@
                             <div class="metric-card">
                               <div class="metric-label">ABV</div>
                               <div class="metric-value d-flex align-center ga-1">
-                                {{ batchSummary.abv !== null ? batchSummary.abv.toFixed(1) + '%' : '—' }}
+                                {{ formatPercent(batchSummary.abv, 1) }}
                                 <v-chip
-                                  v-if="batchSummary.abv !== null && batchSummary.abv_calculated"
+                                  v-if="batchSummary.abv !== null && batchSummary.abv !== undefined && batchSummary.abv_calculated"
                                   size="x-small"
                                   color="info"
                                   variant="tonal"
@@ -324,7 +324,7 @@
                             <div class="metric-card">
                               <div class="metric-label">IBU</div>
                               <div class="metric-value">
-                                {{ batchSummary.ibu !== null ? batchSummary.ibu : '—' }}
+                                {{ batchSummary.ibu ?? '—' }}
                               </div>
                             </div>
                           </v-col>
@@ -337,7 +337,7 @@
                             <div class="metric-card">
                               <div class="metric-label">Days in FV</div>
                               <div class="metric-value">
-                                {{ batchSummary.days_in_fermenter !== null ? formatDays(batchSummary.days_in_fermenter) : '—' }}
+                                {{ formatDays(batchSummary.days_in_fermenter) }}
                               </div>
                             </div>
                           </v-col>
@@ -345,7 +345,7 @@
                             <div class="metric-card">
                               <div class="metric-label">Days in Brite</div>
                               <div class="metric-value">
-                                {{ batchSummary.days_in_brite !== null ? formatDays(batchSummary.days_in_brite) : '—' }}
+                                {{ formatDays(batchSummary.days_in_brite) }}
                               </div>
                             </div>
                           </v-col>
@@ -353,7 +353,7 @@
                             <div class="metric-card metric-card--highlight">
                               <div class="metric-label">Grain to Glass</div>
                               <div class="metric-value">
-                                {{ batchSummary.days_grain_to_glass !== null ? formatDays(batchSummary.days_grain_to_glass) : '—' }}
+                                {{ formatDays(batchSummary.days_grain_to_glass) }}
                               </div>
                             </div>
                           </v-col>
@@ -366,7 +366,7 @@
                             <div class="metric-card">
                               <div class="metric-label">Starting BBLs</div>
                               <div class="metric-value">
-                                {{ batchSummary.starting_volume_bbl !== null ? batchSummary.starting_volume_bbl.toFixed(1) : '—' }}
+                                {{ formatDecimal(batchSummary.starting_volume_bbl, 1) }}
                               </div>
                             </div>
                           </v-col>
@@ -374,7 +374,7 @@
                             <div class="metric-card">
                               <div class="metric-label">Current BBLs</div>
                               <div class="metric-value">
-                                {{ batchSummary.current_volume_bbl !== null ? batchSummary.current_volume_bbl.toFixed(1) : '—' }}
+                                {{ formatDecimal(batchSummary.current_volume_bbl, 1) }}
                               </div>
                             </div>
                           </v-col>
@@ -382,7 +382,7 @@
                             <div class="metric-card">
                               <div class="metric-label">Loss BBLs</div>
                               <div class="metric-value">
-                                {{ batchSummary.total_loss_bbl !== null ? batchSummary.total_loss_bbl.toFixed(2) : '—' }}
+                                {{ formatDecimal(batchSummary.total_loss_bbl, 2) }}
                               </div>
                             </div>
                           </v-col>
@@ -390,7 +390,7 @@
                             <div class="metric-card" :class="{ 'metric-card--warning': (batchSummary.loss_percentage ?? 0) > 10 }">
                               <div class="metric-label">Loss %</div>
                               <div class="metric-value">
-                                {{ batchSummary.loss_percentage !== null ? batchSummary.loss_percentage.toFixed(1) + '%' : '—' }}
+                                {{ formatPercent(batchSummary.loss_percentage, 1) }}
                               </div>
                             </div>
                           </v-col>
@@ -3182,12 +3182,29 @@ function formatValue(value: number | null, unit: string | null | undefined) {
   return `${value}${unit ? ` ${unit}` : ''}`
 }
 
-function formatDays(days: number) {
+function formatDays(days: number | null | undefined) {
+  if (days === null || days === undefined) {
+    return '—'
+  }
   if (days < 1) {
     const hours = Math.round(days * 24)
     return `${hours}h`
   }
   return `${days.toFixed(1)} days`
+}
+
+function formatDecimal(value: number | null | undefined, decimals = 1) {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+  return value.toFixed(decimals)
+}
+
+function formatPercent(value: number | null | undefined, decimals = 1) {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+  return `${value.toFixed(decimals)}%`
 }
 
 function formatPhase(phase: string) {

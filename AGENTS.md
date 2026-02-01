@@ -85,10 +85,12 @@ It captures commands and conventions observed in the current codebase.
 - Use `r.Context()` for request-scoped calls.
 - Keep handler logic thin; delegate storage/logic to service packages.
 - Wire routes in `HTTPRoutes()` on the service type.
+- All API routes are prefixed with `/api` by `cmd.RunServices` (e.g., `/batches` becomes `/api/batches`).
 
 ## Services and lifecycle
 - Service entrypoints use `cmd.Main(run)` to standardize exit codes.
-- `cmd.RunServices` aggregates routes and runs a single HTTP server.
+- `cmd.RunServices` aggregates routes, prefixes them with `/api`, and runs a single HTTP server.
+- The monolith also serves embedded frontend assets at non-API routes via `service/www`.
 - `Start(ctx)` should connect to dependencies and run migrations.
 - If a service allocates resources, clean up on context cancellation.
 - Background goroutines should respect `ctx.Done()`.
@@ -142,7 +144,8 @@ It captures commands and conventions observed in the current codebase.
 
 ## Notes
 - The repo currently has a single test file.
-- Dockerfile in `cmd/monolith/Dockerfile` is used for container builds.
+- Dockerfile in `cmd/monolith/Dockerfile` is a multi-stage build (Node → Go → Alpine runtime).
+- The monolith embeds frontend assets from `service/www/dist/` using `//go:embed`.
 - Makefile provides the canonical run and Postgres helpers.
 - Go version should match `go.mod` and `cmd/monolith/Dockerfile`.
 - When changing migrations, ensure both services can start cleanly.

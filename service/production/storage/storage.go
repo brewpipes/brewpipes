@@ -2,12 +2,16 @@ package storage
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"log/slog"
 
 	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+//go:embed migrations/*.sql
+var migrations embed.FS
 
 type Client struct {
 	dsn string
@@ -31,9 +35,9 @@ func (c *Client) Start(ctx context.Context) error {
 		return fmt.Errorf("pinging Postgres: %w", err)
 	}
 
-	// use the migrations from the "migrations" directory at this level
 	if err := database.Migrate(
-		"file://service/production/storage/migrations",
+		migrations,
+		"migrations",
 		database.MigrationDSN(c.dsn, "production_schema_migrations"),
 	); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)

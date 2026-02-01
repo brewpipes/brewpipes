@@ -171,6 +171,10 @@ export type Style = {
   updated_at: string
 }
 
+export type CreateStyleRequest = {
+  name: string
+}
+
 // Batch types
 export type Batch = {
   id: number

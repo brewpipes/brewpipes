@@ -2,12 +2,16 @@ package storage
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"log/slog"
 
 	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+//go:embed migrations/*.sql
+var migrations embed.FS
 
 type Client struct {
 	dsn string
@@ -32,7 +36,8 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 
 	if err := database.Migrate(
-		"file://service/procurement/storage/migrations",
+		migrations,
+		"migrations",
 		database.MigrationDSN(c.dsn, "procurement_schema_migrations"),
 	); err != nil {
 		return fmt.Errorf("migrating DB: %w", err)

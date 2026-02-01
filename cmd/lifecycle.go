@@ -18,7 +18,9 @@ type Service interface {
 }
 
 // RunServices starts the provided services and manages their lifecycle.
-func RunServices(ctx context.Context, services ...Service) error {
+// If staticHandler is non-nil, it is registered as a catch-all handler for
+// non-API routes to serve static files (e.g., a frontend SPA).
+func RunServices(ctx context.Context, staticHandler http.Handler, services ...Service) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -26,12 +28,17 @@ func RunServices(ctx context.Context, services ...Service) error {
 	mux := http.NewServeMux()
 	for _, svc := range services {
 		for _, route := range svc.HTTPRoutes() {
-			pattern := route.Path
+			pattern := "/api" + route.Path
 			if route.Method != "" {
-				pattern = route.Method + " " + route.Path
+				pattern = route.Method + " /api" + route.Path
 			}
 			mux.Handle(pattern, route.Handler)
 		}
+	}
+
+	// Register static file handler as catch-all for non-API routes.
+	if staticHandler != nil {
+		mux.Handle("/", staticHandler)
 	}
 
 	// Create HTTP server to serve aggregated routes.

@@ -38,6 +38,47 @@ BrewPipes is an open source brewery management system focused on day-to-day prod
 - The web app lives under `service/www/` and uses API clients that default to `/api` unless overridden by `VITE_*_API_URL`.
 - Auth tokens are stored in the browser and used for Bearer requests across services.
 
+## Deployment
+
+### Single-container deployment
+
+BrewPipes supports a single-container deployment model where the Go monolith serves both the API and the Vue frontend. This is the simplest deployment option for getting started.
+
+**How it works:**
+- The Vue frontend is built to `service/www/dist/`
+- The Go binary embeds the frontend assets using `//go:embed`
+- API routes are served at `/api/*`
+- All other routes serve the embedded frontend with SPA fallback
+
+**Building the container:**
+```bash
+docker build -f cmd/monolith/Dockerfile -t brewpipes .
+```
+
+**Running the container:**
+```bash
+docker run -p 8080:8080 \
+  -e POSTGRES_DSN="postgres://user:pass@host:5432/brewpipes?sslmode=disable" \
+  -e BREWPIPES_SECRET_KEY="your-secret-key" \
+  brewpipes
+```
+
+**Image characteristics:**
+- Multi-stage build (Node → Go → Alpine runtime)
+- Final image size: ~45MB
+- Static Go binary with embedded frontend assets
+- No runtime dependencies beyond the binary itself
+
+### API route structure
+
+All backend API routes are prefixed with `/api`:
+- Identity: `/api/login`, `/api/refresh`, `/api/logout`, `/api/users/*`
+- Production: `/api/batches/*`, `/api/vessels/*`, `/api/recipes/*`, etc.
+- Inventory: `/api/ingredients/*`, `/api/ingredient-lots/*`, etc.
+- Procurement: `/api/suppliers/*`, `/api/purchase-orders/*`, etc.
+
+The frontend is served at all non-API routes with SPA fallback (unknown paths serve `index.html` for client-side routing).
+
 ## Core entities (current)
 
 - Procurement: supplier, purchase_order, purchase_order_line, purchase_order_fee.

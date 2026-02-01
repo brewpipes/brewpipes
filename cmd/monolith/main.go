@@ -10,6 +10,7 @@ import (
 	"github.com/brewpipes/brewpipes/service/inventory"
 	"github.com/brewpipes/brewpipes/service/procurement"
 	"github.com/brewpipes/brewpipes/service/production"
+	"github.com/brewpipes/brewpipes/service/www"
 )
 
 func main() {
@@ -50,5 +51,5 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("initializing procurement service: %w", err)
 	}
 
-	return cmd.RunServices(ctx, identitySvc, productionSvc, inventorySvc, procurementSvc)
+	return cmd.RunServices(ctx, www.Handler(), identitySvc, productionSvc, inventorySvc, procurementSvc)
 }

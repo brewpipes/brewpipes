@@ -7,10 +7,13 @@ services:
     ports:
       - "8080:8080"
     environment:
+      BREWPIPES_SECRET_KEY: dummy
       POSTGRES_DSN: postgres://brewpipes:brewpipes@postgres:5432/brewpipes?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - brewpipes-net
 
   postgres:
     image: postgres:16
@@ -25,3 +28,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - brewpipes-net
+
+networks:
+  brewpipes-net:
+    driver: bridge

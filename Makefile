@@ -1,5 +1,7 @@
 .PHONY: info clean monolith auth-service production-service run-monolith psql
 
+postgres_dsn = postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable
+
 info:
 	@echo "  make monolith            Build the monolith application"
 	@echo "  make auth-service        Build the authentication service"
@@ -13,14 +15,23 @@ nuke:
 	docker compose down -v
 
 run-server:
-	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
-	BREWPIPES_SECRET_KEY=dummy \
+	POSTGRES_DSN="$(postgres_dsn)" \
+	BREWPIPES_SECRET_KEY="dummy" \
 	go run ./cmd/monolith
 
 run-web:
 	cd service/www && \
 	pnpm dev --force
 
+build-docker:
+	docker build -f cmd/monolith/Dockerfile -t brewpipes .
+
+run-docker:
+	docker run -p 8080:8080 \
+	-e POSTGRES_DSN="$(postgres_dsn)" \
+	-e BREWPIPES_SECRET_KEY="dummy" \
+	brewpipes
+
 # connect to the postgres container using psql
 psql:
-	psql "postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable"
+	psql "$(postgres_dsn)"

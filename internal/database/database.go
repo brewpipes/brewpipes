@@ -1,17 +1,23 @@
 package database
 
 import (
+	"embed"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
-func Migrate(from, to string) error {
-	m, err := migrate.New(from, to)
+func Migrate(fs embed.FS, subdir string, dbURL string) error {
+	source, err := iofs.New(fs, subdir)
+	if err != nil {
+		return fmt.Errorf("creating migration source: %w", err)
+	}
+
+	m, err := migrate.NewWithSourceInstance("iofs", source, dbURL)
 	if err != nil {
 		return fmt.Errorf("creating migration instance: %w", err)
 	}

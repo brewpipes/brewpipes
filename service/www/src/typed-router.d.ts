@@ -39,7 +39,10 @@ declare module 'vue-router/auto-routes' {
     '/production/': RouteRecordInfo<'/production/', '/production', Record<never, never>, Record<never, never>>,
     '/production/recipes': RouteRecordInfo<'/production/recipes', '/production/recipes', Record<never, never>, Record<never, never>>,
     '/settings': RouteRecordInfo<'/settings', '/settings', Record<never, never>, Record<never, never>>,
-    '/vessels': RouteRecordInfo<'/vessels', '/vessels', Record<never, never>, Record<never, never>>,
+    '/vessels/': RouteRecordInfo<'/vessels/', '/vessels', Record<never, never>, Record<never, never>>,
+    '/vessels/[uuid]/': RouteRecordInfo<'/vessels/[uuid]/', '/vessels/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
+    '/vessels/active': RouteRecordInfo<'/vessels/active', '/vessels/active', Record<never, never>, Record<never, never>>,
+    '/vessels/all': RouteRecordInfo<'/vessels/all', '/vessels/all', Record<never, never>, Record<never, never>>,
   }
 
   /**
@@ -137,8 +140,20 @@ declare module 'vue-router/auto-routes' {
       routes: '/settings'
       views: never
     }
-    'src/pages/vessels.vue': {
-      routes: '/vessels'
+    'src/pages/vessels/index.vue': {
+      routes: '/vessels/'
+      views: never
+    }
+    'src/pages/vessels/[uuid]/index.vue': {
+      routes: '/vessels/[uuid]/'
+      views: never
+    }
+    'src/pages/vessels/active.vue': {
+      routes: '/vessels/active'
+      views: never
+    }
+    'src/pages/vessels/all.vue': {
+      routes: '/vessels/all'
       views: never
     }
   }

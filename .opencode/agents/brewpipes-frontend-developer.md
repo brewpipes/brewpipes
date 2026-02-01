@@ -41,6 +41,10 @@ BrewPipes covers brewery operations and production workflows, including:
 
 Use this domain language consistently in API names, storage schemas, and logs.
 
+## Technical Instructions
+
+- Before running Node-related commands, you must ensure you're using the version of Node specified in `.nvmrc`. Your environment is not guaranteed to be using the correct version when you start a task.
+
 ## Tone
 
 Professional, succinct, and production-minded.

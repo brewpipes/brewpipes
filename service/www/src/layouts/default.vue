@@ -62,6 +62,14 @@
         <v-list-item title="All Batches" to="/batches/all" />
       </v-list-group>
 
+      <v-list-group class="nav-group" value="vessels">
+        <template #activator="{ props }">
+          <v-list-item v-bind="props" prepend-icon="mdi-silo" title="Vessels" />
+        </template>
+        <v-list-item title="Active" to="/vessels/active" />
+        <v-list-item title="All Vessels" to="/vessels/all" />
+      </v-list-group>
+
       <v-list-group class="nav-group" value="production">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
@@ -117,7 +125,6 @@
 
   const navItems = [
     { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
-    { title: 'Vessels', icon: 'mdi-silo', to: '/vessels' },
   ]
 
   function toggleDrawer () {

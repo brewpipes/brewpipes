@@ -5,15 +5,7 @@
         <v-card class="section-card">
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-silo" />
-            Vessel list
-            <v-spacer />
-            <v-btn
-              aria-label="Register vessel"
-              icon="mdi-plus"
-              size="small"
-              variant="text"
-              @click="createVesselDialog = true"
-            />
+            Active Vessels
           </v-card-title>
           <v-card-text>
             <v-alert
@@ -28,7 +20,7 @@
 
             <v-list active-color="primary" class="vessel-list" lines="two">
               <v-list-item
-                v-for="vessel in vessels"
+                v-for="vessel in sortedActiveVessels"
                 :key="vessel.id"
                 :active="vessel.id === selectedVesselId"
                 @click="selectVessel(vessel.id)"
@@ -40,15 +32,19 @@
                   {{ vessel.type }} - {{ formatVolumePreferred(vessel.capacity, vessel.capacity_unit) }}
                 </v-list-item-subtitle>
                 <template #append>
-                  <v-chip size="x-small" variant="tonal">
-                    {{ vessel.status }}
+                  <v-chip
+                    :color="isVesselOccupied(vessel.id) ? 'primary' : 'grey'"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    {{ isVesselOccupied(vessel.id) ? 'Occupied' : 'Available' }}
                   </v-chip>
                 </template>
               </v-list-item>
 
-              <v-list-item v-if="vessels.length === 0">
-                <v-list-item-title>No vessels yet</v-list-item-title>
-                <v-list-item-subtitle>Use + to register the first vessel.</v-list-item-subtitle>
+              <v-list-item v-if="sortedActiveVessels.length === 0 && !loading">
+                <v-list-item-title>No active vessels</v-list-item-title>
+                <v-list-item-subtitle>Register vessels in All Vessels to see them here.</v-list-item-subtitle>
               </v-list-item>
             </v-list>
           </v-card-text>
@@ -197,98 +193,42 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
-
-  <v-dialog v-model="createVesselDialog" max-width="640">
-    <v-card>
-      <v-card-title class="text-h6">Register vessel</v-card-title>
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.type" label="Type" placeholder="Fermenter" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.name" label="Name" placeholder="FV-01" />
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-text-field v-model="newVessel.capacity" label="Capacity" type="number" />
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="newVessel.capacity_unit"
-              :items="unitOptions"
-              label="Capacity unit"
-            />
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="newVessel.status"
-              :items="vesselStatusOptions"
-              label="Status"
-            />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.make" label="Make" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.model" label="Model" />
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="createVesselDialog = false">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!newVessel.type.trim() || !newVessel.name.trim() || !newVessel.capacity"
-          @click="createVessel"
-        >
-          Add vessel
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useApiClient } from '@/composables/useApiClient'
   import {
+    useFormatters,
+    useOccupancyStatusFormatters,
+  } from '@/composables/useFormatters'
+  import {
     type Occupancy,
     OCCUPANCY_STATUS_VALUES,
     type OccupancyStatus,
     useProductionApi,
+    type Vessel,
   } from '@/composables/useProductionApi'
-  import { useUnitPreferences, volumeOptions, type VolumeUnit } from '@/composables/useUnitPreferences'
-
-  type Vessel = {
-    id: number
-    uuid: string
-    type: string
-    name: string
-    capacity: number
-    capacity_unit: VolumeUnit
-    make: string | null
-    model: string | null
-    status: 'active' | 'inactive' | 'retired'
-    created_at: string
-    updated_at: string
-  }
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-
-  const unitOptions = volumeOptions.map(opt => opt.value)
-  const vesselStatusOptions = ['active', 'inactive', 'retired']
 
   const vessels = ref<Vessel[]>([])
   const occupancies = ref<Occupancy[]>([])
   const selectedVesselId = ref<number | null>(null)
   const errorMessage = ref('')
   const loading = ref(false)
-  const createVesselDialog = ref(false)
   const updatingOccupancyStatus = ref(false)
 
   const { request } = useApiClient(apiBase)
   const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
+  const { formatDateTime } = useFormatters()
+  const {
+    formatOccupancyStatus,
+    getOccupancyStatusColor,
+    getOccupancyStatusIcon,
+  } = useOccupancyStatusFormatters()
 
   const snackbar = reactive({
     show: false,
@@ -296,14 +236,25 @@
     color: 'success',
   })
 
-  const newVessel = reactive({
-    type: '',
-    name: '',
-    capacity: '',
-    capacity_unit: 'ml' as VolumeUnit,
-    status: 'active',
-    make: '',
-    model: '',
+  // Filter to only active vessels
+  const activeVessels = computed(() =>
+    vessels.value.filter(vessel => vessel.status === 'active'),
+  )
+
+  // Sort: occupied vessels first, then alphabetically by name
+  const sortedActiveVessels = computed(() => {
+    // eslint-disable-next-line unicorn/no-array-sort -- toSorted requires ES2023+
+    return [...activeVessels.value].sort((a, b) => {
+      const aOccupied = isVesselOccupied(a.id)
+      const bOccupied = isVesselOccupied(b.id)
+
+      // Occupied vessels first
+      if (aOccupied && !bOccupied) return -1
+      if (!aOccupied && bOccupied) return 1
+
+      // Within same occupancy group, sort alphabetically by name
+      return a.name.localeCompare(b.name)
+    })
   })
 
   const selectedVessel = computed(() =>
@@ -325,6 +276,10 @@
       title: formatOccupancyStatus(status),
     })),
   )
+
+  function isVesselOccupied (vesselId: number): boolean {
+    return occupancyMap.value.has(vesselId)
+  }
 
   onMounted(async () => {
     await refreshVessels()
@@ -358,6 +313,12 @@
         loadOccupancies(),
       ])
       vessels.value = vesselData
+
+      // Auto-select first vessel if none selected
+      const firstVessel = sortedActiveVessels.value[0]
+      if (!selectedVesselId.value && firstVessel) {
+        selectedVesselId.value = firstVessel.id
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load vessels'
       errorMessage.value = message
@@ -373,108 +334,6 @@
     } catch (error) {
       console.error('Failed to load occupancies:', error)
     }
-  }
-
-  async function createVessel () {
-    errorMessage.value = ''
-    try {
-      const payload = {
-        type: newVessel.type.trim(),
-        name: newVessel.name.trim(),
-        capacity: toNumber(newVessel.capacity),
-        capacity_unit: newVessel.capacity_unit,
-        status: newVessel.status,
-        make: normalizeText(newVessel.make),
-        model: normalizeText(newVessel.model),
-      }
-      await request<Vessel>('/vessels', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      showNotice('Vessel registered')
-      newVessel.type = ''
-      newVessel.name = ''
-      newVessel.capacity = ''
-      newVessel.make = ''
-      newVessel.model = ''
-      await refreshVessels()
-      createVesselDialog.value = false
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create vessel'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    }
-  }
-
-  function normalizeText (value: string) {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  function toNumber (value: string | number | null) {
-    if (value === null || value === undefined || value === '') {
-      return null
-    }
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  function formatDateTime (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
-
-  function formatOccupancyStatus (status: string | null | undefined): string {
-    if (!status) {
-      return 'No status'
-    }
-    const statusLabels: Record<string, string> = {
-      fermenting: 'Fermenting',
-      conditioning: 'Conditioning',
-      cold_crashing: 'Cold Crashing',
-      dry_hopping: 'Dry Hopping',
-      carbonating: 'Carbonating',
-      holding: 'Holding',
-      packaging: 'Packaging',
-    }
-    return statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
-  }
-
-  function getOccupancyStatusColor (status: string | null | undefined): string {
-    if (!status) {
-      return 'grey'
-    }
-    const statusColors: Record<string, string> = {
-      fermenting: 'orange',
-      conditioning: 'blue',
-      cold_crashing: 'cyan',
-      dry_hopping: 'green',
-      carbonating: 'purple',
-      holding: 'grey',
-      packaging: 'teal',
-    }
-    return statusColors[status] ?? 'secondary'
-  }
-
-  function getOccupancyStatusIcon (status: string | null | undefined): string {
-    if (!status) {
-      return 'mdi-help-circle-outline'
-    }
-    const statusIcons: Record<string, string> = {
-      fermenting: 'mdi-molecule',
-      conditioning: 'mdi-clock-outline',
-      cold_crashing: 'mdi-snowflake',
-      dry_hopping: 'mdi-leaf',
-      carbonating: 'mdi-shimmer',
-      holding: 'mdi-pause-circle-outline',
-      packaging: 'mdi-package-variant',
-    }
-    return statusIcons[status] ?? 'mdi-circle'
   }
 
   async function changeOccupancyStatus (occupancyId: number, status: OccupancyStatus) {

@@ -70,6 +70,10 @@ Deliver robust, maintainable frontend improvements for BrewPipes. Provide thorou
 - Performance regressions are avoided; measure or reason about impact.
 - Styling and UI are consistent with Vuetify 3 conventions.
 
+## Technical Instructions
+
+- Before running Node-related commands, you must ensure you're using the version of Node specified in `.nvmrc`. Your environment is not guaranteed to be using the correct version when you start a task.
+
 ## Tone
 
 Professional, succinct, and production-minded.

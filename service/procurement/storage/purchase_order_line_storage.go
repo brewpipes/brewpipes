@@ -58,6 +58,96 @@ func (c *Client) CreatePurchaseOrderLine(ctx context.Context, line PurchaseOrder
 	return line, nil
 }
 
+func (c *Client) UpdatePurchaseOrderLine(ctx context.Context, id int64, update PurchaseOrderLineUpdate) (PurchaseOrderLine, error) {
+	var line PurchaseOrderLine
+	var inventoryItemUUID pgtype.UUID
+	err := c.db.QueryRow(ctx, `
+		UPDATE purchase_order_line
+		SET
+			line_number = COALESCE($1, line_number),
+			item_type = COALESCE($2, item_type),
+			item_name = COALESCE($3, item_name),
+			inventory_item_uuid = COALESCE($4, inventory_item_uuid),
+			quantity = COALESCE($5, quantity),
+			quantity_unit = COALESCE($6, quantity_unit),
+			unit_cost_cents = COALESCE($7, unit_cost_cents),
+			currency = COALESCE($8, currency),
+			updated_at = timezone('utc', now())
+		WHERE id = $9 AND deleted_at IS NULL
+		RETURNING id, uuid, purchase_order_id, line_number, item_type, item_name, inventory_item_uuid, quantity, quantity_unit, unit_cost_cents, currency, created_at, updated_at, deleted_at`,
+		update.LineNumber,
+		update.ItemType,
+		update.ItemName,
+		uuidParam(update.InventoryItemUUID),
+		update.Quantity,
+		update.QuantityUnit,
+		update.UnitCostCents,
+		update.Currency,
+		id,
+	).Scan(
+		&line.ID,
+		&line.UUID,
+		&line.PurchaseOrderID,
+		&line.LineNumber,
+		&line.ItemType,
+		&line.ItemName,
+		&inventoryItemUUID,
+		&line.Quantity,
+		&line.QuantityUnit,
+		&line.UnitCostCents,
+		&line.Currency,
+		&line.CreatedAt,
+		&line.UpdatedAt,
+		&line.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return PurchaseOrderLine{}, service.ErrNotFound
+		}
+		return PurchaseOrderLine{}, fmt.Errorf("updating purchase order line: %w", err)
+	}
+
+	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	return line, nil
+}
+
+func (c *Client) DeletePurchaseOrderLine(ctx context.Context, id int64) (PurchaseOrderLine, error) {
+	var line PurchaseOrderLine
+	var inventoryItemUUID pgtype.UUID
+	err := c.db.QueryRow(ctx, `
+		UPDATE purchase_order_line
+		SET deleted_at = timezone('utc', now()),
+			updated_at = timezone('utc', now())
+		WHERE id = $1 AND deleted_at IS NULL
+		RETURNING id, uuid, purchase_order_id, line_number, item_type, item_name, inventory_item_uuid, quantity, quantity_unit, unit_cost_cents, currency, created_at, updated_at, deleted_at`,
+		id,
+	).Scan(
+		&line.ID,
+		&line.UUID,
+		&line.PurchaseOrderID,
+		&line.LineNumber,
+		&line.ItemType,
+		&line.ItemName,
+		&inventoryItemUUID,
+		&line.Quantity,
+		&line.QuantityUnit,
+		&line.UnitCostCents,
+		&line.Currency,
+		&line.CreatedAt,
+		&line.UpdatedAt,
+		&line.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return PurchaseOrderLine{}, service.ErrNotFound
+		}
+		return PurchaseOrderLine{}, fmt.Errorf("deleting purchase order line: %w", err)
+	}
+
+	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	return line, nil
+}
+
 func (c *Client) GetPurchaseOrderLine(ctx context.Context, id int64) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID

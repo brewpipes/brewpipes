@@ -50,6 +50,14 @@ type PurchaseOrder struct {
 	entity.Timestamps
 }
 
+type PurchaseOrderUpdate struct {
+	OrderNumber *string
+	Status      *string
+	OrderedAt   *time.Time
+	ExpectedAt  *time.Time
+	Notes       *string
+}
+
 type PurchaseOrderLine struct {
 	entity.Identifiers
 	PurchaseOrderID   int64
@@ -64,6 +72,17 @@ type PurchaseOrderLine struct {
 	entity.Timestamps
 }
 
+type PurchaseOrderLineUpdate struct {
+	LineNumber        *int
+	ItemType          *string
+	ItemName          *string
+	InventoryItemUUID *uuid.UUID
+	Quantity          *int64
+	QuantityUnit      *string
+	UnitCostCents     *int64
+	Currency          *string
+}
+
 type PurchaseOrderFee struct {
 	entity.Identifiers
 	PurchaseOrderID int64
@@ -71,4 +90,10 @@ type PurchaseOrderFee struct {
 	AmountCents     int64
 	Currency        string
 	entity.Timestamps
+}
+
+type PurchaseOrderFeeUpdate struct {
+	FeeType     *string
+	AmountCents *int64
+	Currency    *string
 }

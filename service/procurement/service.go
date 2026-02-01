@@ -43,12 +43,17 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/purchase-orders", Handler: auth(handler.HandlePurchaseOrders(s.storage))},
 		{Method: http.MethodPost, Path: "/purchase-orders", Handler: auth(handler.HandlePurchaseOrders(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-orders/{id}", Handler: auth(handler.HandlePurchaseOrderByID(s.storage))},
+		{Method: http.MethodPatch, Path: "/purchase-orders/{id}", Handler: auth(handler.HandlePurchaseOrderByID(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-order-lines", Handler: auth(handler.HandlePurchaseOrderLines(s.storage))},
 		{Method: http.MethodPost, Path: "/purchase-order-lines", Handler: auth(handler.HandlePurchaseOrderLines(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-order-lines/{id}", Handler: auth(handler.HandlePurchaseOrderLineByID(s.storage))},
+		{Method: http.MethodPatch, Path: "/purchase-order-lines/{id}", Handler: auth(handler.HandlePurchaseOrderLineByID(s.storage))},
+		{Method: http.MethodDelete, Path: "/purchase-order-lines/{id}", Handler: auth(handler.HandlePurchaseOrderLineByID(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-order-fees", Handler: auth(handler.HandlePurchaseOrderFees(s.storage))},
 		{Method: http.MethodPost, Path: "/purchase-order-fees", Handler: auth(handler.HandlePurchaseOrderFees(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-order-fees/{id}", Handler: auth(handler.HandlePurchaseOrderFeeByID(s.storage))},
+		{Method: http.MethodPatch, Path: "/purchase-order-fees/{id}", Handler: auth(handler.HandlePurchaseOrderFeeByID(s.storage))},
+		{Method: http.MethodDelete, Path: "/purchase-order-fees/{id}", Handler: auth(handler.HandlePurchaseOrderFeeByID(s.storage))},
 	}
 }
 

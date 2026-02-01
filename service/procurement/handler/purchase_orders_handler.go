@@ -18,6 +18,7 @@ type PurchaseOrderStore interface {
 	ListPurchaseOrdersBySupplier(context.Context, int64) ([]storage.PurchaseOrder, error)
 	GetPurchaseOrder(context.Context, int64) (storage.PurchaseOrder, error)
 	CreatePurchaseOrder(context.Context, storage.PurchaseOrder) (storage.PurchaseOrder, error)
+	UpdatePurchaseOrder(context.Context, int64, storage.PurchaseOrderUpdate) (storage.PurchaseOrder, error)
 }
 
 // HandlePurchaseOrders handles [GET /purchase-orders] and [POST /purchase-orders].
@@ -67,10 +68,11 @@ func HandlePurchaseOrders(db PurchaseOrderStore) http.HandlerFunc {
 			if status == "" {
 				status = storage.PurchaseOrderStatusDraft
 			}
+			orderNumber := strings.TrimSpace(req.OrderNumber)
 
 			order := storage.PurchaseOrder{
 				SupplierID:  req.SupplierID,
-				OrderNumber: req.OrderNumber,
+				OrderNumber: orderNumber,
 				Status:      status,
 				OrderedAt:   req.OrderedAt,
 				ExpectedAt:  req.ExpectedAt,
@@ -91,14 +93,9 @@ func HandlePurchaseOrders(db PurchaseOrderStore) http.HandlerFunc {
 	}
 }
 
-// HandlePurchaseOrderByID handles [GET /purchase-orders/{id}].
+// HandlePurchaseOrderByID handles [GET /purchase-orders/{id}] and [PATCH /purchase-orders/{id}].
 func HandlePurchaseOrderByID(db PurchaseOrderStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		idValue := r.PathValue("id")
 		if idValue == "" {
 			http.Error(w, "invalid id", http.StatusBadRequest)
@@ -110,16 +107,59 @@ func HandlePurchaseOrderByID(db PurchaseOrderStore) http.HandlerFunc {
 			return
 		}
 
-		order, err := db.GetPurchaseOrder(r.Context(), orderID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "purchase order not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			slog.Error("error getting purchase order", "error", err)
-			service.InternalError(w, err.Error())
-			return
-		}
+		switch r.Method {
+		case http.MethodGet:
+			order, err := db.GetPurchaseOrder(r.Context(), orderID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "purchase order not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				slog.Error("error getting purchase order", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
 
-		service.JSON(w, dto.NewPurchaseOrderResponse(order))
+			service.JSON(w, dto.NewPurchaseOrderResponse(order))
+		case http.MethodPatch:
+			var req dto.UpdatePurchaseOrderRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+			if err := req.Validate(); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			update := storage.PurchaseOrderUpdate{
+				OrderNumber: req.OrderNumber,
+				Status:      req.Status,
+				OrderedAt:   req.OrderedAt,
+				ExpectedAt:  req.ExpectedAt,
+				Notes:       req.Notes,
+			}
+			if update.OrderNumber != nil {
+				value := strings.TrimSpace(*update.OrderNumber)
+				update.OrderNumber = &value
+			}
+			if update.Status != nil {
+				value := strings.TrimSpace(*update.Status)
+				update.Status = &value
+			}
+
+			order, err := db.UpdatePurchaseOrder(r.Context(), orderID, update)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "purchase order not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				slog.Error("error updating purchase order", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			service.JSON(w, dto.NewPurchaseOrderResponse(order))
+		default:
+			methodNotAllowed(w)
+		}
 	}
 }

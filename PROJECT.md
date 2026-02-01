@@ -17,6 +17,7 @@ BrewPipes is an open source brewery management system focused on day-to-day prod
 - Sign in and access the operational dashboard.
 - Set up production basics (vessels and stock locations).
 - Manage suppliers and create purchase orders with line items and fees.
+- Procurement workflow starts with suppliers, then purchase orders; line items and fees are managed from the purchase order context.
 - Receive ingredients into inventory, creating lots and tracking movements.
 - Plan and run production batches, tracking volumes through vessels and transfers.
 - Bulk import planned batches via CSV for rapid setup.
@@ -51,3 +52,5 @@ BrewPipes is an open source brewery management system focused on day-to-day prod
 ## Open questions
 
 - Bulk batch import: confirm required CSV columns beyond `short_name` (default: `short_name` required, `brew_date` and `notes` optional) and whether duplicate `short_name` values should be rejected.
+- Procurement purchase order numbers: confirm default generated format when a custom ID is not provided (recommend `PO-YYYYMMDD-###`).
+- Procurement updates: confirm whether to add backend support for updating purchase orders and modifying/removing line items and fees.

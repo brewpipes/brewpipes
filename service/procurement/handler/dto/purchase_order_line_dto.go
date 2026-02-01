@@ -48,6 +48,54 @@ func (r CreatePurchaseOrderLineRequest) Validate() error {
 	return nil
 }
 
+type UpdatePurchaseOrderLineRequest struct {
+	LineNumber        *int    `json:"line_number"`
+	ItemType          *string `json:"item_type"`
+	ItemName          *string `json:"item_name"`
+	InventoryItemUUID *string `json:"inventory_item_uuid"`
+	Quantity          *int64  `json:"quantity"`
+	QuantityUnit      *string `json:"quantity_unit"`
+	UnitCostCents     *int64  `json:"unit_cost_cents"`
+	Currency          *string `json:"currency"`
+}
+
+func (r UpdatePurchaseOrderLineRequest) Validate() error {
+	if r.LineNumber == nil && r.ItemType == nil && r.ItemName == nil && r.InventoryItemUUID == nil && r.Quantity == nil && r.QuantityUnit == nil && r.UnitCostCents == nil && r.Currency == nil {
+		return fmt.Errorf("at least one field must be provided")
+	}
+	if r.LineNumber != nil && *r.LineNumber <= 0 {
+		return fmt.Errorf("line_number must be greater than zero")
+	}
+	if r.ItemType != nil {
+		if err := validateLineItemType(*r.ItemType); err != nil {
+			return err
+		}
+	}
+	if r.ItemName != nil {
+		if err := validateRequired(*r.ItemName, "item_name"); err != nil {
+			return err
+		}
+	}
+	if r.Quantity != nil && *r.Quantity <= 0 {
+		return fmt.Errorf("quantity must be greater than zero")
+	}
+	if r.QuantityUnit != nil {
+		if err := validateRequired(*r.QuantityUnit, "quantity_unit"); err != nil {
+			return err
+		}
+	}
+	if r.UnitCostCents != nil && *r.UnitCostCents < 0 {
+		return fmt.Errorf("unit_cost_cents must be zero or greater")
+	}
+	if r.Currency != nil {
+		if err := validateCurrency(*r.Currency); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type PurchaseOrderLineResponse struct {
 	ID                int64      `json:"id"`
 	UUID              string     `json:"uuid"`

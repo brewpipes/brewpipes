@@ -21,11 +21,38 @@ func (r CreatePurchaseOrderRequest) Validate() error {
 	if r.SupplierID <= 0 {
 		return fmt.Errorf("supplier_id is required")
 	}
-	if err := validateRequired(r.OrderNumber, "order_number"); err != nil {
-		return err
-	}
 	status := strings.TrimSpace(r.Status)
 	if status != "" {
+		if err := validatePurchaseOrderStatus(status); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+type UpdatePurchaseOrderRequest struct {
+	OrderNumber *string    `json:"order_number"`
+	Status      *string    `json:"status"`
+	OrderedAt   *time.Time `json:"ordered_at"`
+	ExpectedAt  *time.Time `json:"expected_at"`
+	Notes       *string    `json:"notes"`
+}
+
+func (r UpdatePurchaseOrderRequest) Validate() error {
+	if r.OrderNumber == nil && r.Status == nil && r.OrderedAt == nil && r.ExpectedAt == nil && r.Notes == nil {
+		return fmt.Errorf("at least one field must be provided")
+	}
+	if r.OrderNumber != nil {
+		if err := validateRequired(*r.OrderNumber, "order_number"); err != nil {
+			return err
+		}
+	}
+	if r.Status != nil {
+		status := strings.TrimSpace(*r.Status)
+		if status == "" {
+			return fmt.Errorf("status is required")
+		}
 		if err := validatePurchaseOrderStatus(status); err != nil {
 			return err
 		}

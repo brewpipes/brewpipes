@@ -7,10 +7,13 @@
         <v-btn size="small" variant="text" :loading="loading" @click="loadSuppliers">
           Refresh
         </v-btn>
+        <v-btn class="ml-2" color="primary" size="small" variant="text" @click="createSupplierDialog = true">
+          New supplier
+        </v-btn>
       </v-card-title>
       <v-card-text>
         <v-row align="stretch">
-          <v-col cols="12" md="7">
+          <v-col cols="12">
             <v-card class="sub-card" variant="outlined">
               <v-card-title>Supplier list</v-card-title>
               <v-card-text>
@@ -47,31 +50,6 @@
               </v-card-text>
             </v-card>
           </v-col>
-          <v-col cols="12" md="5">
-            <v-card class="sub-card" variant="tonal">
-              <v-card-title>Create supplier</v-card-title>
-              <v-card-text>
-                <v-text-field v-model="supplierForm.name" label="Name" />
-                <v-text-field v-model="supplierForm.contact_name" label="Contact name" />
-                <v-text-field v-model="supplierForm.email" label="Email" />
-                <v-text-field v-model="supplierForm.phone" label="Phone" />
-                <v-text-field v-model="supplierForm.address_line1" label="Address line 1" />
-                <v-text-field v-model="supplierForm.address_line2" label="Address line 2" />
-                <v-text-field v-model="supplierForm.city" label="City" />
-                <v-text-field v-model="supplierForm.region" label="Region" />
-                <v-text-field v-model="supplierForm.postal_code" label="Postal code" />
-                <v-text-field v-model="supplierForm.country" label="Country" />
-                <v-btn
-                  block
-                  color="primary"
-                  :disabled="!supplierForm.name.trim()"
-                  @click="createSupplier"
-                >
-                  Add supplier
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-col>
         </v-row>
       </v-card-text>
     </v-card>
@@ -80,6 +58,52 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
+
+  <v-dialog v-model="createSupplierDialog" max-width="720">
+    <v-card>
+      <v-card-title class="text-h6">Create supplier</v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.name" label="Name" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.contact_name" label="Contact name" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.email" label="Email" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.phone" label="Phone" />
+          </v-col>
+          <v-col cols="12">
+            <v-text-field v-model="supplierForm.address_line1" label="Address line 1" />
+          </v-col>
+          <v-col cols="12">
+            <v-text-field v-model="supplierForm.address_line2" label="Address line 2" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.city" label="City" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.region" label="Region" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.postal_code" label="Postal code" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="supplierForm.country" label="Country" />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="createSupplierDialog = false">Cancel</v-btn>
+        <v-btn color="primary" :disabled="!supplierForm.name.trim()" @click="createSupplier">
+          Add supplier
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -108,6 +132,7 @@ const { request, normalizeText, formatDateTime } = useProcurementApi()
 const suppliers = ref<Supplier[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const createSupplierDialog = ref(false)
 
 const supplierForm = reactive({
   name: '',
@@ -180,6 +205,7 @@ async function createSupplier() {
     supplierForm.postal_code = ''
     supplierForm.country = ''
     await loadSuppliers()
+    createSupplierDialog.value = false
     showNotice('Supplier created')
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create supplier'

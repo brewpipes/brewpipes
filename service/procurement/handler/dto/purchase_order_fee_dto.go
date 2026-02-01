@@ -31,6 +31,33 @@ func (r CreatePurchaseOrderFeeRequest) Validate() error {
 	return nil
 }
 
+type UpdatePurchaseOrderFeeRequest struct {
+	FeeType     *string `json:"fee_type"`
+	AmountCents *int64  `json:"amount_cents"`
+	Currency    *string `json:"currency"`
+}
+
+func (r UpdatePurchaseOrderFeeRequest) Validate() error {
+	if r.FeeType == nil && r.AmountCents == nil && r.Currency == nil {
+		return fmt.Errorf("at least one field must be provided")
+	}
+	if r.FeeType != nil {
+		if err := validateRequired(*r.FeeType, "fee_type"); err != nil {
+			return err
+		}
+	}
+	if r.AmountCents != nil && *r.AmountCents < 0 {
+		return fmt.Errorf("amount_cents must be zero or greater")
+	}
+	if r.Currency != nil {
+		if err := validateCurrency(*r.Currency); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type PurchaseOrderFeeResponse struct {
 	ID              int64      `json:"id"`
 	UUID            string     `json:"uuid"`

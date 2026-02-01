@@ -68,11 +68,8 @@
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-clipboard-text" title="Procurement" />
         </template>
-        <v-list-item to="/procurement" title="Overview" />
-        <v-list-item to="/procurement/suppliers" title="Suppliers" />
         <v-list-item to="/procurement/purchase-orders" title="Purchase orders" />
-        <v-list-item to="/procurement/purchase-order-lines" title="Order lines" />
-        <v-list-item to="/procurement/purchase-order-fees" title="Order fees" />
+        <v-list-item to="/procurement/suppliers" title="Suppliers" />
       </v-list-group>
     </v-list>
   </v-navigation-drawer>

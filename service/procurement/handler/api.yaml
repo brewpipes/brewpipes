@@ -134,6 +134,39 @@ paths:
                 type: string
         "500":
           $ref: "#/components/responses/InternalError"
+    patch:
+      summary: Update a purchase order
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order ID to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderUpdateRequest"
+      responses:
+        "200":
+          description: Purchase order updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Purchase order not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
   /purchase-order-lines:
     get:
       summary: List purchase order lines
@@ -203,6 +236,64 @@ paths:
                 type: string
         "500":
           $ref: "#/components/responses/InternalError"
+    patch:
+      summary: Update a purchase order line
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order line ID to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderLineUpdateRequest"
+      responses:
+        "200":
+          description: Purchase order line updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Purchase order line not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      summary: Delete a purchase order line
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order line ID to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order line deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "404":
+          description: Purchase order line not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
   /purchase-order-fees:
     get:
       summary: List purchase order fees
@@ -260,6 +351,64 @@ paths:
       responses:
         "200":
           description: Purchase order fee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "404":
+          description: Purchase order fee not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      summary: Update a purchase order fee
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order fee ID to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderFeeUpdateRequest"
+      responses:
+        "200":
+          description: Purchase order fee updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Purchase order fee not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      summary: Delete a purchase order fee
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order fee ID to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order fee deleted
           content:
             application/json:
               schema:
@@ -379,7 +528,6 @@ components:
       type: object
       required:
         - supplier_id
-        - order_number
       properties:
         supplier_id:
           type: integer
@@ -396,6 +544,31 @@ components:
             - received
             - cancelled
           nullable: true
+        ordered_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    PurchaseOrderUpdateRequest:
+      type: object
+      properties:
+        order_number:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - submitted
+            - confirmed
+            - partially_received
+            - received
+            - cancelled
         ordered_at:
           type: string
           format: date-time
@@ -563,6 +736,36 @@ components:
           type: string
           format: date-time
           nullable: true
+    PurchaseOrderLineUpdateRequest:
+      type: object
+      properties:
+        line_number:
+          type: integer
+          format: int64
+        item_type:
+          type: string
+          enum:
+            - ingredient
+            - packaging
+            - service
+            - equipment
+            - other
+        item_name:
+          type: string
+        inventory_item_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: integer
+          format: int64
+        quantity_unit:
+          type: string
+        unit_cost_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
     PurchaseOrderFeeCreateRequest:
       type: object
       required:
@@ -619,3 +822,13 @@ components:
           type: string
           format: date-time
           nullable: true
+    PurchaseOrderFeeUpdateRequest:
+      type: object
+      properties:
+        fee_type:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string

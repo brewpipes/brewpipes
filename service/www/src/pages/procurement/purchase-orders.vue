@@ -7,10 +7,13 @@
         <v-btn size="small" variant="text" :loading="loading" @click="refreshAll">
           Refresh
         </v-btn>
+        <v-btn class="ml-2" color="primary" size="small" variant="text" @click="createOrderDialog = true">
+          New order
+        </v-btn>
       </v-card-title>
       <v-card-text>
         <v-row align="stretch">
-          <v-col cols="12" md="7">
+          <v-col cols="12">
             <v-card class="sub-card" variant="outlined">
               <v-card-title class="d-flex align-center">
                 Order list
@@ -74,41 +77,6 @@
               </v-card-text>
             </v-card>
           </v-col>
-          <v-col cols="12" md="5">
-            <v-card class="sub-card" variant="tonal">
-              <v-card-title>Create purchase order</v-card-title>
-              <v-card-text>
-                <v-select
-                  v-model="orderForm.supplier_id"
-                  :items="supplierSelectItems"
-                  label="Supplier"
-                />
-                <v-text-field v-model="orderForm.order_number" label="Order number" />
-                <v-select
-                  v-model="orderForm.status"
-                  :items="statusOptions"
-                  label="Status"
-                  clearable
-                />
-                <v-text-field v-model="orderForm.ordered_at" label="Ordered at" type="datetime-local" />
-                <v-text-field v-model="orderForm.expected_at" label="Expected at" type="datetime-local" />
-                <v-textarea
-                  v-model="orderForm.notes"
-                  auto-grow
-                  label="Notes"
-                  rows="2"
-                />
-                <v-btn
-                  block
-                  color="primary"
-                  :disabled="!orderForm.supplier_id || !orderForm.order_number.trim()"
-                  @click="createOrder"
-                >
-                  Add purchase order
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-col>
         </v-row>
       </v-card-text>
     </v-card>
@@ -117,6 +85,48 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
+
+  <v-dialog v-model="createOrderDialog" max-width="640">
+    <v-card>
+      <v-card-title class="text-h6">Create purchase order</v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12">
+            <v-select
+              v-model="orderForm.supplier_id"
+              :items="supplierSelectItems"
+              label="Supplier"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="orderForm.order_number" label="Order number" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-select v-model="orderForm.status" :items="statusOptions" label="Status" clearable />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="orderForm.ordered_at" label="Ordered at" type="datetime-local" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="orderForm.expected_at" label="Expected at" type="datetime-local" />
+          </v-col>
+          <v-col cols="12">
+            <v-textarea v-model="orderForm.notes" auto-grow label="Notes" rows="2" />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="createOrderDialog = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!orderForm.supplier_id || !orderForm.order_number.trim()"
+          @click="createOrder"
+        >
+          Add purchase order
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -149,6 +159,7 @@ const suppliers = ref<Supplier[]>([])
 const orders = ref<PurchaseOrder[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const createOrderDialog = ref(false)
 
 const statusOptions = [
   'draft',
@@ -242,6 +253,7 @@ async function createOrder() {
     orderForm.expected_at = ''
     orderForm.notes = ''
     await loadOrders()
+    createOrderDialog.value = false
     showNotice('Purchase order created')
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create purchase order'

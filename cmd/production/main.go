@@ -17,6 +17,7 @@ func run(ctx context.Context) error {
 
 	svc, err := production.New(ctx, production.Config{
 		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return err

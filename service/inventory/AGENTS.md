@@ -12,6 +12,11 @@ The Inventory service models ingredients and consumables inventory: malt/ferment
 
 The big picture: the system tracks ingredients from receiving, into storage, through usage, and into adjustments and transfers.
 
+## Auth
+
+- All HTTP routes require `Authorization: Bearer <access token>`.
+- Service startup fails if `BREWPIPES_SECRET_KEY` is missing.
+
 Ingredient
 - An ingredient is the master definition (e.g., "Pale Malt", "Cascade 2024", "WLP001", "Lactic Acid", "CO2").
 - It defines the category, default unit, and any critical attributes used in inventory calculations.

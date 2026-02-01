@@ -28,6 +28,7 @@ func run(ctx context.Context) error {
 
 	productionSvc, err := production.New(ctx, production.Config{
 		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return fmt.Errorf("initializing production service: %w", err)
@@ -35,6 +36,7 @@ func run(ctx context.Context) error {
 
 	inventorySvc, err := inventory.New(ctx, inventory.Config{
 		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return fmt.Errorf("initializing inventory service: %w", err)
@@ -42,6 +44,7 @@ func run(ctx context.Context) error {
 
 	procurementSvc, err := procurement.New(ctx, procurement.Config{
 		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return fmt.Errorf("initializing procurement service: %w", err)

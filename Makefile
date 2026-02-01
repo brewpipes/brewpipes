@@ -14,10 +14,13 @@ nuke:
 
 run-server:
 	POSTGRES_DSN=postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable \
+	BREWPIPES_SECRET_KEY=dummy \
 	go run ./cmd/monolith
 
 run-web:
-	cd service/www && pnpm dev --force
+	nvm use && \
+	cd service/www && \
+	pnpm dev --force
 
 # connect to the postgres container using psql
 psql:

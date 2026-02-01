@@ -22,7 +22,7 @@ It captures commands and conventions observed in the current codebase.
 - `POSTGRES_DSN` is required by all services.
 - Local DSN used in Makefile:
   `postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable`
-- `BREWPIPES_SECRET_KEY` is required for identity/JWT issuance.
+- `BREWPIPES_SECRET_KEY` is required for identity/JWT issuance and for access token verification in production, inventory, and procurement services.
 
 ## Setup and run
 - Start Postgres: `make start-postgres`
@@ -116,6 +116,7 @@ It captures commands and conventions observed in the current codebase.
 - JWT helpers live in `internal/jwt`.
 - Tokens are HMAC (HS256) and use `github.com/golang-jwt/jwt/v4`.
 - Identity service requires `BREWPIPES_SECRET_KEY` to sign tokens.
+- Production, inventory, and procurement services require `Authorization: Bearer <access token>` on all routes and will not start without `BREWPIPES_SECRET_KEY`.
 - Access/refresh TTLs are defined in `service/identity/storage/user.go`.
 
 ## Logging

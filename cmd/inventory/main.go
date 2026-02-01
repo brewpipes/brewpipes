@@ -17,6 +17,7 @@ func run(ctx context.Context) error {
 
 	svc, err := inventory.New(ctx, inventory.Config{
 		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return err

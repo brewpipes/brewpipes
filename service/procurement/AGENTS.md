@@ -12,6 +12,11 @@ The Procurement service models supplier management and purchasing workflows: sup
 
 The big picture: the system tracks who you buy from and what you order, including quantities, costs, and receipt status.
 
+## Auth
+
+- All HTTP routes require `Authorization: Bearer <access token>`.
+- Service startup fails if `BREWPIPES_SECRET_KEY` is missing.
+
 Supplier
 - A supplier is a vendor record with contact and address details.
 - Suppliers are referenced by UUID in downstream services; purchase orders reference suppliers internally.

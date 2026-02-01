@@ -12,6 +12,11 @@ The Production service models the data and workflows of producing batches of bee
 
 The big picture: the system tracks your beer as it moves through tanks, gets split or blended, has ingredients added, and gets measured over time.
 
+## Auth
+
+- All HTTP routes require `Authorization: Bearer <access token>`.
+- Service startup fails if `BREWPIPES_SECRET_KEY` is missing.
+
 Batch
 - A batch is the overall production run you care about (e.g., “IPA 24‑07”).
 - It’s the top‑level record you plan, brew, ferment, and eventually package.

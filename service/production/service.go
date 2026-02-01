@@ -13,10 +13,12 @@ import (
 
 type Config struct {
 	PostgresDSN string
+	SecretKey   string
 }
 
 type Service struct {
-	storage *storage.Client
+	storage   *storage.Client
+	secretKey string
 }
 
 // New creates and initializes a new production service instance.
@@ -27,50 +29,55 @@ func New(ctx context.Context, cfg Config) (*Service, error) {
 	}
 
 	return &Service{
-		storage: stg,
+		storage:   stg,
+		secretKey: cfg.SecretKey,
 	}, nil
 }
 
 func (s *Service) HTTPRoutes() []service.HTTPRoute {
+	auth := service.RequireAccessToken(s.secretKey)
 	return []service.HTTPRoute{
-		{Method: http.MethodGet, Path: "/batches", Handler: handler.HandleBatches(s.storage)},
-		{Method: http.MethodPost, Path: "/batches", Handler: handler.HandleBatches(s.storage)},
-		{Method: http.MethodGet, Path: "/batches/{id}", Handler: handler.HandleBatchByID(s.storage)},
-		{Method: http.MethodGet, Path: "/volumes", Handler: handler.HandleVolumes(s.storage)},
-		{Method: http.MethodPost, Path: "/volumes", Handler: handler.HandleVolumes(s.storage)},
-		{Method: http.MethodGet, Path: "/volumes/{id}", Handler: handler.HandleVolumeByID(s.storage)},
-		{Method: http.MethodGet, Path: "/volume-relations", Handler: handler.HandleVolumeRelations(s.storage)},
-		{Method: http.MethodPost, Path: "/volume-relations", Handler: handler.HandleVolumeRelations(s.storage)},
-		{Method: http.MethodGet, Path: "/volume-relations/{id}", Handler: handler.HandleVolumeRelationByID(s.storage)},
-		{Method: http.MethodGet, Path: "/vessels", Handler: handler.HandleVessels(s.storage)},
-		{Method: http.MethodPost, Path: "/vessels", Handler: handler.HandleVessels(s.storage)},
-		{Method: http.MethodGet, Path: "/vessels/{id}", Handler: handler.HandleVesselByID(s.storage)},
-		{Method: http.MethodPost, Path: "/occupancies", Handler: handler.HandleCreateOccupancy(s.storage)},
-		{Method: http.MethodGet, Path: "/occupancies/{id}", Handler: handler.HandleOccupancyByID(s.storage)},
-		{Method: http.MethodGet, Path: "/occupancies/active", Handler: handler.HandleActiveOccupancy(s.storage)},
-		{Method: http.MethodGet, Path: "/transfers", Handler: handler.HandleTransfers(s.storage)},
-		{Method: http.MethodPost, Path: "/transfers", Handler: handler.HandleTransfers(s.storage)},
-		{Method: http.MethodGet, Path: "/transfers/{id}", Handler: handler.HandleTransferByID(s.storage)},
-		{Method: http.MethodGet, Path: "/batch-volumes", Handler: handler.HandleBatchVolumes(s.storage)},
-		{Method: http.MethodPost, Path: "/batch-volumes", Handler: handler.HandleBatchVolumes(s.storage)},
-		{Method: http.MethodGet, Path: "/batch-volumes/{id}", Handler: handler.HandleBatchVolumeByID(s.storage)},
-		{Method: http.MethodGet, Path: "/batch-process-phases", Handler: handler.HandleBatchProcessPhases(s.storage)},
-		{Method: http.MethodPost, Path: "/batch-process-phases", Handler: handler.HandleBatchProcessPhases(s.storage)},
-		{Method: http.MethodGet, Path: "/batch-process-phases/{id}", Handler: handler.HandleBatchProcessPhaseByID(s.storage)},
-		{Method: http.MethodGet, Path: "/batch-relations", Handler: handler.HandleBatchRelations(s.storage)},
-		{Method: http.MethodPost, Path: "/batch-relations", Handler: handler.HandleBatchRelations(s.storage)},
-		{Method: http.MethodGet, Path: "/batch-relations/{id}", Handler: handler.HandleBatchRelationByID(s.storage)},
-		{Method: http.MethodGet, Path: "/additions", Handler: handler.HandleAdditions(s.storage)},
-		{Method: http.MethodPost, Path: "/additions", Handler: handler.HandleAdditions(s.storage)},
-		{Method: http.MethodGet, Path: "/additions/{id}", Handler: handler.HandleAdditionByID(s.storage)},
-		{Method: http.MethodGet, Path: "/measurements", Handler: handler.HandleMeasurements(s.storage)},
-		{Method: http.MethodPost, Path: "/measurements", Handler: handler.HandleMeasurements(s.storage)},
-		{Method: http.MethodGet, Path: "/measurements/{id}", Handler: handler.HandleMeasurementByID(s.storage)},
+		{Method: http.MethodGet, Path: "/batches", Handler: auth(handler.HandleBatches(s.storage))},
+		{Method: http.MethodPost, Path: "/batches", Handler: auth(handler.HandleBatches(s.storage))},
+		{Method: http.MethodGet, Path: "/batches/{id}", Handler: auth(handler.HandleBatchByID(s.storage))},
+		{Method: http.MethodGet, Path: "/volumes", Handler: auth(handler.HandleVolumes(s.storage))},
+		{Method: http.MethodPost, Path: "/volumes", Handler: auth(handler.HandleVolumes(s.storage))},
+		{Method: http.MethodGet, Path: "/volumes/{id}", Handler: auth(handler.HandleVolumeByID(s.storage))},
+		{Method: http.MethodGet, Path: "/volume-relations", Handler: auth(handler.HandleVolumeRelations(s.storage))},
+		{Method: http.MethodPost, Path: "/volume-relations", Handler: auth(handler.HandleVolumeRelations(s.storage))},
+		{Method: http.MethodGet, Path: "/volume-relations/{id}", Handler: auth(handler.HandleVolumeRelationByID(s.storage))},
+		{Method: http.MethodGet, Path: "/vessels", Handler: auth(handler.HandleVessels(s.storage))},
+		{Method: http.MethodPost, Path: "/vessels", Handler: auth(handler.HandleVessels(s.storage))},
+		{Method: http.MethodGet, Path: "/vessels/{id}", Handler: auth(handler.HandleVesselByID(s.storage))},
+		{Method: http.MethodPost, Path: "/occupancies", Handler: auth(handler.HandleCreateOccupancy(s.storage))},
+		{Method: http.MethodGet, Path: "/occupancies/{id}", Handler: auth(handler.HandleOccupancyByID(s.storage))},
+		{Method: http.MethodGet, Path: "/occupancies/active", Handler: auth(handler.HandleActiveOccupancy(s.storage))},
+		{Method: http.MethodGet, Path: "/transfers", Handler: auth(handler.HandleTransfers(s.storage))},
+		{Method: http.MethodPost, Path: "/transfers", Handler: auth(handler.HandleTransfers(s.storage))},
+		{Method: http.MethodGet, Path: "/transfers/{id}", Handler: auth(handler.HandleTransferByID(s.storage))},
+		{Method: http.MethodGet, Path: "/batch-volumes", Handler: auth(handler.HandleBatchVolumes(s.storage))},
+		{Method: http.MethodPost, Path: "/batch-volumes", Handler: auth(handler.HandleBatchVolumes(s.storage))},
+		{Method: http.MethodGet, Path: "/batch-volumes/{id}", Handler: auth(handler.HandleBatchVolumeByID(s.storage))},
+		{Method: http.MethodGet, Path: "/batch-process-phases", Handler: auth(handler.HandleBatchProcessPhases(s.storage))},
+		{Method: http.MethodPost, Path: "/batch-process-phases", Handler: auth(handler.HandleBatchProcessPhases(s.storage))},
+		{Method: http.MethodGet, Path: "/batch-process-phases/{id}", Handler: auth(handler.HandleBatchProcessPhaseByID(s.storage))},
+		{Method: http.MethodGet, Path: "/batch-relations", Handler: auth(handler.HandleBatchRelations(s.storage))},
+		{Method: http.MethodPost, Path: "/batch-relations", Handler: auth(handler.HandleBatchRelations(s.storage))},
+		{Method: http.MethodGet, Path: "/batch-relations/{id}", Handler: auth(handler.HandleBatchRelationByID(s.storage))},
+		{Method: http.MethodGet, Path: "/additions", Handler: auth(handler.HandleAdditions(s.storage))},
+		{Method: http.MethodPost, Path: "/additions", Handler: auth(handler.HandleAdditions(s.storage))},
+		{Method: http.MethodGet, Path: "/additions/{id}", Handler: auth(handler.HandleAdditionByID(s.storage))},
+		{Method: http.MethodGet, Path: "/measurements", Handler: auth(handler.HandleMeasurements(s.storage))},
+		{Method: http.MethodPost, Path: "/measurements", Handler: auth(handler.HandleMeasurements(s.storage))},
+		{Method: http.MethodGet, Path: "/measurements/{id}", Handler: auth(handler.HandleMeasurementByID(s.storage))},
 	}
 }
 
 func (s *Service) Start(ctx context.Context) error {
 	slog.Info("production service starting")
+	if s.secretKey == "" {
+		return fmt.Errorf("missing BREWPIPES_SECRET_KEY for access token verification")
+	}
 	if err := s.storage.Start(ctx); err != nil {
 		return fmt.Errorf("starting storage: %w", err)
 	}

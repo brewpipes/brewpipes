@@ -20,7 +20,7 @@ func main() {
 func run(ctx context.Context) error {
 	// Initialize services.
 	identitySvc, err := identity.NewService(ctx, &identity.Config{
-		PostgresDSN: postgresDSN(),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -28,7 +28,7 @@ func run(ctx context.Context) error {
 	}
 
 	productionSvc, err := production.New(ctx, production.Config{
-		PostgresDSN: postgresDSN(),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -36,7 +36,7 @@ func run(ctx context.Context) error {
 	}
 
 	inventorySvc, err := inventory.New(ctx, inventory.Config{
-		PostgresDSN: postgresDSN(),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -44,7 +44,7 @@ func run(ctx context.Context) error {
 	}
 
 	procurementSvc, err := procurement.New(ctx, procurement.Config{
-		PostgresDSN: postgresDSN(),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -52,18 +52,4 @@ func run(ctx context.Context) error {
 	}
 
 	return cmd.RunServices(ctx, www.Handler(), identitySvc, productionSvc, inventorySvc, procurementSvc)
-}
-
-func postgresDSN() string {
-	params := ""
-	if os.Getenv("ENVIRONMENT") == "local" {
-		params = "?sslmode=disable"
-	}
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s",
-		os.Getenv("PGUSER"),
-		os.Getenv("PGPASSWORD"),
-		os.Getenv("PGHOST"),
-		os.Getenv("PGPORT"),
-		os.Getenv("PGDATABASE"),
-		params)
 }

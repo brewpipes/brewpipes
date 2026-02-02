@@ -39,7 +39,10 @@ func Migrate(fs embed.FS, subdir string, dbURL string) error {
 }
 
 func MigrationDSN(dsn, table string) string {
-	migrationDSN := strings.Replace(dsn, "postgres://", "pgx5://", 1)
+	// Handle both postgres:// and postgresql:// schemes (Railway uses postgresql://)
+	migrationDSN := dsn
+	migrationDSN = strings.Replace(migrationDSN, "postgresql://", "pgx5://", 1)
+	migrationDSN = strings.Replace(migrationDSN, "postgres://", "pgx5://", 1)
 	if table == "" {
 		return migrationDSN
 	}

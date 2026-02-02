@@ -20,7 +20,7 @@ func main() {
 func run(ctx context.Context) error {
 	// Initialize services.
 	identitySvc, err := identity.NewService(ctx, &identity.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -28,7 +28,7 @@ func run(ctx context.Context) error {
 	}
 
 	productionSvc, err := production.New(ctx, production.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -36,7 +36,7 @@ func run(ctx context.Context) error {
 	}
 
 	inventorySvc, err := inventory.New(ctx, inventory.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
@@ -44,7 +44,7 @@ func run(ctx context.Context) error {
 	}
 
 	procurementSvc, err := procurement.New(ctx, procurement.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		PostgresDSN: os.Getenv("DATABASE_URL"),
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {

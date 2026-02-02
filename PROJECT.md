@@ -4,6 +4,22 @@
 
 BrewPipes is an open source brewery management system focused on day-to-day production operations. It aims to be the operational source of truth for procurement, inventory, and production, with clear traceability from ingredients and receipts through batches, vessels, and finished lots.
 
+## V1 Roadmap
+
+See [V1_ROADMAP.md](./V1_ROADMAP.md) for the complete V1 product roadmap including:
+- Finalized user journeys
+- Prioritized feature backlog
+- Progress tracking
+
+### V1 Target Users
+Small craft breweries where 1-2 people wear multiple hats, managing both the business and performing brewery work.
+
+### V1 Scope Decisions
+- **In scope:** Procurement, brew day, fermentation, packaging, inventory, batch costing, brewhouse removals
+- **Out of scope:** Taproom, merchandise, sales, multi-user/roles, multi-tenancy
+- **Critical requirement:** Excellent mobile/tablet experience
+- **Technical debt:** Must be addressed before new feature work
+
 ## Core modules
 
 - Identity: access tokens and authentication for all services.

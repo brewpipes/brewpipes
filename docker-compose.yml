@@ -7,6 +7,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      ENVIRONMENT: local
       BREWPIPES_SECRET_KEY: dummy
       POSTGRES_DSN: postgres://brewpipes:brewpipes@postgres:5432/brewpipes?sslmode=disable
     depends_on:

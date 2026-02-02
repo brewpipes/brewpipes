@@ -1,0 +1,36 @@
+# Development overlay with watch mode for automatic rebuilds
+# Usage: make dev
+# Requires Docker Compose 2.22+
+
+services:
+
+  brewpipes:
+    develop:
+      watch:
+        # Rebuild when Go source files change
+        - path: ./cmd
+          action: rebuild
+        - path: ./service
+          action: rebuild
+          ignore:
+            - service/www/node_modules/
+            - service/www/dist/
+            - service/www/.vite/
+        - path: ./internal
+          action: rebuild
+        - path: ./go.mod
+          action: rebuild
+        - path: ./go.sum
+          action: rebuild
+
+        # Rebuild when frontend source changes
+        - path: ./service/www/src
+          action: rebuild
+        - path: ./service/www/public
+          action: rebuild
+        - path: ./service/www/index.html
+          action: rebuild
+        - path: ./service/www/package.json
+          action: rebuild
+        - path: ./service/www/vite.config.ts
+          action: rebuild

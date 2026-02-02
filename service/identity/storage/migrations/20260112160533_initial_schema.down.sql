@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS identity.refresh_token CASCADE;
+DROP TABLE IF EXISTS identity.user CASCADE;
+DROP SCHEMA IF EXISTS identity;

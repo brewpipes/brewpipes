@@ -1,0 +1,100 @@
+package dto
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/brewpipes/brewpipes/service/inventory/storage"
+)
+
+type CreateIngredientLotRequest struct {
+	IngredientID      int64      `json:"ingredient_id"`
+	ReceiptID         *int64     `json:"receipt_id"`
+	SupplierUUID      *string    `json:"supplier_uuid"`
+	BreweryLotCode    *string    `json:"brewery_lot_code"`
+	OriginatorLotCode *string    `json:"originator_lot_code"`
+	OriginatorName    *string    `json:"originator_name"`
+	OriginatorType    *string    `json:"originator_type"`
+	ReceivedAt        *time.Time `json:"received_at"`
+	ReceivedAmount    int64      `json:"received_amount"`
+	ReceivedUnit      string     `json:"received_unit"`
+	BestByAt          *time.Time `json:"best_by_at"`
+	ExpiresAt         *time.Time `json:"expires_at"`
+	Notes             *string    `json:"notes"`
+}
+
+func (r CreateIngredientLotRequest) Validate() error {
+	if r.IngredientID <= 0 {
+		return fmt.Errorf("ingredient_id is required")
+	}
+	if r.ReceivedAmount <= 0 {
+		return fmt.Errorf("received_amount must be greater than zero")
+	}
+	if err := validateRequired(r.ReceivedUnit, "received_unit"); err != nil {
+		return err
+	}
+	if r.OriginatorType != nil {
+		if err := validateOriginatorType(*r.OriginatorType); err != nil {
+			return err
+		}
+	}
+	if r.BestByAt != nil && r.ExpiresAt != nil {
+		if r.ExpiresAt.Before(*r.BestByAt) {
+			return fmt.Errorf("expires_at must be after best_by_at")
+		}
+	}
+
+	return nil
+}
+
+type IngredientLotResponse struct {
+	ID                int64      `json:"id"`
+	UUID              string     `json:"uuid"`
+	IngredientID      int64      `json:"ingredient_id"`
+	ReceiptID         *int64     `json:"receipt_id,omitempty"`
+	SupplierUUID      *string    `json:"supplier_uuid,omitempty"`
+	BreweryLotCode    *string    `json:"brewery_lot_code,omitempty"`
+	OriginatorLotCode *string    `json:"originator_lot_code,omitempty"`
+	OriginatorName    *string    `json:"originator_name,omitempty"`
+	OriginatorType    *string    `json:"originator_type,omitempty"`
+	ReceivedAt        time.Time  `json:"received_at"`
+	ReceivedAmount    int64      `json:"received_amount"`
+	ReceivedUnit      string     `json:"received_unit"`
+	BestByAt          *time.Time `json:"best_by_at,omitempty"`
+	ExpiresAt         *time.Time `json:"expires_at,omitempty"`
+	Notes             *string    `json:"notes,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
+}
+
+func NewIngredientLotResponse(lot storage.IngredientLot) IngredientLotResponse {
+	return IngredientLotResponse{
+		ID:                lot.ID,
+		UUID:              lot.UUID.String(),
+		IngredientID:      lot.IngredientID,
+		ReceiptID:         lot.ReceiptID,
+		SupplierUUID:      uuidToStringPointer(lot.SupplierUUID),
+		BreweryLotCode:    lot.BreweryLotCode,
+		OriginatorLotCode: lot.OriginatorLotCode,
+		OriginatorName:    lot.OriginatorName,
+		OriginatorType:    lot.OriginatorType,
+		ReceivedAt:        lot.ReceivedAt,
+		ReceivedAmount:    lot.ReceivedAmount,
+		ReceivedUnit:      lot.ReceivedUnit,
+		BestByAt:          lot.BestByAt,
+		ExpiresAt:         lot.ExpiresAt,
+		Notes:             lot.Notes,
+		CreatedAt:         lot.CreatedAt,
+		UpdatedAt:         lot.UpdatedAt,
+		DeletedAt:         lot.DeletedAt,
+	}
+}
+
+func NewIngredientLotsResponse(lots []storage.IngredientLot) []IngredientLotResponse {
+	resp := make([]IngredientLotResponse, 0, len(lots))
+	for _, lot := range lots {
+		resp = append(resp, NewIngredientLotResponse(lot))
+	}
+	return resp
+}

@@ -1,0 +1,15 @@
+DROP TABLE IF EXISTS inventory_movement CASCADE;
+DROP TABLE IF EXISTS beer_lot CASCADE;
+DROP TABLE IF EXISTS inventory_transfer CASCADE;
+DROP TABLE IF EXISTS inventory_adjustment CASCADE;
+DROP TABLE IF EXISTS inventory_usage CASCADE;
+DROP TABLE IF EXISTS ingredient_lot_yeast_detail CASCADE;
+DROP TABLE IF EXISTS ingredient_lot_hop_detail CASCADE;
+DROP TABLE IF EXISTS ingredient_lot_malt_detail CASCADE;
+DROP TABLE IF EXISTS ingredient_lot CASCADE;
+DROP TABLE IF EXISTS inventory_receipt CASCADE;
+DROP TABLE IF EXISTS stock_location CASCADE;
+DROP TABLE IF EXISTS ingredient_yeast_detail CASCADE;
+DROP TABLE IF EXISTS ingredient_hop_detail CASCADE;
+DROP TABLE IF EXISTS ingredient_malt_detail CASCADE;
+DROP TABLE IF EXISTS ingredient CASCADE;

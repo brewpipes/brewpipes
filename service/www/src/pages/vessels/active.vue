@@ -1,0 +1,150 @@
+<template>
+  <v-container class="vessels-page" fluid>
+    <v-row align="stretch">
+      <v-col cols="12" md="4">
+        <VesselList
+          :loading="loading"
+          :occupancies="occupancies"
+          :selected-vessel-id="selectedVesselId"
+          :vessels="activeVessels"
+          @refresh="refreshVessels"
+          @select="selectVessel"
+        />
+      </v-col>
+
+      <v-col cols="12" md="8">
+        <VesselDetails
+          :loading="loading"
+          :occupancy="selectedVesselOccupancy"
+          :vessel="selectedVessel"
+          @clear="clearSelection"
+          @occupancy-status-change="changeOccupancyStatus"
+          @refresh="refreshVessels"
+        />
+      </v-col>
+    </v-row>
+  </v-container>
+
+  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+    {{ snackbar.text }}
+  </v-snackbar>
+</template>
+
+<script lang="ts" setup>
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import VesselDetails from '@/components/VesselDetails.vue'
+  import VesselList from '@/components/VesselList.vue'
+  import { useApiClient } from '@/composables/useApiClient'
+  import { useOccupancyStatusFormatters } from '@/composables/useFormatters'
+  import {
+    type Occupancy,
+    type OccupancyStatus,
+    useProductionApi,
+    type Vessel,
+  } from '@/composables/useProductionApi'
+
+  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
+
+  const vessels = ref<Vessel[]>([])
+  const occupancies = ref<Occupancy[]>([])
+  const selectedVesselId = ref<number | null>(null)
+  const loading = ref(false)
+
+  const { request } = useApiClient(apiBase)
+  const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
+  const { formatOccupancyStatus } = useOccupancyStatusFormatters()
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  // Filter to only active vessels
+  const activeVessels = computed(() =>
+    vessels.value.filter(vessel => vessel.status === 'active'),
+  )
+
+  const selectedVessel = computed(() =>
+    vessels.value.find(vessel => vessel.id === selectedVesselId.value) ?? null,
+  )
+
+  const occupancyMap = computed(
+    () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_id, occupancy])),
+  )
+
+  const selectedVesselOccupancy = computed(() => {
+    if (!selectedVesselId.value) return null
+    return occupancyMap.value.get(selectedVesselId.value) ?? null
+  })
+
+  onMounted(async () => {
+    await refreshVessels()
+  })
+
+  watch(selectedVesselId, async () => {
+    // Refresh occupancies when vessel selection changes
+    await loadOccupancies()
+  })
+
+  function selectVessel (id: number) {
+    selectedVesselId.value = id
+  }
+
+  function clearSelection () {
+    selectedVesselId.value = null
+  }
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refreshVessels () {
+    loading.value = true
+    try {
+      const [vesselData] = await Promise.all([
+        request<Vessel[]>('/vessels'),
+        loadOccupancies(),
+      ])
+      vessels.value = vesselData
+
+      // Auto-select first active vessel if none selected
+      const firstVessel = activeVessels.value[0]
+      if (!selectedVesselId.value && firstVessel) {
+        selectedVesselId.value = firstVessel.id
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load vessels'
+      showNotice(message, 'error')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadOccupancies () {
+    try {
+      occupancies.value = await getActiveOccupancies()
+    } catch (error) {
+      console.error('Failed to load occupancies:', error)
+    }
+  }
+
+  async function changeOccupancyStatus (occupancyId: number, status: OccupancyStatus) {
+    try {
+      await updateOccupancyStatus(occupancyId, status)
+      showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
+      await loadOccupancies()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update status'
+      showNotice(message, 'error')
+    }
+  }
+</script>
+
+<style scoped>
+.vessels-page {
+  position: relative;
+}
+</style>

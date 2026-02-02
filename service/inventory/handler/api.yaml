@@ -1,0 +1,1701 @@
+info:
+  title: BrewPipes Inventory Service API
+  version: 0.1.0
+  description: API for ingredients, lots, receipts, movements, and finished beer inventory.
+servers:
+  - url: http://localhost:8080
+paths:
+  /ingredients:
+    get:
+      summary: List ingredients
+      responses:
+        "200":
+          description: Ingredient list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngredientResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create an ingredient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientCreateRequest"
+      responses:
+        "200":
+          description: Ingredient created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredients/{id}:
+    get:
+      summary: Fetch an ingredient
+      parameters:
+        - in: path
+          name: id
+          description: Ingredient ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Ingredient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientResponse"
+        "404":
+          description: Ingredient not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-malt-details:
+    get:
+      summary: Fetch malt detail by ingredient
+      parameters:
+        - in: query
+          name: ingredient_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Malt detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientMaltDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Malt detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create malt detail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientMaltDetailCreateRequest"
+      responses:
+        "200":
+          description: Malt detail created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientMaltDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-malt-details/{id}:
+    get:
+      summary: Fetch malt detail
+      parameters:
+        - in: path
+          name: id
+          description: Malt detail ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Malt detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientMaltDetailResponse"
+        "404":
+          description: Malt detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-hop-details:
+    get:
+      summary: Fetch hop detail by ingredient
+      parameters:
+        - in: query
+          name: ingredient_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Hop detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientHopDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Hop detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create hop detail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientHopDetailCreateRequest"
+      responses:
+        "200":
+          description: Hop detail created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientHopDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-hop-details/{id}:
+    get:
+      summary: Fetch hop detail
+      parameters:
+        - in: path
+          name: id
+          description: Hop detail ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Hop detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientHopDetailResponse"
+        "404":
+          description: Hop detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-yeast-details:
+    get:
+      summary: Fetch yeast detail by ingredient
+      parameters:
+        - in: query
+          name: ingredient_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Yeast detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientYeastDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Yeast detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create yeast detail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientYeastDetailCreateRequest"
+      responses:
+        "200":
+          description: Yeast detail created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientYeastDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-yeast-details/{id}:
+    get:
+      summary: Fetch yeast detail
+      parameters:
+        - in: path
+          name: id
+          description: Yeast detail ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Yeast detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientYeastDetailResponse"
+        "404":
+          description: Yeast detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /stock-locations:
+    get:
+      summary: List stock locations
+      responses:
+        "200":
+          description: Stock location list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockLocationResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a stock location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockLocationCreateRequest"
+      responses:
+        "200":
+          description: Stock location created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockLocationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /stock-locations/{id}:
+    get:
+      summary: Fetch a stock location
+      parameters:
+        - in: path
+          name: id
+          description: Stock location ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Stock location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockLocationResponse"
+        "404":
+          description: Stock location not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-receipts:
+    get:
+      summary: List inventory receipts
+      responses:
+        "200":
+          description: Inventory receipt list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryReceiptResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create an inventory receipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryReceiptCreateRequest"
+      responses:
+        "200":
+          description: Inventory receipt created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryReceiptResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-receipts/{id}:
+    get:
+      summary: Fetch an inventory receipt
+      parameters:
+        - in: path
+          name: id
+          description: Inventory receipt ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inventory receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryReceiptResponse"
+        "404":
+          description: Inventory receipt not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lots:
+    get:
+      summary: List ingredient lots
+      parameters:
+        - in: query
+          name: ingredient_id
+          description: Filter by ingredient id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: receipt_id
+          description: Filter by receipt id
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Ingredient lot list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngredientLotResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create an ingredient lot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientLotCreateRequest"
+      responses:
+        "200":
+          description: Ingredient lot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lots/{id}:
+    get:
+      summary: Fetch an ingredient lot
+      parameters:
+        - in: path
+          name: id
+          description: Ingredient lot ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Ingredient lot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotResponse"
+        "404":
+          description: Ingredient lot not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lot-malt-details:
+    get:
+      summary: Fetch malt lot detail by lot
+      parameters:
+        - in: query
+          name: ingredient_lot_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Malt lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotMaltDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Malt lot detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create malt lot detail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientLotMaltDetailCreateRequest"
+      responses:
+        "200":
+          description: Malt lot detail created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotMaltDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lot-malt-details/{id}:
+    get:
+      summary: Fetch malt lot detail
+      parameters:
+        - in: path
+          name: id
+          description: Malt lot detail ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Malt lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotMaltDetailResponse"
+        "404":
+          description: Malt lot detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lot-hop-details:
+    get:
+      summary: Fetch hop lot detail by lot
+      parameters:
+        - in: query
+          name: ingredient_lot_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Hop lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotHopDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Hop lot detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create hop lot detail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientLotHopDetailCreateRequest"
+      responses:
+        "200":
+          description: Hop lot detail created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotHopDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lot-hop-details/{id}:
+    get:
+      summary: Fetch hop lot detail
+      parameters:
+        - in: path
+          name: id
+          description: Hop lot detail ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Hop lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotHopDetailResponse"
+        "404":
+          description: Hop lot detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lot-yeast-details:
+    get:
+      summary: Fetch yeast lot detail by lot
+      parameters:
+        - in: query
+          name: ingredient_lot_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Yeast lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotYeastDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Yeast lot detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create yeast lot detail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientLotYeastDetailCreateRequest"
+      responses:
+        "200":
+          description: Yeast lot detail created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotYeastDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /ingredient-lot-yeast-details/{id}:
+    get:
+      summary: Fetch yeast lot detail
+      parameters:
+        - in: path
+          name: id
+          description: Yeast lot detail ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Yeast lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientLotYeastDetailResponse"
+        "404":
+          description: Yeast lot detail not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-usage:
+    get:
+      summary: List inventory usage
+      responses:
+        "200":
+          description: Inventory usage list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryUsageResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create inventory usage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryUsageCreateRequest"
+      responses:
+        "200":
+          description: Inventory usage created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryUsageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-usage/{id}:
+    get:
+      summary: Fetch inventory usage
+      parameters:
+        - in: path
+          name: id
+          description: Inventory usage ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inventory usage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryUsageResponse"
+        "404":
+          description: Inventory usage not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-adjustments:
+    get:
+      summary: List inventory adjustments
+      responses:
+        "200":
+          description: Inventory adjustment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryAdjustmentResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create inventory adjustment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryAdjustmentCreateRequest"
+      responses:
+        "200":
+          description: Inventory adjustment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryAdjustmentResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-adjustments/{id}:
+    get:
+      summary: Fetch inventory adjustment
+      parameters:
+        - in: path
+          name: id
+          description: Inventory adjustment ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inventory adjustment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryAdjustmentResponse"
+        "404":
+          description: Inventory adjustment not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-transfers:
+    get:
+      summary: List inventory transfers
+      responses:
+        "200":
+          description: Inventory transfer list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryTransferResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create inventory transfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryTransferCreateRequest"
+      responses:
+        "200":
+          description: Inventory transfer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryTransferResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-transfers/{id}:
+    get:
+      summary: Fetch inventory transfer
+      parameters:
+        - in: path
+          name: id
+          description: Inventory transfer ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inventory transfer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryTransferResponse"
+        "404":
+          description: Inventory transfer not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /beer-lots:
+    get:
+      summary: List beer lots
+      parameters:
+        - in: query
+          name: production_batch_uuid
+          description: Filter by production batch UUID
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Beer lot list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BeerLotResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a beer lot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeerLotCreateRequest"
+      responses:
+        "200":
+          description: Beer lot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeerLotResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /beer-lots/{id}:
+    get:
+      summary: Fetch a beer lot
+      parameters:
+        - in: path
+          name: id
+          description: Beer lot ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Beer lot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeerLotResponse"
+        "404":
+          description: Beer lot not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-movements:
+    get:
+      summary: List inventory movements
+      parameters:
+        - in: query
+          name: ingredient_lot_id
+          description: Filter by ingredient lot id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: beer_lot_id
+          description: Filter by beer lot id
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inventory movement list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryMovementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create inventory movement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryMovementCreateRequest"
+      responses:
+        "200":
+          description: Inventory movement created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryMovementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /inventory-movements/{id}:
+    get:
+      summary: Fetch inventory movement
+      parameters:
+        - in: path
+          name: id
+          description: Inventory movement ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Inventory movement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryMovementResponse"
+        "404":
+          description: Inventory movement not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        text/plain:
+          schema:
+            type: string
+    InternalError:
+      description: Internal server error
+      content:
+        text/plain:
+          schema:
+            type: string
+  schemas:
+    IngredientCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        default_unit:
+          type: string
+        description:
+          type: string
+      required: [name, category, default_unit]
+    IngredientResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        default_unit:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientMaltDetailCreateRequest:
+      type: object
+      properties:
+        ingredient_id:
+          type: integer
+          format: int64
+        maltster_name:
+          type: string
+        variety:
+          type: string
+        lovibond:
+          type: number
+        srm:
+          type: number
+        diastatic_power:
+          type: number
+      required: [ingredient_id]
+    IngredientMaltDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_id:
+          type: integer
+          format: int64
+        maltster_name:
+          type: string
+        variety:
+          type: string
+        lovibond:
+          type: number
+        srm:
+          type: number
+        diastatic_power:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientHopDetailCreateRequest:
+      type: object
+      properties:
+        ingredient_id:
+          type: integer
+          format: int64
+        producer_name:
+          type: string
+        variety:
+          type: string
+        crop_year:
+          type: integer
+        form:
+          type: string
+        alpha_acid:
+          type: number
+        beta_acid:
+          type: number
+      required: [ingredient_id]
+    IngredientHopDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_id:
+          type: integer
+          format: int64
+        producer_name:
+          type: string
+        variety:
+          type: string
+        crop_year:
+          type: integer
+        form:
+          type: string
+        alpha_acid:
+          type: number
+        beta_acid:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientYeastDetailCreateRequest:
+      type: object
+      properties:
+        ingredient_id:
+          type: integer
+          format: int64
+        lab_name:
+          type: string
+        strain:
+          type: string
+        form:
+          type: string
+      required: [ingredient_id]
+    IngredientYeastDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_id:
+          type: integer
+          format: int64
+        lab_name:
+          type: string
+        strain:
+          type: string
+        form:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    StockLocationCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        location_type:
+          type: string
+        description:
+          type: string
+      required: [name]
+    StockLocationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        name:
+          type: string
+        location_type:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    InventoryReceiptCreateRequest:
+      type: object
+      properties:
+        supplier_uuid:
+          type: string
+        reference_code:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    InventoryReceiptResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        supplier_uuid:
+          type: string
+        reference_code:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientLotCreateRequest:
+      type: object
+      properties:
+        ingredient_id:
+          type: integer
+          format: int64
+        receipt_id:
+          type: integer
+          format: int64
+        supplier_uuid:
+          type: string
+        brewery_lot_code:
+          type: string
+        originator_lot_code:
+          type: string
+        originator_name:
+          type: string
+        originator_type:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        received_amount:
+          type: integer
+          format: int64
+        received_unit:
+          type: string
+        best_by_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+      required: [ingredient_id, received_amount, received_unit]
+    IngredientLotResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_id:
+          type: integer
+          format: int64
+        receipt_id:
+          type: integer
+          format: int64
+        supplier_uuid:
+          type: string
+        brewery_lot_code:
+          type: string
+        originator_lot_code:
+          type: string
+        originator_name:
+          type: string
+        originator_type:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        received_amount:
+          type: integer
+          format: int64
+        received_unit:
+          type: string
+        best_by_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientLotMaltDetailCreateRequest:
+      type: object
+      properties:
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        moisture_percent:
+          type: number
+      required: [ingredient_lot_id]
+    IngredientLotMaltDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        moisture_percent:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientLotHopDetailCreateRequest:
+      type: object
+      properties:
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        alpha_acid:
+          type: number
+        beta_acid:
+          type: number
+      required: [ingredient_lot_id]
+    IngredientLotHopDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        alpha_acid:
+          type: number
+        beta_acid:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    IngredientLotYeastDetailCreateRequest:
+      type: object
+      properties:
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        viability_percent:
+          type: number
+        generation:
+          type: integer
+      required: [ingredient_lot_id]
+    IngredientLotYeastDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        viability_percent:
+          type: number
+        generation:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    InventoryUsageCreateRequest:
+      type: object
+      properties:
+        production_ref_uuid:
+          type: string
+        used_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    InventoryUsageResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        production_ref_uuid:
+          type: string
+        used_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    InventoryAdjustmentCreateRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+        adjusted_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+      required: [reason]
+    InventoryAdjustmentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        reason:
+          type: string
+        adjusted_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    InventoryTransferCreateRequest:
+      type: object
+      properties:
+        source_location_id:
+          type: integer
+          format: int64
+        dest_location_id:
+          type: integer
+          format: int64
+        transferred_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+      required: [source_location_id, dest_location_id]
+    InventoryTransferResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        source_location_id:
+          type: integer
+          format: int64
+        dest_location_id:
+          type: integer
+          format: int64
+        transferred_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    BeerLotCreateRequest:
+      type: object
+      properties:
+        production_batch_uuid:
+          type: string
+        lot_code:
+          type: string
+        packaged_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+      required: [production_batch_uuid]
+    BeerLotResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        production_batch_uuid:
+          type: string
+        lot_code:
+          type: string
+        packaged_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    InventoryMovementCreateRequest:
+      type: object
+      properties:
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        beer_lot_id:
+          type: integer
+          format: int64
+        stock_location_id:
+          type: integer
+          format: int64
+        direction:
+          type: string
+        reason:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        receipt_id:
+          type: integer
+          format: int64
+        usage_id:
+          type: integer
+          format: int64
+        adjustment_id:
+          type: integer
+          format: int64
+        transfer_id:
+          type: integer
+          format: int64
+        notes:
+          type: string
+      required: [stock_location_id, direction, reason, amount, amount_unit]
+    InventoryMovementResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+        ingredient_lot_id:
+          type: integer
+          format: int64
+        beer_lot_id:
+          type: integer
+          format: int64
+        stock_location_id:
+          type: integer
+          format: int64
+        direction:
+          type: string
+        reason:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        receipt_id:
+          type: integer
+          format: int64
+        usage_id:
+          type: integer
+          format: int64
+        adjustment_id:
+          type: integer
+          format: int64
+        transfer_id:
+          type: integer
+          format: int64
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time

@@ -1,0 +1,52 @@
+import { useApiClient } from '@/composables/useApiClient'
+
+const procurementApiBase = import.meta.env.VITE_PROCUREMENT_API_URL ?? '/api'
+
+export function useProcurementApi () {
+  const { request } = useApiClient(procurementApiBase)
+
+  const normalizeText = (value: string) => {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+
+  const normalizeDateTime = (value: string) => {
+    return value ? new Date(value).toISOString() : null
+  }
+
+  const toNumber = (value: string | number | null) => {
+    if (value === null || value === undefined || value === '') {
+      return null
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const formatDateTime = (value: string | null | undefined) => {
+    if (!value) {
+      return 'n/a'
+    }
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(value))
+  }
+
+  const formatCurrency = (cents: number | null | undefined, currency: string | null | undefined) => {
+    if (cents === null || cents === undefined) {
+      return 'n/a'
+    }
+    const amount = (cents / 100).toFixed(2)
+    return `${amount} ${currency ?? ''}`.trim()
+  }
+
+  return {
+    apiBase: procurementApiBase,
+    request,
+    normalizeText,
+    normalizeDateTime,
+    toNumber,
+    formatDateTime,
+    formatCurrency,
+  }
+}

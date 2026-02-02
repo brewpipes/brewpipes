@@ -1,0 +1,834 @@
+openapi: 3.0.3
+info:
+  title: BrewPipes Procurement Service API
+  version: 0.1.0
+  description: API for suppliers, purchase orders, line items, and fees.
+servers:
+  - url: http://localhost:8080
+paths:
+  /suppliers:
+    get:
+      summary: List suppliers
+      responses:
+        "200":
+          description: Supplier list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupplierResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierCreateRequest"
+      responses:
+        "200":
+          description: Supplier created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplierResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /suppliers/{id}:
+    get:
+      summary: Fetch a supplier
+      parameters:
+        - in: path
+          name: id
+          description: Supplier ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Supplier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplierResponse"
+        "404":
+          description: Supplier not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /purchase-orders:
+    get:
+      summary: List purchase orders
+      parameters:
+        - in: query
+          name: supplier_id
+          description: Filter by supplier id
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PurchaseOrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a purchase order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderCreateRequest"
+      responses:
+        "200":
+          description: Purchase order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /purchase-orders/{id}:
+    get:
+      summary: Fetch a purchase order
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "404":
+          description: Purchase order not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      summary: Update a purchase order
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order ID to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderUpdateRequest"
+      responses:
+        "200":
+          description: Purchase order updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Purchase order not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /purchase-order-lines:
+    get:
+      summary: List purchase order lines
+      parameters:
+        - in: query
+          name: purchase_order_id
+          description: Filter by purchase order id
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order line list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a purchase order line
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderLineCreateRequest"
+      responses:
+        "200":
+          description: Purchase order line created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /purchase-order-lines/{id}:
+    get:
+      summary: Fetch a purchase order line
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order line ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order line
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "404":
+          description: Purchase order line not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      summary: Update a purchase order line
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order line ID to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderLineUpdateRequest"
+      responses:
+        "200":
+          description: Purchase order line updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Purchase order line not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      summary: Delete a purchase order line
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order line ID to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order line deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderLineResponse"
+        "404":
+          description: Purchase order line not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /purchase-order-fees:
+    get:
+      summary: List purchase order fees
+      parameters:
+        - in: query
+          name: purchase_order_id
+          description: Filter by purchase order id
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order fee list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a purchase order fee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderFeeCreateRequest"
+      responses:
+        "200":
+          description: Purchase order fee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /purchase-order-fees/{id}:
+    get:
+      summary: Fetch a purchase order fee
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order fee ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order fee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "404":
+          description: Purchase order fee not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      summary: Update a purchase order fee
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order fee ID to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderFeeUpdateRequest"
+      responses:
+        "200":
+          description: Purchase order fee updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Purchase order fee not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      summary: Delete a purchase order fee
+      parameters:
+        - in: path
+          name: id
+          description: Purchase order fee ID to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Purchase order fee deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderFeeResponse"
+        "404":
+          description: Purchase order fee not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        text/plain:
+          schema:
+            type: string
+    InternalError:
+      description: Internal server error
+      content:
+        text/plain:
+          schema:
+            type: string
+  schemas:
+    SupplierCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        contact_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        address_line1:
+          type: string
+          nullable: true
+        address_line2:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+    SupplierResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        contact_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        address_line1:
+          type: string
+          nullable: true
+        address_line2:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    PurchaseOrderCreateRequest:
+      type: object
+      required:
+        - supplier_id
+      properties:
+        supplier_id:
+          type: integer
+          format: int64
+        order_number:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - submitted
+            - confirmed
+            - partially_received
+            - received
+            - cancelled
+          nullable: true
+        ordered_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    PurchaseOrderUpdateRequest:
+      type: object
+      properties:
+        order_number:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - submitted
+            - confirmed
+            - partially_received
+            - received
+            - cancelled
+        ordered_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    PurchaseOrderResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - supplier_id
+        - order_number
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        supplier_id:
+          type: integer
+          format: int64
+        order_number:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - submitted
+            - confirmed
+            - partially_received
+            - received
+            - cancelled
+        ordered_at:
+          type: string
+          format: date-time
+          nullable: true
+        expected_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    PurchaseOrderLineCreateRequest:
+      type: object
+      required:
+        - purchase_order_id
+        - line_number
+        - item_type
+        - item_name
+        - quantity
+        - quantity_unit
+        - unit_cost_cents
+        - currency
+      properties:
+        purchase_order_id:
+          type: integer
+          format: int64
+        line_number:
+          type: integer
+          format: int64
+        item_type:
+          type: string
+          enum:
+            - ingredient
+            - packaging
+            - service
+            - equipment
+            - other
+        item_name:
+          type: string
+        inventory_item_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: integer
+          format: int64
+        quantity_unit:
+          type: string
+        unit_cost_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+    PurchaseOrderLineResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - purchase_order_id
+        - line_number
+        - item_type
+        - item_name
+        - quantity
+        - quantity_unit
+        - unit_cost_cents
+        - currency
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        purchase_order_id:
+          type: integer
+          format: int64
+        line_number:
+          type: integer
+          format: int64
+        item_type:
+          type: string
+          enum:
+            - ingredient
+            - packaging
+            - service
+            - equipment
+            - other
+        item_name:
+          type: string
+        inventory_item_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: integer
+          format: int64
+        quantity_unit:
+          type: string
+        unit_cost_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    PurchaseOrderLineUpdateRequest:
+      type: object
+      properties:
+        line_number:
+          type: integer
+          format: int64
+        item_type:
+          type: string
+          enum:
+            - ingredient
+            - packaging
+            - service
+            - equipment
+            - other
+        item_name:
+          type: string
+        inventory_item_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: integer
+          format: int64
+        quantity_unit:
+          type: string
+        unit_cost_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+    PurchaseOrderFeeCreateRequest:
+      type: object
+      required:
+        - purchase_order_id
+        - fee_type
+        - amount_cents
+        - currency
+      properties:
+        purchase_order_id:
+          type: integer
+          format: int64
+        fee_type:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+    PurchaseOrderFeeResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - purchase_order_id
+        - fee_type
+        - amount_cents
+        - currency
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        purchase_order_id:
+          type: integer
+          format: int64
+        fee_type:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    PurchaseOrderFeeUpdateRequest:
+      type: object
+      properties:
+        fee_type:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string

@@ -1,0 +1,1570 @@
+openapi: 3.0.3
+info:
+  title: BrewPipes Production Service API
+  version: 0.1.0
+  description: API for batch production workflows, volumes, vessels, transfers, additions, and measurements.
+servers:
+  - url: http://localhost:8080
+paths:
+  /batches:
+    get:
+      summary: List batches
+      responses:
+        "200":
+          description: Batch list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BatchResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchCreateRequest"
+      responses:
+        "200":
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batches/{id}:
+    get:
+      summary: Fetch a batch
+      parameters:
+        - in: path
+          name: id
+          description: Batch ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchResponse"
+        "404":
+          description: Batch not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /volumes:
+    get:
+      summary: List volumes
+      responses:
+        "200":
+          description: Volume list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VolumeResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a volume
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VolumeCreateRequest"
+      responses:
+        "200":
+          description: Volume created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VolumeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /volumes/{id}:
+    get:
+      summary: Fetch a volume
+      parameters:
+        - in: path
+          name: id
+          description: Volume ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Volume
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VolumeResponse"
+        "404":
+          description: Volume not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /volume-relations:
+    get:
+      summary: List volume relations by volume
+      parameters:
+        - in: query
+          name: volume_id
+          description: Volume ID to fetch relations for
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Volume relations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VolumeRelationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a volume relation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VolumeRelationCreateRequest"
+      responses:
+        "200":
+          description: Volume relation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VolumeRelationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /volume-relations/{id}:
+    get:
+      summary: Fetch a volume relation
+      parameters:
+        - in: path
+          name: id
+          description: Volume relation ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Volume relation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VolumeRelationResponse"
+        "404":
+          description: Volume relation not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /vessels:
+    get:
+      summary: List vessels
+      responses:
+        "200":
+          description: Vessel list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VesselResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a vessel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VesselCreateRequest"
+      responses:
+        "200":
+          description: Vessel created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VesselResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /vessels/{id}:
+    get:
+      summary: Fetch a vessel
+      parameters:
+        - in: path
+          name: id
+          description: Vessel ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Vessel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VesselResponse"
+        "404":
+          description: Vessel not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /occupancies:
+    post:
+      summary: Create an occupancy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OccupancyCreateRequest"
+      responses:
+        "200":
+          description: Occupancy created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /occupancies/{id}:
+    get:
+      summary: Fetch an occupancy
+      parameters:
+        - in: path
+          name: id
+          description: Occupancy ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Occupancy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancyResponse"
+        "404":
+          description: Occupancy not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /occupancies/active:
+    get:
+      summary: Fetch active occupancy by vessel or volume
+      description: Provide exactly one of active_vessel_id or active_volume_id.
+      parameters:
+        - in: query
+          name: active_vessel_id
+          description: Vessel ID to fetch its current occupancy
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: active_volume_id
+          description: Volume ID to fetch its current occupancy
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Occupancy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Occupancy not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /transfers:
+    get:
+      summary: List transfers by batch
+      parameters:
+        - in: query
+          name: batch_id
+          description: Batch ID to fetch transfers for
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Transfers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransferResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Record a transfer
+      description: Closes the source occupancy, creates a destination occupancy, and inserts the transfer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferCreateRequest"
+      responses:
+        "200":
+          description: Transfer recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferRecordResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /transfers/{id}:
+    get:
+      summary: Fetch a transfer
+      parameters:
+        - in: path
+          name: id
+          description: Transfer ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Transfer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferResponse"
+        "404":
+          description: Transfer not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batch-volumes:
+    get:
+      summary: List batch volume history by batch
+      parameters:
+        - in: query
+          name: batch_id
+          description: Batch ID to fetch volume history for
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch volume history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BatchVolumeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a batch volume record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchVolumeCreateRequest"
+      responses:
+        "200":
+          description: Batch volume created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchVolumeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batch-volumes/{id}:
+    get:
+      summary: Fetch a batch volume record
+      parameters:
+        - in: path
+          name: id
+          description: Batch volume ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch volume
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchVolumeResponse"
+        "404":
+          description: Batch volume not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batch-process-phases:
+    get:
+      summary: List batch process phases by batch
+      parameters:
+        - in: query
+          name: batch_id
+          description: Batch ID to fetch process phases for
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch process phase history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BatchProcessPhaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a batch process phase record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchProcessPhaseCreateRequest"
+      responses:
+        "200":
+          description: Batch process phase created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchProcessPhaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batch-process-phases/{id}:
+    get:
+      summary: Fetch a batch process phase record
+      parameters:
+        - in: path
+          name: id
+          description: Batch process phase ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch process phase
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchProcessPhaseResponse"
+        "404":
+          description: Batch process phase not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batch-relations:
+    get:
+      summary: List batch relations by batch
+      parameters:
+        - in: query
+          name: batch_id
+          description: Batch ID to fetch relations for
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch relations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BatchRelationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a batch relation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchRelationCreateRequest"
+      responses:
+        "200":
+          description: Batch relation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchRelationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /batch-relations/{id}:
+    get:
+      summary: Fetch a batch relation
+      parameters:
+        - in: path
+          name: id
+          description: Batch relation ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Batch relation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchRelationResponse"
+        "404":
+          description: Batch relation not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /additions:
+    get:
+      summary: List additions by batch or occupancy
+      description: Provide either batch_id or occupancy_id.
+      parameters:
+        - in: query
+          name: batch_id
+          description: Batch ID to fetch additions for
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: occupancy_id
+          description: Occupancy ID to fetch additions for
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Additions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdditionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create an addition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdditionCreateRequest"
+      responses:
+        "200":
+          description: Addition created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdditionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /additions/{id}:
+    get:
+      summary: Fetch an addition
+      parameters:
+        - in: path
+          name: id
+          description: Addition ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Addition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdditionResponse"
+        "404":
+          description: Addition not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /measurements:
+    get:
+      summary: List measurements by batch or occupancy
+      description: Provide either batch_id or occupancy_id.
+      parameters:
+        - in: query
+          name: batch_id
+          description: Batch ID to fetch measurements for
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: occupancy_id
+          description: Occupancy ID to fetch measurements for
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Measurements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeasurementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      summary: Create a measurement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasurementCreateRequest"
+      responses:
+        "200":
+          description: Measurement created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeasurementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /measurements/{id}:
+    get:
+      summary: Fetch a measurement
+      parameters:
+        - in: path
+          name: id
+          description: Measurement ID to fetch
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Measurement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeasurementResponse"
+        "404":
+          description: Measurement not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        text/plain:
+          schema:
+            type: string
+    InternalError:
+      description: Internal server error
+      content:
+        text/plain:
+          schema:
+            type: string
+  schemas:
+    BatchCreateRequest:
+      type: object
+      required:
+        - short_name
+      properties:
+        short_name:
+          type: string
+        brew_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    BatchResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - short_name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        short_name:
+          type: string
+        brew_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    VolumeCreateRequest:
+      type: object
+      required:
+        - amount
+        - amount_unit
+      properties:
+        name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+    VolumeResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - amount
+        - amount_unit
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    VolumeRelationCreateRequest:
+      type: object
+      required:
+        - parent_volume_id
+        - child_volume_id
+        - relation_type
+        - amount
+        - amount_unit
+      properties:
+        parent_volume_id:
+          type: integer
+          format: int64
+        child_volume_id:
+          type: integer
+          format: int64
+        relation_type:
+          type: string
+          enum: [split, blend]
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+    VolumeRelationResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - parent_volume_id
+        - child_volume_id
+        - relation_type
+        - amount
+        - amount_unit
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        parent_volume_id:
+          type: integer
+          format: int64
+        child_volume_id:
+          type: integer
+          format: int64
+        relation_type:
+          type: string
+          enum: [split, blend]
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    VesselCreateRequest:
+      type: object
+      required:
+        - type
+        - name
+        - capacity
+        - capacity_unit
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        capacity:
+          type: integer
+          format: int64
+        capacity_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        make:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, retired]
+          nullable: true
+    VesselResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - type
+        - name
+        - capacity
+        - capacity_unit
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        type:
+          type: string
+        name:
+          type: string
+        capacity:
+          type: integer
+          format: int64
+        capacity_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        make:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, retired]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    OccupancyCreateRequest:
+      type: object
+      required:
+        - vessel_id
+        - volume_id
+      properties:
+        vessel_id:
+          type: integer
+          format: int64
+        volume_id:
+          type: integer
+          format: int64
+        in_at:
+          type: string
+          format: date-time
+          nullable: true
+    OccupancyResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - vessel_id
+        - volume_id
+        - in_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        vessel_id:
+          type: integer
+          format: int64
+        volume_id:
+          type: integer
+          format: int64
+        in_at:
+          type: string
+          format: date-time
+        out_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    TransferCreateRequest:
+      type: object
+      required:
+        - source_occupancy_id
+        - dest_vessel_id
+        - volume_id
+        - amount
+        - amount_unit
+      properties:
+        source_occupancy_id:
+          type: integer
+          format: int64
+        dest_vessel_id:
+          type: integer
+          format: int64
+        volume_id:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        loss_amount:
+          type: integer
+          format: int64
+          nullable: true
+        loss_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+    TransferResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - source_occupancy_id
+        - dest_occupancy_id
+        - amount
+        - amount_unit
+        - started_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        source_occupancy_id:
+          type: integer
+          format: int64
+        dest_occupancy_id:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        loss_amount:
+          type: integer
+          format: int64
+          nullable: true
+        loss_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    TransferRecordResponse:
+      type: object
+      required:
+        - transfer
+        - dest_occupancy
+      properties:
+        transfer:
+          $ref: "#/components/schemas/TransferResponse"
+        dest_occupancy:
+          $ref: "#/components/schemas/OccupancyResponse"
+    BatchVolumeCreateRequest:
+      type: object
+      required:
+        - batch_id
+        - volume_id
+        - liquid_phase
+      properties:
+        batch_id:
+          type: integer
+          format: int64
+        volume_id:
+          type: integer
+          format: int64
+        liquid_phase:
+          type: string
+          enum: [water, wort, beer]
+        phase_at:
+          type: string
+          format: date-time
+          nullable: true
+    BatchVolumeResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - batch_id
+        - volume_id
+        - liquid_phase
+        - phase_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        batch_id:
+          type: integer
+          format: int64
+        volume_id:
+          type: integer
+          format: int64
+        liquid_phase:
+          type: string
+          enum: [water, wort, beer]
+        phase_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    BatchProcessPhaseCreateRequest:
+      type: object
+      required:
+        - batch_id
+        - process_phase
+      properties:
+        batch_id:
+          type: integer
+          format: int64
+        process_phase:
+          type: string
+          enum:
+            - planning
+            - mashing
+            - heating
+            - boiling
+            - cooling
+            - fermenting
+            - conditioning
+            - packaging
+            - finished
+        phase_at:
+          type: string
+          format: date-time
+          nullable: true
+    BatchProcessPhaseResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - batch_id
+        - process_phase
+        - phase_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        batch_id:
+          type: integer
+          format: int64
+        process_phase:
+          type: string
+          enum:
+            - planning
+            - mashing
+            - heating
+            - boiling
+            - cooling
+            - fermenting
+            - conditioning
+            - packaging
+            - finished
+        phase_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    BatchRelationCreateRequest:
+      type: object
+      required:
+        - parent_batch_id
+        - child_batch_id
+        - relation_type
+      properties:
+        parent_batch_id:
+          type: integer
+          format: int64
+        child_batch_id:
+          type: integer
+          format: int64
+        relation_type:
+          type: string
+          enum: [split, blend]
+        volume_id:
+          type: integer
+          format: int64
+          nullable: true
+    BatchRelationResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - parent_batch_id
+        - child_batch_id
+        - relation_type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        parent_batch_id:
+          type: integer
+          format: int64
+        child_batch_id:
+          type: integer
+          format: int64
+        relation_type:
+          type: string
+          enum: [split, blend]
+        volume_id:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdditionCreateRequest:
+      type: object
+      required:
+        - addition_type
+        - amount
+        - amount_unit
+      properties:
+        batch_id:
+          type: integer
+          format: int64
+          nullable: true
+        occupancy_id:
+          type: integer
+          format: int64
+          nullable: true
+        addition_type:
+          type: string
+          enum:
+            - malt
+            - hop
+            - yeast
+            - adjunct
+            - water_chem
+            - gas
+            - other
+        stage:
+          type: string
+          nullable: true
+        inventory_lot_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        added_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    AdditionResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - addition_type
+        - amount
+        - amount_unit
+        - added_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        batch_id:
+          type: integer
+          format: int64
+          nullable: true
+        occupancy_id:
+          type: integer
+          format: int64
+          nullable: true
+        addition_type:
+          type: string
+          enum:
+            - malt
+            - hop
+            - yeast
+            - adjunct
+            - water_chem
+            - gas
+            - other
+        stage:
+          type: string
+          nullable: true
+        inventory_lot_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        amount:
+          type: integer
+          format: int64
+        amount_unit:
+          type: string
+          enum: [ml, usfloz, ukfloz]
+        added_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    MeasurementCreateRequest:
+      type: object
+      required:
+        - kind
+        - value
+      properties:
+        batch_id:
+          type: integer
+          format: int64
+          nullable: true
+        occupancy_id:
+          type: integer
+          format: int64
+          nullable: true
+        kind:
+          type: string
+        value:
+          type: number
+          format: double
+        unit:
+          type: string
+          nullable: true
+        observed_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    MeasurementResponse:
+      type: object
+      required:
+        - id
+        - uuid
+        - kind
+        - value
+        - observed_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        uuid:
+          type: string
+          format: uuid
+        batch_id:
+          type: integer
+          format: int64
+          nullable: true
+        occupancy_id:
+          type: integer
+          format: int64
+          nullable: true
+        kind:
+          type: string
+        value:
+          type: number
+          format: double
+        unit:
+          type: string
+          nullable: true
+        observed_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true

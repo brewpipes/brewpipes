@@ -325,3 +325,49 @@ Frontend now uses correct backend category values:
 
 - The "Other" tab serves as a catch-all for non-core ingredient categories. This can be refined into more specific tabs (e.g., Adjuncts, Water Chemistry) as needs evolve.
 - The "Other" tab includes a Category column to help distinguish between different ingredient types within that tab.
+
+## Implemented: Inventory Activity Page Enhancements
+
+### Overview
+
+Enhanced the Inventory Activity page with a richer data display that provides better context for each inventory movement.
+
+### New Columns
+
+| Column | Description |
+|--------|-------------|
+| **Item** | Ingredient name (resolved via lot → ingredient) or beer lot code |
+| **Lot #** | Brewery lot code for ingredient lots, or lot code for beer lots |
+| **Direction** | Colored icons: green down arrow for "in" (received), orange up arrow for "out" (used/transferred/adjusted). Includes tooltips. |
+| **Reason** | Context-aware display based on movement type (see below) |
+| **Amount** | Formatted with user's preferred units |
+| **Location** | Stock location name |
+
+### Reason Column Logic
+
+The Reason column displays context-aware information based on the movement type:
+
+- **Usage (`reason === 'use'`)**: Shows "Used in [BATCH_SHORT_NAME]" with a link to the batch page. Falls back to "Used in production" if batch cannot be resolved.
+- **Receipt (`reason === 'receive'`)**: Shows "Received from [SUPPLIER_NAME]" when supplier can be resolved. Falls back to "Received" otherwise.
+- **Adjustment (`reason === 'adjust'` or `'waste'`)**: Shows formatted adjustment reason (Cycle count, Spoilage, Shrink, Damage, Correction, Other). Notes displayed in tooltip if available.
+- **Transfer (`reason === 'transfer'`)**: Shows "Transferred to [LOCATION]" or "Transferred from [LOCATION]" based on direction. Notes displayed in tooltip if available.
+
+### Data Fetching
+
+The page fetches data from multiple sources:
+
+**Inventory service:**
+- Ingredients (to resolve ingredient names)
+- Ingredient lots, beer lots, stock locations
+- Inventory movements, receipts, usages, adjustments, transfers
+
+**Cross-service calls (graceful failure):**
+- Production service: batches (to resolve batch names for usage movements)
+- Procurement service: suppliers (to resolve supplier names for receipts)
+
+### Implementation Notes
+
+- Uses computed lookup maps for O(1) data resolution
+- Cross-service calls use `Promise.allSettled` for non-blocking, graceful failure
+- Graceful fallbacks when related data cannot be resolved
+- Filter dropdowns now show ingredient name alongside lot code for better identification

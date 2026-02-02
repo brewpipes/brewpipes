@@ -1,4 +1,4 @@
-.PHONY: info clean monolith auth-service production-service run-server psql up down nuke
+.PHONY: info clean monolith auth-service production-service run-server psql up up-quick dev down nuke
 
 postgres_dsn = postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable
 
@@ -12,7 +12,13 @@ start-postgres:
 	docker compose up -d postgres
 
 up:
+	docker compose up --build
+
+up-quick:
 	docker compose up
+
+dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build --watch
 
 down:
 	docker compose down

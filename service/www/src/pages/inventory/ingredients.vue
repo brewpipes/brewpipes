@@ -1,344 +1,421 @@
 <template>
   <v-container class="inventory-page" fluid>
     <v-card class="section-card">
-      <v-card-title>Ingredients</v-card-title>
+      <v-card-title class="d-flex align-center">
+        <v-icon class="mr-2" icon="mdi-barley" />
+        Ingredients
+        <v-spacer />
+        <v-btn
+          color="primary"
+          :loading="ingredientLoading"
+          prepend-icon="mdi-plus"
+          size="small"
+          variant="text"
+          @click="openIngredientDialog"
+        >
+          New ingredient
+        </v-btn>
+      </v-card-title>
       <v-card-text>
+        <v-alert
+          v-if="ingredientErrorMessage"
+          class="mb-3"
+          density="compact"
+          type="error"
+          variant="tonal"
+        >
+          {{ ingredientErrorMessage }}
+        </v-alert>
         <v-tabs v-model="activeTab" class="inventory-tabs" color="primary" show-arrows>
-          <v-tab value="stock">Stock</v-tab>
+          <v-tab value="malt">Malt</v-tab>
+          <v-tab value="hops">Hops</v-tab>
+          <v-tab value="yeast">Yeast</v-tab>
+          <v-tab value="other">Other</v-tab>
           <v-tab value="usage">Usage</v-tab>
-          <v-tab value="types">Types</v-tab>
+          <v-tab value="received">Received</v-tab>
         </v-tabs>
 
         <v-window v-model="activeTab" class="mt-4">
-          <v-window-item value="stock">
-            <v-row align="stretch">
-              <v-col cols="12" md="7">
-                <v-card class="sub-card" variant="outlined">
-                  <v-card-title class="d-flex align-center">
-                    Receipts
-                    <v-spacer />
-                    <v-btn :loading="receiptLoading" size="small" variant="text" @click="loadReceipts">
-                      Refresh
+          <!-- Malt Tab -->
+          <v-window-item value="malt">
+            <v-card variant="outlined">
+              <v-card-title class="d-flex align-center">
+                Malt lots
+                <v-spacer />
+                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
+                  Refresh
+                </v-btn>
+                <v-btn
+                  class="ml-2"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  size="small"
+                  variant="text"
+                  @click="openLotDialog('fermentable')"
+                >
+                  Create lot
+                </v-btn>
+              </v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="lotErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ lotErrorMessage }}
+                </v-alert>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="lotHeaders"
+                  item-value="id"
+                  :items="maltLots"
+                  :loading="lotLoading"
+                >
+                  <template #item.ingredient_id="{ item }">
+                    {{ ingredientName(item.ingredient_id) }}
+                  </template>
+                  <template #item.received_amount="{ item }">
+                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
+                  </template>
+                  <template #item.received_at="{ item }">
+                    {{ formatDateTime(item.received_at) }}
+                  </template>
+                  <template #item.best_by_at="{ item }">
+                    {{ formatDateTime(item.best_by_at) }}
+                  </template>
+                  <template #item.expires_at="{ item }">
+                    {{ formatDateTime(item.expires_at) }}
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
+                      Details
                     </v-btn>
-                  </v-card-title>
-                  <v-card-text>
-                    <v-alert
-                      v-if="receiptErrorMessage"
-                      class="mb-3"
-                      density="compact"
-                      type="error"
-                      variant="tonal"
-                    >
-                      {{ receiptErrorMessage }}
-                    </v-alert>
-                    <v-table class="data-table" density="compact">
-                      <thead>
-                        <tr>
-                          <th>Reference</th>
-                          <th>Supplier</th>
-                          <th>Received at</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="receipt in receipts" :key="receipt.id">
-                          <td>{{ receipt.reference_code || 'n/a' }}</td>
-                          <td>{{ receipt.supplier_uuid || 'n/a' }}</td>
-                          <td>{{ formatDateTime(receipt.received_at) }}</td>
-                        </tr>
-                        <tr v-if="receipts.length === 0">
-                          <td colspan="3">No receipts yet.</td>
-                        </tr>
-                      </tbody>
-                    </v-table>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="5">
-                <v-card class="sub-card" variant="tonal">
-                  <v-card-title>Create receipt</v-card-title>
-                  <v-card-text>
-                    <v-text-field v-model="receiptForm.reference_code" label="Reference code" />
-                    <v-text-field v-model="receiptForm.supplier_uuid" label="Supplier UUID" />
-                    <v-text-field v-model="receiptForm.received_at" label="Received at" type="datetime-local" />
-                    <v-textarea
-                      v-model="receiptForm.notes"
-                      auto-grow
-                      label="Notes"
-                      rows="2"
-                    />
-                    <v-btn block color="primary" @click="createReceipt">
-                      Add receipt
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-
-            <v-divider class="my-6" />
-
-            <v-row align="stretch">
-              <v-col cols="12" md="7">
-                <v-card class="sub-card" variant="outlined">
-                  <v-card-title class="d-flex align-center">
-                    Ingredient lots
-                    <v-spacer />
-                    <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
-                      Apply filter
-                    </v-btn>
-                  </v-card-title>
-                  <v-card-text>
-                    <v-alert
-                      v-if="lotErrorMessage"
-                      class="mb-3"
-                      density="compact"
-                      type="error"
-                      variant="tonal"
-                    >
-                      {{ lotErrorMessage }}
-                    </v-alert>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          v-model="lotFilters.ingredient_id"
-                          clearable
-                          :items="ingredientSelectItems"
-                          label="Filter by ingredient"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          v-model="lotFilters.receipt_id"
-                          clearable
-                          :items="receiptSelectItems"
-                          label="Filter by receipt"
-                        />
-                      </v-col>
-                    </v-row>
-                    <v-table class="data-table" density="compact">
-                      <thead>
-                        <tr>
-                          <th>Ingredient</th>
-                          <th>Received</th>
-                          <th>Best by</th>
-                          <th>Expires</th>
-                          <th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="lot in lots" :key="lot.id">
-                          <td>{{ ingredientName(lot.ingredient_id) }}</td>
-                          <td>{{ formatAmountPreferred(lot.received_amount, lot.received_unit) }}</td>
-                          <td>{{ formatDateTime(lot.best_by_at) }}</td>
-                          <td>{{ formatDateTime(lot.expires_at) }}</td>
-                          <td>
-                            <v-btn size="x-small" variant="text" @click="openLotDetails(lot.id)">
-                              Details
-                            </v-btn>
-                          </td>
-                        </tr>
-                        <tr v-if="lots.length === 0">
-                          <td colspan="5">No lots yet.</td>
-                        </tr>
-                      </tbody>
-                    </v-table>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="5">
-                <v-card class="sub-card" variant="tonal">
-                  <v-card-title>Create lot</v-card-title>
-                  <v-card-text>
-                    <v-select
-                      v-model="lotForm.ingredient_id"
-                      :items="ingredientSelectItems"
-                      label="Ingredient"
-                    />
-                    <v-select
-                      v-model="lotForm.receipt_id"
-                      clearable
-                      :items="receiptSelectItems"
-                      label="Receipt (optional)"
-                    />
-                    <v-text-field v-model="lotForm.supplier_uuid" label="Supplier UUID" />
-                    <v-text-field v-model="lotForm.brewery_lot_code" label="Brewery lot code" />
-                    <v-text-field v-model="lotForm.originator_lot_code" label="Originator lot code" />
-                    <v-text-field v-model="lotForm.originator_name" label="Originator name" />
-                    <v-text-field v-model="lotForm.originator_type" label="Originator type" />
-                    <v-text-field v-model="lotForm.received_at" label="Received at" type="datetime-local" />
-                    <v-text-field v-model="lotForm.received_amount" label="Received amount" type="number" />
-                    <v-combobox
-                      v-model="lotForm.received_unit"
-                      :items="unitOptions"
-                      label="Received unit"
-                    />
-                    <v-text-field v-model="lotForm.best_by_at" label="Best by" type="datetime-local" />
-                    <v-text-field v-model="lotForm.expires_at" label="Expires at" type="datetime-local" />
-                    <v-textarea
-                      v-model="lotForm.notes"
-                      auto-grow
-                      label="Notes"
-                      rows="2"
-                    />
-                    <v-btn
-                      block
-                      color="primary"
-                      :disabled="!lotForm.ingredient_id || !lotForm.received_amount || !lotForm.received_unit"
-                      @click="createLot"
-                    >
-                      Add lot
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No malt lots yet.</div>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
           </v-window-item>
 
+          <!-- Hops Tab -->
+          <v-window-item value="hops">
+            <v-card variant="outlined">
+              <v-card-title class="d-flex align-center">
+                Hop lots
+                <v-spacer />
+                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
+                  Refresh
+                </v-btn>
+                <v-btn
+                  class="ml-2"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  size="small"
+                  variant="text"
+                  @click="openLotDialog('hop')"
+                >
+                  Create lot
+                </v-btn>
+              </v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="lotErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ lotErrorMessage }}
+                </v-alert>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="lotHeaders"
+                  item-value="id"
+                  :items="hopLots"
+                  :loading="lotLoading"
+                >
+                  <template #item.ingredient_id="{ item }">
+                    {{ ingredientName(item.ingredient_id) }}
+                  </template>
+                  <template #item.received_amount="{ item }">
+                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
+                  </template>
+                  <template #item.received_at="{ item }">
+                    {{ formatDateTime(item.received_at) }}
+                  </template>
+                  <template #item.best_by_at="{ item }">
+                    {{ formatDateTime(item.best_by_at) }}
+                  </template>
+                  <template #item.expires_at="{ item }">
+                    {{ formatDateTime(item.expires_at) }}
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
+                      Details
+                    </v-btn>
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No hop lots yet.</div>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
+          </v-window-item>
+
+          <!-- Yeast Tab -->
+          <v-window-item value="yeast">
+            <v-card variant="outlined">
+              <v-card-title class="d-flex align-center">
+                Yeast lots
+                <v-spacer />
+                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
+                  Refresh
+                </v-btn>
+                <v-btn
+                  class="ml-2"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  size="small"
+                  variant="text"
+                  @click="openLotDialog('yeast')"
+                >
+                  Create lot
+                </v-btn>
+              </v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="lotErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ lotErrorMessage }}
+                </v-alert>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="lotHeaders"
+                  item-value="id"
+                  :items="yeastLots"
+                  :loading="lotLoading"
+                >
+                  <template #item.ingredient_id="{ item }">
+                    {{ ingredientName(item.ingredient_id) }}
+                  </template>
+                  <template #item.received_amount="{ item }">
+                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
+                  </template>
+                  <template #item.received_at="{ item }">
+                    {{ formatDateTime(item.received_at) }}
+                  </template>
+                  <template #item.best_by_at="{ item }">
+                    {{ formatDateTime(item.best_by_at) }}
+                  </template>
+                  <template #item.expires_at="{ item }">
+                    {{ formatDateTime(item.expires_at) }}
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
+                      Details
+                    </v-btn>
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No yeast lots yet.</div>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
+          </v-window-item>
+
+          <!-- Other Tab -->
+          <v-window-item value="other">
+            <v-card variant="outlined">
+              <v-card-title class="d-flex align-center">
+                Other lots
+                <v-spacer />
+                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
+                  Refresh
+                </v-btn>
+                <v-btn
+                  class="ml-2"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  size="small"
+                  variant="text"
+                  @click="openLotDialog('other')"
+                >
+                  Create lot
+                </v-btn>
+              </v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="lotErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ lotErrorMessage }}
+                </v-alert>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="otherLotHeaders"
+                  item-value="id"
+                  :items="otherLots"
+                  :loading="lotLoading"
+                >
+                  <template #item.ingredient_id="{ item }">
+                    {{ ingredientName(item.ingredient_id) }}
+                  </template>
+                  <template #item.category="{ item }">
+                    <v-chip density="compact" size="small" variant="tonal">
+                      {{ ingredientCategory(item.ingredient_id) }}
+                    </v-chip>
+                  </template>
+                  <template #item.received_amount="{ item }">
+                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
+                  </template>
+                  <template #item.received_at="{ item }">
+                    {{ formatDateTime(item.received_at) }}
+                  </template>
+                  <template #item.best_by_at="{ item }">
+                    {{ formatDateTime(item.best_by_at) }}
+                  </template>
+                  <template #item.expires_at="{ item }">
+                    {{ formatDateTime(item.expires_at) }}
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
+                      Details
+                    </v-btn>
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No other lots yet.</div>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
+          </v-window-item>
+
+          <!-- Usage Tab -->
           <v-window-item value="usage">
-            <v-row align="stretch">
-              <v-col cols="12" md="7">
-                <v-card class="sub-card" variant="outlined">
-                  <v-card-title class="d-flex align-center">
-                    Usage log
-                    <v-spacer />
-                    <v-btn :loading="usageLoading" size="small" variant="text" @click="loadUsage">
-                      Refresh
-                    </v-btn>
-                  </v-card-title>
-                  <v-card-text>
-                    <v-alert
-                      v-if="usageErrorMessage"
-                      class="mb-3"
-                      density="compact"
-                      type="error"
-                      variant="tonal"
-                    >
-                      {{ usageErrorMessage }}
-                    </v-alert>
-                    <v-table class="data-table" density="compact">
-                      <thead>
-                        <tr>
-                          <th>Production ref</th>
-                          <th>Used at</th>
-                          <th>Notes</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="usage in usages" :key="usage.id">
-                          <td>{{ usage.production_ref_uuid || 'n/a' }}</td>
-                          <td>{{ formatDateTime(usage.used_at) }}</td>
-                          <td>{{ usage.notes || '' }}</td>
-                        </tr>
-                        <tr v-if="usages.length === 0">
-                          <td colspan="3">No usage records yet.</td>
-                        </tr>
-                      </tbody>
-                    </v-table>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="5">
-                <v-card class="sub-card" variant="tonal">
-                  <v-card-title>Create usage</v-card-title>
-                  <v-card-text>
-                    <v-text-field v-model="usageForm.production_ref_uuid" label="Production ref UUID" />
-                    <v-text-field v-model="usageForm.used_at" label="Used at" type="datetime-local" />
-                    <v-textarea
-                      v-model="usageForm.notes"
-                      auto-grow
-                      label="Notes"
-                      rows="2"
-                    />
-                    <v-btn block color="primary" @click="createUsage">
-                      Add usage
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
+            <v-card variant="outlined">
+              <v-card-title class="d-flex align-center">
+                Usage log
+                <v-spacer />
+                <v-btn :loading="usageLoading" size="small" variant="text" @click="loadUsage">
+                  Refresh
+                </v-btn>
+                <v-btn
+                  class="ml-2"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  size="small"
+                  variant="text"
+                  @click="openUsageDialog"
+                >
+                  Log usage
+                </v-btn>
+              </v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="usageErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ usageErrorMessage }}
+                </v-alert>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="usageHeaders"
+                  item-value="id"
+                  :items="usages"
+                  :loading="usageLoading"
+                >
+                  <template #item.production_ref_uuid="{ item }">
+                    {{ item.production_ref_uuid || 'n/a' }}
+                  </template>
+                  <template #item.used_at="{ item }">
+                    {{ formatDateTime(item.used_at) }}
+                  </template>
+                  <template #item.notes="{ item }">
+                    {{ item.notes || '' }}
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No usage records yet.</div>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
           </v-window-item>
 
-          <v-window-item value="types">
-            <v-row align="stretch">
-              <v-col cols="12" md="7">
-                <v-card class="sub-card" variant="outlined">
-                  <v-card-title class="d-flex align-center">
-                    Ingredient types
-                    <v-spacer />
-                    <v-btn :loading="ingredientLoading" size="small" variant="text" @click="loadIngredients">
-                      Refresh
-                    </v-btn>
-                  </v-card-title>
-                  <v-card-text>
-                    <v-alert
-                      v-if="ingredientErrorMessage"
-                      class="mb-3"
-                      density="compact"
-                      type="error"
-                      variant="tonal"
-                    >
-                      {{ ingredientErrorMessage }}
-                    </v-alert>
-                    <v-table class="data-table" density="compact">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Category</th>
-                          <th>Unit</th>
-                          <th>Updated</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="ingredient in ingredients" :key="ingredient.id">
-                          <td>{{ ingredient.name }}</td>
-                          <td>{{ ingredient.category }}</td>
-                          <td>{{ ingredient.default_unit }}</td>
-                          <td>{{ formatDateTime(ingredient.updated_at) }}</td>
-                        </tr>
-                        <tr v-if="ingredients.length === 0">
-                          <td colspan="4">No ingredients yet.</td>
-                        </tr>
-                      </tbody>
-                    </v-table>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="5">
-                <v-card class="sub-card" variant="tonal">
-                  <v-card-title>Create ingredient</v-card-title>
-                  <v-card-text>
-                    <v-text-field v-model="ingredientForm.name" label="Name" />
-                    <v-combobox
-                      v-model="ingredientForm.category"
-                      :items="ingredientCategoryOptions"
-                      label="Category"
-                    />
-                    <v-combobox
-                      v-model="ingredientForm.default_unit"
-                      :items="unitOptions"
-                      label="Default unit"
-                    />
-                    <v-textarea
-                      v-model="ingredientForm.description"
-                      auto-grow
-                      label="Description"
-                      rows="2"
-                    />
-                    <v-btn
-                      block
-                      color="primary"
-                      :disabled="
-                        !ingredientForm.name.trim() ||
-                          !ingredientForm.category ||
-                          !ingredientForm.default_unit
-                      "
-                      @click="createIngredient"
-                    >
-                      Add ingredient
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
+          <!-- Received Tab -->
+          <v-window-item value="received">
+            <v-card variant="outlined">
+              <v-card-title class="d-flex align-center">
+                Inventory receipts
+                <v-spacer />
+                <v-btn :loading="receiptLoading" size="small" variant="text" @click="loadReceipts">
+                  Refresh
+                </v-btn>
+                <v-btn
+                  class="ml-2"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  size="small"
+                  variant="text"
+                  @click="openReceiptDialog"
+                >
+                  Create receipt
+                </v-btn>
+              </v-card-title>
+              <v-card-text>
+                <v-alert
+                  v-if="receiptErrorMessage"
+                  class="mb-3"
+                  density="compact"
+                  type="error"
+                  variant="tonal"
+                >
+                  {{ receiptErrorMessage }}
+                </v-alert>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="receiptHeaders"
+                  item-value="id"
+                  :items="receipts"
+                  :loading="receiptLoading"
+                >
+                  <template #item.reference_code="{ item }">
+                    {{ item.reference_code || 'n/a' }}
+                  </template>
+                  <template #item.supplier_uuid="{ item }">
+                    {{ item.supplier_uuid || 'n/a' }}
+                  </template>
+                  <template #item.received_at="{ item }">
+                    {{ formatDateTime(item.received_at) }}
+                  </template>
+                  <template #item.notes="{ item }">
+                    {{ item.notes || '' }}
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No receipts yet.</div>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -348,6 +425,230 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
+
+  <!-- Create Lot Dialog -->
+  <v-dialog v-model="lotDialog" max-width="600" persistent>
+    <v-card>
+      <v-card-title class="text-h6">Create ingredient lot</v-card-title>
+      <v-card-text>
+        <v-select
+          v-model="lotForm.ingredient_id"
+          density="comfortable"
+          :items="filteredIngredientSelectItems"
+          label="Ingredient"
+          :rules="[rules.required]"
+        />
+        <v-select
+          v-model="lotForm.receipt_id"
+          clearable
+          density="comfortable"
+          :items="receiptSelectItems"
+          label="Receipt (optional)"
+        />
+        <v-text-field
+          v-model="lotForm.supplier_uuid"
+          density="comfortable"
+          label="Supplier UUID"
+        />
+        <v-text-field
+          v-model="lotForm.brewery_lot_code"
+          density="comfortable"
+          label="Brewery lot code"
+        />
+        <v-text-field
+          v-model="lotForm.originator_lot_code"
+          density="comfortable"
+          label="Originator lot code"
+        />
+        <v-text-field
+          v-model="lotForm.originator_name"
+          density="comfortable"
+          label="Originator name"
+        />
+        <v-text-field
+          v-model="lotForm.originator_type"
+          density="comfortable"
+          label="Originator type"
+        />
+        <v-text-field
+          v-model="lotForm.received_at"
+          density="comfortable"
+          label="Received at"
+          type="datetime-local"
+        />
+        <v-text-field
+          v-model="lotForm.received_amount"
+          density="comfortable"
+          label="Received amount"
+          :rules="[rules.required]"
+          type="number"
+        />
+        <v-combobox
+          v-model="lotForm.received_unit"
+          density="comfortable"
+          :items="unitOptions"
+          label="Received unit"
+          :rules="[rules.required]"
+        />
+        <v-text-field
+          v-model="lotForm.best_by_at"
+          density="comfortable"
+          label="Best by"
+          type="datetime-local"
+        />
+        <v-text-field
+          v-model="lotForm.expires_at"
+          density="comfortable"
+          label="Expires at"
+          type="datetime-local"
+        />
+        <v-textarea
+          v-model="lotForm.notes"
+          auto-grow
+          density="comfortable"
+          label="Notes"
+          rows="2"
+        />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="lotSaving" variant="text" @click="closeLotDialog">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!isLotFormValid"
+          :loading="lotSaving"
+          @click="createLot"
+        >
+          Create lot
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Create Usage Dialog -->
+  <v-dialog v-model="usageDialog" max-width="500" persistent>
+    <v-card>
+      <v-card-title class="text-h6">Log ingredient usage</v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="usageForm.production_ref_uuid"
+          density="comfortable"
+          label="Batch reference UUID"
+        />
+        <v-text-field
+          v-model="usageForm.used_at"
+          density="comfortable"
+          label="Used at"
+          type="datetime-local"
+        />
+        <v-textarea
+          v-model="usageForm.notes"
+          auto-grow
+          density="comfortable"
+          label="Notes"
+          rows="2"
+        />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="usageSaving" variant="text" @click="closeUsageDialog">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :loading="usageSaving"
+          @click="createUsage"
+        >
+          Log usage
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Create Receipt Dialog -->
+  <v-dialog v-model="receiptDialog" max-width="500" persistent>
+    <v-card>
+      <v-card-title class="text-h6">Create receipt</v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="receiptForm.reference_code"
+          density="comfortable"
+          label="Reference code"
+        />
+        <v-text-field
+          v-model="receiptForm.supplier_uuid"
+          density="comfortable"
+          label="Supplier UUID"
+        />
+        <v-text-field
+          v-model="receiptForm.received_at"
+          density="comfortable"
+          label="Received at"
+          type="datetime-local"
+        />
+        <v-textarea
+          v-model="receiptForm.notes"
+          auto-grow
+          density="comfortable"
+          label="Notes"
+          rows="2"
+        />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="receiptSaving" variant="text" @click="closeReceiptDialog">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :loading="receiptSaving"
+          @click="createReceipt"
+        >
+          Create receipt
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Create Ingredient Dialog -->
+  <v-dialog v-model="ingredientDialog" max-width="500" persistent>
+    <v-card>
+      <v-card-title class="text-h6">Create ingredient</v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="ingredientForm.name"
+          density="comfortable"
+          label="Name"
+          :rules="[rules.required]"
+        />
+        <v-select
+          v-model="ingredientForm.category"
+          density="comfortable"
+          :items="ingredientCategoryOptions"
+          label="Category"
+          :rules="[rules.required]"
+        />
+        <v-combobox
+          v-model="ingredientForm.default_unit"
+          density="comfortable"
+          :items="unitOptions"
+          label="Default unit"
+          :rules="[rules.required]"
+        />
+        <v-textarea
+          v-model="ingredientForm.description"
+          auto-grow
+          density="comfortable"
+          label="Description"
+          rows="2"
+        />
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="ingredientSaving" variant="text" @click="closeIngredientDialog">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!isIngredientFormValid"
+          :loading="ingredientSaving"
+          @click="createIngredient"
+        >
+          Create ingredient
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -409,26 +710,55 @@
   const { formatAmountPreferred } = useUnitPreferences()
   const router = useRouter()
 
-  const activeTab = ref('stock')
+  const activeTab = ref('malt')
 
+  // Data
   const ingredients = ref<Ingredient[]>([])
   const receipts = ref<InventoryReceipt[]>([])
   const lots = ref<IngredientLot[]>([])
   const usages = ref<InventoryUsage[]>([])
 
+  // Loading states
   const ingredientLoading = ref(false)
   const receiptLoading = ref(false)
   const lotLoading = ref(false)
   const usageLoading = ref(false)
 
+  // Saving states
+  const ingredientSaving = ref(false)
+  const receiptSaving = ref(false)
+  const lotSaving = ref(false)
+  const usageSaving = ref(false)
+
+  // Error messages
   const ingredientErrorMessage = ref('')
   const receiptErrorMessage = ref('')
   const lotErrorMessage = ref('')
   const usageErrorMessage = ref('')
 
-  const ingredientCategoryOptions = ['malt', 'hop', 'yeast', 'adjunct', 'water_chem', 'gas', 'other']
+  // Dialog states
+  const ingredientDialog = ref(false)
+  const receiptDialog = ref(false)
+  const lotDialog = ref(false)
+  const usageDialog = ref(false)
+
+  // Category filter for lot creation
+  const lotDialogCategory = ref<string>('fermentable')
+
+  // Options
+  const ingredientCategoryOptions = [
+    { title: 'Fermentable', value: 'fermentable' },
+    { title: 'Hop', value: 'hop' },
+    { title: 'Yeast', value: 'yeast' },
+    { title: 'Adjunct', value: 'adjunct' },
+    { title: 'Salt', value: 'salt' },
+    { title: 'Chemical', value: 'chemical' },
+    { title: 'Gas', value: 'gas' },
+    { title: 'Other', value: 'other' },
+  ]
   const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
 
+  // Forms
   const ingredientForm = reactive({
     name: '',
     category: '',
@@ -441,11 +771,6 @@
     reference_code: '',
     received_at: '',
     notes: '',
-  })
-
-  const lotFilters = reactive({
-    ingredient_id: null as number | null,
-    receipt_id: null as number | null,
   })
 
   const lotForm = reactive({
@@ -476,12 +801,92 @@
     color: 'success',
   })
 
-  const ingredientSelectItems = computed(() =>
-    ingredients.value.map(ingredient => ({
-      title: ingredient.name,
-      value: ingredient.id,
-    })),
-  )
+  const rules = {
+    required: (v: string | number | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
+  }
+
+  // Table headers
+  const lotHeaders = [
+    { title: 'Lot Code', key: 'brewery_lot_code', sortable: true },
+    { title: 'Ingredient', key: 'ingredient_id', sortable: true },
+    { title: 'Received Amount', key: 'received_amount', sortable: true },
+    { title: 'Received Date', key: 'received_at', sortable: true },
+    { title: 'Best By', key: 'best_by_at', sortable: true },
+    { title: 'Expires', key: 'expires_at', sortable: true },
+    { title: 'Notes', key: 'notes', sortable: false },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  ]
+
+  const otherLotHeaders = [
+    { title: 'Lot Code', key: 'brewery_lot_code', sortable: true },
+    { title: 'Ingredient', key: 'ingredient_id', sortable: true },
+    { title: 'Category', key: 'category', sortable: true },
+    { title: 'Received Amount', key: 'received_amount', sortable: true },
+    { title: 'Received Date', key: 'received_at', sortable: true },
+    { title: 'Best By', key: 'best_by_at', sortable: true },
+    { title: 'Expires', key: 'expires_at', sortable: true },
+    { title: 'Notes', key: 'notes', sortable: false },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  ]
+
+  const usageHeaders = [
+    { title: 'Batch Reference', key: 'production_ref_uuid', sortable: true },
+    { title: 'Used At', key: 'used_at', sortable: true },
+    { title: 'Notes', key: 'notes', sortable: false },
+  ]
+
+  const receiptHeaders = [
+    { title: 'Reference Code', key: 'reference_code', sortable: true },
+    { title: 'Supplier', key: 'supplier_uuid', sortable: true },
+    { title: 'Received At', key: 'received_at', sortable: true },
+    { title: 'Notes', key: 'notes', sortable: false },
+  ]
+
+  // Computed: Filter lots by category
+  const maltLots = computed(() => {
+    return lots.value.filter(lot => {
+      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      return ingredient?.category === 'fermentable'
+    })
+  })
+
+  const hopLots = computed(() => {
+    return lots.value.filter(lot => {
+      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      return ingredient?.category === 'hop'
+    })
+  })
+
+  const yeastLots = computed(() => {
+    return lots.value.filter(lot => {
+      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      return ingredient?.category === 'yeast'
+    })
+  })
+
+  const otherCategories = ['adjunct', 'salt', 'chemical', 'gas', 'other']
+
+  const otherLots = computed(() => {
+    return lots.value.filter(lot => {
+      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      return ingredient && otherCategories.includes(ingredient.category)
+    })
+  })
+
+  // Computed: Select items
+  const filteredIngredientSelectItems = computed(() => {
+    // For "other" tab, include all non-core categories
+    const categoriesToInclude = lotDialogCategory.value === 'other'
+      ? otherCategories
+      : [lotDialogCategory.value]
+
+    return ingredients.value
+      .filter(ingredient => categoriesToInclude.includes(ingredient.category))
+      .map(ingredient => ({
+        title: ingredient.name,
+        value: ingredient.id,
+      }))
+  })
 
   const receiptSelectItems = computed(() =>
     receipts.value.map(receipt => ({
@@ -489,6 +894,15 @@
       value: receipt.id,
     })),
   )
+
+  // Computed: Form validation
+  const isLotFormValid = computed(() => {
+    return lotForm.ingredient_id && lotForm.received_amount && lotForm.received_unit
+  })
+
+  const isIngredientFormValid = computed(() => {
+    return ingredientForm.name.trim() && ingredientForm.category && ingredientForm.default_unit
+  })
 
   onMounted(async () => {
     await refreshAll()
@@ -534,15 +948,7 @@
     lotLoading.value = true
     lotErrorMessage.value = ''
     try {
-      const query = new URLSearchParams()
-      if (lotFilters.ingredient_id) {
-        query.set('ingredient_id', String(lotFilters.ingredient_id))
-      }
-      if (lotFilters.receipt_id) {
-        query.set('receipt_id', String(lotFilters.receipt_id))
-      }
-      const path = query.toString() ? `/ingredient-lots?${query.toString()}` : '/ingredient-lots'
-      lots.value = await request<IngredientLot[]>(path)
+      lots.value = await request<IngredientLot[]>('/ingredient-lots')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load lots'
       lotErrorMessage.value = message
@@ -564,7 +970,73 @@
     }
   }
 
+  // Dialog openers
+  function openIngredientDialog () {
+    ingredientForm.name = ''
+    ingredientForm.category = ''
+    ingredientForm.default_unit = ''
+    ingredientForm.description = ''
+    ingredientDialog.value = true
+  }
+
+  function closeIngredientDialog () {
+    ingredientDialog.value = false
+  }
+
+  function openReceiptDialog () {
+    receiptForm.supplier_uuid = ''
+    receiptForm.reference_code = ''
+    receiptForm.received_at = ''
+    receiptForm.notes = ''
+    receiptDialog.value = true
+  }
+
+  function closeReceiptDialog () {
+    receiptDialog.value = false
+  }
+
+  function openLotDialog (category: string) {
+    lotDialogCategory.value = category
+    lotForm.ingredient_id = null
+    lotForm.receipt_id = null
+    lotForm.supplier_uuid = ''
+    lotForm.brewery_lot_code = ''
+    lotForm.originator_lot_code = ''
+    lotForm.originator_name = ''
+    lotForm.originator_type = ''
+    lotForm.received_at = ''
+    lotForm.received_amount = ''
+    lotForm.received_unit = ''
+    lotForm.best_by_at = ''
+    lotForm.expires_at = ''
+    lotForm.notes = ''
+    lotDialog.value = true
+  }
+
+  function closeLotDialog () {
+    lotDialog.value = false
+  }
+
+  function openUsageDialog () {
+    usageForm.production_ref_uuid = ''
+    usageForm.used_at = ''
+    usageForm.notes = ''
+    usageDialog.value = true
+  }
+
+  function closeUsageDialog () {
+    usageDialog.value = false
+  }
+
+  // Create functions
   async function createIngredient () {
+    if (!isIngredientFormValid.value) {
+      return
+    }
+
+    ingredientSaving.value = true
+    ingredientErrorMessage.value = ''
+
     try {
       const payload = {
         name: ingredientForm.name.trim(),
@@ -576,20 +1048,22 @@
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      ingredientForm.name = ''
-      ingredientForm.category = ''
-      ingredientForm.default_unit = ''
-      ingredientForm.description = ''
+      closeIngredientDialog()
       await loadIngredients()
       showNotice('Ingredient created')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create ingredient'
       ingredientErrorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      ingredientSaving.value = false
     }
   }
 
   async function createReceipt () {
+    receiptSaving.value = true
+    receiptErrorMessage.value = ''
+
     try {
       const payload = {
         supplier_uuid: normalizeText(receiptForm.supplier_uuid),
@@ -601,20 +1075,26 @@
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      receiptForm.supplier_uuid = ''
-      receiptForm.reference_code = ''
-      receiptForm.received_at = ''
-      receiptForm.notes = ''
+      closeReceiptDialog()
       await loadReceipts()
       showNotice('Receipt created')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create receipt'
       receiptErrorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      receiptSaving.value = false
     }
   }
 
   async function createLot () {
+    if (!isLotFormValid.value) {
+      return
+    }
+
+    lotSaving.value = true
+    lotErrorMessage.value = ''
+
     try {
       const payload = {
         ingredient_id: lotForm.ingredient_id,
@@ -635,29 +1115,22 @@
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      lotForm.ingredient_id = null
-      lotForm.receipt_id = null
-      lotForm.supplier_uuid = ''
-      lotForm.brewery_lot_code = ''
-      lotForm.originator_lot_code = ''
-      lotForm.originator_name = ''
-      lotForm.originator_type = ''
-      lotForm.received_at = ''
-      lotForm.received_amount = ''
-      lotForm.received_unit = ''
-      lotForm.best_by_at = ''
-      lotForm.expires_at = ''
-      lotForm.notes = ''
+      closeLotDialog()
       await loadLots()
       showNotice('Lot created')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create lot'
       lotErrorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      lotSaving.value = false
     }
   }
 
   async function createUsage () {
+    usageSaving.value = true
+    usageErrorMessage.value = ''
+
     try {
       const payload = {
         production_ref_uuid: normalizeText(usageForm.production_ref_uuid),
@@ -668,20 +1141,33 @@
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      usageForm.production_ref_uuid = ''
-      usageForm.used_at = ''
-      usageForm.notes = ''
+      closeUsageDialog()
       await loadUsage()
-      showNotice('Usage created')
+      showNotice('Usage logged')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create usage'
+      const message = error instanceof Error ? error.message : 'Unable to log usage'
       usageErrorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      usageSaving.value = false
     }
   }
 
   function ingredientName (ingredientId: number) {
     return ingredients.value.find(ingredient => ingredient.id === ingredientId)?.name ?? `Ingredient ${ingredientId}`
+  }
+
+  function ingredientCategory (ingredientId: number) {
+    const category = ingredients.value.find(ingredient => ingredient.id === ingredientId)?.category
+    // Return a display-friendly label
+    const labels: Record<string, string> = {
+      adjunct: 'Adjunct',
+      salt: 'Salt',
+      chemical: 'Chemical',
+      gas: 'Gas',
+      other: 'Other',
+    }
+    return labels[category ?? ''] ?? category ?? 'Unknown'
   }
 
   function openLotDetails (lotId: number) {
@@ -701,11 +1187,6 @@
   background: rgba(var(--v-theme-surface), 0.92);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
 }
 
 .data-table :deep(th) {

@@ -253,3 +253,75 @@ Defaults are US-centric (first customer is US-based):
 - Settings page accessible via user dropdown menu → "Settings"
 - Composables: `useUnitConversion.ts` (pure conversion functions), `useUnitPreferences.ts` (preferences state and formatting)
 - Applied across: Batches (sparklines, metrics), Vessels (capacity), Inventory (amounts), Dashboard
+
+## Implemented: Inventory UX Simplification
+
+### Overview
+
+Simplified the Inventory module UX to better reflect how inventory data flows through the system and provide more intuitive workflows.
+
+### Changes
+
+**Activity Page** - Now read-only
+- Removed the "Log activity" form entirely
+- Inventory activity (movements) is derived from higher-level operations: ingredient usage, transfers between locations, receipt of purchase orders, etc.
+- The page now displays a read-only activity log with filtering capabilities
+
+**Locations Page** - Modal dialog pattern
+- Converted the inline "Create Stock Location" form to a modal dialog
+- Follows the established modal pattern used in Production (recipes) and Procurement (suppliers, purchase orders)
+- "Create location" button in the page header opens the dialog
+- Locations table now uses full page width
+
+**Adjustments & Transfers Page** - Intuitive browse-then-act workflow
+- Complete redesign replacing separate "create adjustment" and "create transfer" forms
+- New workflow:
+  1. Search for lots by name/ID, OR select a stock location to browse its inventory
+  2. Unified inventory table shows all ingredient and beer lots with type, lot ID, name, quantity, and location
+  3. Each row has "Adjust" and "Transfer" action buttons
+- **Adjustment Modal**: Shows lot info (read-only), current quantity, adjustment amount (+/-), reason (required), notes, and timestamp
+- **Transfer Modal**: Shows lot info (read-only), from location (read-only), to location dropdown, quantity to transfer (with validation against available quantity), notes, and timestamp
+- Transfer validation prevents transferring more than available quantity
+
+## Implemented: Ingredients Page Restructure
+
+### Overview
+
+Restructured the Ingredients page with a new tab layout focused on ingredient types and converted all inline forms to modal dialogs.
+
+### New Tab Structure
+
+| Tab | Content |
+|-----|---------|
+| **Malt** | Ingredient lots where parent ingredient has `category === 'fermentable'` |
+| **Hops** | Ingredient lots where parent ingredient has `category === 'hop'` |
+| **Yeast** | Ingredient lots where parent ingredient has `category === 'yeast'` |
+| **Other** | Ingredient lots for non-core categories: `adjunct`, `salt`, `chemical`, `gas`, `other` |
+| **Usage** | Ingredient usage records (grouped by batch reference) |
+| **Received** | Inventory receipts from suppliers |
+
+### Modal Dialogs
+
+All forms converted to modal dialogs following established patterns:
+
+- **Create Lot Modal**: Ingredient dropdown filtered by current tab's category, receipt reference, supplier info, lot codes, amounts, dates
+- **Log Usage Modal**: Batch reference UUID, used at timestamp, notes
+- **Create Receipt Modal**: Reference code, supplier UUID, received at timestamp, notes
+- **Create Ingredient Modal**: Accessible via "New ingredient" button in page header; name, category, default unit, description
+
+### Category Values Fixed
+
+Frontend now uses correct backend category values:
+- `fermentable` (not `malt`)
+- `hop`
+- `yeast`
+- `adjunct`
+- `salt` (not `water_chem`)
+- `chemical`
+- `gas`
+- `other`
+
+### Notes
+
+- The "Other" tab serves as a catch-all for non-core ingredient categories. This can be refined into more specific tabs (e.g., Adjuncts, Water Chemistry) as needs evolve.
+- The "Other" tab includes a Category column to help distinguish between different ingredient types within that tab.

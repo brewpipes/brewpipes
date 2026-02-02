@@ -26,6 +26,13 @@ func RunServices(ctx context.Context, staticHandler http.Handler, services ...Se
 
 	// Aggregate HTTP routes from all services.
 	mux := http.NewServeMux()
+
+	// Health check endpoint for load balancers and orchestrators.
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
 	for _, svc := range services {
 		for _, route := range svc.HTTPRoutes() {
 			pattern := "/api" + route.Path

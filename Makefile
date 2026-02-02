@@ -27,7 +27,7 @@ nuke:
 	docker compose down -v
 
 run-server:
-	POSTGRES_DSN="$(postgres_dsn)" \
+	DATABASE_URL="$(postgres_dsn)" \
 	BREWPIPES_SECRET_KEY="dummy" \
 	go run ./cmd/monolith
 
@@ -40,7 +40,7 @@ build-docker:
 
 run-docker:
 	docker run -p 8080:8080 \
-	-e POSTGRES_DSN="$(postgres_dsn)" \
+	-e DATABASE_URL="$(postgres_dsn)" \
 	-e BREWPIPES_SECRET_KEY="dummy" \
 	brewpipes
 

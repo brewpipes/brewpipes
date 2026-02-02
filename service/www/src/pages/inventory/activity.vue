@@ -360,19 +360,19 @@
   }
 
   async function loadIngredients () {
-    ingredients.value = await inventoryRequest<Ingredient[]>('/ingredients')
+    ingredients.value = await inventoryRequest<Ingredient[]>('/ingredients') ?? []
   }
 
   async function loadLots () {
-    lots.value = await inventoryRequest<IngredientLot[]>('/ingredient-lots')
+    lots.value = await inventoryRequest<IngredientLot[]>('/ingredient-lots') ?? []
   }
 
   async function loadLocations () {
-    locations.value = await inventoryRequest<StockLocation[]>('/stock-locations')
+    locations.value = await inventoryRequest<StockLocation[]>('/stock-locations') ?? []
   }
 
   async function loadBeerLots () {
-    beerLots.value = await inventoryRequest<BeerLot[]>('/beer-lots')
+    beerLots.value = await inventoryRequest<BeerLot[]>('/beer-lots') ?? []
   }
 
   async function loadMovements () {
@@ -384,23 +384,23 @@
       query.set('beer_lot_id', String(filters.beer_lot_id))
     }
     const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
-    movements.value = await inventoryRequest<InventoryMovement[]>(path)
+    movements.value = await inventoryRequest<InventoryMovement[]>(path) ?? []
   }
 
   async function loadReceipts () {
-    receipts.value = await inventoryRequest<InventoryReceipt[]>('/inventory-receipts')
+    receipts.value = await inventoryRequest<InventoryReceipt[]>('/inventory-receipts') ?? []
   }
 
   async function loadUsages () {
-    usages.value = await inventoryRequest<InventoryUsage[]>('/inventory-usage')
+    usages.value = await inventoryRequest<InventoryUsage[]>('/inventory-usage') ?? []
   }
 
   async function loadAdjustments () {
-    adjustments.value = await inventoryRequest<InventoryAdjustment[]>('/inventory-adjustments')
+    adjustments.value = await inventoryRequest<InventoryAdjustment[]>('/inventory-adjustments') ?? []
   }
 
   async function loadTransfers () {
-    transfers.value = await inventoryRequest<InventoryTransfer[]>('/inventory-transfers')
+    transfers.value = await inventoryRequest<InventoryTransfer[]>('/inventory-transfers') ?? []
   }
 
   async function loadCrossServiceData () {
@@ -411,11 +411,11 @@
     ])
 
     if (results[0].status === 'fulfilled') {
-      batches.value = results[0].value
+      batches.value = results[0].value ?? []
     }
 
     if (results[1].status === 'fulfilled') {
-      suppliers.value = results[1].value
+      suppliers.value = results[1].value ?? []
     }
   }
 

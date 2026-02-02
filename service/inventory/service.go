@@ -52,6 +52,18 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/inventory-movements", Handler: auth(handler.HandleInventoryMovements(s.storage))},
 		{Method: http.MethodPost, Path: "/inventory-movements", Handler: auth(handler.HandleInventoryMovements(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-movements/{id}", Handler: auth(handler.HandleInventoryMovementByID(s.storage))},
+		{Method: http.MethodGet, Path: "/inventory-usage", Handler: auth(handler.HandleInventoryUsage(s.storage))},
+		{Method: http.MethodPost, Path: "/inventory-usage", Handler: auth(handler.HandleInventoryUsage(s.storage))},
+		{Method: http.MethodGet, Path: "/inventory-usage/{id}", Handler: auth(handler.HandleInventoryUsageByID(s.storage))},
+		{Method: http.MethodGet, Path: "/inventory-adjustments", Handler: auth(handler.HandleInventoryAdjustments(s.storage))},
+		{Method: http.MethodPost, Path: "/inventory-adjustments", Handler: auth(handler.HandleInventoryAdjustments(s.storage))},
+		{Method: http.MethodGet, Path: "/inventory-adjustments/{id}", Handler: auth(handler.HandleInventoryAdjustmentByID(s.storage))},
+		{Method: http.MethodGet, Path: "/inventory-transfers", Handler: auth(handler.HandleInventoryTransfers(s.storage))},
+		{Method: http.MethodPost, Path: "/inventory-transfers", Handler: auth(handler.HandleInventoryTransfers(s.storage))},
+		{Method: http.MethodGet, Path: "/inventory-transfers/{id}", Handler: auth(handler.HandleInventoryTransferByID(s.storage))},
+		{Method: http.MethodGet, Path: "/beer-lots", Handler: auth(handler.HandleBeerLots(s.storage))},
+		{Method: http.MethodPost, Path: "/beer-lots", Handler: auth(handler.HandleBeerLots(s.storage))},
+		{Method: http.MethodGet, Path: "/beer-lots/{id}", Handler: auth(handler.HandleBeerLotByID(s.storage))},
 	}
 }
 

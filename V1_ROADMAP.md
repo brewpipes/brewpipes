@@ -263,7 +263,7 @@ These items must be completed before any new feature work.
 
 | ID | Feature | Size | Status |
 |----|---------|------|--------|
-| TD-01 | Decompose BatchDetails.vue into smaller components | L | Not Started |
+| TD-01 | Decompose BatchDetails.vue into smaller components | L | **Complete** |
 | TD-02 | Add frontend unit tests for API composables | M | Not Started |
 | TD-03 | Add frontend unit tests for utility composables | M | Not Started |
 | TD-04 | Consolidate duplicate TypeScript types | S | Not Started |
@@ -411,7 +411,11 @@ Track brewhouse removals for future TTB compliance.
 
 ### Completed Features
 
-_None yet - beginning Phase 0_
+| ID | Feature | Date |
+|----|---------|------|
+| TD-01 | Decompose BatchDetails.vue into smaller components | 2026-02-02 |
+
+**TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export. Tech lead approved.
 
 ---
 

@@ -54,12 +54,13 @@
         :to="item.to"
       />
 
-      <v-list-group class="nav-group" value="batches">
+      <v-list-group class="nav-group" value="production">
         <template #activator="{ props }">
-          <v-list-item v-bind="props" prepend-icon="mdi-barley" title="Batches" />
+          <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
         </template>
-        <v-list-item title="In Progress" to="/batches/in-progress" />
-        <v-list-item title="All Batches" to="/batches/all" />
+        <v-list-item title="Pipeline" to="/batches/in-progress" />
+        <v-list-item title="Batches" to="/batches/all" />
+        <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="vessels">
@@ -68,13 +69,6 @@
         </template>
         <v-list-item title="Active" to="/vessels/active" />
         <v-list-item title="All Vessels" to="/vessels/all" />
-      </v-list-group>
-
-      <v-list-group class="nav-group" value="production">
-        <template #activator="{ props }">
-          <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
-        </template>
-        <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="inventory">

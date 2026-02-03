@@ -1,10 +1,6 @@
+import type { AuthTokens } from '@/types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-
-type AuthTokens = {
-  access_token: string
-  refresh_token: string
-}
 
 const identityApiBase = import.meta.env.VITE_IDENTITY_API_URL ?? '/api'
 const storageKeys = {

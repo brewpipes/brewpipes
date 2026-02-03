@@ -264,11 +264,11 @@ These items must be completed before any new feature work.
 | ID | Feature | Size | Status |
 |----|---------|------|--------|
 | TD-01 | Decompose BatchDetails.vue into smaller components | L | **Complete** |
-| TD-02 | Add frontend unit tests for API composables | M | Not Started |
-| TD-03 | Add frontend unit tests for utility composables | M | Not Started |
-| TD-04 | Consolidate duplicate TypeScript types | S | Not Started |
-| TD-05 | Audit and fix mobile responsiveness issues | M | Not Started |
-| TD-06 | Add frontend component tests for critical flows | L | Not Started |
+| TD-02 | Add frontend unit tests for API composables | M | **Complete** |
+| TD-03 | Add frontend unit tests for utility composables | M | **Complete** |
+| TD-04 | Consolidate duplicate TypeScript types | S | **Complete** |
+| TD-05 | Audit and fix mobile responsiveness issues | M | **Complete** |
+| TD-06 | Add frontend component tests for critical flows | L | **Complete** |
 
 ---
 
@@ -398,7 +398,7 @@ Track brewhouse removals for future TTB compliance.
 | Milestone | Description | Status |
 |-----------|-------------|--------|
 | **M0: Roadmap Complete** | User journeys and feature backlog finalized | **Complete** |
-| **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | Not Started |
+| **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | **Complete** |
 | **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | Not Started |
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | Not Started |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | Not Started |
@@ -414,8 +414,23 @@ Track brewhouse removals for future TTB compliance.
 | ID | Feature | Date |
 |----|---------|------|
 | TD-01 | Decompose BatchDetails.vue into smaller components | 2026-02-02 |
+| TD-02 | Add frontend unit tests for API composables | 2026-02-02 |
+| TD-03 | Add frontend unit tests for utility composables | 2026-02-02 |
+| TD-04 | Consolidate duplicate TypeScript types | 2026-02-02 |
+| TD-05 | Audit and fix mobile responsiveness issues | 2026-02-02 |
+| TD-06 | Add frontend component tests for critical flows | 2026-02-02 |
 
-**TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export. Tech lead approved.
+**TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
+
+**TD-02 Details:** Created 4 test files with 97 tests covering `useApiClient`, `useProductionApi`, `useInventoryApi`, `useProcurementApi`. Set up Vitest with happy-dom environment.
+
+**TD-03 Details:** Created 4 test files with 198 tests covering `useFormatters`, `useUnitConversion`, `useUnitPreferences`, `useUserSettings`. Total test suite now has 295 passing tests.
+
+**TD-04 Details:** Created `service/www/src/types/` directory with 6 files organizing domain types (common, units, production, settings, auth). Consolidated duplicate types including `VolumeUnit` (4→9 values). Maintained backward compatibility via re-exports from composables.
+
+**TD-05 Details:** Modified 12 files for mobile responsiveness. Implemented master-detail mobile pattern (list OR detail on mobile), responsive dialogs, icon-only buttons on xs, 44px touch targets, table horizontal scrolling. App now works well on phones, tablets, and desktops.
+
+**TD-06 Details:** Created 3 component test files with 36 tests covering `BatchList`, `VesselList`, and `AppFooter`. Tests cover rendering, selection, events, empty states, and sorting. Total test suite now has 331 passing tests. Updated Vitest config for Vuetify component testing.
 
 ---
 
@@ -444,7 +459,7 @@ Track brewhouse removals for future TTB compliance.
 - Polished UI with consistent design patterns
 - User display preferences (units)
 
-### Key Gaps (to be addressed)
+### Key Gaps (to be addressed in Phases 1-8)
 - Limited edit/delete operations
 - No occupancy creation from UI
 - No stock level visibility
@@ -453,5 +468,8 @@ Track brewhouse removals for future TTB compliance.
 - No cost tracking
 - No packaging workflow
 - No removal tracking
-- Mobile responsiveness needs work
-- No frontend tests
+
+### Recently Addressed (Phase 0)
+- ✅ Mobile responsiveness - now works well on all devices
+- ✅ Frontend tests - 331 tests covering composables and components
+- ✅ Code organization - BatchDetails decomposed, types consolidated

@@ -1,4 +1,7 @@
-import type { OccupancyStatus } from '@/composables/useProductionApi'
+import type { OccupancyStatus, VesselStatus } from '@/types'
+
+// Re-export VesselStatus for backward compatibility
+export type { VesselStatus } from '@/types'
 
 /**
  * Shared formatting utilities for dates, times, and domain-specific values.
@@ -70,9 +73,7 @@ export function useFormatters () {
   }
 }
 
-// Vessel status types and formatting
-export type VesselStatus = 'active' | 'inactive' | 'retired'
-
+// Vessel status formatting
 const VESSEL_STATUS_LABELS: Record<VesselStatus, string> = {
   active: 'Active',
   inactive: 'Inactive',

@@ -6,11 +6,11 @@ import Fonts from 'unplugin-fonts/vite'
 import Components from 'unplugin-vue-components/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
 import VueRouter from 'unplugin-vue-router/vite'
-// Utilities
-import { defineConfig } from 'vite'
-
 import Layouts from 'vite-plugin-vue-layouts-next'
+
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+// Utilities
+import { defineConfig } from 'vitest/config'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -90,5 +90,10 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  test: {
+    environment: 'happy-dom',
+    include: ['src/**/*.{test,spec}.{js,ts}'],
+    globals: true,
   },
 })

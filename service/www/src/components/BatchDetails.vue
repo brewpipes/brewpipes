@@ -1673,4 +1673,118 @@
   text-transform: none;
   font-weight: 600;
 }
+
+/* Ensure tables scroll horizontally on mobile */
+.data-table {
+  overflow-x: auto;
+}
+
+.data-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
+}
+
+.data-table :deep(th) {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
+}
+
+.data-table :deep(td) {
+  font-size: 0.85rem;
+}
+
+/* Timeline time picker responsive width */
+.timeline-time-picker {
+  min-width: 280px;
+  max-width: 90vw;
+}
+
+.spark-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-surface), 0.4);
+}
+
+.spark-meta {
+  min-width: 86px;
+}
+
+.spark-chart {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.spark-chart svg {
+  width: 100%;
+  height: 36px;
+}
+
+.spark-placeholder {
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.spark-line {
+  fill: none;
+  stroke: rgb(var(--spark-color));
+  stroke-width: 2;
+}
+
+.spark-area {
+  fill: rgba(var(--spark-color), 0.2);
+}
+
+.brew-session-list {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.metric-card {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-surface), 0.5);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  text-align: center;
+}
+
+.metric-card--highlight {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-color: rgba(var(--v-theme-primary), 0.2);
+}
+
+.metric-card--warning {
+  background: rgba(var(--v-theme-warning), 0.08);
+  border-color: rgba(var(--v-theme-warning), 0.2);
+}
+
+.metric-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.87);
+}
+
+.brew-session-summary-list {
+  border-radius: 8px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
 </style>

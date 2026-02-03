@@ -1,48 +1,55 @@
 <template>
   <v-container class="batches-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" icon="mdi-barley" />
-        All Batches
-        <v-spacer />
-        <v-text-field
-          v-model="search"
-          append-inner-icon="mdi-magnify"
-          class="search-field"
-          clearable
-          density="compact"
-          hide-details
-          label="Search"
-          single-line
-          variant="outlined"
-        />
-        <v-btn
-          class="ml-2"
-          :loading="loading"
-          size="small"
-          variant="text"
-          @click="loadBatches"
-        >
-          Refresh
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          prepend-icon="mdi-upload"
-          size="small"
-          variant="text"
-          @click="bulkImportDialog = true"
-        >
-          Import
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          color="primary"
-          size="small"
-          variant="text"
-          @click="openCreateDialog"
-        >
-          New batch
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <div class="d-flex align-center">
+          <v-icon class="mr-2" icon="mdi-barley" />
+          <span class="d-none d-sm-inline">All Batches</span>
+          <span class="d-sm-none">Batches</span>
+        </div>
+        <div class="card-title-actions">
+          <v-text-field
+            v-model="search"
+            append-inner-icon="mdi-magnify"
+            class="search-field"
+            clearable
+            density="compact"
+            hide-details
+            label="Search"
+            single-line
+            variant="outlined"
+          />
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :loading="loading"
+            size="small"
+            variant="text"
+            @click="loadBatches"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-refresh" />
+            <span v-else>Refresh</span>
+          </v-btn>
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :prepend-icon="$vuetify.display.xs ? undefined : 'mdi-upload'"
+            size="small"
+            variant="text"
+            @click="bulkImportDialog = true"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-upload" />
+            <span v-else>Import</span>
+          </v-btn>
+          <v-btn
+            color="primary"
+            :icon="$vuetify.display.xs"
+            size="small"
+            variant="text"
+            @click="openCreateDialog"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+            <span v-else>New batch</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-alert
@@ -123,7 +130,7 @@
   </v-snackbar>
 
   <!-- Create Batch Dialog -->
-  <v-dialog v-model="createBatchDialog" max-width="520" persistent>
+  <v-dialog v-model="createBatchDialog" :max-width="$vuetify.display.xs ? '100%' : 520" persistent>
     <v-card>
       <v-card-title class="text-h6">Create batch</v-card-title>
       <v-card-text>
@@ -185,7 +192,7 @@
   </v-dialog>
 
   <!-- Bulk Import Dialog -->
-  <v-dialog v-model="bulkImportDialog" max-width="720">
+  <v-dialog v-model="bulkImportDialog" :max-width="$vuetify.display.xs ? '100%' : 720">
     <v-card>
       <v-card-title class="text-h6">Bulk import batches</v-card-title>
       <v-card-text>
@@ -711,8 +718,47 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .search-field {
-  max-width: 260px;
+  width: 200px;
+  min-width: 120px;
+  flex-shrink: 1;
+}
+
+@media (max-width: 599px) {
+  .card-title-responsive {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-title-actions {
+    justify-content: flex-end;
+  }
+
+  .search-field {
+    width: 100%;
+    max-width: none;
+    order: 10;
+    margin-top: 8px;
+  }
+}
+
+.data-table {
+  overflow-x: auto;
 }
 
 .data-table :deep(th) {
@@ -720,6 +766,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {
@@ -732,5 +779,10 @@
 
 .batches-table :deep(tr:hover td) {
   background: rgba(var(--v-theme-primary), 0.04);
+}
+
+/* Ensure table scrolls horizontally on mobile */
+.batches-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 </style>

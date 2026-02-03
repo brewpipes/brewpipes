@@ -8,7 +8,7 @@
       </v-avatar>
     </div>
 
-    <div class="brand-text">
+    <div class="brand-text d-none d-sm-flex">
       <div class="text-caption text-medium-emphasis">BrewPipes</div>
       <div class="text-subtitle-1">{{ breweryName }}</div>
     </div>
@@ -228,5 +228,15 @@
   padding-right: calc(var(--v-layout-right) + 8px);
   padding-bottom: calc(var(--v-layout-bottom) + 8px);
   padding-left: calc(var(--v-layout-left) + 8px);
+}
+
+/* Mobile: reduce padding for more content space */
+@media (max-width: 599px) {
+  .app-main {
+    padding-top: calc(var(--v-layout-top) + 4px);
+    padding-right: calc(var(--v-layout-right) + 4px);
+    padding-bottom: calc(var(--v-layout-bottom) + 4px);
+    padding-left: calc(var(--v-layout-left) + 4px);
+  }
 }
 </style>

@@ -1,22 +1,31 @@
 <template>
   <v-container class="inventory-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        Stock locations
-        <v-spacer />
-        <v-btn :loading="loading" size="small" variant="text" @click="loadLocations">
-          Refresh
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          color="primary"
-          prepend-icon="mdi-plus"
-          size="small"
-          variant="text"
-          @click="openCreateDialog"
-        >
-          Create location
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <span>Stock locations</span>
+        <div class="card-title-actions">
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :loading="loading"
+            size="small"
+            variant="text"
+            @click="loadLocations"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-refresh" />
+            <span v-else>Refresh</span>
+          </v-btn>
+          <v-btn
+            color="primary"
+            :icon="$vuetify.display.xs"
+            :prepend-icon="$vuetify.display.xs ? undefined : 'mdi-plus'"
+            size="small"
+            variant="text"
+            @click="openCreateDialog"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+            <span v-else>Create location</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-alert
@@ -58,7 +67,7 @@
   </v-snackbar>
 
   <!-- Create Location Dialog -->
-  <v-dialog v-model="createDialog" max-width="480" persistent>
+  <v-dialog v-model="createDialog" :max-width="$vuetify.display.xs ? '100%' : 480" persistent>
     <v-card>
       <v-card-title class="text-h6">Create stock location</v-card-title>
       <v-card-text>
@@ -216,11 +225,35 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.data-table {
+  overflow-x: auto;
+}
+
+.data-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
+}
+
 .data-table :deep(th) {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {

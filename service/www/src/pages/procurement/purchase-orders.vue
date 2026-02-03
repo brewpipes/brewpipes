@@ -1,21 +1,30 @@
 <template>
   <v-container class="procurement-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        Purchase orders
-        <v-spacer />
-        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
-          Refresh
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          color="primary"
-          size="small"
-          variant="text"
-          @click="createOrderDialog = true"
-        >
-          New order
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <span>Purchase orders</span>
+        <div class="card-title-actions">
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :loading="loading"
+            size="small"
+            variant="text"
+            @click="refreshAll"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-refresh" />
+            <span v-else>Refresh</span>
+          </v-btn>
+          <v-btn
+            color="primary"
+            :icon="$vuetify.display.xs"
+            size="small"
+            variant="text"
+            @click="createOrderDialog = true"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+            <span v-else>New order</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-row align="stretch">
@@ -92,7 +101,7 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <v-dialog v-model="createOrderDialog" max-width="640">
+  <v-dialog v-model="createOrderDialog" :max-width="$vuetify.display.xs ? '100%' : 640">
     <v-card>
       <v-card-title class="text-h6">Create purchase order</v-card-title>
       <v-card-text>
@@ -298,9 +307,32 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .sub-card {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: rgba(var(--v-theme-surface), 0.7);
+}
+
+.data-table {
+  overflow-x: auto;
+}
+
+.data-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 
 .data-table :deep(th) {
@@ -308,6 +340,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {

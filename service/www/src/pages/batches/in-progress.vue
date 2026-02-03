@@ -1,6 +1,28 @@
 <template>
   <v-container class="production-page" fluid>
-    <v-row align="stretch">
+    <!-- Mobile: Show list or detail based on selection -->
+    <v-row v-if="$vuetify.display.smAndDown" align="stretch">
+      <v-col v-if="!selectedBatchId" cols="12">
+        <BatchList
+          :batches="inProgressBatches"
+          :loading="loading"
+          :selected-batch-id="selectedBatchId"
+          :show-bulk-import="false"
+          @create="createBatchDialog = true"
+          @select="selectBatch"
+        />
+      </v-col>
+
+      <v-col v-else cols="12">
+        <BatchDetails
+          :batch-id="selectedBatchId"
+          @cleared="clearSelection"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Desktop: Side-by-side layout -->
+    <v-row v-else align="stretch">
       <v-col cols="12" md="4">
         <BatchList
           :batches="inProgressBatches"
@@ -25,7 +47,7 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <v-dialog v-model="createBatchDialog" max-width="520">
+  <v-dialog v-model="createBatchDialog" :max-width="$vuetify.display.xs ? '100%' : 520">
     <v-card>
       <v-card-title class="text-h6">Create batch</v-card-title>
       <v-card-text>
@@ -81,9 +103,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Batch } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import BatchDetails from '@/components/BatchDetails.vue'
-  import BatchList, { type Batch } from '@/components/BatchList.vue'
+  import BatchList from '@/components/BatchList.vue'
   import { useApiClient } from '@/composables/useApiClient'
   import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
 

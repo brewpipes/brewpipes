@@ -1,6 +1,32 @@
 <template>
   <v-container class="vessels-page" fluid>
-    <v-row align="stretch">
+    <!-- Mobile: Show list or detail based on selection -->
+    <v-row v-if="$vuetify.display.smAndDown" align="stretch">
+      <v-col v-if="!selectedVesselId" cols="12">
+        <VesselList
+          :loading="loading"
+          :occupancies="occupancies"
+          :selected-vessel-id="selectedVesselId"
+          :vessels="activeVessels"
+          @refresh="refreshVessels"
+          @select="selectVessel"
+        />
+      </v-col>
+
+      <v-col v-else cols="12">
+        <VesselDetails
+          :loading="loading"
+          :occupancy="selectedVesselOccupancy"
+          :vessel="selectedVessel"
+          @clear="clearSelection"
+          @occupancy-status-change="changeOccupancyStatus"
+          @refresh="refreshVessels"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Desktop: Side-by-side layout -->
+    <v-row v-else align="stretch">
       <v-col cols="12" md="4">
         <VesselList
           :loading="loading"

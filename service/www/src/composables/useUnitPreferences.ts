@@ -1,7 +1,15 @@
+import type {
+  ColorUnit,
+  GravityUnit,
+  MassUnit,
+  PressureUnit,
+  TemperatureUnit,
+  UnitPreferences,
+  VolumeUnit,
+} from '@/types'
 import { ref, watch } from 'vue'
 import {
   colorLabels,
-  type ColorUnit,
   formatColor,
   formatGravity,
   formatMass,
@@ -9,16 +17,22 @@ import {
   formatTemperature,
   formatVolume,
   gravityLabels,
-  type GravityUnit,
   massLabels,
-  type MassUnit,
   pressureLabels,
-  type PressureUnit,
   temperatureLabels,
-  type TemperatureUnit,
   volumeLabels,
-  type VolumeUnit,
 } from './useUnitConversion'
+
+// Re-export unit types for backward compatibility
+export type {
+  ColorUnit,
+  GravityUnit,
+  MassUnit,
+  PressureUnit,
+  TemperatureUnit,
+  UnitPreferences,
+  VolumeUnit,
+} from '@/types'
 
 // ==================== Unit Type Detection ====================
 // Sets for detecting unit categories from string values (e.g., from backend data)
@@ -62,17 +76,6 @@ export function normalizeVolumeUnit (unit: string): VolumeUnit {
  */
 export function normalizeMassUnit (unit: string): MassUnit {
   return unit.toLowerCase() as MassUnit
-}
-
-// Re-export unit types for convenience
-
-export interface UnitPreferences {
-  temperature: TemperatureUnit
-  gravity: GravityUnit
-  volume: VolumeUnit
-  mass: MassUnit
-  pressure: PressureUnit
-  color: ColorUnit
 }
 
 const STORAGE_KEY = 'brewpipes:unitPreferences'
@@ -388,5 +391,3 @@ export function useUnitPreferences () {
     colorLabels,
   }
 }
-
-export { type ColorUnit, type GravityUnit, type MassUnit, type PressureUnit, type TemperatureUnit, type VolumeUnit } from './useUnitConversion'

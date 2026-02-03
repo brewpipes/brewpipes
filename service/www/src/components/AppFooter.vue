@@ -1,10 +1,10 @@
 <template>
   <v-footer app class="app-footer" height="56">
-    <v-container class="d-flex align-center">
-      <div class="text-caption text-medium-emphasis">
+    <v-container class="footer-content">
+      <div class="text-caption text-medium-emphasis d-none d-sm-block">
         BrewPipes Production UI
       </div>
-      <v-spacer />
+      <v-spacer class="d-none d-sm-block" />
       <div class="d-flex align-center ga-2">
         <v-btn
           class="text-caption"
@@ -40,5 +40,16 @@
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: rgba(var(--v-theme-surface), 0.8);
   backdrop-filter: blur(10px);
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 599px) {
+  .footer-content {
+    justify-content: center;
+  }
 }
 </style>

@@ -1,8 +1,8 @@
+import type { UserSettings } from '@/types'
 import { computed, ref, watch } from 'vue'
 
-export interface UserSettings {
-  breweryName: string
-}
+// Re-export UserSettings for backward compatibility
+export type { UserSettings } from '@/types'
 
 const STORAGE_KEY = 'brewpipes:userSettings'
 

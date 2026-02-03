@@ -55,4 +55,51 @@ body {
     radial-gradient(520px 320px at 20% 80%, rgba(var(--v-theme-info), 0.16), transparent 70%),
     radial-gradient(620px 360px at 80% 70%, rgba(var(--v-theme-success), 0.16), transparent 70%);
 }
+
+/* Global mobile responsiveness improvements */
+
+/* Ensure minimum touch target size (44x44px) for interactive elements on mobile */
+@media (max-width: 599px) {
+  /* Increase tap targets for list items */
+  .v-list-item {
+    min-height: 48px;
+  }
+
+  /* Ensure buttons have adequate touch targets */
+  .v-btn--size-small {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Improve chip tap targets */
+  .v-chip {
+    min-height: 32px;
+  }
+
+  /* Reduce card padding on mobile for more content space */
+  .v-card-text {
+    padding: 12px;
+  }
+
+  .v-card-title {
+    padding: 12px;
+  }
+
+  .v-card-actions {
+    padding: 8px 12px;
+  }
+}
+
+/* Ensure tables are scrollable on all screen sizes */
+.v-table__wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Improve form field usability on mobile */
+@media (max-width: 599px) {
+  .v-field__input {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+}
 </style>

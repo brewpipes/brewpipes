@@ -1,4 +1,53 @@
+import type {
+  Addition,
+  BatchSummary,
+  BrewSession,
+  CreateAdditionRequest,
+  CreateBrewSessionRequest,
+  CreateMeasurementRequest,
+  CreateRecipeRequest,
+  CreateStyleRequest,
+  CreateVolumeRequest,
+  Measurement,
+  Occupancy,
+  OccupancyStatus,
+  Recipe,
+  Style,
+  UpdateBrewSessionRequest,
+  UpdateRecipeRequest,
+  Vessel,
+  Volume,
+} from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
+
+// Re-export types for backward compatibility
+export type {
+  Addition,
+  AdditionType,
+  Batch,
+  BatchSummary,
+  BatchSummaryBrewSession,
+  BrewSession,
+  CreateAdditionRequest,
+  CreateBrewSessionRequest,
+  CreateMeasurementRequest,
+  CreateRecipeRequest,
+  CreateStyleRequest,
+  CreateVolumeRequest,
+  Measurement,
+  Occupancy,
+  OccupancyStatus,
+  Recipe,
+  Style,
+  UpdateBrewSessionRequest,
+  UpdateRecipeRequest,
+  Vessel,
+  VesselStatus,
+  Volume,
+  VolumeUnit,
+} from '@/types'
+
+export { OCCUPANCY_STATUS_VALUES } from '@/types'
 
 const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
@@ -160,263 +209,4 @@ export function useProductionApi () {
     getOccupancy,
     updateOccupancyStatus,
   }
-}
-
-// Types
-export type Style = {
-  id: number
-  uuid: string
-  name: string
-  created_at: string
-  updated_at: string
-}
-
-export type CreateStyleRequest = {
-  name: string
-}
-
-// Batch types
-export type Batch = {
-  id: number
-  uuid: string
-  short_name: string
-  brew_date: string | null
-  recipe_id: number | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type Recipe = {
-  id: number
-  uuid: string
-  name: string
-  style_id: number | null
-  style_name: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type CreateRecipeRequest = {
-  name: string
-  style_id?: number | null
-  style_name?: string | null
-  notes?: string | null
-}
-
-export type UpdateRecipeRequest = {
-  name: string
-  style_id?: number | null
-  style_name?: string | null
-  notes?: string | null
-}
-
-// Vessel types
-export type VolumeUnit = 'ml' | 'usfloz' | 'ukfloz' | 'bbl'
-
-export type Vessel = {
-  id: number
-  uuid: string
-  type: string
-  name: string
-  capacity: number
-  capacity_unit: VolumeUnit
-  make: string | null
-  model: string | null
-  status: 'active' | 'inactive' | 'retired'
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
-// Volume types
-export type Volume = {
-  id: number
-  uuid: string
-  name: string | null
-  description: string | null
-  amount: number
-  amount_unit: VolumeUnit
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
-export type CreateVolumeRequest = {
-  name?: string | null
-  description?: string | null
-  amount: number
-  amount_unit: VolumeUnit
-}
-
-// Brew Session types
-export type BrewSession = {
-  id: number
-  uuid: string
-  batch_id: number | null
-  wort_volume_id: number | null
-  mash_vessel_id: number | null
-  boil_vessel_id: number | null
-  brewed_at: string
-  notes: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
-export type CreateBrewSessionRequest = {
-  batch_id?: number | null
-  wort_volume_id?: number | null
-  mash_vessel_id?: number | null
-  boil_vessel_id?: number | null
-  brewed_at: string
-  notes?: string | null
-}
-
-export type UpdateBrewSessionRequest = {
-  batch_id?: number | null
-  wort_volume_id?: number | null
-  mash_vessel_id?: number | null
-  boil_vessel_id?: number | null
-  brewed_at: string
-  notes?: string | null
-}
-
-// Addition types
-export type AdditionType
-  = | 'malt'
-    | 'hop'
-    | 'yeast'
-    | 'adjunct'
-    | 'water_chem'
-    | 'gas'
-    | 'other'
-
-export type Addition = {
-  id: number
-  uuid: string
-  batch_id: number | null
-  occupancy_id: number | null
-  volume_id: number | null
-  addition_type: AdditionType
-  stage: string | null
-  inventory_lot_uuid: string | null
-  amount: number
-  amount_unit: VolumeUnit
-  added_at: string
-  notes: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
-export type CreateAdditionRequest = {
-  batch_id?: number | null
-  occupancy_id?: number | null
-  volume_id?: number | null
-  addition_type: AdditionType
-  stage?: string | null
-  inventory_lot_uuid?: string | null
-  amount: number
-  amount_unit: VolumeUnit
-  added_at?: string | null
-  notes?: string | null
-}
-
-// Measurement types
-export type Measurement = {
-  id: number
-  uuid: string
-  batch_id: number | null
-  occupancy_id: number | null
-  volume_id: number | null
-  kind: string
-  value: number
-  unit: string | null
-  observed_at: string
-  notes: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
-export type CreateMeasurementRequest = {
-  batch_id?: number | null
-  occupancy_id?: number | null
-  volume_id?: number | null
-  kind: string
-  value: number
-  unit?: string | null
-  observed_at?: string | null
-  notes?: string | null
-}
-
-// Batch Summary types
-export type BatchSummaryBrewSession = {
-  id: number
-  brewed_at: string
-  notes: string | null
-}
-
-export type BatchSummary = {
-  id: number
-  uuid: string
-  short_name: string
-  brew_date: string | null
-  notes: string | null
-  recipe_name: string | null
-  style_name: string | null
-  brew_sessions: BatchSummaryBrewSession[]
-  current_phase: string | null
-  current_vessel: string | null
-  current_occupancy_status: string | null
-  current_occupancy_id: number | null
-  original_gravity: number | null
-  final_gravity: number | null
-  abv: number | null
-  abv_calculated: boolean
-  ibu: number | null
-  days_in_fermenter: number | null
-  days_in_brite: number | null
-  days_grain_to_glass: number | null
-  starting_volume_bbl: number | null
-  current_volume_bbl: number | null
-  total_loss_bbl: number | null
-  loss_percentage: number | null
-  created_at: string
-  updated_at: string
-}
-
-// Occupancy types
-export type OccupancyStatus
-  = | 'fermenting'
-    | 'conditioning'
-    | 'cold_crashing'
-    | 'dry_hopping'
-    | 'carbonating'
-    | 'holding'
-    | 'packaging'
-
-export const OCCUPANCY_STATUS_VALUES: OccupancyStatus[] = [
-  'fermenting',
-  'conditioning',
-  'cold_crashing',
-  'dry_hopping',
-  'carbonating',
-  'holding',
-  'packaging',
-]
-
-export type Occupancy = {
-  id: number
-  uuid: string
-  vessel_id: number
-  volume_id: number
-  batch_id: number | null
-  status: OccupancyStatus | null
-  in_at: string
-  out_at: string | null
-  created_at: string
-  updated_at: string
 }

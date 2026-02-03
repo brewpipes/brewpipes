@@ -1,7 +1,7 @@
-import type { OccupancyStatus, VesselStatus } from '@/types'
+import type { OccupancyStatus, VesselStatus, VesselType } from '@/types'
 
 // Re-export VesselStatus for backward compatibility
-export type { VesselStatus } from '@/types'
+export type { VesselStatus, VesselType } from '@/types'
 
 /**
  * Shared formatting utilities for dates, times, and domain-specific values.
@@ -98,6 +98,28 @@ export function useVesselStatusFormatters () {
   return {
     formatVesselStatus,
     getVesselStatusColor,
+  }
+}
+
+// Vessel type formatting
+const VESSEL_TYPE_LABELS: Record<VesselType, string> = {
+  mash_tun: 'Mash Tun',
+  lauter_tun: 'Lauter Tun',
+  kettle: 'Kettle',
+  whirlpool: 'Whirlpool',
+  fermenter: 'Fermenter',
+  brite_tank: 'Brite Tank',
+  serving_tank: 'Serving Tank',
+  other: 'Other',
+}
+
+export function useVesselTypeFormatters () {
+  function formatVesselType (type: VesselType | string): string {
+    return VESSEL_TYPE_LABELS[type as VesselType] ?? type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+  }
+
+  return {
+    formatVesselType,
   }
 }
 

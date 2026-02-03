@@ -278,13 +278,13 @@ Complete basic operations that are currently missing.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| CRUD-01 | Add batch editing (name, brew date, recipe, notes) | M | 2, 5 | Not Started |
-| CRUD-02 | Add batch deletion with confirmation and checks | S | 2 | Not Started |
-| CRUD-03 | Add vessel editing | S | 2, 3 | Not Started |
-| CRUD-04 | Add vessel retirement workflow | S | - | Not Started |
-| CRUD-05 | Add recipe deletion with batch reference check | S | 2 | Not Started |
-| CRUD-06 | Add supplier editing | S | 1 | Not Started |
-| CRUD-07 | Add purchase order editing | M | 1 | Not Started |
+| CRUD-01 | Add batch editing (name, brew date, recipe, notes) | M | 2, 5 | **Complete** |
+| CRUD-02 | Add batch deletion with confirmation and checks | S | 2 | **Complete** |
+| CRUD-03 | Add vessel editing | S | 2, 3 | **Complete** |
+| CRUD-04 | Add vessel retirement workflow | S | - | **Complete** |
+| CRUD-05 | Add recipe deletion with batch reference check | S | 2 | **Complete** |
+| CRUD-06 | Add supplier editing | S | 1 | **Complete** |
+| CRUD-07 | Add purchase order editing | M | 1 | **Complete** |
 
 ---
 
@@ -399,7 +399,7 @@ Track brewhouse removals for future TTB compliance.
 |-----------|-------------|--------|
 | **M0: Roadmap Complete** | User journeys and feature backlog finalized | **Complete** |
 | **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | **Complete** |
-| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | Not Started |
+| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 1 complete) |
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | Not Started |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | Not Started |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | Not Started |
@@ -419,6 +419,13 @@ Track brewhouse removals for future TTB compliance.
 | TD-04 | Consolidate duplicate TypeScript types | 2026-02-02 |
 | TD-05 | Audit and fix mobile responsiveness issues | 2026-02-02 |
 | TD-06 | Add frontend component tests for critical flows | 2026-02-02 |
+| CRUD-01 | Add batch editing (name, brew date, recipe, notes) | 2026-02-02 |
+| CRUD-02 | Add batch deletion with confirmation and checks | 2026-02-02 |
+| CRUD-03 | Add vessel editing | 2026-02-02 |
+| CRUD-04 | Add vessel retirement workflow | 2026-02-02 |
+| CRUD-05 | Add recipe deletion with batch reference check | 2026-02-02 |
+| CRUD-06 | Add supplier editing | 2026-02-02 |
+| CRUD-07 | Add purchase order editing | 2026-02-02 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -431,6 +438,13 @@ Track brewhouse removals for future TTB compliance.
 **TD-05 Details:** Modified 12 files for mobile responsiveness. Implemented master-detail mobile pattern (list OR detail on mobile), responsive dialogs, icon-only buttons on xs, 44px touch targets, table horizontal scrolling. App now works well on phones, tablets, and desktops.
 
 **TD-06 Details:** Created 3 component test files with 36 tests covering `BatchList`, `VesselList`, and `AppFooter`. Tests cover rendering, selection, events, empty states, and sorting. Total test suite now has 331 passing tests. Updated Vitest config for Vuetify component testing.
+
+**Phase 1 Details:** Implemented full CRUD operations for core entities:
+- **Batch Edit/Delete (CRUD-01, CRUD-02):** Backend PATCH/DELETE endpoints with dependency checking (blocks deletion if batch has volumes, phases, sessions, additions, or measurements). Frontend edit dialog with recipe selector, delete confirmation dialog with 409 conflict handling. Accessible from batch detail page and batch list.
+- **Vessel Edit/Retire (CRUD-03, CRUD-04):** Backend PATCH endpoint with active occupancy check (blocks retirement if vessel is occupied). Frontend edit dialog with status dropdown and retirement warning. Accessible from vessel detail, active vessels, and all vessels pages.
+- **Recipe Delete (CRUD-05):** Backend DELETE endpoint with batch reference check (blocks deletion if batches use the recipe). Frontend delete action with confirmation dialog. Accessible from recipes page.
+- **Supplier Edit (CRUD-06):** Backend PATCH endpoint with partial update semantics. Frontend unified create/edit dialog. Accessible from suppliers page.
+- **Purchase Order Edit (CRUD-07):** Frontend edit functionality added to existing backend PATCH endpoint. Unified create/edit dialog with supplier lock (cannot change supplier after creation). Accessible from purchase orders page.
 
 ---
 

@@ -16,7 +16,9 @@ declare module 'vue' {
     BatchAdditionsTab: typeof import('./components/batch/BatchAdditionsTab.vue')['default']
     BatchBrewSessionDialog: typeof import('./components/batch/BatchBrewSessionDialog.vue')['default']
     BatchBrewSessionsTab: typeof import('./components/batch/BatchBrewSessionsTab.vue')['default']
+    BatchDeleteDialog: typeof import('./components/batch/BatchDeleteDialog.vue')['default']
     BatchDetails: typeof import('./components/BatchDetails.vue')['default']
+    BatchEditDialog: typeof import('./components/batch/BatchEditDialog.vue')['default']
     BatchFlowTab: typeof import('./components/batch/BatchFlowTab.vue')['default']
     BatchHotSideAdditionDialog: typeof import('./components/batch/BatchHotSideAdditionDialog.vue')['default']
     BatchHotSideMeasurementDialog: typeof import('./components/batch/BatchHotSideMeasurementDialog.vue')['default']
@@ -33,6 +35,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SankeyDiagram: typeof import('./components/SankeyDiagram.vue')['default']
     VesselDetails: typeof import('./components/VesselDetails.vue')['default']
+    VesselEditDialog: typeof import('./components/vessel/VesselEditDialog.vue')['default']
     VesselList: typeof import('./components/VesselList.vue')['default']
   }
 }

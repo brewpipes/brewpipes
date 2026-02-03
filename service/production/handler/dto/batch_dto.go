@@ -17,6 +17,17 @@ func (r CreateBatchRequest) Validate() error {
 	return validateRequired(r.ShortName, "short_name")
 }
 
+type UpdateBatchRequest struct {
+	ShortName string     `json:"short_name"`
+	BrewDate  *time.Time `json:"brew_date"`
+	Notes     *string    `json:"notes"`
+	RecipeID  *int64     `json:"recipe_id"`
+}
+
+func (r UpdateBatchRequest) Validate() error {
+	return validateRequired(r.ShortName, "short_name")
+}
+
 type BatchResponse struct {
 	ID        int64      `json:"id"`
 	UUID      string     `json:"uuid"`

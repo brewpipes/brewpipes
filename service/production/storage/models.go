@@ -26,6 +26,17 @@ const (
 )
 
 const (
+	VesselTypeMashTun     = "mash_tun"
+	VesselTypeLauterTun   = "lauter_tun"
+	VesselTypeKettle      = "kettle"
+	VesselTypeWhirlpool   = "whirlpool"
+	VesselTypeFermenter   = "fermenter"
+	VesselTypeBriteTank   = "brite_tank"
+	VesselTypeServingTank = "serving_tank"
+	VesselTypeOther       = "other"
+)
+
+const (
 	LiquidPhaseWater = "water"
 	LiquidPhaseWort  = "wort"
 	LiquidPhaseBeer  = "beer"

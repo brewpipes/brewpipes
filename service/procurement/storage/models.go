@@ -39,6 +39,19 @@ type Supplier struct {
 	entity.Timestamps
 }
 
+type SupplierUpdate struct {
+	Name         *string
+	ContactName  *string
+	Email        *string
+	Phone        *string
+	AddressLine1 *string
+	AddressLine2 *string
+	City         *string
+	Region       *string
+	PostalCode   *string
+	Country      *string
+}
+
 type PurchaseOrder struct {
 	entity.Identifiers
 	SupplierID  int64

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -17,6 +18,11 @@ type RecipeStore interface {
 	GetRecipe(context.Context, int64) (storage.Recipe, error)
 	ListRecipes(context.Context) ([]storage.Recipe, error)
 	UpdateRecipe(context.Context, int64, storage.Recipe) (storage.Recipe, error)
+	DeleteRecipe(context.Context, int64) error
+}
+
+type RecipeBatchCounter interface {
+	CountBatchesByRecipe(context.Context, int64) (int, error)
 }
 
 // HandleRecipes handles [GET /recipes] and [POST /recipes].
@@ -66,8 +72,8 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 	}
 }
 
-// HandleRecipeByID handles [GET /recipes/{id}] and [PUT /recipes/{id}].
-func HandleRecipeByID(db RecipeStore) http.HandlerFunc {
+// HandleRecipeByID handles [GET /recipes/{id}], [PUT /recipes/{id}], and [DELETE /recipes/{id}].
+func HandleRecipeByID(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idValue := r.PathValue("id")
 		if idValue == "" {
@@ -124,6 +130,33 @@ func HandleRecipeByID(db RecipeStore) http.HandlerFunc {
 			slog.Info("recipe updated", "recipe_id", updated.ID, "name", updated.Name)
 
 			service.JSON(w, dto.NewRecipeResponse(updated))
+		case http.MethodDelete:
+			// Check if any batches reference this recipe
+			batchCount, err := batches.CountBatchesByRecipe(r.Context(), recipeID)
+			if err != nil {
+				slog.Error("error counting batches by recipe", "error", err, "recipe_id", recipeID)
+				service.InternalError(w, err.Error())
+				return
+			}
+			if batchCount > 0 {
+				msg := fmt.Sprintf("cannot delete recipe: %d batch(es) reference this recipe", batchCount)
+				http.Error(w, msg, http.StatusConflict)
+				return
+			}
+
+			err = db.DeleteRecipe(r.Context(), recipeID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "recipe not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				slog.Error("error deleting recipe", "error", err, "recipe_id", recipeID)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			slog.Info("recipe deleted", "recipe_id", recipeID)
+
+			w.WriteHeader(http.StatusNoContent)
 		default:
 			methodNotAllowed(w)
 		}

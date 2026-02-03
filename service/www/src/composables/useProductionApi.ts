@@ -1,5 +1,6 @@
 import type {
   Addition,
+  Batch,
   BatchSummary,
   BrewSession,
   CreateAdditionRequest,
@@ -13,8 +14,10 @@ import type {
   OccupancyStatus,
   Recipe,
   Style,
+  UpdateBatchRequest,
   UpdateBrewSessionRequest,
   UpdateRecipeRequest,
+  UpdateVesselRequest,
   Vessel,
   Volume,
 } from '@/types'
@@ -39,15 +42,22 @@ export type {
   OccupancyStatus,
   Recipe,
   Style,
+  UpdateBatchRequest,
   UpdateBrewSessionRequest,
   UpdateRecipeRequest,
+  UpdateVesselRequest,
   Vessel,
   VesselStatus,
+  VesselType,
   Volume,
   VolumeUnit,
 } from '@/types'
 
-export { OCCUPANCY_STATUS_VALUES } from '@/types'
+export {
+  OCCUPANCY_STATUS_VALUES,
+  VESSEL_STATUS_VALUES,
+  VESSEL_TYPE_VALUES,
+} from '@/types'
 
 const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
@@ -103,11 +113,20 @@ export function useProductionApi () {
       method: 'PUT',
       body: JSON.stringify(data),
     })
+  const deleteRecipe = (id: number) =>
+    request<void>(`/recipes/${id}`, {
+      method: 'DELETE',
+    })
 
   // Vessels API
   const getVessels = () => request<Vessel[]>('/vessels')
   const getVessel = (id: number) => request<Vessel>(`/vessels/${id}`)
   const getVesselByUUID = (uuid: string) => request<Vessel>(`/vessels/uuid/${uuid}`)
+  const updateVessel = (id: number, data: UpdateVesselRequest) =>
+    request<Vessel>(`/vessels/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
 
   // Volumes API
   const getVolumes = () => request<Volume[]>('/volumes')
@@ -152,6 +171,19 @@ export function useProductionApi () {
       body: JSON.stringify(data),
     })
 
+  // Batches API
+  const getBatch = (id: number) =>
+    request<Batch>(`/batches/${id}`)
+  const updateBatch = (id: number, data: UpdateBatchRequest) =>
+    request<Batch>(`/batches/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deleteBatch = (id: number) =>
+    request<void>(`/batches/${id}`, {
+      method: 'DELETE',
+    })
+
   // Batch Summary API
   const getBatchSummary = (id: number) =>
     request<BatchSummary>(`/batches/${id}/summary`)
@@ -183,10 +215,12 @@ export function useProductionApi () {
     getRecipe,
     createRecipe,
     updateRecipe,
+    deleteRecipe,
     // Vessels
     getVessels,
     getVessel,
     getVesselByUUID,
+    updateVessel,
     // Volumes
     getVolumes,
     getVolume,
@@ -202,6 +236,10 @@ export function useProductionApi () {
     // Measurements
     getMeasurementsByVolume,
     createMeasurement,
+    // Batches
+    getBatch,
+    updateBatch,
+    deleteBatch,
     // Batch Summary
     getBatchSummary,
     // Occupancy

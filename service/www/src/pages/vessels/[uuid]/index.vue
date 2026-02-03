@@ -35,7 +35,27 @@
           </div>
         </div>
         <v-spacer />
+        <v-btn
+          class="mr-2"
+          size="small"
+          variant="text"
+          @click="openEditDialog"
+        >
+          <v-icon class="mr-1" icon="mdi-pencil" size="small" />
+          Edit
+        </v-btn>
+        <v-btn
+          v-if="vessel.status !== 'retired'"
+          color="warning"
+          size="small"
+          variant="text"
+          @click="openRetireDialog"
+        >
+          <v-icon class="mr-1" icon="mdi-archive" size="small" />
+          Retire
+        </v-btn>
         <v-chip
+          class="ml-2"
           :color="getVesselStatusColor(vessel.status)"
           size="small"
           variant="tonal"
@@ -173,12 +193,27 @@
         </v-col>
       </v-row>
     </template>
+
+    <!-- Edit Vessel Dialog -->
+    <VesselEditDialog
+      ref="editDialogRef"
+      v-model="editDialogOpen"
+      :vessel="vessel"
+      @save="handleSaveVessel"
+    />
+
+    <!-- Snackbar for notifications -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.text }}
+    </v-snackbar>
   </v-container>
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, ref } from 'vue'
+  import type { UpdateVesselRequest } from '@/types'
+  import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import { useApiClient } from '@/composables/useApiClient'
   import {
     useFormatters,
@@ -198,7 +233,7 @@
 
   const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const { request } = useApiClient(productionApiBase)
-  const { getActiveOccupancies, getVesselByUUID } = useProductionApi()
+  const { getActiveOccupancies, getVesselByUUID, updateVessel } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
@@ -209,6 +244,17 @@
   const vessel = ref<Vessel | null>(null)
   const occupancies = ref<Occupancy[]>([])
   const batches = ref<Batch[]>([])
+
+  // Edit dialog state
+  const editDialogOpen = ref(false)
+  const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
+
+  // Snackbar state
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
 
   const routeUuid = computed(() => {
     const params = route.params
@@ -230,6 +276,12 @@
     if (!currentOccupancy.value || !currentOccupancy.value.batch_id) return null
     return batches.value.find(b => b.id === currentOccupancy.value!.batch_id) ?? null
   })
+
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
 
   async function loadData () {
     const uuid = routeUuid.value
@@ -265,6 +317,44 @@
 
   function goBack () {
     router.push('/vessels/all')
+  }
+
+  function openEditDialog () {
+    editDialogOpen.value = true
+  }
+
+  function openRetireDialog () {
+    // Open edit dialog - user will change status to retired manually
+    // The dialog will show the retirement warning when status is changed
+    if (vessel.value) {
+      editDialogOpen.value = true
+    }
+  }
+
+  async function handleSaveVessel (data: UpdateVesselRequest) {
+    if (!vessel.value) return
+
+    editDialogRef.value?.setSaving(true)
+    editDialogRef.value?.clearError()
+
+    try {
+      const updated = await updateVessel(vessel.value.id, data)
+      vessel.value = updated
+      editDialogOpen.value = false
+      showNotice('Vessel updated successfully')
+    } catch (error_) {
+      console.error('Failed to update vessel:', error_)
+
+      // Check for 409 Conflict (vessel has active occupancy)
+      if (error_ instanceof Error && error_.message.includes('409')) {
+        editDialogRef.value?.setError('Cannot change status: vessel has an active occupancy')
+      } else {
+        const message = error_ instanceof Error ? error_.message : 'Failed to update vessel'
+        editDialogRef.value?.setError(message)
+      }
+    } finally {
+      editDialogRef.value?.setSaving(false)
+    }
   }
 
   onMounted(() => {

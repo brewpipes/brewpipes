@@ -19,7 +19,7 @@
             :icon="$vuetify.display.xs"
             size="small"
             variant="text"
-            @click="createOrderDialog = true"
+            @click="openCreateDialog"
           >
             <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
             <span v-else>New order</span>
@@ -71,6 +71,13 @@
                         <v-btn
                           size="x-small"
                           variant="text"
+                          @click="openEditDialog(order)"
+                        >
+                          Edit
+                        </v-btn>
+                        <v-btn
+                          size="x-small"
+                          variant="text"
                           @click="openLines(order.id)"
                         >
                           Lines
@@ -101,16 +108,30 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <v-dialog v-model="createOrderDialog" :max-width="$vuetify.display.xs ? '100%' : 640">
+  <v-dialog v-model="orderDialog" :max-width="$vuetify.display.xs ? '100%' : 640">
     <v-card>
-      <v-card-title class="text-h6">Create purchase order</v-card-title>
+      <v-card-title class="text-h6">
+        {{ isEditMode ? 'Edit purchase order' : 'Create purchase order' }}
+      </v-card-title>
       <v-card-text>
+        <v-alert
+          v-if="dialogError"
+          class="mb-3"
+          density="compact"
+          type="error"
+          variant="tonal"
+        >
+          {{ dialogError }}
+        </v-alert>
         <v-row>
           <v-col cols="12">
             <v-select
               v-model="orderForm.supplier_id"
+              :disabled="isEditMode"
+              :hint="isEditMode ? 'Supplier cannot be changed after creation' : ''"
               :items="supplierSelectItems"
               label="Supplier"
+              :persistent-hint="isEditMode"
             />
           </v-col>
           <v-col cols="12" md="6">
@@ -131,13 +152,14 @@
         </v-row>
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="createOrderDialog = false">Cancel</v-btn>
+        <v-btn :disabled="saving" variant="text" @click="closeDialog">Cancel</v-btn>
         <v-btn
           color="primary"
-          :disabled="!orderForm.supplier_id || !orderForm.order_number.trim()"
-          @click="createOrder"
+          :disabled="!isFormValid"
+          :loading="saving"
+          @click="saveOrder"
         >
-          Add purchase order
+          {{ isEditMode ? 'Save changes' : 'Add purchase order' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -147,34 +169,35 @@
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useProcurementApi } from '@/composables/useProcurementApi'
+  import {
+    type PurchaseOrder,
+    type Supplier,
+    useProcurementApi,
+  } from '@/composables/useProcurementApi'
 
-  type Supplier = {
-    id: number
-    name: string
-  }
-
-  type PurchaseOrder = {
-    id: number
-    uuid: string
-    supplier_id: number
-    order_number: string
-    status: string
-    ordered_at: string | null
-    expected_at: string | null
-    notes: string | null
-    created_at: string
-    updated_at: string
-  }
-
-  const { request, normalizeText, normalizeDateTime, formatDateTime } = useProcurementApi()
+  const {
+    getSuppliers,
+    getPurchaseOrders,
+    createPurchaseOrder,
+    updatePurchaseOrder,
+    normalizeText,
+    normalizeDateTime,
+    formatDateTime,
+  } = useProcurementApi()
   const router = useRouter()
 
   const suppliers = ref<Supplier[]>([])
   const orders = ref<PurchaseOrder[]>([])
   const loading = ref(false)
   const errorMessage = ref('')
-  const createOrderDialog = ref(false)
+
+  // Dialog state
+  const orderDialog = ref(false)
+  const editingOrder = ref<PurchaseOrder | null>(null)
+  const saving = ref(false)
+  const dialogError = ref('')
+
+  const isEditMode = computed(() => editingOrder.value !== null)
 
   const statusOptions = [
     'draft',
@@ -211,6 +234,10 @@
     })),
   )
 
+  const isFormValid = computed(() => {
+    return orderForm.supplier_id !== null && orderForm.order_number.trim().length > 0
+  })
+
   onMounted(async () => {
     await refreshAll()
   })
@@ -235,45 +262,89 @@
   }
 
   async function loadSuppliers () {
-    suppliers.value = await request<Supplier[]>('/suppliers')
+    suppliers.value = await getSuppliers()
   }
 
   async function loadOrders () {
-    const query = new URLSearchParams()
-    if (filters.supplier_id) {
-      query.set('supplier_id', String(filters.supplier_id))
-    }
-    const path = query.toString() ? `/purchase-orders?${query.toString()}` : '/purchase-orders'
-    orders.value = await request<PurchaseOrder[]>(path)
+    orders.value = await getPurchaseOrders(filters.supplier_id ?? undefined)
   }
 
-  async function createOrder () {
+  function resetForm () {
+    orderForm.supplier_id = null
+    orderForm.order_number = ''
+    orderForm.status = ''
+    orderForm.ordered_at = ''
+    orderForm.expected_at = ''
+    orderForm.notes = ''
+  }
+
+  function openCreateDialog () {
+    editingOrder.value = null
+    dialogError.value = ''
+    resetForm()
+    orderDialog.value = true
+  }
+
+  function openEditDialog (order: PurchaseOrder) {
+    editingOrder.value = order
+    dialogError.value = ''
+    orderForm.supplier_id = order.supplier_id
+    orderForm.order_number = order.order_number
+    orderForm.status = order.status || ''
+    orderForm.ordered_at = order.ordered_at ? toDateTimeLocal(order.ordered_at) : ''
+    orderForm.expected_at = order.expected_at ? toDateTimeLocal(order.expected_at) : ''
+    orderForm.notes = order.notes || ''
+    orderDialog.value = true
+  }
+
+  function closeDialog () {
+    orderDialog.value = false
+    editingOrder.value = null
+    dialogError.value = ''
+    resetForm()
+  }
+
+  function toDateTimeLocal (isoString: string): string {
+    const date = new Date(isoString)
+    const offset = date.getTimezoneOffset()
+    const local = new Date(date.getTime() - offset * 60 * 1000)
+    return local.toISOString().slice(0, 16)
+  }
+
+  async function saveOrder () {
+    saving.value = true
+    dialogError.value = ''
+
     try {
-      const payload = {
-        supplier_id: orderForm.supplier_id,
-        order_number: orderForm.order_number.trim(),
-        status: normalizeText(orderForm.status),
-        ordered_at: normalizeDateTime(orderForm.ordered_at),
-        expected_at: normalizeDateTime(orderForm.expected_at),
-        notes: normalizeText(orderForm.notes),
+      if (isEditMode.value && editingOrder.value) {
+        const payload = {
+          order_number: orderForm.order_number.trim(),
+          status: normalizeText(orderForm.status) ?? undefined,
+          ordered_at: normalizeDateTime(orderForm.ordered_at),
+          expected_at: normalizeDateTime(orderForm.expected_at),
+          notes: normalizeText(orderForm.notes),
+        }
+        await updatePurchaseOrder(editingOrder.value.id, payload)
+        showNotice('Purchase order updated')
+      } else {
+        const payload = {
+          supplier_id: orderForm.supplier_id!,
+          order_number: orderForm.order_number.trim(),
+          status: normalizeText(orderForm.status),
+          ordered_at: normalizeDateTime(orderForm.ordered_at),
+          expected_at: normalizeDateTime(orderForm.expected_at),
+          notes: normalizeText(orderForm.notes),
+        }
+        await createPurchaseOrder(payload)
+        showNotice('Purchase order created')
       }
-      await request<PurchaseOrder>('/purchase-orders', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      orderForm.supplier_id = null
-      orderForm.order_number = ''
-      orderForm.status = ''
-      orderForm.ordered_at = ''
-      orderForm.expected_at = ''
-      orderForm.notes = ''
       await loadOrders()
-      createOrderDialog.value = false
-      showNotice('Purchase order created')
+      closeDialog()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create purchase order'
-      errorMessage.value = message
-      showNotice(message, 'error')
+      const message = error instanceof Error ? error.message : 'Unable to save purchase order'
+      dialogError.value = message
+    } finally {
+      saving.value = false
     }
   }
 

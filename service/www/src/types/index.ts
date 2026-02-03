@@ -37,14 +37,21 @@ export type {
   OccupancyStatus,
   Recipe,
   Style,
+  UpdateBatchRequest,
   UpdateBrewSessionRequest,
   UpdateRecipeRequest,
+  UpdateVesselRequest,
   Vessel,
   VesselStatus,
+  VesselType,
   Volume,
 } from './production'
 
-export { OCCUPANCY_STATUS_VALUES } from './production'
+export {
+  OCCUPANCY_STATUS_VALUES,
+  VESSEL_STATUS_VALUES,
+  VESSEL_TYPE_VALUES,
+} from './production'
 
 // Settings types
 export type { UserSettings } from './settings'

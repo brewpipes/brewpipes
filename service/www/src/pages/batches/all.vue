@@ -106,6 +106,22 @@
             {{ formatDateTime(item.updated_at) }}
           </template>
 
+          <template #item.actions="{ item }">
+            <v-btn
+              icon="mdi-pencil"
+              size="x-small"
+              variant="text"
+              @click.stop="openEditDialog(item)"
+            />
+            <v-btn
+              color="error"
+              icon="mdi-delete"
+              size="x-small"
+              variant="text"
+              @click.stop="openDeleteDialog(item)"
+            />
+          </template>
+
           <template #no-data>
             <div class="text-center py-4">
               <div class="text-body-2 text-medium-emphasis">No batches yet.</div>
@@ -259,13 +275,34 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Edit Batch Dialog -->
+  <BatchEditDialog
+    v-model="editBatchDialog"
+    :batch="editingBatch"
+    :error-message="editBatchError"
+    :recipes="recipes"
+    :recipes-loading="recipesLoading"
+    :saving="savingBatchEdit"
+    @submit="saveBatchEdit"
+  />
+
+  <!-- Delete Batch Dialog -->
+  <BatchDeleteDialog
+    v-model="deleteBatchDialog"
+    :batch="deletingBatchItem"
+    :deleting="deletingBatch"
+    :error-message="deleteBatchError"
+    @confirm="confirmDeleteBatch"
+  />
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
+  import { BatchDeleteDialog, BatchEditDialog, type BatchEditForm } from '@/components/batch'
   import { useApiClient } from '@/composables/useApiClient'
-  import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
+  import { type Recipe, type UpdateBatchRequest, useProductionApi } from '@/composables/useProductionApi'
 
   type Batch = {
     id: number
@@ -312,7 +349,7 @@
   const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const router = useRouter()
   const { request } = useApiClient(apiBase)
-  const { getRecipes, getBatchSummary } = useProductionApi()
+  const { getRecipes, getBatchSummary, updateBatch, deleteBatch, normalizeText } = useProductionApi()
 
   // State
   const batches = ref<BatchWithSummary[]>([])
@@ -326,6 +363,17 @@
   // Dialogs
   const createBatchDialog = ref(false)
   const bulkImportDialog = ref(false)
+
+  // Edit/Delete state
+  const editBatchDialog = ref(false)
+  const editingBatch = ref<BatchWithSummary | null>(null)
+  const savingBatchEdit = ref(false)
+  const editBatchError = ref('')
+
+  const deleteBatchDialog = ref(false)
+  const deletingBatchItem = ref<BatchWithSummary | null>(null)
+  const deletingBatch = ref(false)
+  const deleteBatchError = ref('')
 
   // Form
   const formRef = ref()
@@ -360,6 +408,7 @@
     { title: 'Status', key: 'current_phase', sortable: true },
     { title: 'Brew Date', key: 'brew_date', sortable: true },
     { title: 'Updated', key: 'updated_at', sortable: true },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '100px' },
   ]
 
   // Computed
@@ -569,6 +618,73 @@
     router.push(`/batches/${item.uuid}`)
   }
 
+  // Edit/Delete functions
+  function openEditDialog (batch: BatchWithSummary) {
+    editingBatch.value = batch
+    editBatchError.value = ''
+    editBatchDialog.value = true
+  }
+
+  async function saveBatchEdit (form: BatchEditForm) {
+    if (!editingBatch.value) return
+
+    savingBatchEdit.value = true
+    editBatchError.value = ''
+
+    try {
+      const payload: UpdateBatchRequest = {
+        short_name: form.short_name.trim(),
+        brew_date: form.brew_date ? normalizeDateOnly(form.brew_date) : null,
+        recipe_id: form.recipe_id,
+        notes: normalizeText(form.notes),
+      }
+
+      await updateBatch(editingBatch.value.id, payload)
+      showNotice('Batch updated')
+      editBatchDialog.value = false
+      editingBatch.value = null
+      await loadBatches()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update batch'
+      editBatchError.value = message
+    } finally {
+      savingBatchEdit.value = false
+    }
+  }
+
+  function openDeleteDialog (batch: BatchWithSummary) {
+    deletingBatchItem.value = batch
+    deleteBatchError.value = ''
+    deleteBatchDialog.value = true
+  }
+
+  async function confirmDeleteBatch () {
+    if (!deletingBatchItem.value) return
+
+    deletingBatch.value = true
+    deleteBatchError.value = ''
+
+    try {
+      await deleteBatch(deletingBatchItem.value.id)
+      showNotice('Batch deleted')
+      deleteBatchDialog.value = false
+      deletingBatchItem.value = null
+      await loadBatches()
+    } catch (error) {
+      // Check for 409 Conflict (batch has dependencies)
+      if (error instanceof Error && error.message.includes('409')) {
+        deleteBatchError.value = 'Cannot delete this batch because it has associated brew sessions, measurements, or other data. Remove those first.'
+      } else if (error instanceof Error && (error.message.toLowerCase().includes('conflict') || error.message.toLowerCase().includes('dependencies'))) {
+        deleteBatchError.value = 'Cannot delete this batch because it has associated brew sessions, measurements, or other data. Remove those first.'
+      } else {
+        const message = error instanceof Error ? error.message : 'Failed to delete batch'
+        deleteBatchError.value = message
+      }
+    } finally {
+      deletingBatch.value = false
+    }
+  }
+
   // Import functions
   function getSelectedImportFile (): File | null {
     if (!importFile.value) return null
@@ -648,11 +764,6 @@
   }
 
   // Formatting functions
-  function normalizeText (value: string) {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
   function normalizeDateOnly (value: string) {
     return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
   }

@@ -19,6 +19,7 @@
           :occupancy="selectedVesselOccupancy"
           :vessel="selectedVessel"
           @clear="clearSelection"
+          @edit="openEditDialog"
           @occupancy-status-change="changeOccupancyStatus"
           @refresh="refreshVessels"
         />
@@ -44,11 +45,20 @@
           :occupancy="selectedVesselOccupancy"
           :vessel="selectedVessel"
           @clear="clearSelection"
+          @edit="openEditDialog"
           @occupancy-status-change="changeOccupancyStatus"
           @refresh="refreshVessels"
         />
       </v-col>
     </v-row>
+
+    <!-- Edit Vessel Dialog -->
+    <VesselEditDialog
+      ref="editDialogRef"
+      v-model="editDialogOpen"
+      :vessel="selectedVessel"
+      @save="handleSaveVessel"
+    />
   </v-container>
 
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
@@ -57,8 +67,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { UpdateVesselRequest } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import VesselDetails from '@/components/VesselDetails.vue'
+  import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import VesselList from '@/components/VesselList.vue'
   import { useApiClient } from '@/composables/useApiClient'
   import { useOccupancyStatusFormatters } from '@/composables/useFormatters'
@@ -76,8 +88,12 @@
   const selectedVesselId = ref<number | null>(null)
   const loading = ref(false)
 
+  // Edit dialog state
+  const editDialogOpen = ref(false)
+  const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
+
   const { request } = useApiClient(apiBase)
-  const { getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
+  const { getActiveOccupancies, updateOccupancyStatus, updateVessel } = useProductionApi()
   const { formatOccupancyStatus } = useOccupancyStatusFormatters()
 
   const snackbar = reactive({
@@ -165,6 +181,42 @@
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update status'
       showNotice(message, 'error')
+    }
+  }
+
+  function openEditDialog () {
+    if (selectedVessel.value) {
+      editDialogOpen.value = true
+    }
+  }
+
+  async function handleSaveVessel (data: UpdateVesselRequest) {
+    if (!selectedVessel.value) return
+
+    editDialogRef.value?.setSaving(true)
+    editDialogRef.value?.clearError()
+
+    try {
+      const updated = await updateVessel(selectedVessel.value.id, data)
+      // Update the vessel in the list
+      const index = vessels.value.findIndex(v => v.id === updated.id)
+      if (index !== -1) {
+        vessels.value[index] = updated
+      }
+      editDialogOpen.value = false
+      showNotice('Vessel updated successfully')
+    } catch (error_) {
+      console.error('Failed to update vessel:', error_)
+
+      // Check for 409 Conflict (vessel has active occupancy)
+      if (error_ instanceof Error && error_.message.includes('409')) {
+        editDialogRef.value?.setError('Cannot change status: vessel has an active occupancy')
+      } else {
+        const message = error_ instanceof Error ? error_.message : 'Failed to update vessel'
+        editDialogRef.value?.setError(message)
+      }
+    } finally {
+      editDialogRef.value?.setSaving(false)
     }
   }
 </script>

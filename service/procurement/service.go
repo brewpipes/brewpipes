@@ -40,6 +40,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/suppliers", Handler: auth(handler.HandleSuppliers(s.storage))},
 		{Method: http.MethodPost, Path: "/suppliers", Handler: auth(handler.HandleSuppliers(s.storage))},
 		{Method: http.MethodGet, Path: "/suppliers/{id}", Handler: auth(handler.HandleSupplierByID(s.storage))},
+		{Method: http.MethodPatch, Path: "/suppliers/{id}", Handler: auth(handler.HandleSupplierByID(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-orders", Handler: auth(handler.HandlePurchaseOrders(s.storage))},
 		{Method: http.MethodPost, Path: "/purchase-orders", Handler: auth(handler.HandlePurchaseOrders(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-orders/{id}", Handler: auth(handler.HandlePurchaseOrderByID(s.storage))},

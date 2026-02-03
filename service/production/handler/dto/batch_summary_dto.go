@@ -15,12 +15,6 @@ const (
 	MeasurementKindIBU = "ibu"
 )
 
-// Vessel types for tracking fermentation vs brite
-const (
-	VesselTypeFermenter = "fermenter"
-	VesselTypeBrite     = "brite_tank"
-)
-
 // BatchSummaryResponse provides an aggregated view of batch data with derived metrics.
 type BatchSummaryResponse struct {
 	// Core batch info
@@ -182,9 +176,9 @@ func populateDurations(resp *BatchSummaryResponse, summary *storage.BatchSummary
 		duration := endTime.Sub(startTime).Hours()
 
 		switch occ.Vessel.Type {
-		case VesselTypeFermenter:
+		case storage.VesselTypeFermenter:
 			totalFermenterHours += duration
-		case VesselTypeBrite:
+		case storage.VesselTypeBriteTank:
 			totalBriteHours += duration
 		}
 

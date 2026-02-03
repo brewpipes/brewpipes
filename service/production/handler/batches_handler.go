@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/brewpipes/brewpipes/service/production/handler/dto"
@@ -16,6 +18,9 @@ type BatchStore interface {
 	CreateBatch(context.Context, storage.Batch) (storage.Batch, error)
 	GetBatch(context.Context, int64) (storage.Batch, error)
 	ListBatches(context.Context) ([]storage.Batch, error)
+	UpdateBatch(context.Context, int64, storage.Batch) (storage.Batch, error)
+	GetBatchDependencies(context.Context, int64) (storage.BatchDependencies, error)
+	DeleteBatch(context.Context, int64) error
 }
 
 // HandleBatches handles [GET /batches] and [POST /batches].
@@ -68,14 +73,9 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 	}
 }
 
-// HandleBatchByID handles [GET /batches/{id}].
+// HandleBatchByID handles [GET /batches/{id}], [PATCH /batches/{id}], and [DELETE /batches/{id}].
 func HandleBatchByID(db BatchStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		idValue := r.PathValue("id")
 		if idValue == "" {
 			http.Error(w, "invalid id", http.StatusBadRequest)
@@ -87,16 +87,99 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 			return
 		}
 
-		batch, err := db.GetBatch(r.Context(), batchID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "batch not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			slog.Error("error getting batch", "error", err)
-			service.InternalError(w, err.Error())
-			return
-		}
+		switch r.Method {
+		case http.MethodGet:
+			batch, err := db.GetBatch(r.Context(), batchID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				slog.Error("error getting batch", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
 
-		service.JSON(w, dto.NewBatchResponse(batch))
+			service.JSON(w, dto.NewBatchResponse(batch))
+		case http.MethodPatch:
+			var req dto.UpdateBatchRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+			if err := req.Validate(); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			batch := storage.Batch{
+				ShortName: req.ShortName,
+				BrewDate:  req.BrewDate,
+				Notes:     req.Notes,
+				RecipeID:  req.RecipeID,
+			}
+
+			updated, err := db.UpdateBatch(r.Context(), batchID, batch)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				slog.Error("error updating batch", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			slog.Info("batch updated", "batch_id", updated.ID, "short_name", updated.ShortName)
+
+			service.JSON(w, dto.NewBatchResponse(updated))
+		case http.MethodDelete:
+			deps, err := db.GetBatchDependencies(r.Context(), batchID)
+			if err != nil {
+				slog.Error("error checking batch dependencies", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			if deps.HasDependencies() {
+				http.Error(w, formatBatchDependencyError(deps), http.StatusConflict)
+				return
+			}
+
+			err = db.DeleteBatch(r.Context(), batchID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				slog.Error("error deleting batch", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			slog.Info("batch deleted", "batch_id", batchID)
+
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			methodNotAllowed(w)
+		}
 	}
+}
+
+func formatBatchDependencyError(deps storage.BatchDependencies) string {
+	var parts []string
+	if deps.BatchVolumeCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d batch volume(s)", deps.BatchVolumeCount))
+	}
+	if deps.BatchProcessPhaseCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d batch process phase(s)", deps.BatchProcessPhaseCount))
+	}
+	if deps.BrewSessionCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d brew session(s)", deps.BrewSessionCount))
+	}
+	if deps.AdditionCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d addition(s)", deps.AdditionCount))
+	}
+	if deps.MeasurementCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d measurement(s)", deps.MeasurementCount))
+	}
+
+	return fmt.Sprintf("cannot delete batch: has related records (%s)", strings.Join(parts, ", "))
 }

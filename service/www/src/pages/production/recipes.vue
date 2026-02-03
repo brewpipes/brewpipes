@@ -83,6 +83,13 @@
               variant="text"
               @click="openEditDialog(item)"
             />
+            <v-btn
+              color="error"
+              icon="mdi-delete-outline"
+              size="x-small"
+              variant="text"
+              @click="openDeleteDialog(item)"
+            />
           </template>
 
           <template #no-data>
@@ -206,6 +213,30 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Delete Confirmation Dialog -->
+  <v-dialog v-model="deleteDialog" max-width="400" persistent>
+    <v-card>
+      <v-card-title class="text-h6">Delete recipe</v-card-title>
+      <v-card-text>
+        <p>
+          Are you sure you want to delete <strong>{{ recipeToDelete?.name }}</strong>?
+        </p>
+        <p class="text-medium-emphasis mt-2">This action cannot be undone.</p>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="deleting" variant="text" @click="closeDeleteDialog">Cancel</v-btn>
+        <v-btn
+          color="error"
+          :loading="deleting"
+          variant="flat"
+          @click="confirmDelete"
+        >
+          Delete
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -217,6 +248,7 @@
     getStyles,
     createRecipe,
     updateRecipe,
+    deleteRecipe,
     normalizeText,
     formatDateTime,
   } = useProductionApi()
@@ -227,14 +259,17 @@
   const loading = ref(false)
   const stylesLoading = ref(false)
   const saving = ref(false)
+  const deleting = ref(false)
   const errorMessage = ref('')
   const search = ref('')
 
   // Dialogs
   const viewDialog = ref(false)
   const recipeDialog = ref(false)
+  const deleteDialog = ref(false)
   const selectedRecipe = ref<Recipe | null>(null)
   const editingRecipeId = ref<number | null>(null)
+  const recipeToDelete = ref<Recipe | null>(null)
 
   // Form
   const formRef = ref()
@@ -420,6 +455,43 @@
       showNotice(message, 'error')
     } finally {
       saving.value = false
+    }
+  }
+
+  function openDeleteDialog (recipe: Recipe) {
+    recipeToDelete.value = recipe
+    deleteDialog.value = true
+  }
+
+  function closeDeleteDialog () {
+    deleteDialog.value = false
+    recipeToDelete.value = null
+  }
+
+  async function confirmDelete () {
+    if (!recipeToDelete.value) {
+      return
+    }
+
+    deleting.value = true
+    errorMessage.value = ''
+
+    try {
+      await deleteRecipe(recipeToDelete.value.id)
+      showNotice('Recipe deleted')
+      closeDeleteDialog()
+      await loadRecipes()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to delete recipe'
+      // Check for conflict error (recipe used by batches)
+      if (message.includes('used by') || message.includes('batch')) {
+        showNotice(message, 'error')
+      } else {
+        errorMessage.value = message
+        showNotice(message, 'error')
+      }
+    } finally {
+      deleting.value = false
     }
   }
 </script>

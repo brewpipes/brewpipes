@@ -14,6 +14,8 @@
       {{ selectedBatch ? selectedBatch.short_name : 'Batch details' }}
       <v-spacer />
       <v-btn size="small" variant="text" @click="refresh">Refresh</v-btn>
+      <v-btn v-if="selectedBatch" aria-label="Edit batch" icon="mdi-pencil" size="small" variant="text" @click="openEditDialog" />
+      <v-btn v-if="selectedBatch" aria-label="Delete batch" color="error" icon="mdi-delete" size="small" variant="text" @click="openDeleteDialog" />
       <v-btn v-if="!showBackButton" size="small" variant="text" @click="clearSelection">Clear</v-btn>
     </v-card-title>
     <v-card-text>
@@ -245,6 +247,24 @@
     @submit="recordHotSideMeasurement"
     @update:form="Object.assign(hotSideMeasurementForm, $event)"
   />
+
+  <BatchEditDialog
+    v-model="editBatchDialog"
+    :batch="selectedBatch"
+    :error-message="editBatchError"
+    :recipes="recipes"
+    :recipes-loading="recipesLoading"
+    :saving="savingBatch"
+    @submit="saveBatchEdit"
+  />
+
+  <BatchDeleteDialog
+    v-model="deleteBatchDialog"
+    :batch="selectedBatch"
+    :deleting="deletingBatch"
+    :error-message="deleteBatchError"
+    @confirm="confirmDeleteBatch"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -259,6 +279,7 @@
     type AdditionType as ProductionAdditionType,
     type Measurement as ProductionMeasurement,
     type Volume as ProductionVolume,
+    type UpdateBatchRequest,
     useProductionApi,
     type Vessel,
     type VolumeUnit,
@@ -270,6 +291,7 @@
     type TemperatureUnit,
   } from '@/composables/useUnitConversion'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import type { Recipe } from '@/types'
   import {
     type Addition,
     type AdditionType,
@@ -278,6 +300,9 @@
     BatchAdditionsTab,
     BatchBrewSessionDialog,
     BatchBrewSessionsTab,
+    BatchDeleteDialog,
+    BatchEditDialog,
+    type BatchEditForm,
     BatchFlowTab,
     BatchHotSideAdditionDialog,
     BatchHotSideMeasurementDialog,
@@ -334,8 +359,11 @@
     getMeasurementsByVolume,
     createAddition,
     createMeasurement,
+    updateBatch,
+    deleteBatch,
     getBatchSummary,
     updateOccupancyStatus,
+    getRecipes,
   } = useProductionApi()
 
   const {
@@ -467,6 +495,17 @@
     observed_at: '',
     notes: '',
   })
+
+  // Batch edit/delete state
+  const editBatchDialog = ref(false)
+  const savingBatch = ref(false)
+  const editBatchError = ref('')
+  const recipes = ref<Recipe[]>([])
+  const recipesLoading = ref(false)
+
+  const deleteBatchDialog = ref(false)
+  const deletingBatch = ref(false)
+  const deleteBatchError = ref('')
 
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
@@ -1354,6 +1393,89 @@
     } catch (error) {
       handleError(error)
     }
+  }
+
+  // ==================== Batch Edit/Delete Functions ====================
+
+  async function loadRecipesData () {
+    recipesLoading.value = true
+    try {
+      recipes.value = await getRecipes()
+    } catch (error) {
+      console.error('Failed to load recipes:', error)
+    } finally {
+      recipesLoading.value = false
+    }
+  }
+
+  function openEditDialog () {
+    if (!selectedBatch.value) return
+    editBatchError.value = ''
+    loadRecipesData()
+    editBatchDialog.value = true
+  }
+
+  async function saveBatchEdit (form: BatchEditForm) {
+    if (!props.batchId || !selectedBatch.value) return
+
+    savingBatch.value = true
+    editBatchError.value = ''
+
+    try {
+      const payload: UpdateBatchRequest = {
+        short_name: form.short_name.trim(),
+        brew_date: form.brew_date ? normalizeDateOnly(form.brew_date) : null,
+        recipe_id: form.recipe_id,
+        notes: normalizeText(form.notes),
+      }
+
+      await updateBatch(props.batchId, payload)
+      showNotice('Batch updated')
+      editBatchDialog.value = false
+      await loadBatchData(props.batchId)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update batch'
+      editBatchError.value = message
+    } finally {
+      savingBatch.value = false
+    }
+  }
+
+  function openDeleteDialog () {
+    if (!selectedBatch.value) return
+    deleteBatchError.value = ''
+    deleteBatchDialog.value = true
+  }
+
+  async function confirmDeleteBatch () {
+    if (!props.batchId || !selectedBatch.value) return
+
+    deletingBatch.value = true
+    deleteBatchError.value = ''
+
+    try {
+      await deleteBatch(props.batchId)
+      showNotice('Batch deleted')
+      deleteBatchDialog.value = false
+      // Navigate back to batch list
+      router.push('/batches/all')
+    } catch (error) {
+      // Check for 409 Conflict (batch has dependencies)
+      if (error instanceof Error && error.message.includes('409')) {
+        deleteBatchError.value = 'Cannot delete this batch because it has associated brew sessions, measurements, or other data. Remove those first.'
+      } else if (error instanceof Error && (error.message.toLowerCase().includes('conflict') || error.message.toLowerCase().includes('dependencies'))) {
+        deleteBatchError.value = 'Cannot delete this batch because it has associated brew sessions, measurements, or other data. Remove those first.'
+      } else {
+        const message = error instanceof Error ? error.message : 'Failed to delete batch'
+        deleteBatchError.value = message
+      }
+    } finally {
+      deletingBatch.value = false
+    }
+  }
+
+  function normalizeDateOnly (value: string) {
+    return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
   }
 
   // ==================== Helper Functions ====================

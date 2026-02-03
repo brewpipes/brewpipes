@@ -70,12 +70,50 @@ export interface Batch {
   updated_at: string
 }
 
+/** Request payload for updating an existing batch */
+export interface UpdateBatchRequest {
+  short_name: string
+  brew_date?: string | null
+  notes?: string | null
+  recipe_id?: number | null
+}
+
 // ============================================================================
 // Vessel Types
 // ============================================================================
 
 /** Vessel operational status */
 export type VesselStatus = 'active' | 'inactive' | 'retired'
+
+/** All valid vessel status values */
+export const VESSEL_STATUS_VALUES: VesselStatus[] = [
+  'active',
+  'inactive',
+  'retired',
+]
+
+/** Vessel type classification */
+export type VesselType =
+  | 'mash_tun'
+  | 'lauter_tun'
+  | 'kettle'
+  | 'whirlpool'
+  | 'fermenter'
+  | 'brite_tank'
+  | 'serving_tank'
+  | 'other'
+
+/** All valid vessel type values */
+export const VESSEL_TYPE_VALUES: VesselType[] = [
+  'mash_tun',
+  'lauter_tun',
+  'kettle',
+  'whirlpool',
+  'fermenter',
+  'brite_tank',
+  'serving_tank',
+  'other',
+]
 
 /** A brewing vessel (fermenter, brite tank, kettle, etc.) */
 export interface Vessel {
@@ -91,6 +129,17 @@ export interface Vessel {
   created_at: string
   updated_at: string
   deleted_at: string | null
+}
+
+/** Request payload for updating an existing vessel */
+export interface UpdateVesselRequest {
+  name: string
+  type: string
+  capacity: number
+  capacity_unit: string
+  make?: string | null
+  model?: string | null
+  status: VesselStatus
 }
 
 // ============================================================================

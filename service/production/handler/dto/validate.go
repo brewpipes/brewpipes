@@ -42,6 +42,22 @@ func validateVesselStatus(status string) error {
 	}
 }
 
+func validateVesselType(vesselType string) error {
+	switch vesselType {
+	case storage.VesselTypeMashTun,
+		storage.VesselTypeLauterTun,
+		storage.VesselTypeKettle,
+		storage.VesselTypeWhirlpool,
+		storage.VesselTypeFermenter,
+		storage.VesselTypeBriteTank,
+		storage.VesselTypeServingTank,
+		storage.VesselTypeOther:
+		return nil
+	default:
+		return fmt.Errorf("invalid type")
+	}
+}
+
 func validateLiquidPhase(phase string) error {
 	switch phase {
 	case storage.LiquidPhaseWater, storage.LiquidPhaseWort, storage.LiquidPhaseBeer:

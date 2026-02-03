@@ -136,3 +136,21 @@ func (c *Client) UpdateRecipe(ctx context.Context, id int64, recipe Recipe) (Rec
 
 	return recipe, nil
 }
+
+func (c *Client) DeleteRecipe(ctx context.Context, id int64) error {
+	result, err := c.db.Exec(ctx, `
+		UPDATE recipe
+		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("deleting recipe: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return service.ErrNotFound
+	}
+
+	return nil
+}

@@ -1460,15 +1460,8 @@
       // Navigate back to batch list
       router.push('/batches/all')
     } catch (error) {
-      // Check for 409 Conflict (batch has dependencies)
-      if (error instanceof Error && error.message.includes('409')) {
-        deleteBatchError.value = 'Cannot delete this batch because it has associated brew sessions, measurements, or other data. Remove those first.'
-      } else if (error instanceof Error && (error.message.toLowerCase().includes('conflict') || error.message.toLowerCase().includes('dependencies'))) {
-        deleteBatchError.value = 'Cannot delete this batch because it has associated brew sessions, measurements, or other data. Remove those first.'
-      } else {
-        const message = error instanceof Error ? error.message : 'Failed to delete batch'
-        deleteBatchError.value = message
-      }
+      const message = error instanceof Error ? error.message : 'Failed to delete batch'
+      deleteBatchError.value = message
     } finally {
       deletingBatch.value = false
     }

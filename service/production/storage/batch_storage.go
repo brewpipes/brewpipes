@@ -194,19 +194,95 @@ func (c *Client) GetBatchDependencies(ctx context.Context, id int64) (BatchDepen
 	return deps, nil
 }
 
+// DeleteBatch soft-deletes a batch and cascades the soft-delete to all related records.
 func (c *Client) DeleteBatch(ctx context.Context, id int64) error {
-	result, err := c.db.Exec(ctx, `
+	tx, err := c.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("beginning transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Check if batch exists and is not already deleted
+	var exists bool
+	err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM batch WHERE id = $1 AND deleted_at IS NULL)`, id).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking batch existence: %w", err)
+	}
+	if !exists {
+		return service.ErrNotFound
+	}
+
+	// Cascade soft-delete to related records
+	// Order matters for foreign key relationships, but since we're soft-deleting, order is less critical
+
+	// Soft-delete measurements linked to this batch
+	_, err = tx.Exec(ctx, `
+		UPDATE measurement
+		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+		WHERE batch_id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("soft-deleting measurements: %w", err)
+	}
+
+	// Soft-delete additions linked to this batch
+	_, err = tx.Exec(ctx, `
+		UPDATE addition
+		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+		WHERE batch_id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("soft-deleting additions: %w", err)
+	}
+
+	// Soft-delete brew sessions linked to this batch
+	_, err = tx.Exec(ctx, `
+		UPDATE brew_session
+		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+		WHERE batch_id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("soft-deleting brew sessions: %w", err)
+	}
+
+	// Soft-delete batch process phases linked to this batch
+	_, err = tx.Exec(ctx, `
+		UPDATE batch_process_phase
+		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+		WHERE batch_id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("soft-deleting batch process phases: %w", err)
+	}
+
+	// Soft-delete batch volumes linked to this batch
+	_, err = tx.Exec(ctx, `
+		UPDATE batch_volume
+		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+		WHERE batch_id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("soft-deleting batch volumes: %w", err)
+	}
+
+	// Finally, soft-delete the batch itself
+	_, err = tx.Exec(ctx, `
 		UPDATE batch
 		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
 		WHERE id = $1 AND deleted_at IS NULL`,
 		id,
 	)
 	if err != nil {
-		return fmt.Errorf("deleting batch: %w", err)
+		return fmt.Errorf("soft-deleting batch: %w", err)
 	}
 
-	if result.RowsAffected() == 0 {
-		return service.ErrNotFound
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
 	}
 
 	return nil

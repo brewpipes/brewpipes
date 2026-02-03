@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/brewpipes/brewpipes/service/production/handler/dto"
@@ -132,18 +130,23 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 
 			service.JSON(w, dto.NewBatchResponse(updated))
 		case http.MethodDelete:
+			// Log what will be deleted for audit purposes
 			deps, err := db.GetBatchDependencies(r.Context(), batchID)
 			if err != nil {
-				slog.Error("error checking batch dependencies", "error", err)
-				service.InternalError(w, err.Error())
-				return
+				slog.Warn("could not check batch dependencies before delete", "batch_id", batchID, "error", err)
+				// Continue with deletion anyway - this is just for logging
+			} else if deps.HasDependencies() {
+				slog.Info("deleting batch with related records",
+					"batch_id", batchID,
+					"batch_volumes", deps.BatchVolumeCount,
+					"process_phases", deps.BatchProcessPhaseCount,
+					"brew_sessions", deps.BrewSessionCount,
+					"additions", deps.AdditionCount,
+					"measurements", deps.MeasurementCount,
+				)
 			}
 
-			if deps.HasDependencies() {
-				http.Error(w, formatBatchDependencyError(deps), http.StatusConflict)
-				return
-			}
-
+			// Cascade soft-delete the batch and all related records
 			err = db.DeleteBatch(r.Context(), batchID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "batch not found", http.StatusNotFound)
@@ -161,25 +164,4 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 			methodNotAllowed(w)
 		}
 	}
-}
-
-func formatBatchDependencyError(deps storage.BatchDependencies) string {
-	var parts []string
-	if deps.BatchVolumeCount > 0 {
-		parts = append(parts, fmt.Sprintf("%d batch volume(s)", deps.BatchVolumeCount))
-	}
-	if deps.BatchProcessPhaseCount > 0 {
-		parts = append(parts, fmt.Sprintf("%d batch process phase(s)", deps.BatchProcessPhaseCount))
-	}
-	if deps.BrewSessionCount > 0 {
-		parts = append(parts, fmt.Sprintf("%d brew session(s)", deps.BrewSessionCount))
-	}
-	if deps.AdditionCount > 0 {
-		parts = append(parts, fmt.Sprintf("%d addition(s)", deps.AdditionCount))
-	}
-	if deps.MeasurementCount > 0 {
-		parts = append(parts, fmt.Sprintf("%d measurement(s)", deps.MeasurementCount))
-	}
-
-	return fmt.Sprintf("cannot delete batch: has related records (%s)", strings.Join(parts, ", "))
 }

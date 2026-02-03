@@ -22,7 +22,8 @@ Batch
 - It's the top‑level record you plan, brew, ferment, and eventually package.
 - Batches can be updated via `PATCH /batches/{id}` with editable fields: `short_name`, `brew_date`, `recipe_id`, `notes`.
 - Batches can be soft-deleted via `DELETE /batches/{id}`, which sets `deleted_at`.
-- Deletion is blocked (409 Conflict) if the batch has related records: batch volumes, process phases, brew sessions, additions, or measurements.
+- Deletion cascades soft-delete to all related records: batch volumes, process phases, brew sessions, additions, and measurements.
+- The cascade is performed in a single transaction to ensure data consistency.
 
 Volume
 - A volume is a specific quantity of liquid at a point in time (e.g., “10,000 liters of wort”).

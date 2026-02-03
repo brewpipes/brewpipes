@@ -67,9 +67,9 @@ func (c *Client) GetBatchSummary(ctx context.Context, batchID int64) (BatchSumma
 	}
 	summary.Batch = batch
 
-	// Get recipe if assigned
+	// Get recipe if assigned (including soft-deleted recipes for historical reference)
 	if batch.RecipeID != nil {
-		recipe, err := c.GetRecipe(ctx, *batch.RecipeID)
+		recipe, err := c.GetRecipe(ctx, *batch.RecipeID, &RecipeQueryOpts{IncludeDeleted: true})
 		if err != nil && !errors.Is(err, service.ErrNotFound) {
 			return BatchSummary{}, fmt.Errorf("getting recipe: %w", err)
 		}

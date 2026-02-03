@@ -40,14 +40,26 @@ func (c *Client) CreateRecipe(ctx context.Context, recipe Recipe) (Recipe, error
 	return recipe, nil
 }
 
-func (c *Client) GetRecipe(ctx context.Context, id int64) (Recipe, error) {
-	var recipe Recipe
-	err := c.db.QueryRow(ctx, `
+// RecipeQueryOpts controls optional query behavior for recipe retrieval.
+type RecipeQueryOpts struct {
+	// IncludeDeleted allows retrieval of soft-deleted recipes.
+	// This is useful for historical references (e.g., batches that reference deleted recipes).
+	IncludeDeleted bool
+}
+
+func (c *Client) GetRecipe(ctx context.Context, id int64, opts *RecipeQueryOpts) (Recipe, error) {
+	includeDeleted := opts != nil && opts.IncludeDeleted
+
+	query := `
 		SELECT id, uuid, name, style_id, style_name, notes, created_at, updated_at, deleted_at
 		FROM recipe
-		WHERE id = $1 AND deleted_at IS NULL`,
-		id,
-	).Scan(
+		WHERE id = $1`
+	if !includeDeleted {
+		query += ` AND deleted_at IS NULL`
+	}
+
+	var recipe Recipe
+	err := c.db.QueryRow(ctx, query, id).Scan(
 		&recipe.ID,
 		&recipe.UUID,
 		&recipe.Name,

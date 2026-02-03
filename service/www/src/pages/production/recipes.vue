@@ -483,13 +483,8 @@
       await loadRecipes()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to delete recipe'
-      // Check for conflict error (recipe used by batches)
-      if (message.includes('used by') || message.includes('batch')) {
-        showNotice(message, 'error')
-      } else {
-        errorMessage.value = message
-        showNotice(message, 'error')
-      }
+      errorMessage.value = message
+      showNotice(message, 'error')
     } finally {
       deleting.value = false
     }

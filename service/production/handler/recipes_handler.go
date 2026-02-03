@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -15,7 +14,7 @@ import (
 
 type RecipeStore interface {
 	CreateRecipe(context.Context, storage.Recipe) (storage.Recipe, error)
-	GetRecipe(context.Context, int64) (storage.Recipe, error)
+	GetRecipe(context.Context, int64, *storage.RecipeQueryOpts) (storage.Recipe, error)
 	ListRecipes(context.Context) ([]storage.Recipe, error)
 	UpdateRecipe(context.Context, int64, storage.Recipe) (storage.Recipe, error)
 	DeleteRecipe(context.Context, int64) error
@@ -88,7 +87,7 @@ func HandleRecipeByID(db RecipeStore, batches RecipeBatchCounter) http.HandlerFu
 
 		switch r.Method {
 		case http.MethodGet:
-			recipe, err := db.GetRecipe(r.Context(), recipeID)
+			recipe, err := db.GetRecipe(r.Context(), recipeID, nil)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
@@ -131,19 +130,16 @@ func HandleRecipeByID(db RecipeStore, batches RecipeBatchCounter) http.HandlerFu
 
 			service.JSON(w, dto.NewRecipeResponse(updated))
 		case http.MethodDelete:
-			// Check if any batches reference this recipe
+			// Log batch references for audit purposes (but don't block deletion)
 			batchCount, err := batches.CountBatchesByRecipe(r.Context(), recipeID)
 			if err != nil {
-				slog.Error("error counting batches by recipe", "error", err, "recipe_id", recipeID)
-				service.InternalError(w, err.Error())
-				return
-			}
-			if batchCount > 0 {
-				msg := fmt.Sprintf("cannot delete recipe: %d batch(es) reference this recipe", batchCount)
-				http.Error(w, msg, http.StatusConflict)
-				return
+				slog.Warn("could not count batches referencing recipe before delete", "recipe_id", recipeID, "error", err)
+				// Continue with deletion anyway - this is just for logging
+			} else if batchCount > 0 {
+				slog.Info("deleting recipe with batch references", "recipe_id", recipeID, "batch_count", batchCount)
 			}
 
+			// Soft-delete the recipe; batches retain their recipe_id reference for historical traceability
 			err = db.DeleteRecipe(r.Context(), recipeID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "recipe not found", http.StatusNotFound)

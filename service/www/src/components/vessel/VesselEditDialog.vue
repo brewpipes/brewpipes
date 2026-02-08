@@ -226,8 +226,14 @@
 
   // Expose methods for parent to control state
   defineExpose({
-    setSaving: (value: boolean) => { saving.value = value },
-    setError: (message: string) => { errorMessage.value = message },
-    clearError: () => { errorMessage.value = '' },
+    setSaving: (value: boolean) => {
+      saving.value = value
+    },
+    setError: (message: string) => {
+      errorMessage.value = message
+    },
+    clearError: () => {
+      errorMessage.value = ''
+    },
   })
 </script>

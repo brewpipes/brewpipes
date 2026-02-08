@@ -26,14 +26,32 @@ export interface CreateStyleRequest {
 // Recipe Types
 // ============================================================================
 
-/** Recipe definition with optional style association */
+/** Recipe definition with optional style association and target specifications */
 export interface Recipe {
-  id: number
   uuid: string
   name: string
   style_id: number | null
   style_name: string | null
   notes: string | null
+  // Target specifications
+  batch_size: number | null
+  batch_size_unit: string | null
+  target_og: number | null
+  target_og_min: number | null
+  target_og_max: number | null
+  target_fg: number | null
+  target_fg_min: number | null
+  target_fg_max: number | null
+  target_ibu: number | null
+  target_ibu_min: number | null
+  target_ibu_max: number | null
+  target_srm: number | null
+  target_srm_min: number | null
+  target_srm_max: number | null
+  target_carbonation: number | null
+  ibu_method: string | null
+  brewhouse_efficiency: number | null
+  target_abv: number | null // calculated by backend from OG/FG
   created_at: string
   updated_at: string
 }
@@ -52,6 +70,154 @@ export interface UpdateRecipeRequest {
   style_id?: number | null
   style_name?: string | null
   notes?: string | null
+  // Target specifications
+  batch_size?: number | null
+  batch_size_unit?: string | null
+  target_og?: number | null
+  target_og_min?: number | null
+  target_og_max?: number | null
+  target_fg?: number | null
+  target_fg_min?: number | null
+  target_fg_max?: number | null
+  target_ibu?: number | null
+  target_ibu_min?: number | null
+  target_ibu_max?: number | null
+  target_srm?: number | null
+  target_srm_min?: number | null
+  target_srm_max?: number | null
+  target_carbonation?: number | null
+  ibu_method?: string | null
+  brewhouse_efficiency?: number | null
+}
+
+// ============================================================================
+// Recipe Ingredient Types
+// ============================================================================
+
+/** Type of ingredient in a recipe */
+export type RecipeIngredientType
+  = | 'fermentable'
+    | 'hop'
+    | 'yeast'
+    | 'adjunct'
+    | 'salt'
+    | 'chemical'
+    | 'gas'
+    | 'other'
+
+/** All valid recipe ingredient type values */
+export const RECIPE_INGREDIENT_TYPE_VALUES: RecipeIngredientType[] = [
+  'fermentable',
+  'hop',
+  'yeast',
+  'adjunct',
+  'salt',
+  'chemical',
+  'gas',
+  'other',
+]
+
+/** Stage at which an ingredient is used */
+export type RecipeUseStage
+  = | 'mash'
+    | 'boil'
+    | 'whirlpool'
+    | 'fermentation'
+    | 'packaging'
+
+/** All valid recipe use stage values */
+export const RECIPE_USE_STAGE_VALUES: RecipeUseStage[] = [
+  'mash',
+  'boil',
+  'whirlpool',
+  'fermentation',
+  'packaging',
+]
+
+/** How an ingredient is used (purpose) */
+export type RecipeUseType
+  = | 'bittering'
+    | 'flavor'
+    | 'aroma'
+    | 'dry_hop'
+    | 'base'
+    | 'specialty'
+    | 'adjunct'
+    | 'sugar'
+    | 'primary'
+    | 'secondary'
+    | 'bottle'
+    | 'other'
+
+/** All valid recipe use type values */
+export const RECIPE_USE_TYPE_VALUES: RecipeUseType[] = [
+  'bittering',
+  'flavor',
+  'aroma',
+  'dry_hop',
+  'base',
+  'specialty',
+  'adjunct',
+  'sugar',
+  'primary',
+  'secondary',
+  'bottle',
+  'other',
+]
+
+/** A recipe ingredient entry */
+export interface RecipeIngredient {
+  uuid: string
+  recipe_uuid: string
+  ingredient_uuid: string | null
+  ingredient_type: RecipeIngredientType
+  name: string
+  amount: number
+  amount_unit: string
+  use_stage: RecipeUseStage
+  use_type: RecipeUseType | null
+  timing_duration_minutes: number | null
+  timing_temperature_c: number | null
+  alpha_acid_assumed: number | null
+  scaling_factor: number
+  sort_order: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a recipe ingredient */
+export interface CreateRecipeIngredientRequest {
+  ingredient_uuid?: string | null
+  ingredient_type: RecipeIngredientType
+  name: string
+  amount: number
+  amount_unit: string
+  use_stage: RecipeUseStage
+  use_type?: RecipeUseType | null
+  timing_duration_minutes?: number | null
+  timing_temperature_c?: number | null
+  alpha_acid_assumed?: number | null
+  scaling_factor?: number
+  sort_order?: number
+  notes?: string | null
+}
+
+/** Request payload for updating a recipe ingredient */
+export interface UpdateRecipeIngredientRequest {
+  ingredient_uuid?: string | null
+  ingredient_type?: RecipeIngredientType
+  name?: string
+  amount?: number
+  amount_unit?: string
+  use_stage?: RecipeUseStage
+  use_type?: RecipeUseType | null
+  timing_duration_minutes?: number | null
+  timing_temperature_c?: number | null
+  alpha_acid_assumed?: number | null
+  scaling_factor?: number
+  sort_order?: number
+  notes?: string | null
 }
 
 // ============================================================================
@@ -65,6 +231,7 @@ export interface Batch {
   short_name: string
   brew_date: string | null
   recipe_id: number | null
+  recipe_uuid: string | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -76,6 +243,7 @@ export interface UpdateBatchRequest {
   brew_date?: string | null
   notes?: string | null
   recipe_id?: number | null
+  recipe_uuid?: string | null
 }
 
 // ============================================================================
@@ -93,15 +261,15 @@ export const VESSEL_STATUS_VALUES: VesselStatus[] = [
 ]
 
 /** Vessel type classification */
-export type VesselType =
-  | 'mash_tun'
-  | 'lauter_tun'
-  | 'kettle'
-  | 'whirlpool'
-  | 'fermenter'
-  | 'brite_tank'
-  | 'serving_tank'
-  | 'other'
+export type VesselType
+  = | 'mash_tun'
+    | 'lauter_tun'
+    | 'kettle'
+    | 'whirlpool'
+    | 'fermenter'
+    | 'brite_tank'
+    | 'serving_tank'
+    | 'other'
 
 /** All valid vessel type values */
 export const VESSEL_TYPE_VALUES: VesselType[] = [

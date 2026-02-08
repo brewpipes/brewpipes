@@ -64,6 +64,51 @@ const (
 	AdditionTypeOther     = "other"
 )
 
+// Recipe ingredient types
+const (
+	IngredientTypeFermentable = "fermentable"
+	IngredientTypeHop         = "hop"
+	IngredientTypeYeast       = "yeast"
+	IngredientTypeAdjunct     = "adjunct"
+	IngredientTypeSalt        = "salt"
+	IngredientTypeChemical    = "chemical"
+	IngredientTypeGas         = "gas"
+	IngredientTypeOther       = "other"
+)
+
+// Recipe ingredient use stages
+const (
+	UseStageMash         = "mash"
+	UseStageBoil         = "boil"
+	UseStageWhirlpool    = "whirlpool"
+	UseStageFermentation = "fermentation"
+	UseStagePackaging    = "packaging"
+)
+
+// Recipe ingredient use types
+const (
+	UseTypeBittering = "bittering"
+	UseTypeFlavor    = "flavor"
+	UseTypeAroma     = "aroma"
+	UseTypeDryHop    = "dry_hop"
+	UseTypeBase      = "base"
+	UseTypeSpecialty = "specialty"
+	UseTypeAdjunct   = "adjunct"
+	UseTypeSugar     = "sugar"
+	UseTypePrimary   = "primary"
+	UseTypeSecondary = "secondary"
+	UseTypeBottle    = "bottle"
+	UseTypeOther     = "other"
+)
+
+// IBU calculation methods
+const (
+	IBUMethodTinseth = "tinseth"
+	IBUMethodRager   = "rager"
+	IBUMethodGaretz  = "garetz"
+	IBUMethodDaniels = "daniels"
+)
+
 const (
 	OccupancyStatusFermenting   = "fermenting"
 	OccupancyStatusConditioning = "conditioning"
@@ -200,10 +245,27 @@ type Style struct {
 
 type Recipe struct {
 	entity.Identifiers
-	Name      string
-	StyleID   *int64
-	StyleName *string
-	Notes     *string
+	Name                string
+	StyleID             *int64
+	StyleName           *string
+	Notes               *string
+	BatchSize           *float64
+	BatchSizeUnit       *string
+	TargetOG            *float64
+	TargetOGMin         *float64
+	TargetOGMax         *float64
+	TargetFG            *float64
+	TargetFGMin         *float64
+	TargetFGMax         *float64
+	TargetIBU           *float64
+	TargetIBUMin        *float64
+	TargetIBUMax        *float64
+	TargetSRM           *float64
+	TargetSRMMin        *float64
+	TargetSRMMax        *float64
+	TargetCarbonation   *float64
+	IBUMethod           *string
+	BrewhouseEfficiency *float64
 	entity.Timestamps
 }
 
@@ -215,5 +277,24 @@ type BrewSession struct {
 	BoilVesselID *int64
 	BrewedAt     time.Time
 	Notes        *string
+	entity.Timestamps
+}
+
+// RecipeIngredient represents an ingredient in a recipe's ingredient bill.
+type RecipeIngredient struct {
+	entity.Identifiers
+	RecipeID              int64
+	IngredientUUID        *uuid.UUID // Cross-service ref to inventory.ingredient
+	IngredientType        string     // fermentable, hop, yeast, adjunct, salt, chemical, gas, other
+	Amount                float64
+	AmountUnit            string
+	UseStage              string  // mash, boil, whirlpool, fermentation, packaging
+	UseType               *string // bittering, flavor, aroma, dry_hop, base, specialty, etc.
+	TimingDurationMinutes *int
+	TimingTemperatureC    *float64
+	AlphaAcidAssumed      *float64 // For hops only
+	ScalingFactor         float64  // Default 1.0
+	SortOrder             int
+	Notes                 *string
 	entity.Timestamps
 }

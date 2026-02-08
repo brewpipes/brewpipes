@@ -14,8 +14,23 @@
       {{ selectedBatch ? selectedBatch.short_name : 'Batch details' }}
       <v-spacer />
       <v-btn size="small" variant="text" @click="refresh">Refresh</v-btn>
-      <v-btn v-if="selectedBatch" aria-label="Edit batch" icon="mdi-pencil" size="small" variant="text" @click="openEditDialog" />
-      <v-btn v-if="selectedBatch" aria-label="Delete batch" color="error" icon="mdi-delete" size="small" variant="text" @click="openDeleteDialog" />
+      <v-btn
+        v-if="selectedBatch"
+        aria-label="Edit batch"
+        icon="mdi-pencil"
+        size="small"
+        variant="text"
+        @click="openEditDialog"
+      />
+      <v-btn
+        v-if="selectedBatch"
+        aria-label="Delete batch"
+        color="error"
+        icon="mdi-delete"
+        size="small"
+        variant="text"
+        @click="openDeleteDialog"
+      />
       <v-btn v-if="!showBackButton" size="small" variant="text" @click="clearSelection">Clear</v-btn>
     </v-card-title>
     <v-card-text>
@@ -268,6 +283,7 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Recipe } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useApiClient } from '@/composables/useApiClient'
@@ -291,7 +307,6 @@
     type TemperatureUnit,
   } from '@/composables/useUnitConversion'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
-  import type { Recipe } from '@/types'
   import {
     type Addition,
     type AdditionType,
@@ -1425,7 +1440,7 @@
       const payload: UpdateBatchRequest = {
         short_name: form.short_name.trim(),
         brew_date: form.brew_date ? normalizeDateOnly(form.brew_date) : null,
-        recipe_id: form.recipe_id,
+        recipe_uuid: form.recipe_uuid,
         notes: normalizeText(form.notes),
       }
 

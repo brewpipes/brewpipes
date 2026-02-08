@@ -64,7 +64,7 @@
           type="date"
         />
         <v-autocomplete
-          v-model="newBatch.recipe_id"
+          v-model="newBatch.recipe_uuid"
           clearable
           density="comfortable"
           hint="Optional - link this batch to a recipe"
@@ -143,7 +143,7 @@
   const newBatch = reactive({
     short_name: '',
     brew_date: '',
-    recipe_id: null as number | null,
+    recipe_uuid: null as string | null,
     notes: '',
   })
 
@@ -166,7 +166,7 @@
   const recipeSelectItems = computed(() =>
     recipes.value.map(recipe => ({
       title: recipe.name,
-      value: recipe.id,
+      value: recipe.uuid,
       style: recipe.style_name,
     })),
   )
@@ -251,14 +251,14 @@
       const payload = {
         short_name: newBatch.short_name.trim(),
         brew_date: normalizeDateOnly(newBatch.brew_date),
-        recipe_id: newBatch.recipe_id,
+        recipe_uuid: newBatch.recipe_uuid,
         notes: normalizeText(newBatch.notes),
       }
       const created = await post<Batch>('/batches', payload)
       showNotice('Batch created')
       newBatch.short_name = ''
       newBatch.brew_date = ''
-      newBatch.recipe_id = null
+      newBatch.recipe_uuid = null
       newBatch.notes = ''
       await loadBatches()
       selectedBatchId.value = created.id

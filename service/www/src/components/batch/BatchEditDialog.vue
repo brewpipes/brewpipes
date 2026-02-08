@@ -33,7 +33,7 @@
             type="date"
           />
           <v-autocomplete
-            v-model="form.recipe_id"
+            v-model="form.recipe_uuid"
             clearable
             density="comfortable"
             hint="Optional - link this batch to a recipe"
@@ -77,13 +77,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, reactive, ref, watch } from 'vue'
   import type { Batch, Recipe } from '@/types'
+  import { computed, reactive, ref, watch } from 'vue'
 
   export type BatchEditForm = {
     short_name: string
     brew_date: string
-    recipe_id: number | null
+    recipe_uuid: string | null
     notes: string
   }
 
@@ -106,7 +106,7 @@
   const form = reactive<BatchEditForm>({
     short_name: '',
     brew_date: '',
-    recipe_id: null,
+    recipe_uuid: null,
     notes: '',
   })
 
@@ -121,7 +121,7 @@
   const recipeSelectItems = computed(() =>
     props.recipes.map(recipe => ({
       title: recipe.name,
-      value: recipe.id,
+      value: recipe.uuid,
       style: recipe.style_name,
     })),
   )
@@ -135,7 +135,7 @@
         form.brew_date = props.batch.brew_date
           ? formatDateForInput(props.batch.brew_date)
           : ''
-        form.recipe_id = props.batch.recipe_id
+        form.recipe_uuid = props.batch.recipe_uuid
         form.notes = props.batch.notes ?? ''
       }
     },

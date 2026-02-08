@@ -70,7 +70,7 @@
           :items="sortedBatches"
           :loading="loading"
           :search="search"
-          @dblclick:row="onRowDoubleClick"
+          @click:row="onRowClick"
         >
           <template #item.id="{ item }">
             <span class="text-medium-emphasis">#{{ item.id }}</span>
@@ -165,7 +165,7 @@
             type="date"
           />
           <v-autocomplete
-            v-model="batchForm.recipe_id"
+            v-model="batchForm.recipe_uuid"
             clearable
             density="comfortable"
             hint="Optional - link this batch to a recipe"
@@ -310,6 +310,7 @@
     short_name: string
     brew_date: string | null
     recipe_id: number | null
+    recipe_uuid: string | null
     notes: string | null
     created_at: string
     updated_at: string
@@ -380,7 +381,7 @@
   const batchForm = reactive({
     short_name: '',
     brew_date: '',
-    recipe_id: null as number | null,
+    recipe_uuid: null as string | null,
     notes: '',
   })
 
@@ -419,7 +420,7 @@
   const recipeSelectItems = computed(() =>
     recipes.value.map(recipe => ({
       title: recipe.name,
-      value: recipe.id,
+      value: recipe.uuid,
       style: recipe.style_name,
     })),
   )
@@ -572,7 +573,7 @@
   function openCreateDialog () {
     batchForm.short_name = ''
     batchForm.brew_date = ''
-    batchForm.recipe_id = null
+    batchForm.recipe_uuid = null
     batchForm.notes = ''
     createBatchDialog.value = true
   }
@@ -593,7 +594,7 @@
       const payload = {
         short_name: batchForm.short_name.trim(),
         brew_date: normalizeDateOnly(batchForm.brew_date),
-        recipe_id: batchForm.recipe_id,
+        recipe_uuid: batchForm.recipe_uuid,
         notes: normalizeText(batchForm.notes),
       }
 
@@ -614,7 +615,7 @@
     }
   }
 
-  function onRowDoubleClick (_event: Event, { item }: { item: BatchWithSummary }) {
+  function onRowClick (_event: Event, { item }: { item: BatchWithSummary }) {
     router.push(`/batches/${item.uuid}`)
   }
 
@@ -635,7 +636,7 @@
       const payload: UpdateBatchRequest = {
         short_name: form.short_name.trim(),
         brew_date: form.brew_date ? normalizeDateOnly(form.brew_date) : null,
-        recipe_id: form.recipe_id,
+        recipe_uuid: form.recipe_uuid,
         notes: normalizeText(form.notes),
       }
 

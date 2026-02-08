@@ -15,6 +15,14 @@ func validateRequired(value, field string) error {
 	return nil
 }
 
+func errPositiveRequired(field string) error {
+	return fmt.Errorf("%s must be greater than zero", field)
+}
+
+func errRangeRequired(field string, min, max float64) error {
+	return fmt.Errorf("%s must be between %.0f and %.0f", field, min, max)
+}
+
 func validateVolumeUnit(unit string) error {
 	switch unit {
 	case storage.VolumeUnitML, storage.VolumeUnitUSFlOz, storage.VolumeUnitUKFlOz, storage.VolumeUnitBBL:
@@ -123,5 +131,66 @@ func validateOccupancyStatus(status string) error {
 		return nil
 	default:
 		return fmt.Errorf("invalid status")
+	}
+}
+
+func validateIngredientType(ingredientType string) error {
+	switch ingredientType {
+	case storage.IngredientTypeFermentable,
+		storage.IngredientTypeHop,
+		storage.IngredientTypeYeast,
+		storage.IngredientTypeAdjunct,
+		storage.IngredientTypeSalt,
+		storage.IngredientTypeChemical,
+		storage.IngredientTypeGas,
+		storage.IngredientTypeOther:
+		return nil
+	default:
+		return fmt.Errorf("invalid ingredient_type")
+	}
+}
+
+func validateUseStage(useStage string) error {
+	switch useStage {
+	case storage.UseStageMash,
+		storage.UseStageBoil,
+		storage.UseStageWhirlpool,
+		storage.UseStageFermentation,
+		storage.UseStagePackaging:
+		return nil
+	default:
+		return fmt.Errorf("invalid use_stage")
+	}
+}
+
+func validateUseType(useType string) error {
+	switch useType {
+	case storage.UseTypeBittering,
+		storage.UseTypeFlavor,
+		storage.UseTypeAroma,
+		storage.UseTypeDryHop,
+		storage.UseTypeBase,
+		storage.UseTypeSpecialty,
+		storage.UseTypeAdjunct,
+		storage.UseTypeSugar,
+		storage.UseTypePrimary,
+		storage.UseTypeSecondary,
+		storage.UseTypeBottle,
+		storage.UseTypeOther:
+		return nil
+	default:
+		return fmt.Errorf("invalid use_type")
+	}
+}
+
+func validateIBUMethod(method string) error {
+	switch method {
+	case storage.IBUMethodTinseth,
+		storage.IBUMethodRager,
+		storage.IBUMethodGaretz,
+		storage.IBUMethodDaniels:
+		return nil
+	default:
+		return fmt.Errorf("invalid ibu_method")
 	}
 }

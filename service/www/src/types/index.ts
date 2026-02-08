@@ -29,6 +29,7 @@ export type {
   CreateAdditionRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
+  CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,
   CreateVolumeRequest,
@@ -36,9 +37,14 @@ export type {
   Occupancy,
   OccupancyStatus,
   Recipe,
+  RecipeIngredient,
+  RecipeIngredientType,
+  RecipeUseStage,
+  RecipeUseType,
   Style,
   UpdateBatchRequest,
   UpdateBrewSessionRequest,
+  UpdateRecipeIngredientRequest,
   UpdateRecipeRequest,
   UpdateVesselRequest,
   Vessel,
@@ -49,6 +55,9 @@ export type {
 
 export {
   OCCUPANCY_STATUS_VALUES,
+  RECIPE_INGREDIENT_TYPE_VALUES,
+  RECIPE_USE_STAGE_VALUES,
+  RECIPE_USE_TYPE_VALUES,
   VESSEL_STATUS_VALUES,
   VESSEL_TYPE_VALUES,
 } from './production'

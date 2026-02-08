@@ -1,12 +1,13 @@
 <template>
   <v-dialog
-    :max-width="$vuetify.display.xs ? '100%' : 480"
+    :fullscreen="$vuetify.display.xs"
+    :max-width="$vuetify.display.xs ? '100%' : 400"
     :model-value="modelValue"
     persistent
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card>
-      <v-card-title class="text-h6">Delete batch</v-card-title>
+      <v-card-title class="text-h6">Delete Recipe</v-card-title>
       <v-card-text>
         <v-alert
           v-if="errorMessage"
@@ -18,28 +19,29 @@
           {{ errorMessage }}
         </v-alert>
 
-        <p class="text-body-1 mb-4">
-          Are you sure you want to delete
-          <strong>{{ batchName }}</strong>?
+        <p>
+          Are you sure you want to delete <strong>{{ recipe.name }}</strong>?
         </p>
-
         <v-alert
+          class="mt-4"
           density="compact"
           type="warning"
           variant="tonal"
         >
-          This action cannot be undone. The batch and its associated data will be permanently removed.
+          This action cannot be undone. All ingredients associated with this recipe will also be deleted.
         </v-alert>
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn :disabled="deleting" variant="text" @click="handleCancel">Cancel</v-btn>
+        <v-btn :disabled="deleting" variant="text" @click="handleCancel">
+          Cancel
+        </v-btn>
         <v-btn
           color="error"
           :loading="deleting"
           variant="flat"
           @click="handleConfirm"
         >
-          Delete batch
+          Delete
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -47,14 +49,13 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Batch } from '@/types'
-  import { computed } from 'vue'
+  import type { Recipe } from '@/composables/useProductionApi'
 
-  const props = defineProps<{
+  defineProps<{
     modelValue: boolean
-    batch: Batch | null
+    recipe: Recipe
     deleting: boolean
-    errorMessage: string
+    errorMessage?: string
   }>()
 
   const emit = defineEmits<{
@@ -62,13 +63,11 @@
     'confirm': []
   }>()
 
-  const batchName = computed(() => props.batch?.short_name ?? 'this batch')
+  function handleCancel () {
+    emit('update:modelValue', false)
+  }
 
   function handleConfirm () {
     emit('confirm')
-  }
-
-  function handleCancel () {
-    emit('update:modelValue', false)
   }
 </script>

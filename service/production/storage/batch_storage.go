@@ -68,13 +68,14 @@ func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
 	return batch, nil
 }
 
-func (c *Client) CountBatchesByRecipe(ctx context.Context, recipeID int64) (int, error) {
+func (c *Client) CountBatchesByRecipe(ctx context.Context, recipeUUID string) (int, error) {
 	var count int
 	err := c.db.QueryRow(ctx, `
 		SELECT COUNT(*)
-		FROM batch
-		WHERE recipe_id = $1 AND deleted_at IS NULL`,
-		recipeID,
+		FROM batch b
+		JOIN recipe r ON b.recipe_id = r.id
+		WHERE r.uuid = $1 AND b.deleted_at IS NULL`,
+		recipeUUID,
 	).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("counting batches by recipe: %w", err)

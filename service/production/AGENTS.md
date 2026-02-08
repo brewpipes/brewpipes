@@ -82,8 +82,25 @@ Style
 
 Recipe
 - A beer formulation with name and optional style reference.
-- Batches can reference a recipe via `recipe_id`.
-- Future: target ABV/IBU, ingredient bills, process steps.
+- Batches can reference a recipe via `recipe_id` (internal FK).
+- All API endpoints use UUIDs, not internal IDs.
+- Includes target specifications: batch size, OG/FG ranges, IBU/SRM ranges, carbonation, brewhouse efficiency.
+- `target_abv` is calculated from `target_og` and `target_fg` using `(OG - FG) × 131.25` (not stored in DB).
+- IBU calculation method can be: tinseth, rager, garetz, or daniels.
+- CRUD endpoints: `GET/POST /recipes`, `GET/PUT/PATCH/DELETE /recipes/{uuid}`.
+- API responses include only `uuid`, not internal `id`.
+
+Recipe Ingredient
+- Stores the ingredient bill for a recipe.
+- Each ingredient has: type, amount, unit, use stage, optional use type, timing, and notes.
+- Ingredient types: fermentable, hop, yeast, adjunct, salt, chemical, gas, other.
+- Use stages: mash, boil, whirlpool, fermentation, packaging.
+- Use types vary by context: bittering/flavor/aroma/dry_hop (hops), base/specialty/adjunct/sugar (fermentables), primary/secondary/bottle (yeast).
+- `alpha_acid_assumed` is only valid for hop ingredients.
+- `scaling_factor` controls how the ingredient scales with batch size (default 1.0).
+- `ingredient_uuid` is a cross-service reference to inventory.ingredient (no FK).
+- CRUD endpoints: `GET/POST /recipes/{uuid}/ingredients`, `GET/PATCH/DELETE /recipes/{uuid}/ingredients/{ingredient_uuid}`.
+- API responses include `uuid` and `recipe_uuid`, not internal IDs.
 
 Brew Session
 - Captures hot-side wort production (mash → boil → knockout).
@@ -176,3 +193,5 @@ In short:
 - The full brew‑day flow can be reconstructed chronologically from additions, measurements, transfers, and phase changes for a given batch.
 - A brewmaster can view a batch summary with aggregated metrics including recipe/style, brew sessions, current state, OG/FG/ABV/IBU, duration metrics, and loss calculations via `GET /batches/{id}/summary`.
 - ABV is auto-calculated from OG and FG measurements using `(OG - FG) × 131.25` when no manual ABV measurement exists.
+- A brewmaster can define recipe target specifications including batch size, OG/FG/IBU/SRM ranges, carbonation, and brewhouse efficiency.
+- A brewmaster can manage recipe ingredient bills with full CRUD operations on `/recipes/{recipe_id}/ingredients`.

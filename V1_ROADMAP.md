@@ -294,11 +294,11 @@ Enable full recipe management with ingredient bills.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| RCP-01 | Design recipe ingredient bill data model | M | 2 | Not Started |
-| RCP-02 | Add recipe target specifications (OG, FG, ABV, IBU, color) | M | 2, 5 | Not Started |
-| RCP-03 | Backend: Recipe ingredient bill CRUD endpoints | M | 2 | Not Started |
-| RCP-04 | Frontend: Recipe ingredient bill management UI | L | 2 | Not Started |
-| RCP-05 | Frontend: Recipe detail view with full specs | M | 2, 5 | Not Started |
+| RCP-01 | Design recipe ingredient bill data model | M | 2 | **Complete** |
+| RCP-02 | Add recipe target specifications (OG, FG, ABV, IBU, color) | M | 2, 5 | **Complete** |
+| RCP-03 | Backend: Recipe ingredient bill CRUD endpoints | M | 2 | **Complete** |
+| RCP-04 | Frontend: Recipe ingredient bill management UI | L | 2 | **Complete** |
+| RCP-05 | Frontend: Recipe detail view with full specs | M | 2, 5 | **Complete** |
 | RCP-06 | Recipe scaling calculator | M | 2 | Not Started |
 
 ---
@@ -399,7 +399,7 @@ Track brewhouse removals for future TTB compliance.
 |-----------|-------------|--------|
 | **M0: Roadmap Complete** | User journeys and feature backlog finalized | **Complete** |
 | **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | **Complete** |
-| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 1 complete) |
+| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 2 nearly complete, RCP-06 remaining) |
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | Not Started |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | Not Started |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | Not Started |
@@ -426,6 +426,11 @@ Track brewhouse removals for future TTB compliance.
 | CRUD-05 | Add recipe deletion with batch reference check | 2026-02-02 |
 | CRUD-06 | Add supplier editing | 2026-02-02 |
 | CRUD-07 | Add purchase order editing | 2026-02-02 |
+| RCP-01 | Design recipe ingredient bill data model | 2026-02-02 |
+| RCP-02 | Add recipe target specifications (OG, FG, ABV, IBU, color) | 2026-02-02 |
+| RCP-03 | Backend: Recipe ingredient bill CRUD endpoints | 2026-02-02 |
+| RCP-04 | Frontend: Recipe ingredient bill management UI | 2026-02-02 |
+| RCP-05 | Frontend: Recipe detail view with full specs | 2026-02-02 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -445,6 +450,12 @@ Track brewhouse removals for future TTB compliance.
 - **Recipe Delete (CRUD-05):** Backend DELETE endpoint with batch reference check (blocks deletion if batches use the recipe). Frontend delete action with confirmation dialog. Accessible from recipes page.
 - **Supplier Edit (CRUD-06):** Backend PATCH endpoint with partial update semantics. Frontend unified create/edit dialog. Accessible from suppliers page.
 - **Purchase Order Edit (CRUD-07):** Frontend edit functionality added to existing backend PATCH endpoint. Unified create/edit dialog with supplier lock (cannot change supplier after creation). Accessible from purchase orders page.
+
+**Phase 2 Details:** Implemented recipe ingredient bills and target specifications:
+- **Data Model (RCP-01):** Created `recipe_ingredient` table with support for fermentables, hops, yeast, adjuncts, water chemistry, and other additions. Each ingredient has amount, unit, use stage (mash/boil/whirlpool/fermentation/packaging), use type, timing, and notes. Hops include alpha acid for IBU calculations. Scaling factor supports non-linear scaling.
+- **Target Specs (RCP-02):** Extended `recipe` table with batch_size, target_og/fg/ibu/srm (with optional min/max ranges), target_carbonation, ibu_method, and brewhouse_efficiency. ABV is calculated from OG/FG using `(OG - FG) × 131.25`.
+- **Backend CRUD (RCP-03):** Full CRUD endpoints for recipe ingredients at `/recipes/{id}/ingredients`. Validation for ingredient types, use stages, alpha acid (hops only), and positive amounts.
+- **Frontend UI (RCP-04, RCP-05):** Recipe detail page at `/recipes/{uuid}` with tabs for Overview, Fermentables, Hops, Yeast & Other, and Specs. Ingredient management via modal dialogs. Mobile-responsive with card layouts on small screens. SRM color preview swatch. Spec badges in recipe list.
 
 ---
 

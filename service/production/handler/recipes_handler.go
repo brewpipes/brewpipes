@@ -14,14 +14,14 @@ import (
 
 type RecipeStore interface {
 	CreateRecipe(context.Context, storage.Recipe) (storage.Recipe, error)
-	GetRecipe(context.Context, int64, *storage.RecipeQueryOpts) (storage.Recipe, error)
+	GetRecipe(context.Context, string, *storage.RecipeQueryOpts) (storage.Recipe, error)
 	ListRecipes(context.Context) ([]storage.Recipe, error)
-	UpdateRecipe(context.Context, int64, storage.Recipe) (storage.Recipe, error)
-	DeleteRecipe(context.Context, int64) error
+	UpdateRecipe(context.Context, string, storage.Recipe) (storage.Recipe, error)
+	DeleteRecipe(context.Context, string) error
 }
 
 type RecipeBatchCounter interface {
-	CountBatchesByRecipe(context.Context, int64) (int, error)
+	CountBatchesByRecipe(context.Context, string) (int, error)
 }
 
 // HandleRecipes handles [GET /recipes] and [POST /recipes].
@@ -49,10 +49,27 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 			}
 
 			recipe := storage.Recipe{
-				Name:      req.Name,
-				StyleID:   req.StyleID,
-				StyleName: req.StyleName,
-				Notes:     req.Notes,
+				Name:                req.Name,
+				StyleID:             req.StyleID,
+				StyleName:           req.StyleName,
+				Notes:               req.Notes,
+				BatchSize:           req.BatchSize,
+				BatchSizeUnit:       req.BatchSizeUnit,
+				TargetOG:            req.TargetOG,
+				TargetOGMin:         req.TargetOGMin,
+				TargetOGMax:         req.TargetOGMax,
+				TargetFG:            req.TargetFG,
+				TargetFGMin:         req.TargetFGMin,
+				TargetFGMax:         req.TargetFGMax,
+				TargetIBU:           req.TargetIBU,
+				TargetIBUMin:        req.TargetIBUMin,
+				TargetIBUMax:        req.TargetIBUMax,
+				TargetSRM:           req.TargetSRM,
+				TargetSRMMin:        req.TargetSRMMin,
+				TargetSRMMax:        req.TargetSRMMax,
+				TargetCarbonation:   req.TargetCarbonation,
+				IBUMethod:           req.IBUMethod,
+				BrewhouseEfficiency: req.BrewhouseEfficiency,
 			}
 
 			created, err := db.CreateRecipe(r.Context(), recipe)
@@ -71,34 +88,29 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 	}
 }
 
-// HandleRecipeByID handles [GET /recipes/{id}], [PUT /recipes/{id}], and [DELETE /recipes/{id}].
-func HandleRecipeByID(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
+// HandleRecipe handles [GET /recipes/{uuid}], [PUT /recipes/{uuid}], [PATCH /recipes/{uuid}], and [DELETE /recipes/{uuid}].
+func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		recipeID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		recipeUUID := r.PathValue("uuid")
+		if recipeUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			recipe, err := db.GetRecipe(r.Context(), recipeID, nil)
+			recipe, err := db.GetRecipe(r.Context(), recipeUUID, nil)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting recipe", "error", err)
+				slog.Error("error getting recipe", "error", err, "recipe_uuid", recipeUUID)
 				service.InternalError(w, err.Error())
 				return
 			}
 
 			service.JSON(w, dto.NewRecipeResponse(recipe))
-		case http.MethodPut:
+		case http.MethodPut, http.MethodPatch:
 			var req dto.UpdateRecipeRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, "invalid request", http.StatusBadRequest)
@@ -110,47 +122,64 @@ func HandleRecipeByID(db RecipeStore, batches RecipeBatchCounter) http.HandlerFu
 			}
 
 			recipe := storage.Recipe{
-				Name:      req.Name,
-				StyleID:   req.StyleID,
-				StyleName: req.StyleName,
-				Notes:     req.Notes,
+				Name:                req.Name,
+				StyleID:             req.StyleID,
+				StyleName:           req.StyleName,
+				Notes:               req.Notes,
+				BatchSize:           req.BatchSize,
+				BatchSizeUnit:       req.BatchSizeUnit,
+				TargetOG:            req.TargetOG,
+				TargetOGMin:         req.TargetOGMin,
+				TargetOGMax:         req.TargetOGMax,
+				TargetFG:            req.TargetFG,
+				TargetFGMin:         req.TargetFGMin,
+				TargetFGMax:         req.TargetFGMax,
+				TargetIBU:           req.TargetIBU,
+				TargetIBUMin:        req.TargetIBUMin,
+				TargetIBUMax:        req.TargetIBUMax,
+				TargetSRM:           req.TargetSRM,
+				TargetSRMMin:        req.TargetSRMMin,
+				TargetSRMMax:        req.TargetSRMMax,
+				TargetCarbonation:   req.TargetCarbonation,
+				IBUMethod:           req.IBUMethod,
+				BrewhouseEfficiency: req.BrewhouseEfficiency,
 			}
 
-			updated, err := db.UpdateRecipe(r.Context(), recipeID, recipe)
+			updated, err := db.UpdateRecipe(r.Context(), recipeUUID, recipe)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating recipe", "error", err)
+				slog.Error("error updating recipe", "error", err, "recipe_uuid", recipeUUID)
 				service.InternalError(w, err.Error())
 				return
 			}
 
-			slog.Info("recipe updated", "recipe_id", updated.ID, "name", updated.Name)
+			slog.Info("recipe updated", "recipe_uuid", recipeUUID, "name", updated.Name)
 
 			service.JSON(w, dto.NewRecipeResponse(updated))
 		case http.MethodDelete:
 			// Log batch references for audit purposes (but don't block deletion)
-			batchCount, err := batches.CountBatchesByRecipe(r.Context(), recipeID)
+			batchCount, err := batches.CountBatchesByRecipe(r.Context(), recipeUUID)
 			if err != nil {
-				slog.Warn("could not count batches referencing recipe before delete", "recipe_id", recipeID, "error", err)
+				slog.Warn("could not count batches referencing recipe before delete", "recipe_uuid", recipeUUID, "error", err)
 				// Continue with deletion anyway - this is just for logging
 			} else if batchCount > 0 {
-				slog.Info("deleting recipe with batch references", "recipe_id", recipeID, "batch_count", batchCount)
+				slog.Info("deleting recipe with batch references", "recipe_uuid", recipeUUID, "batch_count", batchCount)
 			}
 
 			// Soft-delete the recipe; batches retain their recipe_id reference for historical traceability
-			err = db.DeleteRecipe(r.Context(), recipeID)
+			err = db.DeleteRecipe(r.Context(), recipeUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error deleting recipe", "error", err, "recipe_id", recipeID)
+				slog.Error("error deleting recipe", "error", err, "recipe_uuid", recipeUUID)
 				service.InternalError(w, err.Error())
 				return
 			}
 
-			slog.Info("recipe deleted", "recipe_id", recipeID)
+			slog.Info("recipe deleted", "recipe_uuid", recipeUUID)
 
 			w.WriteHeader(http.StatusNoContent)
 		default:

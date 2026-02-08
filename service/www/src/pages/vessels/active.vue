@@ -69,8 +69,8 @@
 <script lang="ts" setup>
   import type { UpdateVesselRequest } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
-  import VesselDetails from '@/components/VesselDetails.vue'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+  import VesselDetails from '@/components/VesselDetails.vue'
   import VesselList from '@/components/VesselList.vue'
   import { useApiClient } from '@/composables/useApiClient'
   import { useOccupancyStatusFormatters } from '@/composables/useFormatters'

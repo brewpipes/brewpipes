@@ -95,28 +95,28 @@ describe('useProductionApi', () => {
 
   describe('Recipes API', () => {
     it('getRecipes calls correct endpoint', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, name: 'House IPA' }])
+      mockRequest.mockResolvedValue([{ uuid: 'abc-123', name: 'House IPA' }])
 
       const { getRecipes } = useProductionApi()
       const result = await getRecipes()
 
       expect(mockRequest).toHaveBeenCalledWith('/recipes')
-      expect(result).toEqual([{ id: 1, name: 'House IPA' }])
+      expect(result).toEqual([{ uuid: 'abc-123', name: 'House IPA' }])
     })
 
-    it('getRecipe calls correct endpoint with id', async () => {
-      mockRequest.mockResolvedValue({ id: 1, name: 'House IPA' })
+    it('getRecipe calls correct endpoint with uuid', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'abc-123', name: 'House IPA' })
 
       const { getRecipe } = useProductionApi()
-      const result = await getRecipe(1)
+      const result = await getRecipe('abc-123')
 
-      expect(mockRequest).toHaveBeenCalledWith('/recipes/1')
-      expect(result).toEqual({ id: 1, name: 'House IPA' })
+      expect(mockRequest).toHaveBeenCalledWith('/recipes/abc-123')
+      expect(result).toEqual({ uuid: 'abc-123', name: 'House IPA' })
     })
 
     it('createRecipe sends POST with correct body', async () => {
       const recipeData = { name: 'New Recipe', style_id: 1, notes: 'Test notes' }
-      mockRequest.mockResolvedValue({ id: 2, ...recipeData })
+      mockRequest.mockResolvedValue({ uuid: 'def-456', ...recipeData })
 
       const { createRecipe } = useProductionApi()
       const result = await createRecipe(recipeData)
@@ -125,21 +125,32 @@ describe('useProductionApi', () => {
         method: 'POST',
         body: JSON.stringify(recipeData),
       })
-      expect(result).toEqual({ id: 2, ...recipeData })
+      expect(result).toEqual({ uuid: 'def-456', ...recipeData })
     })
 
-    it('updateRecipe sends PUT with correct body', async () => {
+    it('updateRecipe sends PATCH with correct body', async () => {
       const updateData = { name: 'Updated Recipe', style_id: 2 }
-      mockRequest.mockResolvedValue({ id: 1, ...updateData })
+      mockRequest.mockResolvedValue({ uuid: 'abc-123', ...updateData })
 
       const { updateRecipe } = useProductionApi()
-      const result = await updateRecipe(1, updateData)
+      const result = await updateRecipe('abc-123', updateData)
 
-      expect(mockRequest).toHaveBeenCalledWith('/recipes/1', {
-        method: 'PUT',
+      expect(mockRequest).toHaveBeenCalledWith('/recipes/abc-123', {
+        method: 'PATCH',
         body: JSON.stringify(updateData),
       })
-      expect(result).toEqual({ id: 1, ...updateData })
+      expect(result).toEqual({ uuid: 'abc-123', ...updateData })
+    })
+
+    it('deleteRecipe sends DELETE to correct endpoint', async () => {
+      mockRequest.mockResolvedValue(undefined)
+
+      const { deleteRecipe } = useProductionApi()
+      await deleteRecipe('abc-123')
+
+      expect(mockRequest).toHaveBeenCalledWith('/recipes/abc-123', {
+        method: 'DELETE',
+      })
     })
   })
 

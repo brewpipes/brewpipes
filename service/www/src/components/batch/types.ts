@@ -30,6 +30,7 @@ export type Batch = {
   short_name: string
   brew_date: string | null
   recipe_id: number | null
+  recipe_uuid: string | null
   notes: string | null
   created_at: string
   updated_at: string

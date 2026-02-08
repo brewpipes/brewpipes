@@ -6,6 +6,7 @@ import type {
   CreateAdditionRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
+  CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,
   CreateVolumeRequest,
@@ -13,9 +14,11 @@ import type {
   Occupancy,
   OccupancyStatus,
   Recipe,
+  RecipeIngredient,
   Style,
   UpdateBatchRequest,
   UpdateBrewSessionRequest,
+  UpdateRecipeIngredientRequest,
   UpdateRecipeRequest,
   UpdateVesselRequest,
   Vessel,
@@ -34,6 +37,7 @@ export type {
   CreateAdditionRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
+  CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,
   CreateVolumeRequest,
@@ -41,9 +45,14 @@ export type {
   Occupancy,
   OccupancyStatus,
   Recipe,
+  RecipeIngredient,
+  RecipeIngredientType,
+  RecipeUseStage,
+  RecipeUseType,
   Style,
   UpdateBatchRequest,
   UpdateBrewSessionRequest,
+  UpdateRecipeIngredientRequest,
   UpdateRecipeRequest,
   UpdateVesselRequest,
   Vessel,
@@ -55,6 +64,9 @@ export type {
 
 export {
   OCCUPANCY_STATUS_VALUES,
+  RECIPE_INGREDIENT_TYPE_VALUES,
+  RECIPE_USE_STAGE_VALUES,
+  RECIPE_USE_TYPE_VALUES,
   VESSEL_STATUS_VALUES,
   VESSEL_TYPE_VALUES,
 } from '@/types'
@@ -102,19 +114,39 @@ export function useProductionApi () {
 
   // Recipes API
   const getRecipes = () => request<Recipe[]>('/recipes')
-  const getRecipe = (id: number) => request<Recipe>(`/recipes/${id}`)
+  const getRecipe = (uuid: string) => request<Recipe>(`/recipes/${uuid}`)
   const createRecipe = (data: CreateRecipeRequest) =>
     request<Recipe>('/recipes', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updateRecipe = (id: number, data: UpdateRecipeRequest) =>
-    request<Recipe>(`/recipes/${id}`, {
-      method: 'PUT',
+  const updateRecipe = (uuid: string, data: UpdateRecipeRequest) =>
+    request<Recipe>(`/recipes/${uuid}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     })
-  const deleteRecipe = (id: number) =>
-    request<void>(`/recipes/${id}`, {
+  const deleteRecipe = (uuid: string) =>
+    request<void>(`/recipes/${uuid}`, {
+      method: 'DELETE',
+    })
+
+  // Recipe Ingredients API
+  const getRecipeIngredients = (recipeUuid: string) =>
+    request<RecipeIngredient[]>(`/recipes/${recipeUuid}/ingredients`)
+  const getRecipeIngredient = (recipeUuid: string, ingredientUuid: string) =>
+    request<RecipeIngredient>(`/recipes/${recipeUuid}/ingredients/${ingredientUuid}`)
+  const createRecipeIngredient = (recipeUuid: string, data: CreateRecipeIngredientRequest) =>
+    request<RecipeIngredient>(`/recipes/${recipeUuid}/ingredients`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const updateRecipeIngredient = (recipeUuid: string, ingredientUuid: string, data: UpdateRecipeIngredientRequest) =>
+    request<RecipeIngredient>(`/recipes/${recipeUuid}/ingredients/${ingredientUuid}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deleteRecipeIngredient = (recipeUuid: string, ingredientUuid: string) =>
+    request<void>(`/recipes/${recipeUuid}/ingredients/${ingredientUuid}`, {
       method: 'DELETE',
     })
 
@@ -216,6 +248,12 @@ export function useProductionApi () {
     createRecipe,
     updateRecipe,
     deleteRecipe,
+    // Recipe Ingredients
+    getRecipeIngredients,
+    getRecipeIngredient,
+    createRecipeIngredient,
+    updateRecipeIngredient,
+    deleteRecipeIngredient,
     // Vessels
     getVessels,
     getVessel,

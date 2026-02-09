@@ -69,12 +69,11 @@
                       <td>{{ formatDateTime(order.expected_at) }}</td>
                       <td class="text-right">
                         <v-btn
+                          icon="mdi-pencil"
                           size="x-small"
                           variant="text"
-                          @click="openEditDialog(order)"
-                        >
-                          Edit
-                        </v-btn>
+                          @click.stop="openEditDialog(order)"
+                        />
                         <v-btn
                           size="x-small"
                           variant="text"

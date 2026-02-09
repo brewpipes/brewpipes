@@ -72,10 +72,6 @@
           :search="search"
           @click:row="onRowClick"
         >
-          <template #item.id="{ item }">
-            <span class="text-medium-emphasis">#{{ item.id }}</span>
-          </template>
-
           <template #item.short_name="{ item }">
             <span class="font-weight-medium">{{ item.short_name }}</span>
           </template>
@@ -403,7 +399,6 @@
 
   // Table configuration
   const headers = [
-    { title: 'ID', key: 'id', sortable: true, width: '80px' },
     { title: 'Short Name', key: 'short_name', sortable: true },
     { title: 'Recipe', key: 'recipe_name', sortable: true },
     { title: 'Status', key: 'current_phase', sortable: true },

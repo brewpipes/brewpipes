@@ -63,7 +63,7 @@
                 <v-btn
                   aria-label="Delete"
                   color="error"
-                  icon="mdi-delete-outline"
+                  icon="mdi-delete"
                   size="x-small"
                   variant="text"
                   @click="emit('delete', ingredient)"
@@ -122,7 +122,7 @@
                 <v-btn
                   aria-label="Delete"
                   color="error"
-                  icon="mdi-delete-outline"
+                  icon="mdi-delete"
                   size="x-small"
                   variant="text"
                   @click="emit('delete', ingredient)"

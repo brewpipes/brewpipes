@@ -62,10 +62,6 @@
           :search="search"
           @dblclick:row="onRowDoubleClick"
         >
-          <template #item.id="{ item }">
-            <span class="text-medium-emphasis">#{{ item.id }}</span>
-          </template>
-
           <template #item.name="{ item }">
             <span class="font-weight-medium">{{ item.name }}</span>
           </template>
@@ -100,24 +96,20 @@
           </template>
 
           <template #item.actions="{ item }">
-            <div class="d-flex align-center">
-              <v-btn
-                density="compact"
-                icon="mdi-pencil"
-                size="small"
-                variant="text"
-                @click.stop="openEditDialog(item)"
-              />
-              <v-btn
-                v-if="item.status !== 'retired'"
-                color="warning"
-                density="compact"
-                icon="mdi-archive"
-                size="small"
-                variant="text"
-                @click.stop="openRetireDialog(item)"
-              />
-            </div>
+            <v-btn
+              icon="mdi-pencil"
+              size="x-small"
+              variant="text"
+              @click.stop="openEditDialog(item)"
+            />
+            <v-btn
+              v-if="item.status !== 'retired'"
+              color="warning"
+              icon="mdi-archive"
+              size="x-small"
+              variant="text"
+              @click.stop="openRetireDialog(item)"
+            />
           </template>
 
           <template #no-data>
@@ -283,14 +275,13 @@
 
   // Table configuration
   const headers = [
-    { title: 'ID', key: 'id', sortable: true, width: '80px' },
     { title: 'Name', key: 'name', sortable: true },
     { title: 'Type', key: 'type', sortable: true },
     { title: 'Capacity', key: 'capacity', sortable: true },
     { title: 'Status', key: 'status', sortable: true },
     { title: 'Occupancy', key: 'occupancy', sortable: true },
     { title: 'Updated', key: 'updated_at', sortable: true },
-    { title: 'Actions', key: 'actions', sortable: false, width: '100px' },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '100px' },
   ]
 
   // Computed

@@ -47,21 +47,17 @@
         </v-alert>
 
         <v-data-table
-          class="data-table"
+          class="data-table recipes-table"
           density="compact"
           :headers="headers"
+          hover
           item-value="id"
           :items="filteredRecipes"
           :loading="loading"
+          @click:row="onRowClick"
         >
           <template #item.name="{ item }">
-            <a
-              class="recipe-link font-weight-medium"
-              href="#"
-              @click.prevent="openViewDialog(item)"
-            >
-              {{ item.name }}
-            </a>
+            <span class="font-weight-medium">{{ item.name }}</span>
           </template>
 
           <template #item.style_name="{ item }">
@@ -108,16 +104,6 @@
 
           <template #item.updated_at="{ item }">
             {{ formatDateTime(item.updated_at) }}
-          </template>
-
-          <template #item.actions="{ item }">
-            <v-btn
-              aria-label="View recipe"
-              icon="mdi-arrow-right"
-              size="x-small"
-              variant="text"
-              @click="openViewDialog(item)"
-            />
           </template>
 
           <template #no-data>
@@ -294,7 +280,6 @@
     { title: 'Specs', key: 'specs', sortable: false },
     { title: 'Notes', key: 'notes', sortable: false },
     { title: 'Updated', key: 'updated_at', sortable: true },
-    { title: '', key: 'actions', sortable: false, align: 'end' as const },
   ]
 
   // Computed
@@ -370,9 +355,8 @@
     recipeDialog.value = true
   }
 
-  function openViewDialog (recipe: Recipe) {
-    // Navigate to detail page instead of opening dialog
-    router.push(`/production/recipes/${recipe.uuid}`)
+  function onRowClick (_event: Event, { item }: { item: Recipe }) {
+    router.push(`/production/recipes/${item.uuid}`)
   }
 
   function formatGravity (value: number | null | undefined): string {
@@ -533,12 +517,11 @@
   max-width: 300px;
 }
 
-.recipe-link {
-  color: rgb(var(--v-theme-primary));
-  text-decoration: none;
+.recipes-table :deep(tr) {
+  cursor: pointer;
 }
 
-.recipe-link:hover {
-  text-decoration: underline;
+.recipes-table :deep(tr:hover td) {
+  background: rgba(var(--v-theme-primary), 0.04);
 }
 </style>

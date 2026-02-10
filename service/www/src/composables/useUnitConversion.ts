@@ -1,10 +1,21 @@
-// Unit type definitions
-export type TemperatureUnit = 'c' | 'f'
-export type GravityUnit = 'sg' | 'plato'
-export type VolumeUnit = 'ml' | 'l' | 'hl' | 'usfloz' | 'ukfloz' | 'usgal' | 'ukgal' | 'bbl' | 'ukbbl'
-export type MassUnit = 'g' | 'kg' | 'oz' | 'lb'
-export type PressureUnit = 'kpa' | 'psi' | 'bar'
-export type ColorUnit = 'srm' | 'ebc'
+import type {
+  ColorUnit,
+  GravityUnit,
+  MassUnit,
+  PressureUnit,
+  TemperatureUnit,
+  VolumeUnit,
+} from '@/types'
+
+// Re-export unit types for backward compatibility
+export type {
+  ColorUnit,
+  GravityUnit,
+  MassUnit,
+  PressureUnit,
+  TemperatureUnit,
+  VolumeUnit,
+} from '@/types'
 
 // Unit labels for display
 export const temperatureLabels: Record<TemperatureUnit, string> = {

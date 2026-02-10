@@ -54,11 +54,51 @@
           :items="filteredRecipes"
           :loading="loading"
         >
+          <template #item.name="{ item }">
+            <a
+              class="recipe-link font-weight-medium"
+              href="#"
+              @click.prevent="openViewDialog(item)"
+            >
+              {{ item.name }}
+            </a>
+          </template>
+
           <template #item.style_name="{ item }">
             <v-chip v-if="item.style_name" size="small" variant="tonal">
               {{ item.style_name }}
             </v-chip>
             <span v-else class="text-medium-emphasis">—</span>
+          </template>
+
+          <template #item.specs="{ item }">
+            <div class="d-flex flex-wrap ga-1">
+              <v-chip
+                v-if="item.target_og"
+                color="info"
+                size="x-small"
+                variant="tonal"
+              >
+                OG {{ formatGravity(item.target_og) }}
+              </v-chip>
+              <v-chip
+                v-if="item.target_ibu"
+                color="warning"
+                size="x-small"
+                variant="tonal"
+              >
+                {{ formatIbu(item.target_ibu) }} IBU
+              </v-chip>
+              <v-chip
+                v-if="item.target_abv"
+                color="success"
+                size="x-small"
+                variant="tonal"
+              >
+                {{ formatAbv(item.target_abv) }}
+              </v-chip>
+              <span v-if="!item.target_og && !item.target_ibu && !item.target_abv" class="text-medium-emphasis">—</span>
+            </div>
           </template>
 
           <template #item.notes="{ item }">
@@ -72,16 +112,11 @@
 
           <template #item.actions="{ item }">
             <v-btn
-              icon="mdi-eye"
+              aria-label="View recipe"
+              icon="mdi-arrow-right"
               size="x-small"
               variant="text"
               @click="openViewDialog(item)"
-            />
-            <v-btn
-              icon="mdi-pencil"
-              size="x-small"
-              variant="text"
-              @click="openEditDialog(item)"
             />
           </template>
 
@@ -108,38 +143,6 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <!-- View Recipe Dialog -->
-  <v-dialog v-model="viewDialog" max-width="600">
-    <v-card v-if="selectedRecipe">
-      <v-card-title class="text-h6">{{ selectedRecipe.name }}</v-card-title>
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="6">
-            <div class="text-caption text-medium-emphasis">Style</div>
-            <div class="text-body-1">
-              <v-chip v-if="selectedRecipe.style_name" size="small" variant="tonal">
-                {{ selectedRecipe.style_name }}
-              </v-chip>
-              <span v-else class="text-medium-emphasis">Not specified</span>
-            </div>
-          </v-col>
-          <v-col cols="12" md="6">
-            <div class="text-caption text-medium-emphasis">Last updated</div>
-            <div class="text-body-1">{{ formatDateTime(selectedRecipe.updated_at) }}</div>
-          </v-col>
-          <v-col v-if="selectedRecipe.notes" cols="12">
-            <div class="text-caption text-medium-emphasis">Notes</div>
-            <div class="text-body-1">{{ selectedRecipe.notes }}</div>
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="viewDialog = false">Close</v-btn>
-        <v-btn color="primary" variant="text" @click="openEditDialogFromView">Edit</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
   <!-- Create/Edit Recipe Dialog -->
   <v-dialog v-model="recipeDialog" max-width="600" persistent>
     <v-card>
@@ -161,7 +164,7 @@
             density="comfortable"
             hint="Select an existing style or type a new one"
             item-title="name"
-            item-value="id"
+          item-value="uuid"
             :items="styleItems"
             label="Style"
             :loading="stylesLoading"
@@ -206,17 +209,45 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Delete Confirmation Dialog -->
+  <v-dialog v-model="deleteDialog" max-width="400" persistent>
+    <v-card>
+      <v-card-title class="text-h6">Delete recipe</v-card-title>
+      <v-card-text>
+        <p>
+          Are you sure you want to delete <strong>{{ recipeToDelete?.name }}</strong>?
+        </p>
+        <p class="text-medium-emphasis mt-2">This action cannot be undone.</p>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="deleting" variant="text" @click="closeDeleteDialog">Cancel</v-btn>
+        <v-btn
+          color="error"
+          :loading="deleting"
+          variant="flat"
+          @click="confirmDelete"
+        >
+          Delete
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import { type Recipe, type Style, useProductionApi } from '@/composables/useProductionApi'
+
+  const router = useRouter()
 
   const {
     getRecipes,
     getStyles,
     createRecipe,
     updateRecipe,
+    deleteRecipe,
     normalizeText,
     formatDateTime,
   } = useProductionApi()
@@ -227,14 +258,15 @@
   const loading = ref(false)
   const stylesLoading = ref(false)
   const saving = ref(false)
+  const deleting = ref(false)
   const errorMessage = ref('')
   const search = ref('')
 
   // Dialogs
-  const viewDialog = ref(false)
   const recipeDialog = ref(false)
-  const selectedRecipe = ref<Recipe | null>(null)
-  const editingRecipeId = ref<number | null>(null)
+  const deleteDialog = ref(false)
+  const editingRecipeUuid = ref<string | null>(null)
+  const recipeToDelete = ref<Recipe | null>(null)
 
   // Form
   const formRef = ref()
@@ -259,13 +291,14 @@
   const headers = [
     { title: 'Name', key: 'name', sortable: true },
     { title: 'Style', key: 'style_name', sortable: true },
+    { title: 'Specs', key: 'specs', sortable: false },
     { title: 'Notes', key: 'notes', sortable: false },
     { title: 'Updated', key: 'updated_at', sortable: true },
     { title: '', key: 'actions', sortable: false, align: 'end' as const },
   ]
 
   // Computed
-  const isEditing = computed(() => editingRecipeId.value !== null)
+  const isEditing = computed(() => editingRecipeUuid.value !== null)
 
   const isFormValid = computed(() => {
     return recipeForm.name.trim().length > 0
@@ -329,7 +362,7 @@
   }
 
   function openCreateDialog () {
-    editingRecipeId.value = null
+    editingRecipeUuid.value = null
     recipeForm.name = ''
     recipeForm.style = null
     recipeForm.notes = ''
@@ -338,12 +371,28 @@
   }
 
   function openViewDialog (recipe: Recipe) {
-    selectedRecipe.value = recipe
-    viewDialog.value = true
+    // Navigate to detail page instead of opening dialog
+    router.push(`/production/recipes/${recipe.uuid}`)
   }
 
-  function openEditDialog (recipe: Recipe) {
-    editingRecipeId.value = recipe.id
+  function formatGravity (value: number | null | undefined): string {
+    if (value === null || value === undefined) return ''
+    return value.toFixed(3)
+  }
+
+  function formatAbv (value: number | null | undefined): string {
+    if (value === null || value === undefined) return ''
+    return `${value.toFixed(1)}%`
+  }
+
+  function formatIbu (value: number | null | undefined): string {
+    if (value === null || value === undefined) return ''
+    return String(Math.round(value))
+  }
+
+  // Kept for potential future inline editing from list view
+  function _openEditDialog (recipe: Recipe) {
+    editingRecipeUuid.value = recipe.uuid
     recipeForm.name = recipe.name
     recipeForm.notes = recipe.notes ?? ''
 
@@ -361,16 +410,9 @@
     recipeDialog.value = true
   }
 
-  function openEditDialogFromView () {
-    if (selectedRecipe.value) {
-      viewDialog.value = false
-      openEditDialog(selectedRecipe.value)
-    }
-  }
-
   function closeRecipeDialog () {
     recipeDialog.value = false
-    editingRecipeId.value = null
+    editingRecipeUuid.value = null
   }
 
   async function saveRecipe () {
@@ -404,8 +446,8 @@
         notes: normalizeText(recipeForm.notes),
       }
 
-      if (isEditing.value && editingRecipeId.value) {
-        await updateRecipe(editingRecipeId.value, payload)
+      if (isEditing.value && editingRecipeUuid.value) {
+        await updateRecipe(editingRecipeUuid.value, payload)
         showNotice('Recipe updated')
       } else {
         await createRecipe(payload)
@@ -420,6 +462,39 @@
       showNotice(message, 'error')
     } finally {
       saving.value = false
+    }
+  }
+
+  // Kept for potential future inline deletion from list view
+  function _openDeleteDialog (recipe: Recipe) {
+    recipeToDelete.value = recipe
+    deleteDialog.value = true
+  }
+
+  function closeDeleteDialog () {
+    deleteDialog.value = false
+    recipeToDelete.value = null
+  }
+
+  async function confirmDelete () {
+    if (!recipeToDelete.value) {
+      return
+    }
+
+    deleting.value = true
+    errorMessage.value = ''
+
+    try {
+      await deleteRecipe(recipeToDelete.value.uuid)
+      showNotice('Recipe deleted')
+      closeDeleteDialog()
+      await loadRecipes()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to delete recipe'
+      errorMessage.value = message
+      showNotice(message, 'error')
+    } finally {
+      deleting.value = false
     }
   }
 </script>
@@ -456,5 +531,14 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   max-width: 300px;
+}
+
+.recipe-link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+}
+
+.recipe-link:hover {
+  text-decoration: underline;
 }
 </style>

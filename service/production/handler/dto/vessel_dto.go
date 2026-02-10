@@ -21,6 +21,9 @@ func (r CreateVesselRequest) Validate() error {
 	if err := validateRequired(r.Type, "type"); err != nil {
 		return err
 	}
+	if err := validateVesselType(r.Type); err != nil {
+		return err
+	}
 	if err := validateRequired(r.Name, "name"); err != nil {
 		return err
 	}
@@ -34,6 +37,39 @@ func (r CreateVesselRequest) Validate() error {
 		if err := validateVesselStatus(*r.Status); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+type UpdateVesselRequest struct {
+	Type         string  `json:"type"`
+	Name         string  `json:"name"`
+	Capacity     int64   `json:"capacity"`
+	CapacityUnit string  `json:"capacity_unit"`
+	Make         *string `json:"make"`
+	Model        *string `json:"model"`
+	Status       string  `json:"status"`
+}
+
+func (r UpdateVesselRequest) Validate() error {
+	if err := validateRequired(r.Type, "type"); err != nil {
+		return err
+	}
+	if err := validateVesselType(r.Type); err != nil {
+		return err
+	}
+	if err := validateRequired(r.Name, "name"); err != nil {
+		return err
+	}
+	if r.Capacity <= 0 {
+		return fmt.Errorf("capacity must be greater than zero")
+	}
+	if err := validateVolumeUnit(r.CapacityUnit); err != nil {
+		return err
+	}
+	if err := validateVesselStatus(r.Status); err != nil {
+		return err
 	}
 
 	return nil

@@ -8,7 +8,7 @@
       </v-avatar>
     </div>
 
-    <div class="brand-text">
+    <div class="brand-text d-none d-sm-flex">
       <div class="text-caption text-medium-emphasis">BrewPipes</div>
       <div class="text-subtitle-1">{{ breweryName }}</div>
     </div>
@@ -54,12 +54,13 @@
         :to="item.to"
       />
 
-      <v-list-group class="nav-group" value="batches">
+      <v-list-group class="nav-group" value="production">
         <template #activator="{ props }">
-          <v-list-item v-bind="props" prepend-icon="mdi-barley" title="Batches" />
+          <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
         </template>
-        <v-list-item title="In Progress" to="/batches/in-progress" />
-        <v-list-item title="All Batches" to="/batches/all" />
+        <v-list-item title="Pipeline" to="/batches/in-progress" />
+        <v-list-item title="Batches" to="/batches/all" />
+        <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="vessels">
@@ -68,13 +69,6 @@
         </template>
         <v-list-item title="Active" to="/vessels/active" />
         <v-list-item title="All Vessels" to="/vessels/all" />
-      </v-list-group>
-
-      <v-list-group class="nav-group" value="production">
-        <template #activator="{ props }">
-          <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
-        </template>
-        <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
 
       <v-list-group class="nav-group" value="inventory">
@@ -228,5 +222,15 @@
   padding-right: calc(var(--v-layout-right) + 8px);
   padding-bottom: calc(var(--v-layout-bottom) + 8px);
   padding-left: calc(var(--v-layout-left) + 8px);
+}
+
+/* Mobile: reduce padding for more content space */
+@media (max-width: 599px) {
+  .app-main {
+    padding-top: calc(var(--v-layout-top) + 4px);
+    padding-right: calc(var(--v-layout-right) + 4px);
+    padding-bottom: calc(var(--v-layout-bottom) + 4px);
+    padding-left: calc(var(--v-layout-left) + 4px);
+  }
 }
 </style>

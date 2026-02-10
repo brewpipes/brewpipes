@@ -1,39 +1,45 @@
 <template>
   <v-container class="vessels-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" icon="mdi-silo" />
-        All Vessels
-        <v-spacer />
-        <v-text-field
-          v-model="search"
-          append-inner-icon="mdi-magnify"
-          class="search-field"
-          clearable
-          density="compact"
-          hide-details
-          label="Search"
-          single-line
-          variant="outlined"
-        />
-        <v-btn
-          class="ml-2"
-          :loading="loading"
-          size="small"
-          variant="text"
-          @click="refreshData"
-        >
-          Refresh
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          color="primary"
-          size="small"
-          variant="text"
-          @click="openCreateDialog"
-        >
-          New vessel
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <div class="d-flex align-center">
+          <v-icon class="mr-2" icon="mdi-silo" />
+          <span class="d-none d-sm-inline">All Vessels</span>
+          <span class="d-sm-none">Vessels</span>
+        </div>
+        <div class="card-title-actions">
+          <v-text-field
+            v-model="search"
+            append-inner-icon="mdi-magnify"
+            class="search-field"
+            clearable
+            density="compact"
+            hide-details
+            label="Search"
+            single-line
+            variant="outlined"
+          />
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :loading="loading"
+            size="small"
+            variant="text"
+            @click="refreshData"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-refresh" />
+            <span v-else>Refresh</span>
+          </v-btn>
+          <v-btn
+            color="primary"
+            :icon="$vuetify.display.xs"
+            size="small"
+            variant="text"
+            @click="openCreateDialog"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+            <span v-else>New vessel</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-alert
@@ -56,10 +62,6 @@
           :search="search"
           @dblclick:row="onRowDoubleClick"
         >
-          <template #item.id="{ item }">
-            <span class="text-medium-emphasis">#{{ item.id }}</span>
-          </template>
-
           <template #item.name="{ item }">
             <span class="font-weight-medium">{{ item.name }}</span>
           </template>
@@ -93,6 +95,23 @@
             {{ formatRelativeTime(item.updated_at) }}
           </template>
 
+          <template #item.actions="{ item }">
+            <v-btn
+              icon="mdi-pencil"
+              size="x-small"
+              variant="text"
+              @click.stop="openEditDialog(item)"
+            />
+            <v-btn
+              v-if="item.status !== 'retired'"
+              color="warning"
+              icon="mdi-archive"
+              size="x-small"
+              variant="text"
+              @click.stop="openRetireDialog(item)"
+            />
+          </template>
+
           <template #no-data>
             <div class="text-center py-4">
               <div class="text-body-2 text-medium-emphasis">No vessels yet.</div>
@@ -116,8 +135,16 @@
     {{ snackbar.text }}
   </v-snackbar>
 
+  <!-- Edit Vessel Dialog -->
+  <VesselEditDialog
+    ref="editDialogRef"
+    v-model="editDialogOpen"
+    :vessel="editingVessel"
+    @save="handleSaveVessel"
+  />
+
   <!-- Create Vessel Dialog -->
-  <v-dialog v-model="createVesselDialog" max-width="640" persistent>
+  <v-dialog v-model="createVesselDialog" :max-width="$vuetify.display.xs ? '100%' : 640" persistent>
     <v-card>
       <v-card-title class="text-h6">Register vessel</v-card-title>
       <v-card-text>
@@ -169,8 +196,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { UpdateVesselRequest } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import { useApiClient } from '@/composables/useApiClient'
   import {
     useFormatters,
@@ -190,6 +219,7 @@
     short_name: string
     brew_date: string | null
     recipe_id: number | null
+    recipe_uuid: string | null
     notes: string | null
     created_at: string
     updated_at: string
@@ -203,7 +233,7 @@
   const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const router = useRouter()
   const { request } = useApiClient(apiBase)
-  const { getActiveOccupancies } = useProductionApi()
+  const { getActiveOccupancies, updateVessel } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatRelativeTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
@@ -222,6 +252,9 @@
 
   // Dialog state
   const createVesselDialog = ref(false)
+  const editDialogOpen = ref(false)
+  const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
+  const editingVessel = ref<Vessel | null>(null)
 
   // Form state
   const newVessel = reactive({
@@ -242,13 +275,13 @@
 
   // Table configuration
   const headers = [
-    { title: 'ID', key: 'id', sortable: true, width: '80px' },
     { title: 'Name', key: 'name', sortable: true },
     { title: 'Type', key: 'type', sortable: true },
     { title: 'Capacity', key: 'capacity', sortable: true },
     { title: 'Status', key: 'status', sortable: true },
     { title: 'Occupancy', key: 'occupancy', sortable: true },
     { title: 'Updated', key: 'updated_at', sortable: true },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '100px' },
   ]
 
   // Computed
@@ -399,6 +432,48 @@
     router.push(`/vessels/${item.uuid}`)
   }
 
+  function openEditDialog (vessel: Vessel) {
+    editingVessel.value = vessel
+    editDialogOpen.value = true
+  }
+
+  function openRetireDialog (vessel: Vessel) {
+    // Open edit dialog - the user will see the retirement warning when they change status
+    editingVessel.value = vessel
+    editDialogOpen.value = true
+  }
+
+  async function handleSaveVessel (data: UpdateVesselRequest) {
+    if (!editingVessel.value) return
+
+    editDialogRef.value?.setSaving(true)
+    editDialogRef.value?.clearError()
+
+    try {
+      const updated = await updateVessel(editingVessel.value.id, data)
+      // Update the vessel in the list
+      const index = vessels.value.findIndex(v => v.id === updated.id)
+      if (index !== -1) {
+        vessels.value[index] = updated
+      }
+      editDialogOpen.value = false
+      editingVessel.value = null
+      showNotice('Vessel updated successfully')
+    } catch (error_) {
+      console.error('Failed to update vessel:', error_)
+
+      // Check for 409 Conflict (vessel has active occupancy)
+      if (error_ instanceof Error && error_.message.includes('409')) {
+        editDialogRef.value?.setError('Cannot change status: vessel has an active occupancy')
+      } else {
+        const message = error_ instanceof Error ? error_.message : 'Failed to update vessel'
+        editDialogRef.value?.setError(message)
+      }
+    } finally {
+      editDialogRef.value?.setSaving(false)
+    }
+  }
+
   // Formatting functions
   function normalizeText (value: string) {
     const trimmed = value.trim()
@@ -426,8 +501,47 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .search-field {
-  max-width: 260px;
+  width: 200px;
+  min-width: 120px;
+  flex-shrink: 1;
+}
+
+@media (max-width: 599px) {
+  .card-title-responsive {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-title-actions {
+    justify-content: flex-end;
+  }
+
+  .search-field {
+    width: 100%;
+    max-width: none;
+    order: 10;
+    margin-top: 8px;
+  }
+}
+
+.data-table {
+  overflow-x: auto;
 }
 
 .data-table :deep(th) {
@@ -435,10 +549,15 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {
   font-size: 0.85rem;
+}
+
+.vessels-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 
 .vessels-table :deep(tr) {

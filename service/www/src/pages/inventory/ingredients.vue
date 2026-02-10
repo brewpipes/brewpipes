@@ -1,19 +1,22 @@
 <template>
   <v-container class="inventory-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" icon="mdi-barley" />
-        Ingredients
-        <v-spacer />
+      <v-card-title class="card-title-responsive">
+        <div class="d-flex align-center">
+          <v-icon class="mr-2" icon="mdi-barley" />
+          Ingredients
+        </div>
         <v-btn
           color="primary"
+          :icon="$vuetify.display.xs"
           :loading="ingredientLoading"
-          prepend-icon="mdi-plus"
+          :prepend-icon="$vuetify.display.xs ? undefined : 'mdi-plus'"
           size="small"
           variant="text"
           @click="openIngredientDialog"
         >
-          New ingredient
+          <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+          <span v-else>New ingredient</span>
         </v-btn>
       </v-card-title>
       <v-card-text>
@@ -67,12 +70,14 @@
                   {{ lotErrorMessage }}
                 </v-alert>
                 <v-data-table
-                  class="data-table"
+                  class="data-table lot-table"
                   density="compact"
                   :headers="lotHeaders"
+                  hover
                   item-value="id"
                   :items="maltLots"
                   :loading="lotLoading"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
                 >
                   <template #item.ingredient_id="{ item }">
                     {{ ingredientName(item.ingredient_id) }}
@@ -88,11 +93,6 @@
                   </template>
                   <template #item.expires_at="{ item }">
                     {{ formatDateTime(item.expires_at) }}
-                  </template>
-                  <template #item.actions="{ item }">
-                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
-                      Details
-                    </v-btn>
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No malt lots yet.</div>
@@ -133,12 +133,14 @@
                   {{ lotErrorMessage }}
                 </v-alert>
                 <v-data-table
-                  class="data-table"
+                  class="data-table lot-table"
                   density="compact"
                   :headers="lotHeaders"
+                  hover
                   item-value="id"
                   :items="hopLots"
                   :loading="lotLoading"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
                 >
                   <template #item.ingredient_id="{ item }">
                     {{ ingredientName(item.ingredient_id) }}
@@ -154,11 +156,6 @@
                   </template>
                   <template #item.expires_at="{ item }">
                     {{ formatDateTime(item.expires_at) }}
-                  </template>
-                  <template #item.actions="{ item }">
-                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
-                      Details
-                    </v-btn>
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No hop lots yet.</div>
@@ -199,12 +196,14 @@
                   {{ lotErrorMessage }}
                 </v-alert>
                 <v-data-table
-                  class="data-table"
+                  class="data-table lot-table"
                   density="compact"
                   :headers="lotHeaders"
+                  hover
                   item-value="id"
                   :items="yeastLots"
                   :loading="lotLoading"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
                 >
                   <template #item.ingredient_id="{ item }">
                     {{ ingredientName(item.ingredient_id) }}
@@ -220,11 +219,6 @@
                   </template>
                   <template #item.expires_at="{ item }">
                     {{ formatDateTime(item.expires_at) }}
-                  </template>
-                  <template #item.actions="{ item }">
-                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
-                      Details
-                    </v-btn>
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No yeast lots yet.</div>
@@ -265,12 +259,14 @@
                   {{ lotErrorMessage }}
                 </v-alert>
                 <v-data-table
-                  class="data-table"
+                  class="data-table lot-table"
                   density="compact"
                   :headers="otherLotHeaders"
+                  hover
                   item-value="id"
                   :items="otherLots"
                   :loading="lotLoading"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
                 >
                   <template #item.ingredient_id="{ item }">
                     {{ ingredientName(item.ingredient_id) }}
@@ -291,11 +287,6 @@
                   </template>
                   <template #item.expires_at="{ item }">
                     {{ formatDateTime(item.expires_at) }}
-                  </template>
-                  <template #item.actions="{ item }">
-                    <v-btn size="x-small" variant="text" @click="openLotDetails(item.id)">
-                      Details
-                    </v-btn>
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No other lots yet.</div>
@@ -427,7 +418,7 @@
   </v-snackbar>
 
   <!-- Create Lot Dialog -->
-  <v-dialog v-model="lotDialog" max-width="600" persistent>
+  <v-dialog v-model="lotDialog" :max-width="$vuetify.display.xs ? '100%' : 600" persistent>
     <v-card>
       <v-card-title class="text-h6">Create ingredient lot</v-card-title>
       <v-card-text>
@@ -525,7 +516,7 @@
   </v-dialog>
 
   <!-- Create Usage Dialog -->
-  <v-dialog v-model="usageDialog" max-width="500" persistent>
+  <v-dialog v-model="usageDialog" :max-width="$vuetify.display.xs ? '100%' : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Log ingredient usage</v-card-title>
       <v-card-text>
@@ -562,7 +553,7 @@
   </v-dialog>
 
   <!-- Create Receipt Dialog -->
-  <v-dialog v-model="receiptDialog" max-width="500" persistent>
+  <v-dialog v-model="receiptDialog" :max-width="$vuetify.display.xs ? '100%' : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Create receipt</v-card-title>
       <v-card-text>
@@ -604,7 +595,7 @@
   </v-dialog>
 
   <!-- Create Ingredient Dialog -->
-  <v-dialog v-model="ingredientDialog" max-width="500" persistent>
+  <v-dialog v-model="ingredientDialog" :max-width="$vuetify.display.xs ? '100%' : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Create ingredient</v-card-title>
       <v-card-text>
@@ -814,7 +805,6 @@
     { title: 'Best By', key: 'best_by_at', sortable: true },
     { title: 'Expires', key: 'expires_at', sortable: true },
     { title: 'Notes', key: 'notes', sortable: false },
-    { title: '', key: 'actions', sortable: false, align: 'end' as const },
   ]
 
   const otherLotHeaders = [
@@ -826,7 +816,6 @@
     { title: 'Best By', key: 'best_by_at', sortable: true },
     { title: 'Expires', key: 'expires_at', sortable: true },
     { title: 'Notes', key: 'notes', sortable: false },
-    { title: '', key: 'actions', sortable: false, align: 'end' as const },
   ]
 
   const usageHeaders = [
@@ -1189,14 +1178,35 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.data-table {
+  overflow-x: auto;
+}
+
+.data-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
+}
+
 .data-table :deep(th) {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {
   font-size: 0.85rem;
+}
+
+.lot-table :deep(tr) {
+  cursor: pointer;
 }
 </style>

@@ -4,6 +4,10 @@
       <v-icon class="mr-2" icon="mdi-silo-outline" />
       {{ vessel ? vessel.name : 'Vessel details' }}
       <v-spacer />
+      <v-btn v-if="vessel" size="small" variant="text" @click="emit('edit')">
+        <v-icon class="mr-1" icon="mdi-pencil" size="small" />
+        Edit
+      </v-btn>
       <v-btn :loading="loading" size="small" variant="text" @click="emit('refresh')">Refresh</v-btn>
       <v-btn v-if="vessel" size="small" variant="text" @click="emit('clear')">Clear</v-btn>
     </v-card-title>
@@ -157,6 +161,7 @@
 
   const emit = defineEmits<{
     'occupancy-status-change': [occupancyId: number, status: OccupancyStatus]
+    'edit': []
     'refresh': []
     'clear': []
   }>()

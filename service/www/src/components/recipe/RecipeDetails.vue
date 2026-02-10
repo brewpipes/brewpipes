@@ -1,0 +1,519 @@
+<template>
+  <v-card class="section-card">
+    <!-- Header -->
+    <v-card-title class="d-flex align-center flex-wrap ga-2">
+      <v-btn
+        aria-label="Back to recipes"
+        class="mr-2"
+        icon="mdi-arrow-left"
+        size="small"
+        variant="text"
+        @click="emit('back')"
+      />
+      <v-icon class="mr-2" icon="mdi-book-open-page-variant" />
+      <span class="text-h6">{{ recipe.name }}</span>
+      <v-chip
+        v-if="recipe.style_name"
+        class="ml-2"
+        color="secondary"
+        size="small"
+        variant="tonal"
+      >
+        {{ recipe.style_name }}
+      </v-chip>
+      <v-spacer />
+      <v-btn
+        :loading="refreshing"
+        size="small"
+        variant="text"
+        @click="refresh"
+      >
+        <span class="d-none d-sm-inline">Refresh</span>
+        <v-icon class="d-sm-none" icon="mdi-refresh" />
+      </v-btn>
+      <v-btn
+        aria-label="Edit recipe"
+        icon="mdi-pencil"
+        size="small"
+        variant="text"
+        @click="openEditDialog"
+      />
+      <v-btn
+        aria-label="Delete recipe"
+        color="error"
+        icon="mdi-delete"
+        size="small"
+        variant="text"
+        @click="openDeleteDialog"
+      />
+    </v-card-title>
+
+    <v-card-text>
+      <!-- Metric Cards -->
+      <v-row class="mb-4" dense>
+        <v-col cols="6" md="2">
+          <div class="metric-card">
+            <div class="metric-label">OG</div>
+            <div class="metric-value">{{ formatGravity(recipe.target_og) }}</div>
+          </div>
+        </v-col>
+        <v-col cols="6" md="2">
+          <div class="metric-card">
+            <div class="metric-label">FG</div>
+            <div class="metric-value">{{ formatGravity(recipe.target_fg) }}</div>
+          </div>
+        </v-col>
+        <v-col cols="6" md="2">
+          <div class="metric-card">
+            <div class="metric-label">ABV</div>
+            <div class="metric-value">{{ formatPercent(recipe.target_abv) }}</div>
+          </div>
+        </v-col>
+        <v-col cols="6" md="2">
+          <div class="metric-card">
+            <div class="metric-label">IBU</div>
+            <div class="metric-value">{{ formatNumber(recipe.target_ibu) }}</div>
+          </div>
+        </v-col>
+        <v-col cols="6" md="2">
+          <div class="metric-card">
+            <div class="metric-label">SRM</div>
+            <div class="metric-value d-flex align-center justify-center ga-2">
+              {{ formatNumber(recipe.target_srm) }}
+              <div
+                v-if="recipe.target_srm"
+                class="srm-swatch"
+                :style="{ backgroundColor: srmToColor(recipe.target_srm) }"
+              />
+            </div>
+          </div>
+        </v-col>
+        <v-col cols="6" md="2">
+          <div class="metric-card">
+            <div class="metric-label">Batch Size</div>
+            <div class="metric-value">
+              {{ formatBatchSize(recipe.batch_size, recipe.batch_size_unit) }}
+            </div>
+          </div>
+        </v-col>
+      </v-row>
+
+      <!-- Tabs -->
+      <v-tabs v-model="activeTab" class="recipe-tabs" color="primary" show-arrows>
+        <v-tab value="overview">
+          <v-icon class="d-sm-none" icon="mdi-information-outline" />
+          <span class="d-none d-sm-inline">Overview</span>
+        </v-tab>
+        <v-tab value="fermentables">
+          <v-icon class="d-sm-none" icon="mdi-barley" />
+          <span class="d-none d-sm-inline">Fermentables</span>
+        </v-tab>
+        <v-tab value="hops">
+          <v-icon class="d-sm-none" icon="mdi-leaf" />
+          <span class="d-none d-sm-inline">Hops</span>
+        </v-tab>
+        <v-tab value="yeast">
+          <v-icon class="d-sm-none" icon="mdi-flask-outline" />
+          <span class="d-none d-sm-inline">Yeast & Other</span>
+        </v-tab>
+        <v-tab value="specs">
+          <v-icon class="d-sm-none" icon="mdi-tune" />
+          <span class="d-none d-sm-inline">Specs</span>
+        </v-tab>
+      </v-tabs>
+
+      <v-window v-model="activeTab" class="mt-4">
+        <v-window-item value="overview">
+          <RecipeOverviewTab
+            :recipe="recipe"
+          />
+        </v-window-item>
+
+        <v-window-item value="fermentables">
+          <RecipeFermentablesTab
+            :ingredients="fermentables"
+            :loading="ingredientsLoading"
+            @create="openIngredientDialog('fermentable')"
+            @delete="deleteIngredient"
+            @edit="openEditIngredientDialog"
+          />
+        </v-window-item>
+
+        <v-window-item value="hops">
+          <RecipeHopsTab
+            :ingredients="hops"
+            :loading="ingredientsLoading"
+            @create="openIngredientDialog('hop')"
+            @delete="deleteIngredient"
+            @edit="openEditIngredientDialog"
+          />
+        </v-window-item>
+
+        <v-window-item value="yeast">
+          <RecipeYeastTab
+            :adjuncts="adjuncts"
+            :loading="ingredientsLoading"
+            :water-chemistry="waterChemistry"
+            :yeasts="yeasts"
+            @create="openIngredientDialog"
+            @delete="deleteIngredient"
+            @edit="openEditIngredientDialog"
+          />
+        </v-window-item>
+
+        <v-window-item value="specs">
+          <RecipeSpecsTab
+            :recipe="recipe"
+            :saving="savingSpecs"
+            @save="saveSpecs"
+          />
+        </v-window-item>
+      </v-window>
+    </v-card-text>
+  </v-card>
+
+  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+    {{ snackbar.text }}
+  </v-snackbar>
+
+  <!-- Edit Recipe Dialog -->
+  <RecipeEditDialog
+    v-model="editDialog"
+    :error-message="editRecipeError"
+    :recipe="recipe"
+    :saving="savingRecipe"
+    :styles="styles"
+    :styles-loading="stylesLoading"
+    @submit="saveRecipe"
+  />
+
+  <!-- Delete Recipe Dialog -->
+  <RecipeDeleteDialog
+    v-model="deleteDialog"
+    :deleting="deletingRecipe"
+    :error-message="deleteRecipeError"
+    :recipe="recipe"
+    @confirm="confirmDelete"
+  />
+
+  <!-- Ingredient Dialog -->
+  <RecipeIngredientDialog
+    v-model="ingredientDialog"
+    :editing-ingredient="editingIngredient"
+    :ingredient-type="ingredientDialogType"
+    :saving="savingIngredient"
+    @submit="saveIngredient"
+  />
+</template>
+
+<script lang="ts" setup>
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { srmToColor, useBrewingFormatters } from '@/composables/useFormatters'
+  import {
+    type CreateRecipeIngredientRequest,
+    type Recipe,
+    type RecipeIngredient,
+    type RecipeIngredientType,
+    type Style,
+    type UpdateRecipeIngredientRequest,
+    type UpdateRecipeRequest,
+    useProductionApi,
+  } from '@/composables/useProductionApi'
+  import RecipeDeleteDialog from './RecipeDeleteDialog.vue'
+  import RecipeEditDialog from './RecipeEditDialog.vue'
+  import RecipeFermentablesTab from './RecipeFermentablesTab.vue'
+  import RecipeHopsTab from './RecipeHopsTab.vue'
+  import RecipeIngredientDialog from './RecipeIngredientDialog.vue'
+  import RecipeOverviewTab from './RecipeOverviewTab.vue'
+  import RecipeSpecsTab from './RecipeSpecsTab.vue'
+  import RecipeYeastTab from './RecipeYeastTab.vue'
+
+  const props = defineProps<{
+    recipe: Recipe
+  }>()
+
+  const emit = defineEmits<{
+    back: []
+    deleted: []
+    updated: [recipe: Recipe]
+  }>()
+
+  const {
+    getStyles,
+    getRecipe,
+    updateRecipe,
+    deleteRecipe,
+    getRecipeIngredients,
+    createRecipeIngredient,
+    updateRecipeIngredient,
+    deleteRecipeIngredient,
+  } = useProductionApi()
+
+  const {
+    formatGravity,
+    formatPercent,
+    formatWholeNumber: formatNumber,
+    formatBatchSize,
+  } = useBrewingFormatters()
+
+  // State
+  const activeTab = ref('overview')
+  const refreshing = ref(false)
+  const ingredients = ref<RecipeIngredient[]>([])
+  const ingredientsLoading = ref(false)
+  const styles = ref<Style[]>([])
+  const stylesLoading = ref(false)
+
+  // Dialogs
+  const editDialog = ref(false)
+  const deleteDialog = ref(false)
+  const ingredientDialog = ref(false)
+  const ingredientDialogType = ref<RecipeIngredientType>('fermentable')
+  const editingIngredient = ref<RecipeIngredient | null>(null)
+
+  // Saving states
+  const savingRecipe = ref(false)
+  const deletingRecipe = ref(false)
+  const savingIngredient = ref(false)
+  const savingSpecs = ref(false)
+
+  // Error states for dialogs
+  const editRecipeError = ref('')
+  const deleteRecipeError = ref('')
+
+  const snackbar = reactive({
+    show: false,
+    text: '',
+    color: 'success',
+  })
+
+  // Computed ingredient lists
+  const fermentables = computed(() =>
+    ingredients.value.filter(i => i.ingredient_type === 'fermentable'),
+  )
+
+  const hops = computed(() =>
+    ingredients.value.filter(i => i.ingredient_type === 'hop'),
+  )
+
+  const yeasts = computed(() =>
+    ingredients.value.filter(i => i.ingredient_type === 'yeast'),
+  )
+
+  const adjuncts = computed(() =>
+    ingredients.value.filter(i => i.ingredient_type === 'adjunct'),
+  )
+
+  const waterChemistry = computed(() =>
+    ingredients.value.filter(i =>
+      i.ingredient_type === 'salt' || i.ingredient_type === 'chemical',
+    ),
+  )
+
+  // Lifecycle
+  onMounted(async () => {
+    await Promise.all([loadIngredients(), loadStyles()])
+  })
+
+  watch(() => props.recipe.uuid, async () => {
+    await loadIngredients()
+  })
+
+  // Methods
+  function showNotice (text: string, color = 'success') {
+    snackbar.text = text
+    snackbar.color = color
+    snackbar.show = true
+  }
+
+  async function refresh () {
+    refreshing.value = true
+    try {
+      const [updatedRecipe] = await Promise.all([
+        getRecipe(props.recipe.uuid),
+        loadIngredients(),
+      ])
+      emit('updated', updatedRecipe)
+    } catch (error) {
+      console.error('Failed to refresh:', error)
+      showNotice('Failed to refresh recipe', 'error')
+    } finally {
+      refreshing.value = false
+    }
+  }
+
+  async function loadIngredients () {
+    ingredientsLoading.value = true
+    try {
+      ingredients.value = await getRecipeIngredients(props.recipe.uuid)
+    } catch (error) {
+      console.error('Failed to load ingredients:', error)
+      showNotice('Failed to load ingredients', 'error')
+    } finally {
+      ingredientsLoading.value = false
+    }
+  }
+
+  async function loadStyles () {
+    stylesLoading.value = true
+    try {
+      styles.value = await getStyles()
+    } catch (error) {
+      console.error('Failed to load styles:', error)
+    } finally {
+      stylesLoading.value = false
+    }
+  }
+
+  function openEditDialog () {
+    editRecipeError.value = ''
+    loadStyles()
+    editDialog.value = true
+  }
+
+  function openDeleteDialog () {
+    deleteRecipeError.value = ''
+    deleteDialog.value = true
+  }
+
+  async function saveRecipe (data: UpdateRecipeRequest) {
+    savingRecipe.value = true
+    editRecipeError.value = ''
+    try {
+      const updated = await updateRecipe(props.recipe.uuid, data)
+      showNotice('Recipe updated')
+      editDialog.value = false
+      emit('updated', updated)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update recipe'
+      editRecipeError.value = message
+    } finally {
+      savingRecipe.value = false
+    }
+  }
+
+  async function confirmDelete () {
+    deletingRecipe.value = true
+    deleteRecipeError.value = ''
+    try {
+      await deleteRecipe(props.recipe.uuid)
+      showNotice('Recipe deleted')
+      deleteDialog.value = false
+      emit('deleted')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete recipe'
+      deleteRecipeError.value = message
+    } finally {
+      deletingRecipe.value = false
+    }
+  }
+
+  function openIngredientDialog (type: RecipeIngredientType) {
+    ingredientDialogType.value = type
+    editingIngredient.value = null
+    ingredientDialog.value = true
+  }
+
+  function openEditIngredientDialog (ingredient: RecipeIngredient) {
+    ingredientDialogType.value = ingredient.ingredient_type
+    editingIngredient.value = ingredient
+    ingredientDialog.value = true
+  }
+
+  async function saveIngredient (data: CreateRecipeIngredientRequest | UpdateRecipeIngredientRequest) {
+    savingIngredient.value = true
+    try {
+      if (editingIngredient.value) {
+        await updateRecipeIngredient(
+          props.recipe.uuid,
+          editingIngredient.value.uuid,
+          data as UpdateRecipeIngredientRequest,
+        )
+        showNotice('Ingredient updated')
+      } else {
+        await createRecipeIngredient(props.recipe.uuid, data as CreateRecipeIngredientRequest)
+        showNotice('Ingredient added')
+      }
+      ingredientDialog.value = false
+      editingIngredient.value = null
+      await loadIngredients()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save ingredient'
+      showNotice(message, 'error')
+    } finally {
+      savingIngredient.value = false
+    }
+  }
+
+  async function deleteIngredient (ingredient: RecipeIngredient) {
+    try {
+      await deleteRecipeIngredient(props.recipe.uuid, ingredient.uuid)
+      showNotice('Ingredient removed')
+      await loadIngredients()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove ingredient'
+      showNotice(message, 'error')
+    }
+  }
+
+  async function saveSpecs (data: UpdateRecipeRequest) {
+    savingSpecs.value = true
+    try {
+      // Merge with recipe name, but data.name takes precedence if provided
+      const payload: UpdateRecipeRequest = {
+        ...data,
+        name: data.name ?? props.recipe.name,
+      }
+      const updated = await updateRecipe(props.recipe.uuid, payload)
+      showNotice('Specifications saved')
+      emit('updated', updated)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save specifications'
+      showNotice(message, 'error')
+    } finally {
+      savingSpecs.value = false
+    }
+  }
+
+</script>
+
+<style scoped>
+.section-card {
+  background: rgba(var(--v-theme-surface), 0.92);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
+}
+
+.metric-card {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-surface), 0.5);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.87);
+}
+
+.srm-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.2);
+}
+
+.recipe-tabs {
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+}
+</style>

@@ -37,7 +37,8 @@ declare module 'vue-router/auto-routes' {
     '/procurement/purchase-orders': RouteRecordInfo<'/procurement/purchase-orders', '/procurement/purchase-orders', Record<never, never>, Record<never, never>>,
     '/procurement/suppliers': RouteRecordInfo<'/procurement/suppliers', '/procurement/suppliers', Record<never, never>, Record<never, never>>,
     '/production/': RouteRecordInfo<'/production/', '/production', Record<never, never>, Record<never, never>>,
-    '/production/recipes': RouteRecordInfo<'/production/recipes', '/production/recipes', Record<never, never>, Record<never, never>>,
+    '/production/recipes/': RouteRecordInfo<'/production/recipes/', '/production/recipes', Record<never, never>, Record<never, never>>,
+    '/production/recipes/[uuid]/': RouteRecordInfo<'/production/recipes/[uuid]/', '/production/recipes/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     '/settings': RouteRecordInfo<'/settings', '/settings', Record<never, never>, Record<never, never>>,
     '/vessels/': RouteRecordInfo<'/vessels/', '/vessels', Record<never, never>, Record<never, never>>,
     '/vessels/[uuid]/': RouteRecordInfo<'/vessels/[uuid]/', '/vessels/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
@@ -132,8 +133,12 @@ declare module 'vue-router/auto-routes' {
       routes: '/production/'
       views: never
     }
-    'src/pages/production/recipes.vue': {
-      routes: '/production/recipes'
+    'src/pages/production/recipes/index.vue': {
+      routes: '/production/recipes/'
+      views: never
+    }
+    'src/pages/production/recipes/[uuid]/index.vue': {
+      routes: '/production/recipes/[uuid]/'
       views: never
     }
     'src/pages/settings.vue': {

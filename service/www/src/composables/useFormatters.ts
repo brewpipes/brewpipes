@@ -1,4 +1,7 @@
-import type { OccupancyStatus } from '@/composables/useProductionApi'
+import type { OccupancyStatus, VesselStatus, VesselType } from '@/types'
+
+// Re-export VesselStatus for backward compatibility
+export type { VesselStatus, VesselType } from '@/types'
 
 /**
  * Shared formatting utilities for dates, times, and domain-specific values.
@@ -70,9 +73,7 @@ export function useFormatters () {
   }
 }
 
-// Vessel status types and formatting
-export type VesselStatus = 'active' | 'inactive' | 'retired'
-
+// Vessel status formatting
 const VESSEL_STATUS_LABELS: Record<VesselStatus, string> = {
   active: 'Active',
   inactive: 'Inactive',
@@ -97,6 +98,28 @@ export function useVesselStatusFormatters () {
   return {
     formatVesselStatus,
     getVesselStatusColor,
+  }
+}
+
+// Vessel type formatting
+const VESSEL_TYPE_LABELS: Record<VesselType, string> = {
+  mash_tun: 'Mash Tun',
+  lauter_tun: 'Lauter Tun',
+  kettle: 'Kettle',
+  whirlpool: 'Whirlpool',
+  fermenter: 'Fermenter',
+  brite_tank: 'Brite Tank',
+  serving_tank: 'Serving Tank',
+  other: 'Other',
+}
+
+export function useVesselTypeFormatters () {
+  function formatVesselType (type: VesselType | string): string {
+    return VESSEL_TYPE_LABELS[type as VesselType] ?? type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+  }
+
+  return {
+    formatVesselType,
   }
 }
 
@@ -157,5 +180,120 @@ export function useOccupancyStatusFormatters () {
     formatOccupancyStatus,
     getOccupancyStatusColor,
     getOccupancyStatusIcon,
+  }
+}
+
+// ============================================================================
+// Recipe/Brewing Formatters
+// ============================================================================
+
+/** SRM color lookup table for approximate beer color visualization */
+const SRM_COLORS: Record<number, string> = {
+  1: '#FFE699',
+  2: '#FFD878',
+  3: '#FFCA5A',
+  4: '#FFBF42',
+  5: '#FBB123',
+  6: '#F8A600',
+  7: '#F39C00',
+  8: '#EA8F00',
+  9: '#E58500',
+  10: '#DE7C00',
+  11: '#D77200',
+  12: '#CF6900',
+  13: '#CB6200',
+  14: '#C35900',
+  15: '#BB5100',
+  16: '#B54C00',
+  17: '#B04500',
+  18: '#A63E00',
+  19: '#A13700',
+  20: '#9B3200',
+  25: '#7C2900',
+  30: '#5E1E00',
+  35: '#4A1800',
+  40: '#361200',
+}
+
+/**
+ * Convert SRM value to an approximate hex color for visualization.
+ */
+export function srmToColor (srm: number): string {
+  const keys = Object.keys(SRM_COLORS).map(Number).toSorted((a, b) => a - b)
+  for (const key of keys) {
+    if (srm <= key) {
+      return SRM_COLORS[key] ?? '#1A0A00'
+    }
+  }
+  return '#1A0A00'
+}
+
+/**
+ * Brewing-specific formatters for recipe and batch displays.
+ */
+export function useBrewingFormatters () {
+  /**
+   * Format a gravity value (e.g., 1.050).
+   */
+  function formatGravity (value: number | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '—'
+    }
+    return value.toFixed(3)
+  }
+
+  /**
+   * Format a percentage value with one decimal place.
+   */
+  function formatPercent (value: number | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '—'
+    }
+    return `${value.toFixed(1)}%`
+  }
+
+  /**
+   * Format a numeric value as a rounded integer.
+   */
+  function formatWholeNumber (value: number | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '—'
+    }
+    return String(Math.round(value))
+  }
+
+  /**
+   * Format a batch size with unit.
+   */
+  function formatBatchSize (size: number | null | undefined, unit: string | null | undefined): string {
+    if (size === null || size === undefined) {
+      return '—'
+    }
+    return `${size} ${unit ?? 'bbl'}`
+  }
+
+  /**
+   * Format IBU calculation method name.
+   */
+  function formatIbuMethod (method: string | null): string {
+    if (!method) {
+      return '—'
+    }
+    const methods: Record<string, string> = {
+      tinseth: 'Tinseth',
+      rager: 'Rager',
+      garetz: 'Garetz',
+      daniels: 'Daniels',
+    }
+    return methods[method.toLowerCase()] ?? method
+  }
+
+  return {
+    formatGravity,
+    formatPercent,
+    formatWholeNumber,
+    formatBatchSize,
+    formatIbuMethod,
+    srmToColor,
   }
 }

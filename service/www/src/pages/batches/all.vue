@@ -1,48 +1,55 @@
 <template>
   <v-container class="batches-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" icon="mdi-barley" />
-        All Batches
-        <v-spacer />
-        <v-text-field
-          v-model="search"
-          append-inner-icon="mdi-magnify"
-          class="search-field"
-          clearable
-          density="compact"
-          hide-details
-          label="Search"
-          single-line
-          variant="outlined"
-        />
-        <v-btn
-          class="ml-2"
-          :loading="loading"
-          size="small"
-          variant="text"
-          @click="loadBatches"
-        >
-          Refresh
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          prepend-icon="mdi-upload"
-          size="small"
-          variant="text"
-          @click="bulkImportDialog = true"
-        >
-          Import
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          color="primary"
-          size="small"
-          variant="text"
-          @click="openCreateDialog"
-        >
-          New batch
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <div class="d-flex align-center">
+          <v-icon class="mr-2" icon="mdi-barley" />
+          <span class="d-none d-sm-inline">All Batches</span>
+          <span class="d-sm-none">Batches</span>
+        </div>
+        <div class="card-title-actions">
+          <v-text-field
+            v-model="search"
+            append-inner-icon="mdi-magnify"
+            class="search-field"
+            clearable
+            density="compact"
+            hide-details
+            label="Search"
+            single-line
+            variant="outlined"
+          />
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :loading="loading"
+            size="small"
+            variant="text"
+            @click="loadBatches"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-refresh" />
+            <span v-else>Refresh</span>
+          </v-btn>
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :prepend-icon="$vuetify.display.xs ? undefined : 'mdi-upload'"
+            size="small"
+            variant="text"
+            @click="bulkImportDialog = true"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-upload" />
+            <span v-else>Import</span>
+          </v-btn>
+          <v-btn
+            color="primary"
+            :icon="$vuetify.display.xs"
+            size="small"
+            variant="text"
+            @click="openCreateDialog"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+            <span v-else>New batch</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-alert
@@ -63,12 +70,8 @@
           :items="sortedBatches"
           :loading="loading"
           :search="search"
-          @dblclick:row="onRowDoubleClick"
+          @click:row="onRowClick"
         >
-          <template #item.id="{ item }">
-            <span class="text-medium-emphasis">#{{ item.id }}</span>
-          </template>
-
           <template #item.short_name="{ item }">
             <span class="font-weight-medium">{{ item.short_name }}</span>
           </template>
@@ -99,6 +102,22 @@
             {{ formatDateTime(item.updated_at) }}
           </template>
 
+          <template #item.actions="{ item }">
+            <v-btn
+              icon="mdi-pencil"
+              size="x-small"
+              variant="text"
+              @click.stop="openEditDialog(item)"
+            />
+            <v-btn
+              color="error"
+              icon="mdi-delete"
+              size="x-small"
+              variant="text"
+              @click.stop="openDeleteDialog(item)"
+            />
+          </template>
+
           <template #no-data>
             <div class="text-center py-4">
               <div class="text-body-2 text-medium-emphasis">No batches yet.</div>
@@ -123,7 +142,7 @@
   </v-snackbar>
 
   <!-- Create Batch Dialog -->
-  <v-dialog v-model="createBatchDialog" max-width="520" persistent>
+  <v-dialog v-model="createBatchDialog" :max-width="$vuetify.display.xs ? '100%' : 520" persistent>
     <v-card>
       <v-card-title class="text-h6">Create batch</v-card-title>
       <v-card-text>
@@ -142,7 +161,7 @@
             type="date"
           />
           <v-autocomplete
-            v-model="batchForm.recipe_id"
+            v-model="batchForm.recipe_uuid"
             clearable
             density="comfortable"
             hint="Optional - link this batch to a recipe"
@@ -185,7 +204,7 @@
   </v-dialog>
 
   <!-- Bulk Import Dialog -->
-  <v-dialog v-model="bulkImportDialog" max-width="720">
+  <v-dialog v-model="bulkImportDialog" :max-width="$vuetify.display.xs ? '100%' : 720">
     <v-card>
       <v-card-title class="text-h6">Bulk import batches</v-card-title>
       <v-card-text>
@@ -252,13 +271,34 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Edit Batch Dialog -->
+  <BatchEditDialog
+    v-model="editBatchDialog"
+    :batch="editingBatch"
+    :error-message="editBatchError"
+    :recipes="recipes"
+    :recipes-loading="recipesLoading"
+    :saving="savingBatchEdit"
+    @submit="saveBatchEdit"
+  />
+
+  <!-- Delete Batch Dialog -->
+  <BatchDeleteDialog
+    v-model="deleteBatchDialog"
+    :batch="deletingBatchItem"
+    :deleting="deletingBatch"
+    :error-message="deleteBatchError"
+    @confirm="confirmDeleteBatch"
+  />
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
+  import { BatchDeleteDialog, BatchEditDialog, type BatchEditForm } from '@/components/batch'
   import { useApiClient } from '@/composables/useApiClient'
-  import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
+  import { type Recipe, type UpdateBatchRequest, useProductionApi } from '@/composables/useProductionApi'
 
   type Batch = {
     id: number
@@ -266,6 +306,7 @@
     short_name: string
     brew_date: string | null
     recipe_id: number | null
+    recipe_uuid: string | null
     notes: string | null
     created_at: string
     updated_at: string
@@ -305,7 +346,7 @@
   const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const router = useRouter()
   const { request } = useApiClient(apiBase)
-  const { getRecipes, getBatchSummary } = useProductionApi()
+  const { getRecipes, getBatchSummary, updateBatch, deleteBatch, normalizeText } = useProductionApi()
 
   // State
   const batches = ref<BatchWithSummary[]>([])
@@ -320,12 +361,23 @@
   const createBatchDialog = ref(false)
   const bulkImportDialog = ref(false)
 
+  // Edit/Delete state
+  const editBatchDialog = ref(false)
+  const editingBatch = ref<BatchWithSummary | null>(null)
+  const savingBatchEdit = ref(false)
+  const editBatchError = ref('')
+
+  const deleteBatchDialog = ref(false)
+  const deletingBatchItem = ref<BatchWithSummary | null>(null)
+  const deletingBatch = ref(false)
+  const deleteBatchError = ref('')
+
   // Form
   const formRef = ref()
   const batchForm = reactive({
     short_name: '',
     brew_date: '',
-    recipe_id: null as number | null,
+    recipe_uuid: null as string | null,
     notes: '',
   })
 
@@ -347,12 +399,12 @@
 
   // Table configuration
   const headers = [
-    { title: 'ID', key: 'id', sortable: true, width: '80px' },
     { title: 'Short Name', key: 'short_name', sortable: true },
     { title: 'Recipe', key: 'recipe_name', sortable: true },
     { title: 'Status', key: 'current_phase', sortable: true },
     { title: 'Brew Date', key: 'brew_date', sortable: true },
     { title: 'Updated', key: 'updated_at', sortable: true },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '100px' },
   ]
 
   // Computed
@@ -363,7 +415,7 @@
   const recipeSelectItems = computed(() =>
     recipes.value.map(recipe => ({
       title: recipe.name,
-      value: recipe.id,
+      value: recipe.uuid,
       style: recipe.style_name,
     })),
   )
@@ -516,7 +568,7 @@
   function openCreateDialog () {
     batchForm.short_name = ''
     batchForm.brew_date = ''
-    batchForm.recipe_id = null
+    batchForm.recipe_uuid = null
     batchForm.notes = ''
     createBatchDialog.value = true
   }
@@ -537,7 +589,7 @@
       const payload = {
         short_name: batchForm.short_name.trim(),
         brew_date: normalizeDateOnly(batchForm.brew_date),
-        recipe_id: batchForm.recipe_id,
+        recipe_uuid: batchForm.recipe_uuid,
         notes: normalizeText(batchForm.notes),
       }
 
@@ -558,8 +610,68 @@
     }
   }
 
-  function onRowDoubleClick (_event: Event, { item }: { item: BatchWithSummary }) {
+  function onRowClick (_event: Event, { item }: { item: BatchWithSummary }) {
     router.push(`/batches/${item.uuid}`)
+  }
+
+  // Edit/Delete functions
+  function openEditDialog (batch: BatchWithSummary) {
+    editingBatch.value = batch
+    editBatchError.value = ''
+    editBatchDialog.value = true
+  }
+
+  async function saveBatchEdit (form: BatchEditForm) {
+    if (!editingBatch.value) return
+
+    savingBatchEdit.value = true
+    editBatchError.value = ''
+
+    try {
+      const payload: UpdateBatchRequest = {
+        short_name: form.short_name.trim(),
+        brew_date: form.brew_date ? normalizeDateOnly(form.brew_date) : null,
+        recipe_uuid: form.recipe_uuid,
+        notes: normalizeText(form.notes),
+      }
+
+      await updateBatch(editingBatch.value.id, payload)
+      showNotice('Batch updated')
+      editBatchDialog.value = false
+      editingBatch.value = null
+      await loadBatches()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update batch'
+      editBatchError.value = message
+    } finally {
+      savingBatchEdit.value = false
+    }
+  }
+
+  function openDeleteDialog (batch: BatchWithSummary) {
+    deletingBatchItem.value = batch
+    deleteBatchError.value = ''
+    deleteBatchDialog.value = true
+  }
+
+  async function confirmDeleteBatch () {
+    if (!deletingBatchItem.value) return
+
+    deletingBatch.value = true
+    deleteBatchError.value = ''
+
+    try {
+      await deleteBatch(deletingBatchItem.value.id)
+      showNotice('Batch deleted')
+      deleteBatchDialog.value = false
+      deletingBatchItem.value = null
+      await loadBatches()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete batch'
+      deleteBatchError.value = message
+    } finally {
+      deletingBatch.value = false
+    }
   }
 
   // Import functions
@@ -641,11 +753,6 @@
   }
 
   // Formatting functions
-  function normalizeText (value: string) {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
   function normalizeDateOnly (value: string) {
     return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
   }
@@ -711,8 +818,47 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .search-field {
-  max-width: 260px;
+  width: 200px;
+  min-width: 120px;
+  flex-shrink: 1;
+}
+
+@media (max-width: 599px) {
+  .card-title-responsive {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-title-actions {
+    justify-content: flex-end;
+  }
+
+  .search-field {
+    width: 100%;
+    max-width: none;
+    order: 10;
+    margin-top: 8px;
+  }
+}
+
+.data-table {
+  overflow-x: auto;
 }
 
 .data-table :deep(th) {
@@ -720,6 +866,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {
@@ -732,5 +879,10 @@
 
 .batches-table :deep(tr:hover td) {
   background: rgba(var(--v-theme-primary), 0.04);
+}
+
+/* Ensure table scrolls horizontally on mobile */
+.batches-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 </style>

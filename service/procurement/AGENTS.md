@@ -56,6 +56,7 @@ In short:
 ## Acceptance Criteria
 
 - A procurement manager can create a supplier with a name and optional contact and address details.
+- A procurement manager can update a supplier's name, contact, and address details via PATCH.
 - A purchase order can be created with a unique order number, supplier reference, and a default status of draft.
 - Purchase orders support statuses for ordering and receiving flow (draft, submitted, confirmed, partially_received, received, cancelled).
 - Line items can be added to a purchase order with item type, name, quantity, unit, unit cost, and currency.

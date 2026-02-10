@@ -1,6 +1,28 @@
 <template>
   <v-container class="production-page" fluid>
-    <v-row align="stretch">
+    <!-- Mobile: Show list or detail based on selection -->
+    <v-row v-if="$vuetify.display.smAndDown" align="stretch">
+      <v-col v-if="!selectedBatchId" cols="12">
+        <BatchList
+          :batches="inProgressBatches"
+          :loading="loading"
+          :selected-batch-id="selectedBatchId"
+          :show-bulk-import="false"
+          @create="createBatchDialog = true"
+          @select="selectBatch"
+        />
+      </v-col>
+
+      <v-col v-else cols="12">
+        <BatchDetails
+          :batch-id="selectedBatchId"
+          @cleared="clearSelection"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Desktop: Side-by-side layout -->
+    <v-row v-else align="stretch">
       <v-col cols="12" md="4">
         <BatchList
           :batches="inProgressBatches"
@@ -25,7 +47,7 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <v-dialog v-model="createBatchDialog" max-width="520">
+  <v-dialog v-model="createBatchDialog" :max-width="$vuetify.display.xs ? '100%' : 520">
     <v-card>
       <v-card-title class="text-h6">Create batch</v-card-title>
       <v-card-text>
@@ -42,7 +64,7 @@
           type="date"
         />
         <v-autocomplete
-          v-model="newBatch.recipe_id"
+          v-model="newBatch.recipe_uuid"
           clearable
           density="comfortable"
           hint="Optional - link this batch to a recipe"
@@ -81,9 +103,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Batch } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import BatchDetails from '@/components/BatchDetails.vue'
-  import BatchList, { type Batch } from '@/components/BatchList.vue'
+  import BatchList from '@/components/BatchList.vue'
   import { useApiClient } from '@/composables/useApiClient'
   import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
 
@@ -120,7 +143,7 @@
   const newBatch = reactive({
     short_name: '',
     brew_date: '',
-    recipe_id: null as number | null,
+    recipe_uuid: null as string | null,
     notes: '',
   })
 
@@ -143,7 +166,7 @@
   const recipeSelectItems = computed(() =>
     recipes.value.map(recipe => ({
       title: recipe.name,
-      value: recipe.id,
+      value: recipe.uuid,
       style: recipe.style_name,
     })),
   )
@@ -228,14 +251,14 @@
       const payload = {
         short_name: newBatch.short_name.trim(),
         brew_date: normalizeDateOnly(newBatch.brew_date),
-        recipe_id: newBatch.recipe_id,
+        recipe_uuid: newBatch.recipe_uuid,
         notes: normalizeText(newBatch.notes),
       }
       const created = await post<Batch>('/batches', payload)
       showNotice('Batch created')
       newBatch.short_name = ''
       newBatch.brew_date = ''
-      newBatch.recipe_id = null
+      newBatch.recipe_uuid = null
       newBatch.notes = ''
       await loadBatches()
       selectedBatchId.value = created.id

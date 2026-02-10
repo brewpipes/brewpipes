@@ -204,6 +204,22 @@ func (c *Client) CloseOccupancy(ctx context.Context, occupancyID int64, outAt ti
 	return nil
 }
 
+func (c *Client) HasActiveOccupancy(ctx context.Context, vesselID int64) (bool, error) {
+	var exists bool
+	err := c.db.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM occupancy
+			WHERE vessel_id = $1 AND out_at IS NULL AND deleted_at IS NULL
+		)`,
+		vesselID,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking active occupancy: %w", err)
+	}
+
+	return exists, nil
+}
+
 func (c *Client) UpdateOccupancyStatus(ctx context.Context, occupancyID int64, status *string) (Occupancy, error) {
 	var occupancy Occupancy
 	err := c.db.QueryRow(ctx, `

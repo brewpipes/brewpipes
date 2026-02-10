@@ -1,21 +1,30 @@
 <template>
   <v-container class="procurement-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        Suppliers
-        <v-spacer />
-        <v-btn :loading="loading" size="small" variant="text" @click="loadSuppliers">
-          Refresh
-        </v-btn>
-        <v-btn
-          class="ml-2"
-          color="primary"
-          size="small"
-          variant="text"
-          @click="createSupplierDialog = true"
-        >
-          New supplier
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <span>Suppliers</span>
+        <div class="card-title-actions">
+          <v-btn
+            :icon="$vuetify.display.xs"
+            :loading="loading"
+            size="small"
+            variant="text"
+            @click="loadSuppliers"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-refresh" />
+            <span v-else>Refresh</span>
+          </v-btn>
+          <v-btn
+            color="primary"
+            :icon="$vuetify.display.xs"
+            size="small"
+            variant="text"
+            @click="openCreateDialog"
+          >
+            <v-icon v-if="$vuetify.display.xs" icon="mdi-plus" />
+            <span v-else>New supplier</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-row align="stretch">
@@ -39,6 +48,7 @@
                       <th>Contact</th>
                       <th>Email</th>
                       <th>Updated</th>
+                      <th class="text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -47,9 +57,17 @@
                       <td>{{ supplier.contact_name || 'n/a' }}</td>
                       <td>{{ supplier.email || 'n/a' }}</td>
                       <td>{{ formatDateTime(supplier.updated_at) }}</td>
+                      <td class="text-right">
+                        <v-btn
+                          icon="mdi-pencil"
+                          size="x-small"
+                          variant="text"
+                          @click="openEditDialog(supplier)"
+                        />
+                      </td>
                     </tr>
                     <tr v-if="suppliers.length === 0">
-                      <td colspan="4">No suppliers yet.</td>
+                      <td colspan="5">No suppliers yet.</td>
                     </tr>
                   </tbody>
                 </v-table>
@@ -65,9 +83,12 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <v-dialog v-model="createSupplierDialog" max-width="720">
+  <!-- Create/Edit Supplier Dialog -->
+  <v-dialog v-model="supplierDialog" :max-width="$vuetify.display.xs ? '100%' : 720" persistent>
     <v-card>
-      <v-card-title class="text-h6">Create supplier</v-card-title>
+      <v-card-title class="text-h6">
+        {{ isEditing ? 'Edit supplier' : 'Create supplier' }}
+      </v-card-title>
       <v-card-text>
         <v-row>
           <v-col cols="12" md="6">
@@ -77,10 +98,10 @@
             <v-text-field v-model="supplierForm.contact_name" label="Contact name" />
           </v-col>
           <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.email" label="Email" />
+            <v-text-field v-model="supplierForm.email" label="Email" type="email" />
           </v-col>
           <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.phone" label="Phone" />
+            <v-text-field v-model="supplierForm.phone" label="Phone" type="tel" />
           </v-col>
           <v-col cols="12">
             <v-text-field v-model="supplierForm.address_line1" label="Address line 1" />
@@ -103,9 +124,14 @@
         </v-row>
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="createSupplierDialog = false">Cancel</v-btn>
-        <v-btn color="primary" :disabled="!supplierForm.name.trim()" @click="createSupplier">
-          Add supplier
+        <v-btn :disabled="saving" variant="text" @click="closeSupplierDialog">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!supplierForm.name.trim()"
+          :loading="saving"
+          @click="saveSupplier"
+        >
+          {{ isEditing ? 'Save changes' : 'Add supplier' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -113,32 +139,26 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted, reactive, ref } from 'vue'
-  import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { type Supplier, useProcurementApi } from '@/composables/useProcurementApi'
 
-  type Supplier = {
-    id: number
-    uuid: string
-    name: string
-    contact_name: string | null
-    email: string | null
-    phone: string | null
-    address_line1: string | null
-    address_line2: string | null
-    city: string | null
-    region: string | null
-    postal_code: string | null
-    country: string | null
-    created_at: string
-    updated_at: string
-  }
+  const {
+    getSuppliers,
+    createSupplier,
+    updateSupplier,
+    normalizeText,
+    formatDateTime,
+  } = useProcurementApi()
 
-  const { request, normalizeText, formatDateTime } = useProcurementApi()
-
+  // State
   const suppliers = ref<Supplier[]>([])
   const loading = ref(false)
+  const saving = ref(false)
   const errorMessage = ref('')
-  const createSupplierDialog = ref(false)
+
+  // Dialog state
+  const supplierDialog = ref(false)
+  const editingSupplierId = ref<number | null>(null)
 
   const supplierForm = reactive({
     name: '',
@@ -159,21 +179,65 @@
     color: 'success',
   })
 
+  // Computed
+  const isEditing = computed(() => editingSupplierId.value !== null)
+
+  // Lifecycle
   onMounted(async () => {
     await loadSuppliers()
   })
 
+  // Methods
   function showNotice (text: string, color = 'success') {
     snackbar.text = text
     snackbar.color = color
     snackbar.show = true
   }
 
+  function resetForm () {
+    supplierForm.name = ''
+    supplierForm.contact_name = ''
+    supplierForm.email = ''
+    supplierForm.phone = ''
+    supplierForm.address_line1 = ''
+    supplierForm.address_line2 = ''
+    supplierForm.city = ''
+    supplierForm.region = ''
+    supplierForm.postal_code = ''
+    supplierForm.country = ''
+  }
+
+  function openCreateDialog () {
+    editingSupplierId.value = null
+    resetForm()
+    supplierDialog.value = true
+  }
+
+  function openEditDialog (supplier: Supplier) {
+    editingSupplierId.value = supplier.id
+    supplierForm.name = supplier.name
+    supplierForm.contact_name = supplier.contact_name ?? ''
+    supplierForm.email = supplier.email ?? ''
+    supplierForm.phone = supplier.phone ?? ''
+    supplierForm.address_line1 = supplier.address_line1 ?? ''
+    supplierForm.address_line2 = supplier.address_line2 ?? ''
+    supplierForm.city = supplier.city ?? ''
+    supplierForm.region = supplier.region ?? ''
+    supplierForm.postal_code = supplier.postal_code ?? ''
+    supplierForm.country = supplier.country ?? ''
+    supplierDialog.value = true
+  }
+
+  function closeSupplierDialog () {
+    supplierDialog.value = false
+    editingSupplierId.value = null
+  }
+
   async function loadSuppliers () {
     loading.value = true
     errorMessage.value = ''
     try {
-      suppliers.value = await request<Supplier[]>('/suppliers')
+      suppliers.value = await getSuppliers()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load suppliers'
       errorMessage.value = message
@@ -182,7 +246,14 @@
     }
   }
 
-  async function createSupplier () {
+  async function saveSupplier () {
+    if (!supplierForm.name.trim()) {
+      return
+    }
+
+    saving.value = true
+    errorMessage.value = ''
+
     try {
       const payload = {
         name: supplierForm.name.trim(),
@@ -196,27 +267,23 @@
         postal_code: normalizeText(supplierForm.postal_code),
         country: normalizeText(supplierForm.country),
       }
-      await request<Supplier>('/suppliers', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      supplierForm.name = ''
-      supplierForm.contact_name = ''
-      supplierForm.email = ''
-      supplierForm.phone = ''
-      supplierForm.address_line1 = ''
-      supplierForm.address_line2 = ''
-      supplierForm.city = ''
-      supplierForm.region = ''
-      supplierForm.postal_code = ''
-      supplierForm.country = ''
+
+      if (isEditing.value && editingSupplierId.value) {
+        await updateSupplier(editingSupplierId.value, payload)
+        showNotice('Supplier updated')
+      } else {
+        await createSupplier(payload)
+        showNotice('Supplier created')
+      }
+
+      closeSupplierDialog()
       await loadSuppliers()
-      createSupplierDialog.value = false
-      showNotice('Supplier created')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create supplier'
+      const message = error instanceof Error ? error.message : 'Unable to save supplier'
       errorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      saving.value = false
     }
   }
 </script>
@@ -232,9 +299,32 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .sub-card {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: rgba(var(--v-theme-surface), 0.7);
+}
+
+.data-table {
+  overflow-x: auto;
+}
+
+.data-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 
 .data-table :deep(th) {
@@ -242,6 +332,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
 }
 
 .data-table :deep(td) {

@@ -60,10 +60,17 @@
           :items="sortedVessels"
           :loading="loading"
           :search="search"
-          @dblclick:row="onRowDoubleClick"
+          @click:row="onRowDoubleClick"
         >
           <template #item.name="{ item }">
             <span class="font-weight-medium">{{ item.name }}</span>
+          </template>
+
+          <template #item.type="{ item }">
+            <v-chip v-if="item.type" size="small" variant="tonal">
+              {{ item.type }}
+            </v-chip>
+            <span v-else class="text-medium-emphasis">—</span>
           </template>
 
           <template #item.capacity="{ item }">

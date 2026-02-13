@@ -24,7 +24,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="measurement in measurementsSorted" :key="measurement.id">
+              <tr v-for="measurement in measurementsSorted" :key="measurement.uuid">
                 <td>{{ measurement.kind }}</td>
                 <td>
                   {{
@@ -33,7 +33,7 @@
                       : formatValue(measurement.value, measurement.unit)
                   }}
                 </td>
-                <td>{{ measurement.occupancy_id ?? measurement.batch_id }}</td>
+                <td>{{ measurement.occupancy_uuid ? 'Occupancy' : 'Batch' }}</td>
                 <td>{{ formatDateTime(measurement.observed_at) }}</td>
               </tr>
               <tr v-if="measurementsSorted.length === 0">

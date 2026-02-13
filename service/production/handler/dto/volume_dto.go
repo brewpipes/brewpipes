@@ -26,7 +26,6 @@ func (r CreateVolumeRequest) Validate() error {
 }
 
 type VolumeResponse struct {
-	ID          int64      `json:"id"`
 	UUID        string     `json:"uuid"`
 	Name        *string    `json:"name,omitempty"`
 	Description *string    `json:"description,omitempty"`
@@ -39,7 +38,6 @@ type VolumeResponse struct {
 
 func NewVolumeResponse(volume storage.Volume) VolumeResponse {
 	return VolumeResponse{
-		ID:          volume.ID,
 		UUID:        volume.UUID.String(),
 		Name:        volume.Name,
 		Description: volume.Description,

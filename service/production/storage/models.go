@@ -121,10 +121,13 @@ const (
 
 type Batch struct {
 	entity.Identifiers
-	ShortName string
-	BrewDate  *time.Time
-	Notes     *string
-	RecipeID  *int64
+	ShortName    string
+	BrewDate     *time.Time
+	Notes        *string
+	RecipeID     *int64
+	RecipeUUID   *string // Joined from recipe table
+	RecipeName   *string // Joined from recipe table
+	CurrentPhase *string // Derived from most recent batch_process_phase
 	entity.Timestamps
 }
 
@@ -139,11 +142,13 @@ type Volume struct {
 
 type VolumeRelation struct {
 	entity.Identifiers
-	ParentVolumeID int64
-	ChildVolumeID  int64
-	RelationType   string
-	Amount         int64
-	AmountUnit     string
+	ParentVolumeID   int64
+	ParentVolumeUUID string // Joined from volume table
+	ChildVolumeID    int64
+	ChildVolumeUUID  string // Joined from volume table
+	RelationType     string
+	Amount           int64
+	AmountUnit       string
 	entity.Timestamps
 }
 
@@ -161,32 +166,39 @@ type Vessel struct {
 
 type Occupancy struct {
 	entity.Identifiers
-	VesselID int64
-	VolumeID int64
-	InAt     time.Time
-	OutAt    *time.Time
-	Status   *string
-	BatchID  *int64 // Derived from batch_volume join, not stored in occupancy table
+	VesselID   int64
+	VesselUUID string // Joined from vessel table
+	VolumeID   int64
+	VolumeUUID string // Joined from volume table
+	InAt       time.Time
+	OutAt      *time.Time
+	Status     *string
+	BatchID    *int64  // Derived from batch_volume join, not stored in occupancy table
+	BatchUUID  *string // Derived from batch join, not stored in occupancy table
 	entity.Timestamps
 }
 
 type Transfer struct {
 	entity.Identifiers
-	SourceOccupancyID int64
-	DestOccupancyID   int64
-	Amount            int64
-	AmountUnit        string
-	LossAmount        *int64
-	LossUnit          *string
-	StartedAt         time.Time
-	EndedAt           *time.Time
+	SourceOccupancyID   int64
+	SourceOccupancyUUID string // Joined from occupancy table
+	DestOccupancyID     int64
+	DestOccupancyUUID   string // Joined from occupancy table
+	Amount              int64
+	AmountUnit          string
+	LossAmount          *int64
+	LossUnit            *string
+	StartedAt           time.Time
+	EndedAt             *time.Time
 	entity.Timestamps
 }
 
 type BatchVolume struct {
 	entity.Identifiers
 	BatchID     int64
+	BatchUUID   string // Joined from batch table
 	VolumeID    int64
+	VolumeUUID  string // Joined from volume table
 	LiquidPhase string
 	PhaseAt     time.Time
 	entity.Timestamps
@@ -195,6 +207,7 @@ type BatchVolume struct {
 type BatchProcessPhase struct {
 	entity.Identifiers
 	BatchID      int64
+	BatchUUID    string // Joined from batch table
 	ProcessPhase string
 	PhaseAt      time.Time
 	entity.Timestamps
@@ -202,18 +215,24 @@ type BatchProcessPhase struct {
 
 type BatchRelation struct {
 	entity.Identifiers
-	ParentBatchID int64
-	ChildBatchID  int64
-	RelationType  string
-	VolumeID      *int64
+	ParentBatchID   int64
+	ParentBatchUUID string // Joined from batch table
+	ChildBatchID    int64
+	ChildBatchUUID  string // Joined from batch table
+	RelationType    string
+	VolumeID        *int64
+	VolumeUUID      *string // Joined from volume table
 	entity.Timestamps
 }
 
 type Addition struct {
 	entity.Identifiers
 	BatchID          *int64
+	BatchUUID        *string // Joined from batch table
 	OccupancyID      *int64
+	OccupancyUUID    *string // Joined from occupancy table
 	VolumeID         *int64
+	VolumeUUID       *string // Joined from volume table
 	AdditionType     string
 	Stage            *string
 	InventoryLotUUID *uuid.UUID
@@ -226,14 +245,17 @@ type Addition struct {
 
 type Measurement struct {
 	entity.Identifiers
-	BatchID     *int64
-	OccupancyID *int64
-	VolumeID    *int64
-	Kind        string
-	Value       float64
-	Unit        *string
-	ObservedAt  time.Time
-	Notes       *string
+	BatchID       *int64
+	BatchUUID     *string // Joined from batch table
+	OccupancyID   *int64
+	OccupancyUUID *string // Joined from occupancy table
+	VolumeID      *int64
+	VolumeUUID    *string // Joined from volume table
+	Kind          string
+	Value         float64
+	Unit          *string
+	ObservedAt    time.Time
+	Notes         *string
 	entity.Timestamps
 }
 
@@ -247,6 +269,7 @@ type Recipe struct {
 	entity.Identifiers
 	Name                string
 	StyleID             *int64
+	StyleUUID           *string // Joined from style table
 	StyleName           *string
 	Notes               *string
 	BatchSize           *float64
@@ -271,12 +294,16 @@ type Recipe struct {
 
 type BrewSession struct {
 	entity.Identifiers
-	BatchID      *int64
-	WortVolumeID *int64
-	MashVesselID *int64
-	BoilVesselID *int64
-	BrewedAt     time.Time
-	Notes        *string
+	BatchID        *int64
+	BatchUUID      *string // Joined from batch table
+	WortVolumeID   *int64
+	WortVolumeUUID *string // Joined from volume table
+	MashVesselID   *int64
+	MashVesselUUID *string // Joined from vessel table
+	BoilVesselID   *int64
+	BoilVesselUUID *string // Joined from vessel table
+	BrewedAt       time.Time
+	Notes          *string
 	entity.Timestamps
 }
 

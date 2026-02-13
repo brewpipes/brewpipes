@@ -54,7 +54,6 @@ func (r UpdateSupplierRequest) Validate() error {
 }
 
 type SupplierResponse struct {
-	ID           int64      `json:"id"`
 	UUID         string     `json:"uuid"`
 	Name         string     `json:"name"`
 	ContactName  *string    `json:"contact_name,omitempty"`
@@ -73,7 +72,6 @@ type SupplierResponse struct {
 
 func NewSupplierResponse(supplier storage.Supplier) SupplierResponse {
 	return SupplierResponse{
-		ID:           supplier.ID,
 		UUID:         supplier.UUID.String(),
 		Name:         supplier.Name,
 		ContactName:  supplier.ContactName,

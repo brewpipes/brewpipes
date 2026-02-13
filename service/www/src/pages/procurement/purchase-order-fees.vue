@@ -28,7 +28,7 @@
                   {{ errorMessage }}
                 </v-alert>
                 <v-select
-                  v-model="filters.purchase_order_id"
+                  v-model="filters.purchase_order_uuid"
                   clearable
                   :items="orderSelectItems"
                   label="Filter by purchase order"
@@ -43,8 +43,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="fee in fees" :key="fee.id">
-                      <td>{{ orderNumber(fee.purchase_order_id) }}</td>
+                    <tr v-for="fee in fees" :key="fee.uuid">
+                      <td>{{ orderNumber(fee.purchase_order_uuid) }}</td>
                       <td>{{ fee.fee_type }}</td>
                       <td>{{ formatCurrency(fee.amount_cents, fee.currency) }}</td>
                       <td>{{ formatDateTime(fee.updated_at) }}</td>
@@ -62,7 +62,7 @@
               <v-card-title>Create fee</v-card-title>
               <v-card-text>
                 <v-select
-                  v-model="feeForm.purchase_order_id"
+                  v-model="feeForm.purchase_order_uuid"
                   :items="orderSelectItems"
                   label="Purchase order"
                 />
@@ -76,7 +76,7 @@
                 <v-btn
                   block
                   color="primary"
-                  :disabled="!feeForm.purchase_order_id || !feeForm.fee_type.trim() || !feeForm.amount_cents || !feeForm.currency"
+                  :disabled="!feeForm.purchase_order_uuid || !feeForm.fee_type.trim() || !feeForm.amount_cents || !feeForm.currency"
                   @click="createFee"
                 >
                   Add fee
@@ -100,14 +100,13 @@
   import { useProcurementApi } from '@/composables/useProcurementApi'
 
   type PurchaseOrder = {
-    id: number
+    uuid: string
     order_number: string
   }
 
   type PurchaseOrderFee = {
-    id: number
     uuid: string
-    purchase_order_id: number
+    purchase_order_uuid: string
     fee_type: string
     amount_cents: number
     currency: string
@@ -126,11 +125,11 @@
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
   const filters = reactive({
-    purchase_order_id: null as number | null,
+    purchase_order_uuid: null as string | null,
   })
 
   const feeForm = reactive({
-    purchase_order_id: null as number | null,
+    purchase_order_uuid: null as string | null,
     fee_type: '',
     amount_cents: '',
     currency: 'USD',
@@ -145,15 +144,15 @@
   const orderSelectItems = computed(() =>
     orders.value.map(order => ({
       title: order.order_number,
-      value: order.id,
+      value: order.uuid,
     })),
   )
 
   onMounted(async () => {
     await refreshAll()
-    const queryId = route.query.purchase_order_id
-    if (typeof queryId === 'string') {
-      filters.purchase_order_id = Number(queryId)
+    const queryUuid = route.query.purchase_order_uuid
+    if (typeof queryUuid === 'string') {
+      filters.purchase_order_uuid = queryUuid
       await loadFees()
     }
   })
@@ -183,8 +182,8 @@
 
   async function loadFees () {
     const query = new URLSearchParams()
-    if (filters.purchase_order_id) {
-      query.set('purchase_order_id', String(filters.purchase_order_id))
+    if (filters.purchase_order_uuid) {
+      query.set('purchase_order_uuid', filters.purchase_order_uuid)
     }
     const path = query.toString() ? `/purchase-order-fees?${query.toString()}` : '/purchase-order-fees'
     fees.value = await request<PurchaseOrderFee[]>(path)
@@ -193,7 +192,7 @@
   async function createFee () {
     try {
       const payload = {
-        purchase_order_id: feeForm.purchase_order_id,
+        purchase_order_uuid: feeForm.purchase_order_uuid,
         fee_type: feeForm.fee_type.trim(),
         amount_cents: toNumber(feeForm.amount_cents),
         currency: feeForm.currency,
@@ -202,7 +201,7 @@
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      feeForm.purchase_order_id = null
+      feeForm.purchase_order_uuid = null
       feeForm.fee_type = ''
       feeForm.amount_cents = ''
       feeForm.currency = 'USD'
@@ -215,8 +214,9 @@
     }
   }
 
-  function orderNumber (orderId: number) {
-    return orders.value.find(order => order.id === orderId)?.order_number ?? `PO ${orderId}`
+  function orderNumber (orderUuid: string) {
+    const order = orders.value.find(o => o.uuid === orderUuid)
+    return order?.order_number ?? 'Unknown PO'
   }
 </script>
 

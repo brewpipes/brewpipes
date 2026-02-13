@@ -73,15 +73,21 @@ func (c *Client) CreateTransfer(ctx context.Context, transfer Transfer) (Transfe
 func (c *Client) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
 	var transfer Transfer
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, source_occupancy_id, dest_occupancy_id, amount, amount_unit, loss_amount, loss_unit, started_at, ended_at, created_at, updated_at, deleted_at
-		FROM transfer
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT t.id, t.uuid, t.source_occupancy_id, so.uuid, t.dest_occupancy_id, desto.uuid,
+		       t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at,
+		       t.created_at, t.updated_at, t.deleted_at
+		FROM transfer t
+		JOIN occupancy so ON so.id = t.source_occupancy_id
+		JOIN occupancy desto ON desto.id = t.dest_occupancy_id
+		WHERE t.id = $1 AND t.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&transfer.ID,
 		&transfer.UUID,
 		&transfer.SourceOccupancyID,
+		&transfer.SourceOccupancyUUID,
 		&transfer.DestOccupancyID,
+		&transfer.DestOccupancyUUID,
 		&transfer.Amount,
 		&transfer.AmountUnit,
 		&transfer.LossAmount,
@@ -97,6 +103,44 @@ func (c *Client) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
 			return Transfer{}, service.ErrNotFound
 		}
 		return Transfer{}, fmt.Errorf("getting transfer: %w", err)
+	}
+
+	return transfer, nil
+}
+
+func (c *Client) GetTransferByUUID(ctx context.Context, transferUUID string) (Transfer, error) {
+	var transfer Transfer
+	err := c.db.QueryRow(ctx, `
+		SELECT t.id, t.uuid, t.source_occupancy_id, so.uuid, t.dest_occupancy_id, desto.uuid,
+		       t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at,
+		       t.created_at, t.updated_at, t.deleted_at
+		FROM transfer t
+		JOIN occupancy so ON so.id = t.source_occupancy_id
+		JOIN occupancy desto ON desto.id = t.dest_occupancy_id
+		WHERE t.uuid = $1 AND t.deleted_at IS NULL`,
+		transferUUID,
+	).Scan(
+		&transfer.ID,
+		&transfer.UUID,
+		&transfer.SourceOccupancyID,
+		&transfer.SourceOccupancyUUID,
+		&transfer.DestOccupancyID,
+		&transfer.DestOccupancyUUID,
+		&transfer.Amount,
+		&transfer.AmountUnit,
+		&transfer.LossAmount,
+		&transfer.LossUnit,
+		&transfer.StartedAt,
+		&transfer.EndedAt,
+		&transfer.CreatedAt,
+		&transfer.UpdatedAt,
+		&transfer.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Transfer{}, service.ErrNotFound
+		}
+		return Transfer{}, fmt.Errorf("getting transfer by uuid: %w", err)
 	}
 
 	return transfer, nil
@@ -205,13 +249,23 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 		return Transfer{}, Occupancy{}, fmt.Errorf("committing transfer: %w", err)
 	}
 
+	// Resolve UUIDs for the transfer and occupancy
+	c.db.QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, transfer.SourceOccupancyID).Scan(&transfer.SourceOccupancyUUID)
+	transfer.DestOccupancyUUID = dest.UUID.String()
+	c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, dest.VesselID).Scan(&dest.VesselUUID)
+	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, dest.VolumeID).Scan(&dest.VolumeUUID)
+
 	return transfer, dest, nil
 }
 
 func (c *Client) ListTransfersByBatch(ctx context.Context, batchID int64) ([]Transfer, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT t.id, t.uuid, t.source_occupancy_id, t.dest_occupancy_id, t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at, t.created_at, t.updated_at, t.deleted_at
+		SELECT t.id, t.uuid, t.source_occupancy_id, so.uuid, t.dest_occupancy_id, desto.uuid,
+		       t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at,
+		       t.created_at, t.updated_at, t.deleted_at
 		FROM transfer t
+		JOIN occupancy so ON so.id = t.source_occupancy_id
+		JOIN occupancy desto ON desto.id = t.dest_occupancy_id
 		WHERE t.deleted_at IS NULL
 		AND EXISTS (
 			SELECT 1
@@ -237,7 +291,9 @@ func (c *Client) ListTransfersByBatch(ctx context.Context, batchID int64) ([]Tra
 			&transfer.ID,
 			&transfer.UUID,
 			&transfer.SourceOccupancyID,
+			&transfer.SourceOccupancyUUID,
 			&transfer.DestOccupancyID,
+			&transfer.DestOccupancyUUID,
 			&transfer.Amount,
 			&transfer.AmountUnit,
 			&transfer.LossAmount,
@@ -257,4 +313,13 @@ func (c *Client) ListTransfersByBatch(ctx context.Context, batchID int64) ([]Tra
 	}
 
 	return transfers, nil
+}
+
+func (c *Client) ListTransfersByBatchUUID(ctx context.Context, batchUUID string) ([]Transfer, error) {
+	batch, err := c.GetBatchByUUID(ctx, batchUUID)
+	if err != nil {
+		return nil, fmt.Errorf("resolving batch uuid: %w", err)
+	}
+
+	return c.ListTransfersByBatch(ctx, batch.ID)
 }

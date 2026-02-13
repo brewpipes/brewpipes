@@ -9,6 +9,58 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const recipeSelectColumns = `
+	r.id, r.uuid, r.name, r.style_id, s.uuid, r.style_name, r.notes,
+	r.batch_size, r.batch_size_unit,
+	r.target_og, r.target_og_min, r.target_og_max,
+	r.target_fg, r.target_fg_min, r.target_fg_max,
+	r.target_ibu, r.target_ibu_min, r.target_ibu_max,
+	r.target_srm, r.target_srm_min, r.target_srm_max,
+	r.target_carbonation, r.ibu_method, r.brewhouse_efficiency,
+	r.created_at, r.updated_at, r.deleted_at`
+
+const recipeSelectWithJoins = `
+	SELECT ` + recipeSelectColumns + `
+	FROM recipe r
+	LEFT JOIN style s ON s.id = r.style_id`
+
+func scanRecipe(row pgx.Row) (Recipe, error) {
+	var recipe Recipe
+	err := row.Scan(
+		&recipe.ID,
+		&recipe.UUID,
+		&recipe.Name,
+		&recipe.StyleID,
+		&recipe.StyleUUID,
+		&recipe.StyleName,
+		&recipe.Notes,
+		&recipe.BatchSize,
+		&recipe.BatchSizeUnit,
+		&recipe.TargetOG,
+		&recipe.TargetOGMin,
+		&recipe.TargetOGMax,
+		&recipe.TargetFG,
+		&recipe.TargetFGMin,
+		&recipe.TargetFGMax,
+		&recipe.TargetIBU,
+		&recipe.TargetIBUMin,
+		&recipe.TargetIBUMax,
+		&recipe.TargetSRM,
+		&recipe.TargetSRMMin,
+		&recipe.TargetSRMMax,
+		&recipe.TargetCarbonation,
+		&recipe.IBUMethod,
+		&recipe.BrewhouseEfficiency,
+		&recipe.CreatedAt,
+		&recipe.UpdatedAt,
+		&recipe.DeletedAt,
+	)
+	if err != nil {
+		return Recipe{}, err
+	}
+	return recipe, nil
+}
+
 func (c *Client) CreateRecipe(ctx context.Context, recipe Recipe) (Recipe, error) {
 	err := c.db.QueryRow(ctx, `
 		INSERT INTO recipe (
@@ -81,6 +133,14 @@ func (c *Client) CreateRecipe(ctx context.Context, recipe Recipe) (Recipe, error
 		return Recipe{}, fmt.Errorf("creating recipe: %w", err)
 	}
 
+	// Resolve style UUID if style_id is set
+	if recipe.StyleID != nil {
+		var styleUUID string
+		if err := c.db.QueryRow(ctx, `SELECT uuid FROM style WHERE id = $1`, *recipe.StyleID).Scan(&styleUUID); err == nil {
+			recipe.StyleUUID = &styleUUID
+		}
+	}
+
 	return recipe, nil
 }
 
@@ -94,50 +154,12 @@ type RecipeQueryOpts struct {
 func (c *Client) GetRecipe(ctx context.Context, recipeUUID string, opts *RecipeQueryOpts) (Recipe, error) {
 	includeDeleted := opts != nil && opts.IncludeDeleted
 
-	query := `
-		SELECT id, uuid, name, style_id, style_name, notes,
-		       batch_size, batch_size_unit,
-		       target_og, target_og_min, target_og_max,
-		       target_fg, target_fg_min, target_fg_max,
-		       target_ibu, target_ibu_min, target_ibu_max,
-		       target_srm, target_srm_min, target_srm_max,
-		       target_carbonation, ibu_method, brewhouse_efficiency,
-		       created_at, updated_at, deleted_at
-		FROM recipe
-		WHERE uuid = $1`
+	query := recipeSelectWithJoins + ` WHERE r.uuid = $1`
 	if !includeDeleted {
-		query += ` AND deleted_at IS NULL`
+		query += ` AND r.deleted_at IS NULL`
 	}
 
-	var recipe Recipe
-	err := c.db.QueryRow(ctx, query, recipeUUID).Scan(
-		&recipe.ID,
-		&recipe.UUID,
-		&recipe.Name,
-		&recipe.StyleID,
-		&recipe.StyleName,
-		&recipe.Notes,
-		&recipe.BatchSize,
-		&recipe.BatchSizeUnit,
-		&recipe.TargetOG,
-		&recipe.TargetOGMin,
-		&recipe.TargetOGMax,
-		&recipe.TargetFG,
-		&recipe.TargetFGMin,
-		&recipe.TargetFGMax,
-		&recipe.TargetIBU,
-		&recipe.TargetIBUMin,
-		&recipe.TargetIBUMax,
-		&recipe.TargetSRM,
-		&recipe.TargetSRMMin,
-		&recipe.TargetSRMMax,
-		&recipe.TargetCarbonation,
-		&recipe.IBUMethod,
-		&recipe.BrewhouseEfficiency,
-		&recipe.CreatedAt,
-		&recipe.UpdatedAt,
-		&recipe.DeletedAt,
-	)
+	recipe, err := scanRecipe(c.db.QueryRow(ctx, query, recipeUUID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Recipe{}, service.ErrNotFound
@@ -149,19 +171,9 @@ func (c *Client) GetRecipe(ctx context.Context, recipeUUID string, opts *RecipeQ
 }
 
 func (c *Client) ListRecipes(ctx context.Context) ([]Recipe, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, name, style_id, style_name, notes,
-		       batch_size, batch_size_unit,
-		       target_og, target_og_min, target_og_max,
-		       target_fg, target_fg_min, target_fg_max,
-		       target_ibu, target_ibu_min, target_ibu_max,
-		       target_srm, target_srm_min, target_srm_max,
-		       target_carbonation, ibu_method, brewhouse_efficiency,
-		       created_at, updated_at, deleted_at
-		FROM recipe
-		WHERE deleted_at IS NULL
-		ORDER BY name ASC`,
-	)
+	rows, err := c.db.Query(ctx, recipeSelectWithJoins+`
+		WHERE r.deleted_at IS NULL
+		ORDER BY r.name ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("listing recipes: %w", err)
 	}
@@ -175,6 +187,7 @@ func (c *Client) ListRecipes(ctx context.Context) ([]Recipe, error) {
 			&recipe.UUID,
 			&recipe.Name,
 			&recipe.StyleID,
+			&recipe.StyleUUID,
 			&recipe.StyleName,
 			&recipe.Notes,
 			&recipe.BatchSize,
@@ -286,6 +299,14 @@ func (c *Client) UpdateRecipe(ctx context.Context, recipeUUID string, recipe Rec
 		return Recipe{}, fmt.Errorf("updating recipe: %w", err)
 	}
 
+	// Resolve style UUID if style_id is set
+	if recipe.StyleID != nil {
+		var styleUUID string
+		if err := c.db.QueryRow(ctx, `SELECT uuid FROM style WHERE id = $1`, *recipe.StyleID).Scan(&styleUUID); err == nil {
+			recipe.StyleUUID = &styleUUID
+		}
+	}
+
 	return recipe, nil
 }
 
@@ -312,50 +333,12 @@ func (c *Client) DeleteRecipe(ctx context.Context, recipeUUID string) error {
 func (c *Client) getRecipeByID(ctx context.Context, id int64, opts *RecipeQueryOpts) (Recipe, error) {
 	includeDeleted := opts != nil && opts.IncludeDeleted
 
-	query := `
-		SELECT id, uuid, name, style_id, style_name, notes,
-		       batch_size, batch_size_unit,
-		       target_og, target_og_min, target_og_max,
-		       target_fg, target_fg_min, target_fg_max,
-		       target_ibu, target_ibu_min, target_ibu_max,
-		       target_srm, target_srm_min, target_srm_max,
-		       target_carbonation, ibu_method, brewhouse_efficiency,
-		       created_at, updated_at, deleted_at
-		FROM recipe
-		WHERE id = $1`
+	query := recipeSelectWithJoins + ` WHERE r.id = $1`
 	if !includeDeleted {
-		query += ` AND deleted_at IS NULL`
+		query += ` AND r.deleted_at IS NULL`
 	}
 
-	var recipe Recipe
-	err := c.db.QueryRow(ctx, query, id).Scan(
-		&recipe.ID,
-		&recipe.UUID,
-		&recipe.Name,
-		&recipe.StyleID,
-		&recipe.StyleName,
-		&recipe.Notes,
-		&recipe.BatchSize,
-		&recipe.BatchSizeUnit,
-		&recipe.TargetOG,
-		&recipe.TargetOGMin,
-		&recipe.TargetOGMax,
-		&recipe.TargetFG,
-		&recipe.TargetFGMin,
-		&recipe.TargetFGMax,
-		&recipe.TargetIBU,
-		&recipe.TargetIBUMin,
-		&recipe.TargetIBUMax,
-		&recipe.TargetSRM,
-		&recipe.TargetSRMMin,
-		&recipe.TargetSRMMax,
-		&recipe.TargetCarbonation,
-		&recipe.IBUMethod,
-		&recipe.BrewhouseEfficiency,
-		&recipe.CreatedAt,
-		&recipe.UpdatedAt,
-		&recipe.DeletedAt,
-	)
+	recipe, err := scanRecipe(c.db.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Recipe{}, service.ErrNotFound

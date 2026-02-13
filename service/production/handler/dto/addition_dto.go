@@ -8,9 +8,9 @@ import (
 )
 
 type CreateAdditionRequest struct {
-	BatchID          *int64     `json:"batch_id"`
-	OccupancyID      *int64     `json:"occupancy_id"`
-	VolumeID         *int64     `json:"volume_id"`
+	BatchUUID        *string    `json:"batch_uuid"`
+	OccupancyUUID    *string    `json:"occupancy_uuid"`
+	VolumeUUID       *string    `json:"volume_uuid"`
 	AdditionType     string     `json:"addition_type"`
 	Stage            *string    `json:"stage"`
 	InventoryLotUUID *string    `json:"inventory_lot_uuid"`
@@ -22,17 +22,17 @@ type CreateAdditionRequest struct {
 
 func (r CreateAdditionRequest) Validate() error {
 	targetCount := 0
-	if r.BatchID != nil {
+	if r.BatchUUID != nil {
 		targetCount++
 	}
-	if r.OccupancyID != nil {
+	if r.OccupancyUUID != nil {
 		targetCount++
 	}
-	if r.VolumeID != nil {
+	if r.VolumeUUID != nil {
 		targetCount++
 	}
 	if targetCount != 1 {
-		return fmt.Errorf("exactly one of batch_id, occupancy_id, or volume_id is required")
+		return fmt.Errorf("exactly one of batch_uuid, occupancy_uuid, or volume_uuid is required")
 	}
 	if err := validateAdditionType(r.AdditionType); err != nil {
 		return err
@@ -51,11 +51,10 @@ func (r CreateAdditionRequest) Validate() error {
 }
 
 type AdditionResponse struct {
-	ID               int64      `json:"id"`
 	UUID             string     `json:"uuid"`
-	BatchID          *int64     `json:"batch_id,omitempty"`
-	OccupancyID      *int64     `json:"occupancy_id,omitempty"`
-	VolumeID         *int64     `json:"volume_id,omitempty"`
+	BatchUUID        *string    `json:"batch_uuid,omitempty"`
+	OccupancyUUID    *string    `json:"occupancy_uuid,omitempty"`
+	VolumeUUID       *string    `json:"volume_uuid,omitempty"`
 	AdditionType     string     `json:"addition_type"`
 	Stage            *string    `json:"stage,omitempty"`
 	InventoryLotUUID *string    `json:"inventory_lot_uuid,omitempty"`
@@ -70,11 +69,10 @@ type AdditionResponse struct {
 
 func NewAdditionResponse(addition storage.Addition) AdditionResponse {
 	return AdditionResponse{
-		ID:               addition.ID,
 		UUID:             addition.UUID.String(),
-		BatchID:          addition.BatchID,
-		OccupancyID:      addition.OccupancyID,
-		VolumeID:         addition.VolumeID,
+		BatchUUID:        addition.BatchUUID,
+		OccupancyUUID:    addition.OccupancyUUID,
+		VolumeUUID:       addition.VolumeUUID,
 		AdditionType:     addition.AdditionType,
 		Stage:            addition.Stage,
 		InventoryLotUUID: uuidToStringPointer(addition.InventoryLotUUID),

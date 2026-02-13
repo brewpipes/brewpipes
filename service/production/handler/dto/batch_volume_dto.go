@@ -1,22 +1,24 @@
 package dto
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
 type CreateBatchVolumeRequest struct {
-	BatchID     int64      `json:"batch_id"`
-	VolumeID    int64      `json:"volume_id"`
+	BatchUUID   string     `json:"batch_uuid"`
+	VolumeUUID  string     `json:"volume_uuid"`
 	LiquidPhase string     `json:"liquid_phase"`
 	PhaseAt     *time.Time `json:"phase_at"`
 }
 
 func (r CreateBatchVolumeRequest) Validate() error {
-	if r.BatchID <= 0 || r.VolumeID <= 0 {
-		return fmt.Errorf("batch_id and volume_id are required")
+	if err := validateRequired(r.BatchUUID, "batch_uuid"); err != nil {
+		return err
+	}
+	if err := validateRequired(r.VolumeUUID, "volume_uuid"); err != nil {
+		return err
 	}
 	if err := validateLiquidPhase(r.LiquidPhase); err != nil {
 		return err
@@ -26,10 +28,9 @@ func (r CreateBatchVolumeRequest) Validate() error {
 }
 
 type BatchVolumeResponse struct {
-	ID          int64      `json:"id"`
 	UUID        string     `json:"uuid"`
-	BatchID     int64      `json:"batch_id"`
-	VolumeID    int64      `json:"volume_id"`
+	BatchUUID   string     `json:"batch_uuid"`
+	VolumeUUID  string     `json:"volume_uuid"`
 	LiquidPhase string     `json:"liquid_phase"`
 	PhaseAt     time.Time  `json:"phase_at"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -39,10 +40,9 @@ type BatchVolumeResponse struct {
 
 func NewBatchVolumeResponse(volume storage.BatchVolume) BatchVolumeResponse {
 	return BatchVolumeResponse{
-		ID:          volume.ID,
 		UUID:        volume.UUID.String(),
-		BatchID:     volume.BatchID,
-		VolumeID:    volume.VolumeID,
+		BatchUUID:   volume.BatchUUID,
+		VolumeUUID:  volume.VolumeUUID,
 		LiquidPhase: volume.LiquidPhase,
 		PhaseAt:     volume.PhaseAt,
 		CreatedAt:   volume.CreatedAt,

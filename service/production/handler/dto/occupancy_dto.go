@@ -1,22 +1,24 @@
 package dto
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
 type CreateOccupancyRequest struct {
-	VesselID int64      `json:"vessel_id"`
-	VolumeID int64      `json:"volume_id"`
-	InAt     *time.Time `json:"in_at"`
-	Status   *string    `json:"status"`
+	VesselUUID string     `json:"vessel_uuid"`
+	VolumeUUID string     `json:"volume_uuid"`
+	InAt       *time.Time `json:"in_at"`
+	Status     *string    `json:"status"`
 }
 
 func (r CreateOccupancyRequest) Validate() error {
-	if r.VesselID <= 0 || r.VolumeID <= 0 {
-		return fmt.Errorf("vessel_id and volume_id are required")
+	if err := validateRequired(r.VesselUUID, "vessel_uuid"); err != nil {
+		return err
+	}
+	if err := validateRequired(r.VolumeUUID, "volume_uuid"); err != nil {
+		return err
 	}
 	if r.Status != nil {
 		if err := validateOccupancyStatus(*r.Status); err != nil {
@@ -41,32 +43,30 @@ func (r UpdateOccupancyStatusRequest) Validate() error {
 }
 
 type OccupancyResponse struct {
-	ID        int64      `json:"id"`
-	UUID      string     `json:"uuid"`
-	VesselID  int64      `json:"vessel_id"`
-	VolumeID  int64      `json:"volume_id"`
-	BatchID   *int64     `json:"batch_id,omitempty"`
-	InAt      time.Time  `json:"in_at"`
-	OutAt     *time.Time `json:"out_at,omitempty"`
-	Status    *string    `json:"status,omitempty"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	UUID       string     `json:"uuid"`
+	VesselUUID string     `json:"vessel_uuid"`
+	VolumeUUID string     `json:"volume_uuid"`
+	BatchUUID  *string    `json:"batch_uuid,omitempty"`
+	InAt       time.Time  `json:"in_at"`
+	OutAt      *time.Time `json:"out_at,omitempty"`
+	Status     *string    `json:"status,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewOccupancyResponse(occupancy storage.Occupancy) OccupancyResponse {
 	return OccupancyResponse{
-		ID:        occupancy.ID,
-		UUID:      occupancy.UUID.String(),
-		VesselID:  occupancy.VesselID,
-		VolumeID:  occupancy.VolumeID,
-		BatchID:   occupancy.BatchID,
-		InAt:      occupancy.InAt,
-		OutAt:     occupancy.OutAt,
-		Status:    occupancy.Status,
-		CreatedAt: occupancy.CreatedAt,
-		UpdatedAt: occupancy.UpdatedAt,
-		DeletedAt: occupancy.DeletedAt,
+		UUID:       occupancy.UUID.String(),
+		VesselUUID: occupancy.VesselUUID,
+		VolumeUUID: occupancy.VolumeUUID,
+		BatchUUID:  occupancy.BatchUUID,
+		InAt:       occupancy.InAt,
+		OutAt:      occupancy.OutAt,
+		Status:     occupancy.Status,
+		CreatedAt:  occupancy.CreatedAt,
+		UpdatedAt:  occupancy.UpdatedAt,
+		DeletedAt:  occupancy.DeletedAt,
 	}
 }
 

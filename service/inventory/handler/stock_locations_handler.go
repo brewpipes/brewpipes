@@ -14,7 +14,7 @@ import (
 
 type StockLocationStore interface {
 	ListStockLocations(context.Context) ([]storage.StockLocation, error)
-	GetStockLocation(context.Context, int64) (storage.StockLocation, error)
+	GetStockLocationByUUID(context.Context, string) (storage.StockLocation, error)
 	CreateStockLocation(context.Context, storage.StockLocation) (storage.StockLocation, error)
 }
 
@@ -62,26 +62,21 @@ func HandleStockLocations(db StockLocationStore) http.HandlerFunc {
 	}
 }
 
-// HandleStockLocationByID handles [GET /stock-locations/{id}].
-func HandleStockLocationByID(db StockLocationStore) http.HandlerFunc {
+// HandleStockLocationByUUID handles [GET /stock-locations/{uuid}].
+func HandleStockLocationByUUID(db StockLocationStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		locationID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		locationUUID := r.PathValue("uuid")
+		if locationUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		location, err := db.GetStockLocation(r.Context(), locationID)
+		location, err := db.GetStockLocationByUUID(r.Context(), locationUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "stock location not found", http.StatusNotFound)
 			return

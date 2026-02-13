@@ -49,7 +49,6 @@
             <v-card class="sub-card" variant="tonal">
               <v-card-text>
                 <div class="text-overline">Metadata</div>
-                <div class="text-body-2 text-medium-emphasis">ID {{ vessel.id }}</div>
                 <div class="text-body-2 text-medium-emphasis">UUID {{ vessel.uuid }}</div>
                 <div class="text-body-2 text-medium-emphasis">
                   Updated {{ formatDateTime(vessel.updated_at) }}
@@ -89,7 +88,7 @@
                             v-for="statusOption in occupancyStatusOptions"
                             :key="statusOption.value"
                             :active="statusOption.value === occupancy.status"
-                            @click="handleStatusChange(occupancy.id, statusOption.value)"
+                            @click="handleStatusChange(occupancy.uuid, statusOption.value)"
                           >
                             <template #prepend>
                               <v-avatar
@@ -112,9 +111,9 @@
                       </div>
                     </v-col>
                     <v-col cols="12" md="4">
-                      <div class="text-caption text-medium-emphasis">Volume ID</div>
+                      <div class="text-caption text-medium-emphasis">Volume</div>
                       <div class="text-body-2 font-weight-medium mt-1">
-                        {{ occupancy.volume_id }}
+                        {{ occupancy.volume_uuid.substring(0, 8) }}
                       </div>
                     </v-col>
                   </v-row>
@@ -160,7 +159,7 @@
   )
 
   const emit = defineEmits<{
-    'occupancy-status-change': [occupancyId: number, status: OccupancyStatus]
+    'occupancy-status-change': [occupancyUuid: string, status: OccupancyStatus]
     'edit': []
     'refresh': []
     'clear': []
@@ -181,8 +180,8 @@
     })),
   )
 
-  function handleStatusChange (occupancyId: number, status: OccupancyStatus) {
-    emit('occupancy-status-change', occupancyId, status)
+  function handleStatusChange (occupancyUuid: string, status: OccupancyStatus) {
+    emit('occupancy-status-change', occupancyUuid, status)
   }
 </script>
 

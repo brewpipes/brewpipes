@@ -24,7 +24,6 @@ func (r CreateInventoryAdjustmentRequest) Validate() error {
 }
 
 type InventoryAdjustmentResponse struct {
-	ID         int64      `json:"id"`
 	UUID       string     `json:"uuid"`
 	Reason     string     `json:"reason"`
 	AdjustedAt time.Time  `json:"adjusted_at"`
@@ -36,7 +35,6 @@ type InventoryAdjustmentResponse struct {
 
 func NewInventoryAdjustmentResponse(adjustment storage.InventoryAdjustment) InventoryAdjustmentResponse {
 	return InventoryAdjustmentResponse{
-		ID:         adjustment.ID,
 		UUID:       adjustment.UUID.String(),
 		Reason:     adjustment.Reason,
 		AdjustedAt: adjustment.AdjustedAt,

@@ -84,23 +84,42 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 	}
 
 	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+
+	// Resolve FK UUIDs
+	if addition.BatchID != nil {
+		var batchUUID string
+		if err := c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *addition.BatchID).Scan(&batchUUID); err == nil {
+			addition.BatchUUID = &batchUUID
+		}
+	}
+	if addition.OccupancyID != nil {
+		var occUUID string
+		if err := c.db.QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, *addition.OccupancyID).Scan(&occUUID); err == nil {
+			addition.OccupancyUUID = &occUUID
+		}
+	}
+	if addition.VolumeID != nil {
+		var volUUID string
+		if err := c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *addition.VolumeID).Scan(&volUUID); err == nil {
+			addition.VolumeUUID = &volUUID
+		}
+	}
+
 	return addition, nil
 }
 
-func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
+func scanAddition(row pgx.Row) (Addition, error) {
 	var addition Addition
 	var inventoryLotUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
-		FROM addition
-		WHERE id = $1 AND deleted_at IS NULL`,
-		id,
-	).Scan(
+	err := row.Scan(
 		&addition.ID,
 		&addition.UUID,
 		&addition.BatchID,
+		&addition.BatchUUID,
 		&addition.OccupancyID,
+		&addition.OccupancyUUID,
 		&addition.VolumeID,
+		&addition.VolumeUUID,
 		&addition.AdditionType,
 		&addition.Stage,
 		&inventoryLotUUID,
@@ -113,29 +132,95 @@ func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
 		&addition.DeletedAt,
 	)
 	if err != nil {
+		return Addition{}, err
+	}
+	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+	return addition, nil
+}
+
+const additionSelectWithJoins = `
+	SELECT a.id, a.uuid, a.batch_id, b.uuid, a.occupancy_id, o.uuid, a.volume_id, v.uuid,
+	       a.addition_type, a.stage, a.inventory_lot_uuid, a.amount, a.amount_unit,
+	       a.added_at, a.notes, a.created_at, a.updated_at, a.deleted_at
+	FROM addition a
+	LEFT JOIN batch b ON b.id = a.batch_id
+	LEFT JOIN occupancy o ON o.id = a.occupancy_id
+	LEFT JOIN volume v ON v.id = a.volume_id`
+
+func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
+	addition, err := scanAddition(c.db.QueryRow(ctx,
+		additionSelectWithJoins+` WHERE a.id = $1 AND a.deleted_at IS NULL`, id))
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Addition{}, service.ErrNotFound
 		}
 		return Addition{}, fmt.Errorf("getting addition: %w", err)
 	}
-
-	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
 	return addition, nil
 }
 
+func (c *Client) GetAdditionByUUID(ctx context.Context, additionUUID string) (Addition, error) {
+	addition, err := scanAddition(c.db.QueryRow(ctx,
+		additionSelectWithJoins+` WHERE a.uuid = $1 AND a.deleted_at IS NULL`, additionUUID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Addition{}, service.ErrNotFound
+		}
+		return Addition{}, fmt.Errorf("getting addition by uuid: %w", err)
+	}
+	return addition, nil
+}
+
+func (c *Client) listAdditions(ctx context.Context, query string, args ...any) ([]Addition, error) {
+	rows, err := c.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var additions []Addition
+	for rows.Next() {
+		var addition Addition
+		var inventoryLotUUID pgtype.UUID
+		if err := rows.Scan(
+			&addition.ID,
+			&addition.UUID,
+			&addition.BatchID,
+			&addition.BatchUUID,
+			&addition.OccupancyID,
+			&addition.OccupancyUUID,
+			&addition.VolumeID,
+			&addition.VolumeUUID,
+			&addition.AdditionType,
+			&addition.Stage,
+			&inventoryLotUUID,
+			&addition.Amount,
+			&addition.AmountUnit,
+			&addition.AddedAt,
+			&addition.Notes,
+			&addition.CreatedAt,
+			&addition.UpdatedAt,
+			&addition.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+		additions = append(additions, addition)
+	}
+	return additions, rows.Err()
+}
+
 func (c *Client) ListAdditionsByBatch(ctx context.Context, batchID int64) ([]Addition, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT a.id, a.uuid, a.batch_id, a.occupancy_id, a.volume_id, a.addition_type, a.stage, a.inventory_lot_uuid, a.amount, a.amount_unit, a.added_at, a.notes, a.created_at, a.updated_at, a.deleted_at
-		FROM addition a
+	additions, err := c.listAdditions(ctx, additionSelectWithJoins+`
 		WHERE a.deleted_at IS NULL
 		AND (
 			a.batch_id = $1 OR
 			EXISTS (
 				SELECT 1
-				FROM occupancy o
-				JOIN batch_volume bv ON bv.volume_id = o.volume_id
-				WHERE o.id = a.occupancy_id
-				AND o.deleted_at IS NULL
+				FROM occupancy oo
+				JOIN batch_volume bv ON bv.volume_id = oo.volume_id
+				WHERE oo.id = a.occupancy_id
+				AND oo.deleted_at IS NULL
 				AND bv.deleted_at IS NULL
 				AND bv.batch_id = $1
 			) OR
@@ -147,137 +232,55 @@ func (c *Client) ListAdditionsByBatch(ctx context.Context, batchID int64) ([]Add
 				AND bv.batch_id = $1
 			)
 		)
-		ORDER BY a.added_at ASC`,
-		batchID,
-	)
+		ORDER BY a.added_at ASC`, batchID)
 	if err != nil {
 		return nil, fmt.Errorf("listing additions by batch: %w", err)
 	}
-	defer rows.Close()
-
-	var additions []Addition
-	for rows.Next() {
-		var addition Addition
-		var inventoryLotUUID pgtype.UUID
-		if err := rows.Scan(
-			&addition.ID,
-			&addition.UUID,
-			&addition.BatchID,
-			&addition.OccupancyID,
-			&addition.VolumeID,
-			&addition.AdditionType,
-			&addition.Stage,
-			&inventoryLotUUID,
-			&addition.Amount,
-			&addition.AmountUnit,
-			&addition.AddedAt,
-			&addition.Notes,
-			&addition.CreatedAt,
-			&addition.UpdatedAt,
-			&addition.DeletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scanning addition: %w", err)
-		}
-		assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
-		additions = append(additions, addition)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("listing additions by batch: %w", err)
-	}
-
 	return additions, nil
+}
+
+func (c *Client) ListAdditionsByBatchUUID(ctx context.Context, batchUUID string) ([]Addition, error) {
+	batch, err := c.GetBatchByUUID(ctx, batchUUID)
+	if err != nil {
+		return nil, fmt.Errorf("resolving batch uuid: %w", err)
+	}
+	return c.ListAdditionsByBatch(ctx, batch.ID)
 }
 
 func (c *Client) ListAdditionsByOccupancy(ctx context.Context, occupancyID int64) ([]Addition, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
-		FROM addition
-		WHERE occupancy_id = $1 AND deleted_at IS NULL
-		ORDER BY added_at ASC`,
-		occupancyID,
-	)
+	additions, err := c.listAdditions(ctx, additionSelectWithJoins+`
+		WHERE a.occupancy_id = $1 AND a.deleted_at IS NULL
+		ORDER BY a.added_at ASC`, occupancyID)
 	if err != nil {
 		return nil, fmt.Errorf("listing additions by occupancy: %w", err)
 	}
-	defer rows.Close()
-
-	var additions []Addition
-	for rows.Next() {
-		var addition Addition
-		var inventoryLotUUID pgtype.UUID
-		if err := rows.Scan(
-			&addition.ID,
-			&addition.UUID,
-			&addition.BatchID,
-			&addition.OccupancyID,
-			&addition.VolumeID,
-			&addition.AdditionType,
-			&addition.Stage,
-			&inventoryLotUUID,
-			&addition.Amount,
-			&addition.AmountUnit,
-			&addition.AddedAt,
-			&addition.Notes,
-			&addition.CreatedAt,
-			&addition.UpdatedAt,
-			&addition.DeletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scanning addition: %w", err)
-		}
-		assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
-		additions = append(additions, addition)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("listing additions by occupancy: %w", err)
-	}
-
 	return additions, nil
 }
 
+func (c *Client) ListAdditionsByOccupancyUUID(ctx context.Context, occupancyUUID string) ([]Addition, error) {
+	occ, err := c.GetOccupancyByUUID(ctx, occupancyUUID)
+	if err != nil {
+		return nil, fmt.Errorf("resolving occupancy uuid: %w", err)
+	}
+	return c.ListAdditionsByOccupancy(ctx, occ.ID)
+}
+
 func (c *Client) ListAdditionsByVolume(ctx context.Context, volumeID int64) ([]Addition, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, batch_id, occupancy_id, volume_id, addition_type, stage, inventory_lot_uuid, amount, amount_unit, added_at, notes, created_at, updated_at, deleted_at
-		FROM addition
-		WHERE volume_id = $1 AND deleted_at IS NULL
-		ORDER BY added_at ASC`,
-		volumeID,
-	)
+	additions, err := c.listAdditions(ctx, additionSelectWithJoins+`
+		WHERE a.volume_id = $1 AND a.deleted_at IS NULL
+		ORDER BY a.added_at ASC`, volumeID)
 	if err != nil {
 		return nil, fmt.Errorf("listing additions by volume: %w", err)
 	}
-	defer rows.Close()
-
-	var additions []Addition
-	for rows.Next() {
-		var addition Addition
-		var inventoryLotUUID pgtype.UUID
-		if err := rows.Scan(
-			&addition.ID,
-			&addition.UUID,
-			&addition.BatchID,
-			&addition.OccupancyID,
-			&addition.VolumeID,
-			&addition.AdditionType,
-			&addition.Stage,
-			&inventoryLotUUID,
-			&addition.Amount,
-			&addition.AmountUnit,
-			&addition.AddedAt,
-			&addition.Notes,
-			&addition.CreatedAt,
-			&addition.UpdatedAt,
-			&addition.DeletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scanning addition: %w", err)
-		}
-		assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
-		additions = append(additions, addition)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("listing additions by volume: %w", err)
-	}
-
 	return additions, nil
+}
+
+func (c *Client) ListAdditionsByVolumeUUID(ctx context.Context, volumeUUID string) ([]Addition, error) {
+	vol, err := c.GetVolumeByUUID(ctx, volumeUUID)
+	if err != nil {
+		return nil, fmt.Errorf("resolving volume uuid: %w", err)
+	}
+	return c.ListAdditionsByVolume(ctx, vol.ID)
 }
 
 func assignUUIDPointer(destination **uuid.UUID, value pgtype.UUID) {

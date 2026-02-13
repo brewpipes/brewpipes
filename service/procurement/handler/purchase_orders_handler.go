@@ -15,10 +15,11 @@ import (
 
 type PurchaseOrderStore interface {
 	ListPurchaseOrders(context.Context) ([]storage.PurchaseOrder, error)
-	ListPurchaseOrdersBySupplier(context.Context, int64) ([]storage.PurchaseOrder, error)
-	GetPurchaseOrder(context.Context, int64) (storage.PurchaseOrder, error)
+	ListPurchaseOrdersBySupplierUUID(context.Context, string) ([]storage.PurchaseOrder, error)
+	GetPurchaseOrderByUUID(context.Context, string) (storage.PurchaseOrder, error)
+	GetSupplierByUUID(context.Context, string) (storage.Supplier, error)
 	CreatePurchaseOrder(context.Context, storage.PurchaseOrder) (storage.PurchaseOrder, error)
-	UpdatePurchaseOrder(context.Context, int64, storage.PurchaseOrderUpdate) (storage.PurchaseOrder, error)
+	UpdatePurchaseOrderByUUID(context.Context, string, storage.PurchaseOrderUpdate) (storage.PurchaseOrder, error)
 }
 
 // HandlePurchaseOrders handles [GET /purchase-orders] and [POST /purchase-orders].
@@ -26,15 +27,9 @@ func HandlePurchaseOrders(db PurchaseOrderStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			supplierValue := r.URL.Query().Get("supplier_id")
-			if supplierValue != "" {
-				supplierID, err := parseInt64Param(supplierValue)
-				if err != nil {
-					http.Error(w, "invalid supplier_id", http.StatusBadRequest)
-					return
-				}
-
-				orders, err := db.ListPurchaseOrdersBySupplier(r.Context(), supplierID)
+			supplierUUID := r.URL.Query().Get("supplier_uuid")
+			if supplierUUID != "" {
+				orders, err := db.ListPurchaseOrdersBySupplierUUID(r.Context(), supplierUUID)
 				if err != nil {
 					slog.Error("error listing purchase orders by supplier", "error", err)
 					service.InternalError(w, err.Error())
@@ -64,6 +59,17 @@ func HandlePurchaseOrders(db PurchaseOrderStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve supplier UUID to internal ID
+			supplier, err := db.GetSupplierByUUID(r.Context(), req.SupplierUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "supplier not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving supplier uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			status := strings.TrimSpace(req.Status)
 			if status == "" {
 				status = storage.PurchaseOrderStatusDraft
@@ -71,7 +77,7 @@ func HandlePurchaseOrders(db PurchaseOrderStore) http.HandlerFunc {
 			orderNumber := strings.TrimSpace(req.OrderNumber)
 
 			order := storage.PurchaseOrder{
-				SupplierID:  req.SupplierID,
+				SupplierID:  supplier.ID,
 				OrderNumber: orderNumber,
 				Status:      status,
 				OrderedAt:   req.OrderedAt,
@@ -93,23 +99,18 @@ func HandlePurchaseOrders(db PurchaseOrderStore) http.HandlerFunc {
 	}
 }
 
-// HandlePurchaseOrderByID handles [GET /purchase-orders/{id}] and [PATCH /purchase-orders/{id}].
-func HandlePurchaseOrderByID(db PurchaseOrderStore) http.HandlerFunc {
+// HandlePurchaseOrderByUUID handles [GET /purchase-orders/{uuid}] and [PATCH /purchase-orders/{uuid}].
+func HandlePurchaseOrderByUUID(db PurchaseOrderStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		orderID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		orderUUID := r.PathValue("uuid")
+		if orderUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			order, err := db.GetPurchaseOrder(r.Context(), orderID)
+			order, err := db.GetPurchaseOrderByUUID(r.Context(), orderUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order not found", http.StatusNotFound)
 				return
@@ -147,7 +148,7 @@ func HandlePurchaseOrderByID(db PurchaseOrderStore) http.HandlerFunc {
 				update.Status = &value
 			}
 
-			order, err := db.UpdatePurchaseOrder(r.Context(), orderID, update)
+			order, err := db.UpdatePurchaseOrderByUUID(r.Context(), orderUUID, update)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order not found", http.StatusNotFound)
 				return

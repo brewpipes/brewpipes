@@ -20,7 +20,6 @@ const vuetify = createVuetify({
 
 function createVessel (overrides: Partial<Vessel> = {}): Vessel {
   return {
-    id: 1,
     uuid: 'vessel-uuid-1',
     type: 'fermenter',
     name: 'FV-01',
@@ -38,11 +37,10 @@ function createVessel (overrides: Partial<Vessel> = {}): Vessel {
 
 function createOccupancy (overrides: Partial<Occupancy> = {}): Occupancy {
   return {
-    id: 1,
     uuid: 'occupancy-uuid-1',
-    vessel_id: 1,
-    volume_id: 1,
-    batch_id: 1,
+    vessel_uuid: 'vessel-uuid-1',
+    volume_uuid: 'volume-uuid-1',
+    batch_uuid: 'batch-uuid-1',
     status: 'fermenting',
     in_at: '2024-06-10T10:00:00Z',
     out_at: null,
@@ -55,7 +53,7 @@ function createOccupancy (overrides: Partial<Occupancy> = {}): Occupancy {
 function mountVesselList (props: {
   vessels?: Vessel[]
   occupancies?: Occupancy[]
-  selectedVesselId?: number | null
+  selectedVesselUuid?: string | null
   loading?: boolean
 } = {}) {
   return mount(VesselList, {
@@ -65,7 +63,7 @@ function mountVesselList (props: {
     props: {
       vessels: props.vessels ?? [],
       occupancies: props.occupancies ?? [],
-      selectedVesselId: props.selectedVesselId ?? null,
+      selectedVesselUuid: props.selectedVesselUuid ?? null,
       loading: props.loading ?? false,
     },
   })
@@ -80,8 +78,8 @@ describe('VesselList', () => {
 
     it('renders vessel list items', () => {
       const vessels = [
-        createVessel({ id: 1, name: 'FV-01' }),
-        createVessel({ id: 2, name: 'FV-02' }),
+        createVessel({ uuid: 'vessel-uuid-1', name: 'FV-01' }),
+        createVessel({ uuid: 'vessel-uuid-2', name: 'FV-02' }),
       ]
       const wrapper = mountVesselList({ vessels })
 
@@ -124,15 +122,15 @@ describe('VesselList', () => {
 
   describe('occupancy status', () => {
     it('shows "Occupied" chip for vessels with occupancy', () => {
-      const vessels = [createVessel({ id: 1 })]
-      const occupancies = [createOccupancy({ vessel_id: 1 })]
+      const vessels = [createVessel({ uuid: 'vessel-uuid-1' })]
+      const occupancies = [createOccupancy({ vessel_uuid: 'vessel-uuid-1' })]
       const wrapper = mountVesselList({ vessels, occupancies })
 
       expect(wrapper.text()).toContain('Occupied')
     })
 
     it('shows "Available" chip for vessels without occupancy', () => {
-      const vessels = [createVessel({ id: 1 })]
+      const vessels = [createVessel({ uuid: 'vessel-uuid-1' })]
       const wrapper = mountVesselList({ vessels, occupancies: [] })
 
       expect(wrapper.text()).toContain('Available')
@@ -140,10 +138,10 @@ describe('VesselList', () => {
 
     it('correctly identifies occupied vs available vessels', () => {
       const vessels = [
-        createVessel({ id: 1, name: 'FV-01' }),
-        createVessel({ id: 2, name: 'FV-02' }),
+        createVessel({ uuid: 'vessel-uuid-1', name: 'FV-01' }),
+        createVessel({ uuid: 'vessel-uuid-2', name: 'FV-02' }),
       ]
-      const occupancies = [createOccupancy({ vessel_id: 1 })]
+      const occupancies = [createOccupancy({ vessel_uuid: 'vessel-uuid-1' })]
       const wrapper = mountVesselList({ vessels, occupancies })
 
       const chips = wrapper.findAll('.v-chip')
@@ -157,11 +155,11 @@ describe('VesselList', () => {
   describe('sorting', () => {
     it('sorts occupied vessels before available vessels', () => {
       const vessels = [
-        createVessel({ id: 1, name: 'AAA-Available' }),
-        createVessel({ id: 2, name: 'BBB-Occupied' }),
-        createVessel({ id: 3, name: 'CCC-Available' }),
+        createVessel({ uuid: 'vessel-uuid-1', name: 'AAA-Available' }),
+        createVessel({ uuid: 'vessel-uuid-2', name: 'BBB-Occupied' }),
+        createVessel({ uuid: 'vessel-uuid-3', name: 'CCC-Available' }),
       ]
-      const occupancies = [createOccupancy({ vessel_id: 2 })]
+      const occupancies = [createOccupancy({ vessel_uuid: 'vessel-uuid-2' })]
       const wrapper = mountVesselList({ vessels, occupancies })
 
       const listItems = wrapper.findAll('.v-list-item')
@@ -171,9 +169,9 @@ describe('VesselList', () => {
 
     it('sorts alphabetically within same occupancy group', () => {
       const vessels = [
-        createVessel({ id: 1, name: 'Zebra' }),
-        createVessel({ id: 2, name: 'Alpha' }),
-        createVessel({ id: 3, name: 'Beta' }),
+        createVessel({ uuid: 'vessel-uuid-1', name: 'Zebra' }),
+        createVessel({ uuid: 'vessel-uuid-2', name: 'Alpha' }),
+        createVessel({ uuid: 'vessel-uuid-3', name: 'Beta' }),
       ]
       const wrapper = mountVesselList({ vessels, occupancies: [] })
 
@@ -187,10 +185,10 @@ describe('VesselList', () => {
   describe('selection', () => {
     it('marks selected vessel as active', () => {
       const vessels = [
-        createVessel({ id: 1, name: 'FV-01' }),
-        createVessel({ id: 2, name: 'FV-02' }),
+        createVessel({ uuid: 'vessel-uuid-1', name: 'FV-01' }),
+        createVessel({ uuid: 'vessel-uuid-2', name: 'FV-02' }),
       ]
-      const wrapper = mountVesselList({ vessels, selectedVesselId: 2 })
+      const wrapper = mountVesselList({ vessels, selectedVesselUuid: 'vessel-uuid-2' })
 
       const listItems = wrapper.findAll('.v-list-item')
       // Find the item with FV-02 and check if it's active
@@ -199,14 +197,14 @@ describe('VesselList', () => {
     })
 
     it('emits select event when vessel is clicked', async () => {
-      const vessels = [createVessel({ id: 42, name: 'FV-01' })]
+      const vessels = [createVessel({ uuid: 'vessel-uuid-42', name: 'FV-01' })]
       const wrapper = mountVesselList({ vessels })
 
       const listItem = wrapper.find('.v-list-item')
       await listItem.trigger('click')
 
       expect(wrapper.emitted('select')).toBeTruthy()
-      expect(wrapper.emitted('select')![0]).toEqual([42])
+      expect(wrapper.emitted('select')![0]).toEqual(['vessel-uuid-42'])
     })
   })
 

@@ -16,10 +16,12 @@ import (
 
 type IngredientLotStore interface {
 	CreateIngredientLot(context.Context, storage.IngredientLot) (storage.IngredientLot, error)
-	GetIngredientLot(context.Context, int64) (storage.IngredientLot, error)
+	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
+	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
+	GetInventoryReceiptByUUID(context.Context, string) (storage.InventoryReceipt, error)
 	ListIngredientLots(context.Context) ([]storage.IngredientLot, error)
-	ListIngredientLotsByIngredient(context.Context, int64) ([]storage.IngredientLot, error)
-	ListIngredientLotsByReceipt(context.Context, int64) ([]storage.IngredientLot, error)
+	ListIngredientLotsByIngredient(context.Context, string) ([]storage.IngredientLot, error)
+	ListIngredientLotsByReceipt(context.Context, string) ([]storage.IngredientLot, error)
 }
 
 // HandleIngredientLots handles [GET /ingredient-lots] and [POST /ingredient-lots].
@@ -27,20 +29,14 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ingredientValue := r.URL.Query().Get("ingredient_id")
-			receiptValue := r.URL.Query().Get("receipt_id")
+			ingredientValue := r.URL.Query().Get("ingredient_uuid")
+			receiptValue := r.URL.Query().Get("receipt_uuid")
 			if ingredientValue != "" && receiptValue != "" {
-				http.Error(w, "ingredient_id and receipt_id cannot be combined", http.StatusBadRequest)
+				http.Error(w, "ingredient_uuid and receipt_uuid cannot be combined", http.StatusBadRequest)
 				return
 			}
 			if ingredientValue != "" {
-				ingredientID, err := parseInt64Param(ingredientValue)
-				if err != nil {
-					http.Error(w, "invalid ingredient_id", http.StatusBadRequest)
-					return
-				}
-
-				lots, err := db.ListIngredientLotsByIngredient(r.Context(), ingredientID)
+				lots, err := db.ListIngredientLotsByIngredient(r.Context(), ingredientValue)
 				if err != nil {
 					slog.Error("error listing ingredient lots", "error", err)
 					service.InternalError(w, err.Error())
@@ -51,13 +47,7 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 				return
 			}
 			if receiptValue != "" {
-				receiptID, err := parseInt64Param(receiptValue)
-				if err != nil {
-					http.Error(w, "invalid receipt_id", http.StatusBadRequest)
-					return
-				}
-
-				lots, err := db.ListIngredientLotsByReceipt(r.Context(), receiptID)
+				lots, err := db.ListIngredientLotsByReceipt(r.Context(), receiptValue)
 				if err != nil {
 					slog.Error("error listing ingredient lots", "error", err)
 					service.InternalError(w, err.Error())
@@ -102,9 +92,35 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 				supplierUUID = &parsed
 			}
 
+			// Resolve ingredient UUID to internal ID
+			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving ingredient uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve receipt UUID to internal ID if provided
+			var receiptID *int64
+			if req.ReceiptUUID != nil {
+				receipt, err := db.GetInventoryReceiptByUUID(r.Context(), *req.ReceiptUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "receipt not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving receipt uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				receiptID = &receipt.ID
+			}
+
 			lot := storage.IngredientLot{
-				IngredientID:      req.IngredientID,
-				ReceiptID:         req.ReceiptID,
+				IngredientID:      ingredient.ID,
+				ReceiptID:         receiptID,
 				SupplierUUID:      supplierUUID,
 				BreweryLotCode:    req.BreweryLotCode,
 				OriginatorLotCode: req.OriginatorLotCode,
@@ -132,26 +148,21 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 	}
 }
 
-// HandleIngredientLotByID handles [GET /ingredient-lots/{id}].
-func HandleIngredientLotByID(db IngredientLotStore) http.HandlerFunc {
+// HandleIngredientLotByUUID handles [GET /ingredient-lots/{uuid}].
+func HandleIngredientLotByUUID(db IngredientLotStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		lotID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		lotUUID := r.PathValue("uuid")
+		if lotUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		lot, err := db.GetIngredientLot(r.Context(), lotID)
+		lot, err := db.GetIngredientLotByUUID(r.Context(), lotUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "ingredient lot not found", http.StatusNotFound)
 			return

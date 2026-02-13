@@ -3,7 +3,6 @@ import { useApiClient } from '@/composables/useApiClient'
 const procurementApiBase = import.meta.env.VITE_PROCUREMENT_API_URL ?? '/api'
 
 export interface Supplier {
-  id: number
   uuid: string
   name: string
   contact_name: string | null
@@ -33,9 +32,8 @@ export interface UpdateSupplierRequest {
 }
 
 export interface PurchaseOrder {
-  id: number
   uuid: string
-  supplier_id: number
+  supplier_uuid: string
   order_number: string
   status: string
   ordered_at: string | null
@@ -46,7 +44,7 @@ export interface PurchaseOrder {
 }
 
 export interface CreatePurchaseOrderRequest {
-  supplier_id: number
+  supplier_uuid: string
   order_number: string
   status?: string | null
   ordered_at?: string | null
@@ -102,35 +100,35 @@ export function useProcurementApi () {
 
   // Suppliers API
   const getSuppliers = () => request<Supplier[]>('/suppliers')
-  const getSupplier = (id: number) => request<Supplier>(`/suppliers/${id}`)
+  const getSupplier = (uuid: string) => request<Supplier>(`/suppliers/${uuid}`)
   const createSupplier = (data: Omit<UpdateSupplierRequest, 'name'> & { name: string }) =>
     request<Supplier>('/suppliers', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updateSupplier = (id: number, data: UpdateSupplierRequest) =>
-    request<Supplier>(`/suppliers/${id}`, {
+  const updateSupplier = (uuid: string, data: UpdateSupplierRequest) =>
+    request<Supplier>(`/suppliers/${uuid}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
 
   // Purchase Orders API
-  const getPurchaseOrders = (supplierId?: number) => {
+  const getPurchaseOrders = (supplierUuid?: string) => {
     const query = new URLSearchParams()
-    if (supplierId) {
-      query.set('supplier_id', String(supplierId))
+    if (supplierUuid) {
+      query.set('supplier_uuid', supplierUuid)
     }
     const path = query.toString() ? `/purchase-orders?${query.toString()}` : '/purchase-orders'
     return request<PurchaseOrder[]>(path)
   }
-  const getPurchaseOrder = (id: number) => request<PurchaseOrder>(`/purchase-orders/${id}`)
+  const getPurchaseOrder = (uuid: string) => request<PurchaseOrder>(`/purchase-orders/${uuid}`)
   const createPurchaseOrder = (data: CreatePurchaseOrderRequest) =>
     request<PurchaseOrder>('/purchase-orders', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updatePurchaseOrder = (id: number, data: UpdatePurchaseOrderRequest) =>
-    request<PurchaseOrder>(`/purchase-orders/${id}`, {
+  const updatePurchaseOrder = (uuid: string, data: UpdatePurchaseOrderRequest) =>
+    request<PurchaseOrder>(`/purchase-orders/${uuid}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     })

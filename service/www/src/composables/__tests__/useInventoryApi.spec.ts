@@ -104,18 +104,18 @@ describe('useInventoryApi', () => {
 
   describe('request function usage', () => {
     it('request can be used for GET requests', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, name: 'Pale Malt' }])
+      mockRequest.mockResolvedValue([{ uuid: 'ing-uuid-1', name: 'Pale Malt' }])
 
       const { request } = useInventoryApi()
       const result = await request('/ingredients')
 
       expect(mockRequest).toHaveBeenCalledWith('/ingredients')
-      expect(result).toEqual([{ id: 1, name: 'Pale Malt' }])
+      expect(result).toEqual([{ uuid: 'ing-uuid-1', name: 'Pale Malt' }])
     })
 
     it('request can be used for POST requests', async () => {
       const newItem = { name: 'Cascade Hops', quantity: 50 }
-      mockRequest.mockResolvedValue({ id: 1, ...newItem })
+      mockRequest.mockResolvedValue({ uuid: 'ing-uuid-2', ...newItem })
 
       const { request } = useInventoryApi()
       const result = await request('/ingredients', {
@@ -127,35 +127,35 @@ describe('useInventoryApi', () => {
         method: 'POST',
         body: JSON.stringify(newItem),
       })
-      expect(result).toEqual({ id: 1, ...newItem })
+      expect(result).toEqual({ uuid: 'ing-uuid-2', ...newItem })
     })
 
     it('request can be used for PUT requests', async () => {
       const updateData = { name: 'Updated Malt', quantity: 100 }
-      mockRequest.mockResolvedValue({ id: 1, ...updateData })
+      mockRequest.mockResolvedValue({ uuid: 'ing-uuid-1', ...updateData })
 
       const { request } = useInventoryApi()
-      const result = await request('/ingredients/1', {
+      const result = await request('/ingredients/ing-uuid-1', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
 
-      expect(mockRequest).toHaveBeenCalledWith('/ingredients/1', {
+      expect(mockRequest).toHaveBeenCalledWith('/ingredients/ing-uuid-1', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
-      expect(result).toEqual({ id: 1, ...updateData })
+      expect(result).toEqual({ uuid: 'ing-uuid-1', ...updateData })
     })
 
     it('request can be used for DELETE requests', async () => {
       mockRequest.mockResolvedValue(null)
 
       const { request } = useInventoryApi()
-      const result = await request('/ingredients/1', {
+      const result = await request('/ingredients/ing-uuid-1', {
         method: 'DELETE',
       })
 
-      expect(mockRequest).toHaveBeenCalledWith('/ingredients/1', {
+      expect(mockRequest).toHaveBeenCalledWith('/ingredients/ing-uuid-1', {
         method: 'DELETE',
       })
       expect(result).toBeNull()

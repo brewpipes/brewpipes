@@ -6,7 +6,6 @@
  * Standard identifier fields present on most entities.
  */
 export interface EntityIdentifiers {
-  id: number
   uuid: string
 }
 

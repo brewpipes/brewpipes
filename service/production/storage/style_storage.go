@@ -56,6 +56,31 @@ func (c *Client) GetStyle(ctx context.Context, id int64) (Style, error) {
 	return style, nil
 }
 
+func (c *Client) GetStyleByUUID(ctx context.Context, styleUUID string) (Style, error) {
+	var style Style
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, name, created_at, updated_at, deleted_at
+		FROM style
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		styleUUID,
+	).Scan(
+		&style.ID,
+		&style.UUID,
+		&style.Name,
+		&style.CreatedAt,
+		&style.UpdatedAt,
+		&style.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Style{}, service.ErrNotFound
+		}
+		return Style{}, fmt.Errorf("getting style by uuid: %w", err)
+	}
+
+	return style, nil
+}
+
 func (c *Client) GetStyleByName(ctx context.Context, name string) (Style, error) {
 	var style Style
 	err := c.db.QueryRow(ctx, `

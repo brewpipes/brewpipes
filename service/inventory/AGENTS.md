@@ -20,13 +20,13 @@ The big picture: the system tracks ingredients from receiving, into storage, thr
 Ingredient
 - An ingredient is the master definition (e.g., "Pale Malt", "Cascade 2024", "WLP001", "Lactic Acid", "CO2").
 - It defines the category, default unit, and any critical attributes used in inventory calculations.
-- Category-specific attributes live in one-to-one detail records (e.g., malt, hop, yeast) keyed by ingredient ID.
+- Category-specific attributes live in one-to-one detail records (e.g., malt, hop, yeast) keyed by ingredient UUID.
 
 Ingredient Lot
 - A lot is a specific received batch of an ingredient with its own quantity, dates, supplier reference, and originator details.
 - Lots can optionally reference the procurement purchase order line UUID for traceability.
 - Lots are the unit of traceability for usage and quality (e.g., alpha acids for hops, yeast generation, moisture for grain).
-- Lot-specific quality attributes live in lot detail records keyed by ingredient lot ID.
+- Lot-specific quality attributes live in lot detail records keyed by ingredient lot UUID.
 
 Supplier Reference
 - Suppliers are managed in the Procurement service; inventory records store an opaque supplier UUID.
@@ -102,3 +102,13 @@ In short:
 - Inventory balances can be derived from movements and reconciled by location and by lot.
 - Inventory records retain traceability to production and procurement via opaque UUIDs, without shared tables or foreign keys.
 - Beer lots can be created for finished product inventory and related back to production batch UUIDs.
+
+## API Convention: UUID-Only
+
+All inventory API endpoints use UUIDs exclusively for resource identification:
+- Path parameters use `{uuid}` (e.g., `/ingredients/{uuid}`, `/stock-locations/{uuid}`).
+- Request bodies use `_uuid` suffix for FK references (e.g., `ingredient_uuid`, `receipt_uuid`, `ingredient_lot_uuid`).
+- Response bodies include `uuid` fields, never internal `id` fields.
+- Query parameters use `_uuid` suffix (e.g., `ingredient_uuid`, `ingredient_lot_uuid`, `receipt_uuid`).
+- Internal storage models retain both `ID int64` and UUID fields; int64 is for DB operations only.
+- Handlers resolve UUID→internal ID for creates via small lookup queries before INSERT.

@@ -15,8 +15,10 @@ import (
 
 type BatchVolumeStore interface {
 	CreateBatchVolume(context.Context, storage.BatchVolume) (storage.BatchVolume, error)
-	GetBatchVolume(context.Context, int64) (storage.BatchVolume, error)
-	ListBatchVolumes(context.Context, int64) ([]storage.BatchVolume, error)
+	GetBatchVolumeByUUID(context.Context, string) (storage.BatchVolume, error)
+	ListBatchVolumesByBatchUUID(context.Context, string) ([]storage.BatchVolume, error)
+	GetBatchByUUID(context.Context, string) (storage.Batch, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
 
 // HandleBatchVolumes handles [GET /batch-volumes] and [POST /batch-volumes].
@@ -24,19 +26,17 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			batchValue := r.URL.Query().Get("batch_id")
-			if batchValue == "" {
-				http.Error(w, "batch_id is required", http.StatusBadRequest)
-				return
-			}
-			batchID, err := parseInt64Param(batchValue)
-			if err != nil {
-				http.Error(w, "invalid batch_id", http.StatusBadRequest)
+			batchUUID := r.URL.Query().Get("batch_uuid")
+			if batchUUID == "" {
+				http.Error(w, "batch_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			volumes, err := db.ListBatchVolumes(r.Context(), batchID)
-			if err != nil {
+			volumes, err := db.ListBatchVolumesByBatchUUID(r.Context(), batchUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusNotFound)
+				return
+			} else if err != nil {
 				slog.Error("error listing batch volumes", "error", err)
 				service.InternalError(w, err.Error())
 				return
@@ -54,14 +54,36 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve batch UUID to internal ID
+			batch, err := db.GetBatchByUUID(r.Context(), req.BatchUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving batch uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve volume UUID to internal ID
+			volume, err := db.GetVolumeByUUID(r.Context(), req.VolumeUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "volume not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving volume uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			phaseAt := time.Time{}
 			if req.PhaseAt != nil {
 				phaseAt = *req.PhaseAt
 			}
 
 			batchVolume := storage.BatchVolume{
-				BatchID:     req.BatchID,
-				VolumeID:    req.VolumeID,
+				BatchID:     batch.ID,
+				VolumeID:    volume.ID,
 				LiquidPhase: req.LiquidPhase,
 				PhaseAt:     phaseAt,
 			}
@@ -80,31 +102,26 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 	}
 }
 
-// HandleBatchVolumeByID handles [GET /batch-volumes/{id}].
-func HandleBatchVolumeByID(db BatchVolumeStore) http.HandlerFunc {
+// HandleBatchVolumeByUUID handles [GET /batch-volumes/{uuid}].
+func HandleBatchVolumeByUUID(db BatchVolumeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		batchVolumeID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		bvUUID := r.PathValue("uuid")
+		if bvUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		batchVolume, err := db.GetBatchVolume(r.Context(), batchVolumeID)
+		batchVolume, err := db.GetBatchVolumeByUUID(r.Context(), bvUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "batch volume not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting batch volume", "error", err)
+			slog.Error("error getting batch volume", "error", err, "batch_volume_uuid", bvUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

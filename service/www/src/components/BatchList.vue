@@ -19,15 +19,15 @@
       <v-list active-color="primary" class="batch-list" lines="two">
         <v-list-item
           v-for="batch in batches"
-          :key="batch.id"
-          :active="batch.id === selectedBatchId"
-          @click="emit('select', batch.id)"
+          :key="batch.uuid"
+          :active="batch.uuid === selectedBatchUuid"
+          @click="emit('select', batch.uuid)"
         >
           <v-list-item-title>
             {{ batch.short_name }}
           </v-list-item-title>
           <v-list-item-subtitle>
-            #{{ batch.id }} - {{ formatDate(batch.brew_date) }}
+            {{ formatDate(batch.brew_date) }}
           </v-list-item-subtitle>
           <template #append>
             <v-chip size="x-small" variant="tonal">
@@ -61,7 +61,7 @@
   withDefaults(
     defineProps<{
       batches: Batch[]
-      selectedBatchId: number | null
+      selectedBatchUuid: string | null
       loading?: boolean
       showCreateButton?: boolean
       showBulkImport?: boolean
@@ -74,7 +74,7 @@
   )
 
   const emit = defineEmits<{
-    'select': [batchId: number]
+    'select': [batchUuid: string]
     'create': []
     'bulk-import': []
   }>()

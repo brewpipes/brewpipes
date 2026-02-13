@@ -46,21 +46,30 @@ func (c *Client) CreateOccupancy(ctx context.Context, occupancy Occupancy) (Occu
 		return Occupancy{}, fmt.Errorf("creating occupancy: %w", err)
 	}
 
+	// Resolve vessel and volume UUIDs
+	c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, occupancy.VesselID).Scan(&occupancy.VesselUUID)
+	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, occupancy.VolumeID).Scan(&occupancy.VolumeUUID)
+
 	return occupancy, nil
 }
 
 func (c *Client) GetOccupancy(ctx context.Context, id int64) (Occupancy, error) {
 	var occupancy Occupancy
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, vessel_id, volume_id, in_at, out_at, status, created_at, updated_at, deleted_at
-		FROM occupancy
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
+		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
+		FROM occupancy o
+		JOIN vessel ve ON ve.id = o.vessel_id
+		JOIN volume vo ON vo.id = o.volume_id
+		WHERE o.id = $1 AND o.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&occupancy.ID,
 		&occupancy.UUID,
 		&occupancy.VesselID,
+		&occupancy.VesselUUID,
 		&occupancy.VolumeID,
+		&occupancy.VolumeUUID,
 		&occupancy.InAt,
 		&occupancy.OutAt,
 		&occupancy.Status,
@@ -78,18 +87,57 @@ func (c *Client) GetOccupancy(ctx context.Context, id int64) (Occupancy, error) 
 	return occupancy, nil
 }
 
+func (c *Client) GetOccupancyByUUID(ctx context.Context, occupancyUUID string) (Occupancy, error) {
+	var occupancy Occupancy
+	err := c.db.QueryRow(ctx, `
+		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
+		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
+		FROM occupancy o
+		JOIN vessel ve ON ve.id = o.vessel_id
+		JOIN volume vo ON vo.id = o.volume_id
+		WHERE o.uuid = $1 AND o.deleted_at IS NULL`,
+		occupancyUUID,
+	).Scan(
+		&occupancy.ID,
+		&occupancy.UUID,
+		&occupancy.VesselID,
+		&occupancy.VesselUUID,
+		&occupancy.VolumeID,
+		&occupancy.VolumeUUID,
+		&occupancy.InAt,
+		&occupancy.OutAt,
+		&occupancy.Status,
+		&occupancy.CreatedAt,
+		&occupancy.UpdatedAt,
+		&occupancy.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Occupancy{}, service.ErrNotFound
+		}
+		return Occupancy{}, fmt.Errorf("getting occupancy by uuid: %w", err)
+	}
+
+	return occupancy, nil
+}
+
 func (c *Client) GetActiveOccupancyByVessel(ctx context.Context, vesselID int64) (Occupancy, error) {
 	var occupancy Occupancy
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, vessel_id, volume_id, in_at, out_at, status, created_at, updated_at, deleted_at
-		FROM occupancy
-		WHERE vessel_id = $1 AND out_at IS NULL AND deleted_at IS NULL`,
+		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
+		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
+		FROM occupancy o
+		JOIN vessel ve ON ve.id = o.vessel_id
+		JOIN volume vo ON vo.id = o.volume_id
+		WHERE o.vessel_id = $1 AND o.out_at IS NULL AND o.deleted_at IS NULL`,
 		vesselID,
 	).Scan(
 		&occupancy.ID,
 		&occupancy.UUID,
 		&occupancy.VesselID,
+		&occupancy.VesselUUID,
 		&occupancy.VolumeID,
+		&occupancy.VolumeUUID,
 		&occupancy.InAt,
 		&occupancy.OutAt,
 		&occupancy.Status,
@@ -107,18 +155,32 @@ func (c *Client) GetActiveOccupancyByVessel(ctx context.Context, vesselID int64)
 	return occupancy, nil
 }
 
+func (c *Client) GetActiveOccupancyByVesselUUID(ctx context.Context, vesselUUID string) (Occupancy, error) {
+	vessel, err := c.GetVesselByUUID(ctx, vesselUUID)
+	if err != nil {
+		return Occupancy{}, fmt.Errorf("resolving vessel uuid: %w", err)
+	}
+
+	return c.GetActiveOccupancyByVessel(ctx, vessel.ID)
+}
+
 func (c *Client) GetActiveOccupancyByVolume(ctx context.Context, volumeID int64) (Occupancy, error) {
 	var occupancy Occupancy
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, vessel_id, volume_id, in_at, out_at, status, created_at, updated_at, deleted_at
-		FROM occupancy
-		WHERE volume_id = $1 AND out_at IS NULL AND deleted_at IS NULL`,
+		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
+		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
+		FROM occupancy o
+		JOIN vessel ve ON ve.id = o.vessel_id
+		JOIN volume vo ON vo.id = o.volume_id
+		WHERE o.volume_id = $1 AND o.out_at IS NULL AND o.deleted_at IS NULL`,
 		volumeID,
 	).Scan(
 		&occupancy.ID,
 		&occupancy.UUID,
 		&occupancy.VesselID,
+		&occupancy.VesselUUID,
 		&occupancy.VolumeID,
+		&occupancy.VolumeUUID,
 		&occupancy.InAt,
 		&occupancy.OutAt,
 		&occupancy.Status,
@@ -136,19 +198,37 @@ func (c *Client) GetActiveOccupancyByVolume(ctx context.Context, volumeID int64)
 	return occupancy, nil
 }
 
+func (c *Client) GetActiveOccupancyByVolumeUUID(ctx context.Context, volumeUUID string) (Occupancy, error) {
+	vol, err := c.GetVolumeByUUID(ctx, volumeUUID)
+	if err != nil {
+		return Occupancy{}, fmt.Errorf("resolving volume uuid: %w", err)
+	}
+
+	return c.GetActiveOccupancyByVolume(ctx, vol.ID)
+}
+
 func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error) {
 	// Use a subquery to get the most recent batch_id for each volume.
 	// A volume can have multiple batch_volume records (e.g., wort -> beer phase transitions),
 	// so we select the one with the latest phase_at to avoid duplicate occupancy rows.
 	rows, err := c.db.Query(ctx, `
-		SELECT o.id, o.uuid, o.vessel_id, o.volume_id, o.in_at, o.out_at, o.status,
+		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
+		       o.in_at, o.out_at, o.status,
 		       o.created_at, o.updated_at, o.deleted_at,
 		       (SELECT bv.batch_id
 		        FROM batch_volume bv
 		        WHERE bv.volume_id = o.volume_id AND bv.deleted_at IS NULL
 		        ORDER BY bv.phase_at DESC
-		        LIMIT 1) AS batch_id
+		        LIMIT 1) AS batch_id,
+		       (SELECT b.uuid
+		        FROM batch_volume bv
+		        JOIN batch b ON b.id = bv.batch_id
+		        WHERE bv.volume_id = o.volume_id AND bv.deleted_at IS NULL
+		        ORDER BY bv.phase_at DESC
+		        LIMIT 1) AS batch_uuid
 		FROM occupancy o
+		JOIN vessel ve ON ve.id = o.vessel_id
+		JOIN volume vo ON vo.id = o.volume_id
 		WHERE o.out_at IS NULL AND o.deleted_at IS NULL
 		ORDER BY o.in_at DESC`,
 	)
@@ -164,7 +244,9 @@ func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error)
 			&occupancy.ID,
 			&occupancy.UUID,
 			&occupancy.VesselID,
+			&occupancy.VesselUUID,
 			&occupancy.VolumeID,
+			&occupancy.VolumeUUID,
 			&occupancy.InAt,
 			&occupancy.OutAt,
 			&occupancy.Status,
@@ -172,6 +254,7 @@ func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error)
 			&occupancy.UpdatedAt,
 			&occupancy.DeletedAt,
 			&occupancy.BatchID,
+			&occupancy.BatchUUID,
 		); err != nil {
 			return nil, fmt.Errorf("scanning occupancy: %w", err)
 		}
@@ -220,6 +303,15 @@ func (c *Client) HasActiveOccupancy(ctx context.Context, vesselID int64) (bool, 
 	return exists, nil
 }
 
+func (c *Client) HasActiveOccupancyByVesselUUID(ctx context.Context, vesselUUID string) (bool, error) {
+	vessel, err := c.GetVesselByUUID(ctx, vesselUUID)
+	if err != nil {
+		return false, fmt.Errorf("resolving vessel uuid: %w", err)
+	}
+
+	return c.HasActiveOccupancy(ctx, vessel.ID)
+}
+
 func (c *Client) UpdateOccupancyStatus(ctx context.Context, occupancyID int64, status *string) (Occupancy, error) {
 	var occupancy Occupancy
 	err := c.db.QueryRow(ctx, `
@@ -248,5 +340,18 @@ func (c *Client) UpdateOccupancyStatus(ctx context.Context, occupancyID int64, s
 		return Occupancy{}, fmt.Errorf("updating occupancy status: %w", err)
 	}
 
+	// Resolve vessel and volume UUIDs
+	c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, occupancy.VesselID).Scan(&occupancy.VesselUUID)
+	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, occupancy.VolumeID).Scan(&occupancy.VolumeUUID)
+
 	return occupancy, nil
+}
+
+func (c *Client) UpdateOccupancyStatusByUUID(ctx context.Context, occupancyUUID string, status *string) (Occupancy, error) {
+	occ, err := c.GetOccupancyByUUID(ctx, occupancyUUID)
+	if err != nil {
+		return Occupancy{}, err
+	}
+
+	return c.UpdateOccupancyStatus(ctx, occ.ID, status)
 }

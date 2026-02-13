@@ -15,8 +15,9 @@ import (
 
 type InventoryTransferStore interface {
 	CreateInventoryTransfer(context.Context, storage.InventoryTransfer) (storage.InventoryTransfer, error)
-	GetInventoryTransfer(context.Context, int64) (storage.InventoryTransfer, error)
+	GetInventoryTransferByUUID(context.Context, string) (storage.InventoryTransfer, error)
 	ListInventoryTransfers(context.Context) ([]storage.InventoryTransfer, error)
+	GetStockLocationByUUID(context.Context, string) (storage.StockLocation, error)
 }
 
 // HandleInventoryTransfers handles [GET /inventory-transfers] and [POST /inventory-transfers].
@@ -48,9 +49,31 @@ func HandleInventoryTransfers(db InventoryTransferStore) http.HandlerFunc {
 				transferredAt = *req.TransferredAt
 			}
 
+			// Resolve source location UUID to internal ID
+			sourceLocation, err := db.GetStockLocationByUUID(r.Context(), req.SourceLocationUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "source location not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving source location uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve dest location UUID to internal ID
+			destLocation, err := db.GetStockLocationByUUID(r.Context(), req.DestLocationUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "dest location not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving dest location uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			transfer := storage.InventoryTransfer{
-				SourceLocationID: req.SourceLocationID,
-				DestLocationID:   req.DestLocationID,
+				SourceLocationID: sourceLocation.ID,
+				DestLocationID:   destLocation.ID,
 				TransferredAt:    transferredAt,
 				Notes:            req.Notes,
 			}
@@ -69,26 +92,21 @@ func HandleInventoryTransfers(db InventoryTransferStore) http.HandlerFunc {
 	}
 }
 
-// HandleInventoryTransferByID handles [GET /inventory-transfers/{id}].
-func HandleInventoryTransferByID(db InventoryTransferStore) http.HandlerFunc {
+// HandleInventoryTransferByUUID handles [GET /inventory-transfers/{uuid}].
+func HandleInventoryTransferByUUID(db InventoryTransferStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		transferID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		transferUUID := r.PathValue("uuid")
+		if transferUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		transfer, err := db.GetInventoryTransfer(r.Context(), transferID)
+		transfer, err := db.GetInventoryTransferByUUID(r.Context(), transferUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "inventory transfer not found", http.StatusNotFound)
 			return

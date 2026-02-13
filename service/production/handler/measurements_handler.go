@@ -15,10 +15,13 @@ import (
 
 type MeasurementStore interface {
 	CreateMeasurement(context.Context, storage.Measurement) (storage.Measurement, error)
-	GetMeasurement(context.Context, int64) (storage.Measurement, error)
-	ListMeasurementsByBatch(context.Context, int64) ([]storage.Measurement, error)
-	ListMeasurementsByOccupancy(context.Context, int64) ([]storage.Measurement, error)
-	ListMeasurementsByVolume(context.Context, int64) ([]storage.Measurement, error)
+	GetMeasurementByUUID(context.Context, string) (storage.Measurement, error)
+	ListMeasurementsByBatchUUID(context.Context, string) ([]storage.Measurement, error)
+	ListMeasurementsByOccupancyUUID(context.Context, string) ([]storage.Measurement, error)
+	ListMeasurementsByVolumeUUID(context.Context, string) ([]storage.Measurement, error)
+	GetBatchByUUID(context.Context, string) (storage.Batch, error)
+	GetOccupancyByUUID(context.Context, string) (storage.Occupancy, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
 
 // HandleMeasurements handles [GET /measurements] and [POST /measurements].
@@ -26,15 +29,12 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			if batchValue := r.URL.Query().Get("batch_id"); batchValue != "" {
-				batchID, err := parseInt64Param(batchValue)
-				if err != nil {
-					http.Error(w, "invalid batch_id", http.StatusBadRequest)
+			if batchUUID := r.URL.Query().Get("batch_uuid"); batchUUID != "" {
+				measurements, err := db.ListMeasurementsByBatchUUID(r.Context(), batchUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "batch not found", http.StatusNotFound)
 					return
-				}
-
-				measurements, err := db.ListMeasurementsByBatch(r.Context(), batchID)
-				if err != nil {
+				} else if err != nil {
 					slog.Error("error listing measurements", "error", err)
 					service.InternalError(w, err.Error())
 					return
@@ -44,15 +44,12 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 				return
 			}
 
-			if occupancyValue := r.URL.Query().Get("occupancy_id"); occupancyValue != "" {
-				occupancyID, err := parseInt64Param(occupancyValue)
-				if err != nil {
-					http.Error(w, "invalid occupancy_id", http.StatusBadRequest)
+			if occupancyUUID := r.URL.Query().Get("occupancy_uuid"); occupancyUUID != "" {
+				measurements, err := db.ListMeasurementsByOccupancyUUID(r.Context(), occupancyUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "occupancy not found", http.StatusNotFound)
 					return
-				}
-
-				measurements, err := db.ListMeasurementsByOccupancy(r.Context(), occupancyID)
-				if err != nil {
+				} else if err != nil {
 					slog.Error("error listing measurements", "error", err)
 					service.InternalError(w, err.Error())
 					return
@@ -62,15 +59,12 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 				return
 			}
 
-			if volumeValue := r.URL.Query().Get("volume_id"); volumeValue != "" {
-				volumeID, err := parseInt64Param(volumeValue)
-				if err != nil {
-					http.Error(w, "invalid volume_id", http.StatusBadRequest)
+			if volumeUUID := r.URL.Query().Get("volume_uuid"); volumeUUID != "" {
+				measurements, err := db.ListMeasurementsByVolumeUUID(r.Context(), volumeUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "volume not found", http.StatusNotFound)
 					return
-				}
-
-				measurements, err := db.ListMeasurementsByVolume(r.Context(), volumeID)
-				if err != nil {
+				} else if err != nil {
 					slog.Error("error listing measurements", "error", err)
 					service.InternalError(w, err.Error())
 					return
@@ -80,7 +74,7 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 				return
 			}
 
-			http.Error(w, "batch_id, occupancy_id, or volume_id is required", http.StatusBadRequest)
+			http.Error(w, "batch_uuid, occupancy_uuid, or volume_uuid is required", http.StatusBadRequest)
 		case http.MethodPost:
 			var req dto.CreateMeasurementRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -98,14 +92,49 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 			}
 
 			measurement := storage.Measurement{
-				BatchID:     req.BatchID,
-				OccupancyID: req.OccupancyID,
-				VolumeID:    req.VolumeID,
-				Kind:        req.Kind,
-				Value:       req.Value,
-				Unit:        req.Unit,
-				ObservedAt:  observedAt,
-				Notes:       req.Notes,
+				Kind:       req.Kind,
+				Value:      req.Value,
+				Unit:       req.Unit,
+				ObservedAt: observedAt,
+				Notes:      req.Notes,
+			}
+
+			// Resolve FK UUIDs to internal IDs
+			if req.BatchUUID != nil {
+				batch, err := db.GetBatchByUUID(r.Context(), *req.BatchUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "batch not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving batch uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				measurement.BatchID = &batch.ID
+			}
+			if req.OccupancyUUID != nil {
+				occ, err := db.GetOccupancyByUUID(r.Context(), *req.OccupancyUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "occupancy not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving occupancy uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				measurement.OccupancyID = &occ.ID
+			}
+			if req.VolumeUUID != nil {
+				vol, err := db.GetVolumeByUUID(r.Context(), *req.VolumeUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "volume not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving volume uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				measurement.VolumeID = &vol.ID
 			}
 
 			created, err := db.CreateMeasurement(r.Context(), measurement)
@@ -122,31 +151,26 @@ func HandleMeasurements(db MeasurementStore) http.HandlerFunc {
 	}
 }
 
-// HandleMeasurementByID handles [GET /measurements/{id}].
-func HandleMeasurementByID(db MeasurementStore) http.HandlerFunc {
+// HandleMeasurementByUUID handles [GET /measurements/{uuid}].
+func HandleMeasurementByUUID(db MeasurementStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		measurementID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		measurementUUID := r.PathValue("uuid")
+		if measurementUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		measurement, err := db.GetMeasurement(r.Context(), measurementID)
+		measurement, err := db.GetMeasurementByUUID(r.Context(), measurementUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "measurement not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting measurement", "error", err)
+			slog.Error("error getting measurement", "error", err, "measurement_uuid", measurementUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

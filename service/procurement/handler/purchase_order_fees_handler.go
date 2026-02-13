@@ -14,11 +14,12 @@ import (
 
 type PurchaseOrderFeeStore interface {
 	ListPurchaseOrderFees(context.Context) ([]storage.PurchaseOrderFee, error)
-	ListPurchaseOrderFeesByOrder(context.Context, int64) ([]storage.PurchaseOrderFee, error)
-	GetPurchaseOrderFee(context.Context, int64) (storage.PurchaseOrderFee, error)
+	ListPurchaseOrderFeesByOrderUUID(context.Context, string) ([]storage.PurchaseOrderFee, error)
+	GetPurchaseOrderFeeByUUID(context.Context, string) (storage.PurchaseOrderFee, error)
+	GetPurchaseOrderByUUID(context.Context, string) (storage.PurchaseOrder, error)
 	CreatePurchaseOrderFee(context.Context, storage.PurchaseOrderFee) (storage.PurchaseOrderFee, error)
-	UpdatePurchaseOrderFee(context.Context, int64, storage.PurchaseOrderFeeUpdate) (storage.PurchaseOrderFee, error)
-	DeletePurchaseOrderFee(context.Context, int64) (storage.PurchaseOrderFee, error)
+	UpdatePurchaseOrderFeeByUUID(context.Context, string, storage.PurchaseOrderFeeUpdate) (storage.PurchaseOrderFee, error)
+	DeletePurchaseOrderFeeByUUID(context.Context, string) (storage.PurchaseOrderFee, error)
 }
 
 // HandlePurchaseOrderFees handles [GET /purchase-order-fees] and [POST /purchase-order-fees].
@@ -26,15 +27,9 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			orderValue := r.URL.Query().Get("purchase_order_id")
-			if orderValue != "" {
-				orderID, err := parseInt64Param(orderValue)
-				if err != nil {
-					http.Error(w, "invalid purchase_order_id", http.StatusBadRequest)
-					return
-				}
-
-				fees, err := db.ListPurchaseOrderFeesByOrder(r.Context(), orderID)
+			orderUUID := r.URL.Query().Get("purchase_order_uuid")
+			if orderUUID != "" {
+				fees, err := db.ListPurchaseOrderFeesByOrderUUID(r.Context(), orderUUID)
 				if err != nil {
 					slog.Error("error listing purchase order fees by order", "error", err)
 					service.InternalError(w, err.Error())
@@ -64,8 +59,19 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve purchase order UUID to internal ID
+			order, err := db.GetPurchaseOrderByUUID(r.Context(), req.PurchaseOrderUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "purchase order not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving purchase order uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			fee := storage.PurchaseOrderFee{
-				PurchaseOrderID: req.PurchaseOrderID,
+				PurchaseOrderID: order.ID,
 				FeeType:         req.FeeType,
 				AmountCents:     req.AmountCents,
 				Currency:        req.Currency,
@@ -85,23 +91,18 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 	}
 }
 
-// HandlePurchaseOrderFeeByID handles [GET /purchase-order-fees/{id}], [PATCH /purchase-order-fees/{id}], and [DELETE /purchase-order-fees/{id}].
-func HandlePurchaseOrderFeeByID(db PurchaseOrderFeeStore) http.HandlerFunc {
+// HandlePurchaseOrderFeeByUUID handles [GET /purchase-order-fees/{uuid}], [PATCH /purchase-order-fees/{uuid}], and [DELETE /purchase-order-fees/{uuid}].
+func HandlePurchaseOrderFeeByUUID(db PurchaseOrderFeeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		feeID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		feeUUID := r.PathValue("uuid")
+		if feeUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			fee, err := db.GetPurchaseOrderFee(r.Context(), feeID)
+			fee, err := db.GetPurchaseOrderFeeByUUID(r.Context(), feeUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order fee not found", http.StatusNotFound)
 				return
@@ -129,7 +130,7 @@ func HandlePurchaseOrderFeeByID(db PurchaseOrderFeeStore) http.HandlerFunc {
 				Currency:    req.Currency,
 			}
 
-			fee, err := db.UpdatePurchaseOrderFee(r.Context(), feeID, update)
+			fee, err := db.UpdatePurchaseOrderFeeByUUID(r.Context(), feeUUID, update)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order fee not found", http.StatusNotFound)
 				return
@@ -141,7 +142,7 @@ func HandlePurchaseOrderFeeByID(db PurchaseOrderFeeStore) http.HandlerFunc {
 
 			service.JSON(w, dto.NewPurchaseOrderFeeResponse(fee))
 		case http.MethodDelete:
-			fee, err := db.DeletePurchaseOrderFee(r.Context(), feeID)
+			fee, err := db.DeletePurchaseOrderFeeByUUID(r.Context(), feeUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order fee not found", http.StatusNotFound)
 				return

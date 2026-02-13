@@ -28,7 +28,6 @@ func (r CreateIngredientRequest) Validate() error {
 }
 
 type IngredientResponse struct {
-	ID          int64      `json:"id"`
 	UUID        string     `json:"uuid"`
 	Name        string     `json:"name"`
 	Category    string     `json:"category"`
@@ -41,7 +40,6 @@ type IngredientResponse struct {
 
 func NewIngredientResponse(ingredient storage.Ingredient) IngredientResponse {
 	return IngredientResponse{
-		ID:          ingredient.ID,
 		UUID:        ingredient.UUID.String(),
 		Name:        ingredient.Name,
 		Category:    ingredient.Category,

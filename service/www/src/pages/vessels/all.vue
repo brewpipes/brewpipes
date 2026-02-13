@@ -56,7 +56,7 @@
           class="data-table vessels-table"
           density="compact"
           :headers="headers"
-          item-value="id"
+          item-value="uuid"
           :items="sortedVessels"
           :loading="loading"
           :search="search"
@@ -89,11 +89,11 @@
 
           <template #item.occupancy="{ item }">
             <router-link
-              v-if="getOccupancyBatchInfo(item.id)"
+              v-if="getOccupancyBatchInfo(item.uuid)"
               class="batch-link"
-              :to="`/batches/${getOccupancyBatchInfo(item.id)!.uuid}`"
+              :to="`/batches/${getOccupancyBatchInfo(item.uuid)!.uuid}`"
             >
-              {{ getOccupancyBatchInfo(item.id)!.short_name }}
+              {{ getOccupancyBatchInfo(item.uuid)!.short_name }}
             </router-link>
             <span v-else class="text-medium-emphasis">Unoccupied</span>
           </template>
@@ -221,11 +221,9 @@
   import { useUnitPreferences, volumeOptions, type VolumeUnit } from '@/composables/useUnitPreferences'
 
   type Batch = {
-    id: number
     uuid: string
     short_name: string
     brew_date: string | null
-    recipe_id: number | null
     recipe_uuid: string | null
     notes: string | null
     created_at: string
@@ -298,14 +296,14 @@
       && newVessel.capacity !== ''
   })
 
-  // Map vessel_id -> occupancy for quick lookup
+  // Map vessel_uuid -> occupancy for quick lookup
   const occupancyMap = computed(
-    () => new Map(occupancies.value.map(occ => [occ.vessel_id, occ])),
+    () => new Map(occupancies.value.map(occ => [occ.vessel_uuid, occ])),
   )
 
-  // Map batch_id -> batch for quick lookup
+  // Map batch_uuid -> batch for quick lookup
   const batchMap = computed(
-    () => new Map(batches.value.map(batch => [batch.id, batch])),
+    () => new Map(batches.value.map(batch => [batch.uuid, batch])),
   )
 
   /**
@@ -330,8 +328,8 @@
       if (statusDiff !== 0) return statusDiff
 
       // Within same status, occupied vessels first
-      const aOccupied = occupancyMap.value.has(a.id)
-      const bOccupied = occupancyMap.value.has(b.id)
+      const aOccupied = occupancyMap.value.has(a.uuid)
+      const bOccupied = occupancyMap.value.has(b.uuid)
       if (aOccupied && !bOccupied) return -1
       if (!aOccupied && bOccupied) return 1
 
@@ -373,11 +371,11 @@
     }
   }
 
-  function getOccupancyBatchInfo (vesselId: number): BatchInfo | null {
-    const occupancy = occupancyMap.value.get(vesselId)
-    if (!occupancy || !occupancy.batch_id) return null
+  function getOccupancyBatchInfo (vesselUuid: string): BatchInfo | null {
+    const occupancy = occupancyMap.value.get(vesselUuid)
+    if (!occupancy || !occupancy.batch_uuid) return null
 
-    const batch = batchMap.value.get(occupancy.batch_id)
+    const batch = batchMap.value.get(occupancy.batch_uuid)
     if (!batch) return null
 
     return {
@@ -457,9 +455,9 @@
     editDialogRef.value?.clearError()
 
     try {
-      const updated = await updateVessel(editingVessel.value.id, data)
+      const updated = await updateVessel(editingVessel.value.uuid, data)
       // Update the vessel in the list
-      const index = vessels.value.findIndex(v => v.id === updated.id)
+      const index = vessels.value.findIndex(v => v.uuid === updated.uuid)
       if (index !== -1) {
         vessels.value[index] = updated
       }

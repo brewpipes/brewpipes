@@ -78,23 +78,95 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 
 	assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
 	assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
+
+	// Resolve ingredient UUID
+	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, lot.IngredientID).Scan(&lot.IngredientUUID)
+
+	// Resolve receipt UUID if set
+	if lot.ReceiptID != nil {
+		var receiptUUID string
+		err := c.db.QueryRow(ctx, `SELECT uuid FROM inventory_receipt WHERE id = $1`, *lot.ReceiptID).Scan(&receiptUUID)
+		if err == nil {
+			lot.ReceiptUUID = &receiptUUID
+		}
+	}
+
 	return lot, nil
 }
 
 func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot, error) {
+	return c.scanIngredientLotRow(c.db.QueryRow(ctx, ingredientLotSelectSQL+`
+		WHERE il.id = $1 AND il.deleted_at IS NULL`, id))
+}
+
+func (c *Client) GetIngredientLotByUUID(ctx context.Context, lotUUID string) (IngredientLot, error) {
+	return c.scanIngredientLotRow(c.db.QueryRow(ctx, ingredientLotSelectSQL+`
+		WHERE il.uuid = $1 AND il.deleted_at IS NULL`, lotUUID))
+}
+
+func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error) {
+	rows, err := c.db.Query(ctx, ingredientLotSelectSQL+`
+		WHERE il.deleted_at IS NULL
+		ORDER BY il.received_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("listing ingredient lots: %w", err)
+	}
+	defer rows.Close()
+
+	return c.scanIngredientLotRows(rows)
+}
+
+func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientUUID string) ([]IngredientLot, error) {
+	rows, err := c.db.Query(ctx, ingredientLotSelectSQL+`
+		WHERE i.uuid = $1 AND il.deleted_at IS NULL
+		ORDER BY il.received_at DESC`,
+		ingredientUUID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing ingredient lots by ingredient: %w", err)
+	}
+	defer rows.Close()
+
+	return c.scanIngredientLotRows(rows)
+}
+
+func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptUUID string) ([]IngredientLot, error) {
+	rows, err := c.db.Query(ctx, ingredientLotSelectSQL+`
+		WHERE r.uuid = $1 AND il.deleted_at IS NULL
+		ORDER BY il.received_at DESC`,
+		receiptUUID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing ingredient lots by receipt: %w", err)
+	}
+	defer rows.Close()
+
+	return c.scanIngredientLotRows(rows)
+}
+
+const ingredientLotSelectSQL = `
+	SELECT il.id, il.uuid, il.ingredient_id, i.uuid, il.receipt_id, r.uuid,
+	       il.supplier_uuid, il.purchase_order_line_uuid,
+	       il.brewery_lot_code, il.originator_lot_code, il.originator_name, il.originator_type,
+	       il.received_at, il.received_amount, il.received_unit,
+	       il.best_by_at, il.expires_at, il.notes,
+	       il.created_at, il.updated_at, il.deleted_at
+	FROM ingredient_lot il
+	JOIN ingredient i ON i.id = il.ingredient_id
+	LEFT JOIN inventory_receipt r ON r.id = il.receipt_id
+`
+
+func (c *Client) scanIngredientLotRow(row pgx.Row) (IngredientLot, error) {
 	var lot IngredientLot
 	var supplierUUID pgtype.UUID
 	var purchaseOrderLineUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
-		FROM ingredient_lot
-		WHERE id = $1 AND deleted_at IS NULL`,
-		id,
-	).Scan(
+	err := row.Scan(
 		&lot.ID,
 		&lot.UUID,
 		&lot.IngredientID,
+		&lot.IngredientUUID,
 		&lot.ReceiptID,
+		&lot.ReceiptUUID,
 		&supplierUUID,
 		&purchaseOrderLineUUID,
 		&lot.BreweryLotCode,
@@ -115,7 +187,7 @@ func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot,
 		if errors.Is(err, pgx.ErrNoRows) {
 			return IngredientLot{}, service.ErrNotFound
 		}
-		return IngredientLot{}, fmt.Errorf("getting ingredient lot: %w", err)
+		return IngredientLot{}, fmt.Errorf("scanning ingredient lot: %w", err)
 	}
 
 	assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
@@ -123,18 +195,7 @@ func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot,
 	return lot, nil
 }
 
-func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
-		FROM ingredient_lot
-		WHERE deleted_at IS NULL
-		ORDER BY received_at DESC`,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("listing ingredient lots: %w", err)
-	}
-	defer rows.Close()
-
+func (c *Client) scanIngredientLotRows(rows pgx.Rows) ([]IngredientLot, error) {
 	var lots []IngredientLot
 	for rows.Next() {
 		var lot IngredientLot
@@ -144,7 +205,9 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 			&lot.ID,
 			&lot.UUID,
 			&lot.IngredientID,
+			&lot.IngredientUUID,
 			&lot.ReceiptID,
+			&lot.ReceiptUUID,
 			&supplierUUID,
 			&purchaseOrderLineUUID,
 			&lot.BreweryLotCode,
@@ -169,110 +232,6 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("listing ingredient lots: %w", err)
-	}
-
-	return lots, nil
-}
-
-func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientID int64) ([]IngredientLot, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
-		FROM ingredient_lot
-		WHERE ingredient_id = $1 AND deleted_at IS NULL
-		ORDER BY received_at DESC`,
-		ingredientID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("listing ingredient lots by ingredient: %w", err)
-	}
-	defer rows.Close()
-
-	var lots []IngredientLot
-	for rows.Next() {
-		var lot IngredientLot
-		var supplierUUID pgtype.UUID
-		var purchaseOrderLineUUID pgtype.UUID
-		if err := rows.Scan(
-			&lot.ID,
-			&lot.UUID,
-			&lot.IngredientID,
-			&lot.ReceiptID,
-			&supplierUUID,
-			&purchaseOrderLineUUID,
-			&lot.BreweryLotCode,
-			&lot.OriginatorLotCode,
-			&lot.OriginatorName,
-			&lot.OriginatorType,
-			&lot.ReceivedAt,
-			&lot.ReceivedAmount,
-			&lot.ReceivedUnit,
-			&lot.BestByAt,
-			&lot.ExpiresAt,
-			&lot.Notes,
-			&lot.CreatedAt,
-			&lot.UpdatedAt,
-			&lot.DeletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scanning ingredient lot: %w", err)
-		}
-		assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
-		assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
-		lots = append(lots, lot)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("listing ingredient lots by ingredient: %w", err)
-	}
-
-	return lots, nil
-}
-
-func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptID int64) ([]IngredientLot, error) {
-	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at
-		FROM ingredient_lot
-		WHERE receipt_id = $1 AND deleted_at IS NULL
-		ORDER BY received_at DESC`,
-		receiptID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("listing ingredient lots by receipt: %w", err)
-	}
-	defer rows.Close()
-
-	var lots []IngredientLot
-	for rows.Next() {
-		var lot IngredientLot
-		var supplierUUID pgtype.UUID
-		var purchaseOrderLineUUID pgtype.UUID
-		if err := rows.Scan(
-			&lot.ID,
-			&lot.UUID,
-			&lot.IngredientID,
-			&lot.ReceiptID,
-			&supplierUUID,
-			&purchaseOrderLineUUID,
-			&lot.BreweryLotCode,
-			&lot.OriginatorLotCode,
-			&lot.OriginatorName,
-			&lot.OriginatorType,
-			&lot.ReceivedAt,
-			&lot.ReceivedAmount,
-			&lot.ReceivedUnit,
-			&lot.BestByAt,
-			&lot.ExpiresAt,
-			&lot.Notes,
-			&lot.CreatedAt,
-			&lot.UpdatedAt,
-			&lot.DeletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scanning ingredient lot: %w", err)
-		}
-		assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
-		assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
-		lots = append(lots, lot)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("listing ingredient lots by receipt: %w", err)
 	}
 
 	return lots, nil

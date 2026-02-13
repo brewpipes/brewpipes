@@ -76,7 +76,6 @@ func (r UpdateVesselRequest) Validate() error {
 }
 
 type VesselResponse struct {
-	ID           int64      `json:"id"`
 	UUID         string     `json:"uuid"`
 	Type         string     `json:"type"`
 	Name         string     `json:"name"`
@@ -92,7 +91,6 @@ type VesselResponse struct {
 
 func NewVesselResponse(vessel storage.Vessel) VesselResponse {
 	return VesselResponse{
-		ID:           vessel.ID,
 		UUID:         vessel.UUID.String(),
 		Type:         vessel.Type,
 		Name:         vessel.Name,

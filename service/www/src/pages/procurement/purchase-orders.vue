@@ -46,7 +46,7 @@
                   {{ errorMessage }}
                 </v-alert>
                 <v-select
-                  v-model="filters.supplier_id"
+                  v-model="filters.supplier_uuid"
                   clearable
                   :items="supplierSelectItems"
                   label="Filter by supplier"
@@ -62,9 +62,9 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="order in orders" :key="order.id">
+                    <tr v-for="order in orders" :key="order.uuid">
                       <td>{{ order.order_number }}</td>
-                      <td>{{ supplierName(order.supplier_id) }}</td>
+                      <td>{{ supplierName(order.supplier_uuid) }}</td>
                       <td>{{ order.status }}</td>
                       <td>{{ formatDateTime(order.expected_at) }}</td>
                       <td class="text-right">
@@ -77,14 +77,14 @@
                         <v-btn
                           size="x-small"
                           variant="text"
-                          @click="openLines(order.id)"
+                          @click="openLines(order.uuid)"
                         >
                           Lines
                         </v-btn>
                         <v-btn
                           size="x-small"
                           variant="text"
-                          @click="openFees(order.id)"
+                          @click="openFees(order.uuid)"
                         >
                           Fees
                         </v-btn>
@@ -125,7 +125,7 @@
         <v-row>
           <v-col cols="12">
             <v-select
-              v-model="orderForm.supplier_id"
+              v-model="orderForm.supplier_uuid"
               :disabled="isEditMode"
               :hint="isEditMode ? 'Supplier cannot be changed after creation' : ''"
               :items="supplierSelectItems"
@@ -208,11 +208,11 @@
   ]
 
   const filters = reactive({
-    supplier_id: null as number | null,
+    supplier_uuid: null as string | null,
   })
 
   const orderForm = reactive({
-    supplier_id: null as number | null,
+    supplier_uuid: null as string | null,
     order_number: '',
     status: '',
     ordered_at: '',
@@ -229,12 +229,12 @@
   const supplierSelectItems = computed(() =>
     suppliers.value.map(supplier => ({
       title: supplier.name,
-      value: supplier.id,
+      value: supplier.uuid,
     })),
   )
 
   const isFormValid = computed(() => {
-    return orderForm.supplier_id !== null && orderForm.order_number.trim().length > 0
+    return orderForm.supplier_uuid !== null && orderForm.order_number.trim().length > 0
   })
 
   onMounted(async () => {
@@ -265,11 +265,11 @@
   }
 
   async function loadOrders () {
-    orders.value = await getPurchaseOrders(filters.supplier_id ?? undefined)
+    orders.value = await getPurchaseOrders(filters.supplier_uuid ?? undefined)
   }
 
   function resetForm () {
-    orderForm.supplier_id = null
+    orderForm.supplier_uuid = null
     orderForm.order_number = ''
     orderForm.status = ''
     orderForm.ordered_at = ''
@@ -287,7 +287,7 @@
   function openEditDialog (order: PurchaseOrder) {
     editingOrder.value = order
     dialogError.value = ''
-    orderForm.supplier_id = order.supplier_id
+    orderForm.supplier_uuid = order.supplier_uuid
     orderForm.order_number = order.order_number
     orderForm.status = order.status || ''
     orderForm.ordered_at = order.ordered_at ? toDateTimeLocal(order.ordered_at) : ''
@@ -323,11 +323,11 @@
           expected_at: normalizeDateTime(orderForm.expected_at),
           notes: normalizeText(orderForm.notes),
         }
-        await updatePurchaseOrder(editingOrder.value.id, payload)
+        await updatePurchaseOrder(editingOrder.value.uuid, payload)
         showNotice('Purchase order updated')
       } else {
         const payload = {
-          supplier_id: orderForm.supplier_id!,
+          supplier_uuid: orderForm.supplier_uuid!,
           order_number: orderForm.order_number.trim(),
           status: normalizeText(orderForm.status),
           ordered_at: normalizeDateTime(orderForm.ordered_at),
@@ -347,21 +347,22 @@
     }
   }
 
-  function supplierName (supplierId: number) {
-    return suppliers.value.find(supplier => supplier.id === supplierId)?.name ?? `Supplier ${supplierId}`
+  function supplierName (supplierUuid: string) {
+    const supplier = suppliers.value.find(s => s.uuid === supplierUuid)
+    return supplier?.name ?? 'Unknown Supplier'
   }
 
-  function openLines (orderId: number) {
+  function openLines (orderUuid: string) {
     router.push({
       path: '/procurement/purchase-order-lines',
-      query: { purchase_order_id: String(orderId) },
+      query: { purchase_order_uuid: orderUuid },
     })
   }
 
-  function openFees (orderId: number) {
+  function openFees (orderUuid: string) {
     router.push({
       path: '/procurement/purchase-order-fees',
-      query: { purchase_order_id: String(orderId) },
+      query: { purchase_order_uuid: orderUuid },
     })
   }
 </script>

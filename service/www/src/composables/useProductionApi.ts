@@ -105,7 +105,7 @@ export function useProductionApi () {
 
   // Styles API
   const getStyles = () => request<Style[]>('/styles')
-  const getStyle = (id: number) => request<Style>(`/styles/${id}`)
+  const getStyle = (uuid: string) => request<Style>(`/styles/${uuid}`)
   const createStyle = (data: CreateStyleRequest) =>
     request<Style>('/styles', {
       method: 'POST',
@@ -152,17 +152,16 @@ export function useProductionApi () {
 
   // Vessels API
   const getVessels = () => request<Vessel[]>('/vessels')
-  const getVessel = (id: number) => request<Vessel>(`/vessels/${id}`)
-  const getVesselByUUID = (uuid: string) => request<Vessel>(`/vessels/uuid/${uuid}`)
-  const updateVessel = (id: number, data: UpdateVesselRequest) =>
-    request<Vessel>(`/vessels/${id}`, {
+  const getVessel = (uuid: string) => request<Vessel>(`/vessels/${uuid}`)
+  const updateVessel = (uuid: string, data: UpdateVesselRequest) =>
+    request<Vessel>(`/vessels/${uuid}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
 
   // Volumes API
   const getVolumes = () => request<Volume[]>('/volumes')
-  const getVolume = (id: number) => request<Volume>(`/volumes/${id}`)
+  const getVolume = (uuid: string) => request<Volume>(`/volumes/${uuid}`)
   const createVolume = (data: CreateVolumeRequest) =>
     request<Volume>('/volumes', {
       method: 'POST',
@@ -170,24 +169,24 @@ export function useProductionApi () {
     })
 
   // Brew Sessions API
-  const getBrewSessions = (batchId: number) =>
-    request<BrewSession[]>(`/brew-sessions?batch_id=${batchId}`)
-  const getBrewSession = (id: number) =>
-    request<BrewSession>(`/brew-sessions/${id}`)
+  const getBrewSessions = (batchUuid: string) =>
+    request<BrewSession[]>(`/brew-sessions?batch_uuid=${batchUuid}`)
+  const getBrewSession = (uuid: string) =>
+    request<BrewSession>(`/brew-sessions/${uuid}`)
   const createBrewSession = (data: CreateBrewSessionRequest) =>
     request<BrewSession>('/brew-sessions', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updateBrewSession = (id: number, data: UpdateBrewSessionRequest) =>
-    request<BrewSession>(`/brew-sessions/${id}`, {
+  const updateBrewSession = (uuid: string, data: UpdateBrewSessionRequest) =>
+    request<BrewSession>(`/brew-sessions/${uuid}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
 
   // Additions API (volume-targeted)
-  const getAdditionsByVolume = (volumeId: number) =>
-    request<Addition[]>(`/additions?volume_id=${volumeId}`)
+  const getAdditionsByVolume = (volumeUuid: string) =>
+    request<Addition[]>(`/additions?volume_uuid=${volumeUuid}`)
   const createAddition = (data: CreateAdditionRequest) =>
     request<Addition>('/additions', {
       method: 'POST',
@@ -195,8 +194,8 @@ export function useProductionApi () {
     })
 
   // Measurements API (volume-targeted)
-  const getMeasurementsByVolume = (volumeId: number) =>
-    request<Measurement[]>(`/measurements?volume_id=${volumeId}`)
+  const getMeasurementsByVolume = (volumeUuid: string) =>
+    request<Measurement[]>(`/measurements?volume_uuid=${volumeUuid}`)
   const createMeasurement = (data: CreateMeasurementRequest) =>
     request<Measurement>('/measurements', {
       method: 'POST',
@@ -204,29 +203,29 @@ export function useProductionApi () {
     })
 
   // Batches API
-  const getBatch = (id: number) =>
-    request<Batch>(`/batches/${id}`)
-  const updateBatch = (id: number, data: UpdateBatchRequest) =>
-    request<Batch>(`/batches/${id}`, {
+  const getBatch = (uuid: string) =>
+    request<Batch>(`/batches/${uuid}`)
+  const updateBatch = (uuid: string, data: UpdateBatchRequest) =>
+    request<Batch>(`/batches/${uuid}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
-  const deleteBatch = (id: number) =>
-    request<void>(`/batches/${id}`, {
+  const deleteBatch = (uuid: string) =>
+    request<void>(`/batches/${uuid}`, {
       method: 'DELETE',
     })
 
   // Batch Summary API
-  const getBatchSummary = (id: number) =>
-    request<BatchSummary>(`/batches/${id}/summary`)
+  const getBatchSummary = (uuid: string) =>
+    request<BatchSummary>(`/batches/${uuid}/summary`)
 
   // Occupancy API
   const getActiveOccupancies = () =>
     request<Occupancy[]>('/occupancies?active=true')
-  const getOccupancy = (id: number) =>
-    request<Occupancy>(`/occupancies/${id}`)
-  const updateOccupancyStatus = (id: number, status: OccupancyStatus) =>
-    request<Occupancy>(`/occupancies/${id}/status`, {
+  const getOccupancy = (uuid: string) =>
+    request<Occupancy>(`/occupancies/${uuid}`)
+  const updateOccupancyStatus = (uuid: string, status: OccupancyStatus) =>
+    request<Occupancy>(`/occupancies/${uuid}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     })
@@ -257,7 +256,6 @@ export function useProductionApi () {
     // Vessels
     getVessels,
     getVessel,
-    getVesselByUUID,
     updateVessel,
     // Volumes
     getVolumes,

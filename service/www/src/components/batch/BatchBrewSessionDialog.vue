@@ -21,11 +21,11 @@
               clearable
               density="comfortable"
               item-title="name"
-              item-value="id"
+              item-value="uuid"
               :items="mashVesselOptions"
               label="Mash Vessel"
-              :model-value="form.mash_vessel_id"
-              @update:model-value="updateForm('mash_vessel_id', $event)"
+              :model-value="form.mash_vessel_uuid"
+              @update:model-value="updateForm('mash_vessel_uuid', $event)"
             />
           </v-col>
           <v-col cols="12" md="6">
@@ -33,11 +33,11 @@
               clearable
               density="comfortable"
               item-title="name"
-              item-value="id"
+              item-value="uuid"
               :items="boilVesselOptions"
               label="Boil Vessel"
-              :model-value="form.boil_vessel_id"
-              @update:model-value="updateForm('boil_vessel_id', $event)"
+              :model-value="form.boil_vessel_uuid"
+              @update:model-value="updateForm('boil_vessel_uuid', $event)"
             />
           </v-col>
           <v-col cols="12" md="6">
@@ -46,12 +46,12 @@
               density="comfortable"
               hint="Select existing or create new"
               item-title="label"
-              item-value="id"
+              item-value="uuid"
               :items="wortVolumeOptions"
               label="Wort Volume"
-              :model-value="form.wort_volume_id"
+              :model-value="form.wort_volume_uuid"
               persistent-hint
-              @update:model-value="updateForm('wort_volume_id', $event)"
+              @update:model-value="updateForm('wort_volume_uuid', $event)"
             >
               <template #no-data>
                 <v-list-item>
@@ -105,9 +105,9 @@
 
   export type BrewSessionForm = {
     brewed_at: string
-    mash_vessel_id: number | null
-    boil_vessel_id: number | null
-    wort_volume_id: number | null
+    mash_vessel_uuid: string | null
+    boil_vessel_uuid: string | null
+    wort_volume_uuid: string | null
     notes: string
   }
 
@@ -138,19 +138,19 @@
   const mashVesselOptions = computed(() =>
     props.vessels
       .filter(v => v.status === 'active' && v.type.toLowerCase().includes('mash'))
-      .map(v => ({ id: v.id, name: v.name })),
+      .map(v => ({ uuid: v.uuid, name: v.name })),
   )
 
   const boilVesselOptions = computed(() =>
     props.vessels
       .filter(v => v.status === 'active' && (v.type.toLowerCase().includes('kettle') || v.type.toLowerCase().includes('boil')))
-      .map(v => ({ id: v.id, name: v.name })),
+      .map(v => ({ uuid: v.uuid, name: v.name })),
   )
 
   const wortVolumeOptions = computed(() =>
     props.volumes.map(v => ({
-      id: v.id,
-      label: v.name ? `${v.name} (${v.amount} ${v.amount_unit})` : `Volume #${v.id} (${v.amount} ${v.amount_unit})`,
+      uuid: v.uuid,
+      label: v.name ? `${v.name} (${v.amount} ${v.amount_unit})` : `Unnamed Volume (${v.amount} ${v.amount_unit})`,
     })),
   )
 

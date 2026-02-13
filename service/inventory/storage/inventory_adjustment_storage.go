@@ -70,6 +70,33 @@ func (c *Client) GetInventoryAdjustment(ctx context.Context, id int64) (Inventor
 	return adjustment, nil
 }
 
+func (c *Client) GetInventoryAdjustmentByUUID(ctx context.Context, adjustmentUUID string) (InventoryAdjustment, error) {
+	var adjustment InventoryAdjustment
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, reason, adjusted_at, notes, created_at, updated_at, deleted_at
+		FROM inventory_adjustment
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		adjustmentUUID,
+	).Scan(
+		&adjustment.ID,
+		&adjustment.UUID,
+		&adjustment.Reason,
+		&adjustment.AdjustedAt,
+		&adjustment.Notes,
+		&adjustment.CreatedAt,
+		&adjustment.UpdatedAt,
+		&adjustment.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return InventoryAdjustment{}, service.ErrNotFound
+		}
+		return InventoryAdjustment{}, fmt.Errorf("getting inventory adjustment by uuid: %w", err)
+	}
+
+	return adjustment, nil
+}
+
 func (c *Client) ListInventoryAdjustments(ctx context.Context) ([]InventoryAdjustment, error) {
 	rows, err := c.db.Query(ctx, `
 		SELECT id, uuid, reason, adjusted_at, notes, created_at, updated_at, deleted_at

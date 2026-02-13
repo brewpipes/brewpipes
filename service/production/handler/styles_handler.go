@@ -14,7 +14,7 @@ import (
 
 type StyleStore interface {
 	CreateStyle(context.Context, storage.Style) (storage.Style, error)
-	GetStyle(context.Context, int64) (storage.Style, error)
+	GetStyleByUUID(context.Context, string) (storage.Style, error)
 	ListStyles(context.Context) ([]storage.Style, error)
 }
 
@@ -53,7 +53,7 @@ func HandleStyles(db StyleStore) http.HandlerFunc {
 				return
 			}
 
-			slog.Info("style created", "style_id", created.ID, "name", created.Name)
+			slog.Info("style created", "style_uuid", created.UUID, "name", created.Name)
 
 			service.JSON(w, dto.NewStyleResponse(created))
 		default:
@@ -62,31 +62,26 @@ func HandleStyles(db StyleStore) http.HandlerFunc {
 	}
 }
 
-// HandleStyleByID handles [GET /styles/{id}].
-func HandleStyleByID(db StyleStore) http.HandlerFunc {
+// HandleStyleByUUID handles [GET /styles/{uuid}].
+func HandleStyleByUUID(db StyleStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		styleID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		styleUUID := r.PathValue("uuid")
+		if styleUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		style, err := db.GetStyle(r.Context(), styleID)
+		style, err := db.GetStyleByUUID(r.Context(), styleUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "style not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting style", "error", err)
+			slog.Error("error getting style", "error", err, "style_uuid", styleUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

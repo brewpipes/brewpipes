@@ -2,14 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gofrs/uuid/v5"
 )
-
-func parseInt64Param(value string) (int64, error) {
-	return strconv.ParseInt(value, 10, 64)
-}
 
 func parseUUIDPointer(value *string) (*uuid.UUID, error) {
 	if value == nil {

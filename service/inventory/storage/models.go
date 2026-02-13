@@ -85,6 +85,7 @@ type Ingredient struct {
 type IngredientMaltDetail struct {
 	entity.Identifiers
 	IngredientID   int64
+	IngredientUUID string // Joined from ingredient table
 	MaltsterName   *string
 	Variety        *string
 	Lovibond       *float64
@@ -95,22 +96,24 @@ type IngredientMaltDetail struct {
 
 type IngredientHopDetail struct {
 	entity.Identifiers
-	IngredientID int64
-	ProducerName *string
-	Variety      *string
-	CropYear     *int
-	Form         *string
-	AlphaAcid    *float64
-	BetaAcid     *float64
+	IngredientID   int64
+	IngredientUUID string // Joined from ingredient table
+	ProducerName   *string
+	Variety        *string
+	CropYear       *int
+	Form           *string
+	AlphaAcid      *float64
+	BetaAcid       *float64
 	entity.Timestamps
 }
 
 type IngredientYeastDetail struct {
 	entity.Identifiers
-	IngredientID int64
-	LabName      *string
-	Strain       *string
-	Form         *string
+	IngredientID   int64
+	IngredientUUID string // Joined from ingredient table
+	LabName        *string
+	Strain         *string
+	Form           *string
 	entity.Timestamps
 }
 
@@ -135,7 +138,9 @@ type InventoryReceipt struct {
 type IngredientLot struct {
 	entity.Identifiers
 	IngredientID          int64
+	IngredientUUID        string // Joined from ingredient table
 	ReceiptID             *int64
+	ReceiptUUID           *string // Joined from inventory_receipt table
 	SupplierUUID          *uuid.UUID
 	PurchaseOrderLineUUID *uuid.UUID
 	BreweryLotCode        *string
@@ -153,24 +158,27 @@ type IngredientLot struct {
 
 type IngredientLotMaltDetail struct {
 	entity.Identifiers
-	IngredientLotID int64
-	MoisturePercent *float64
+	IngredientLotID   int64
+	IngredientLotUUID string // Joined from ingredient_lot table
+	MoisturePercent   *float64
 	entity.Timestamps
 }
 
 type IngredientLotHopDetail struct {
 	entity.Identifiers
-	IngredientLotID int64
-	AlphaAcid       *float64
-	BetaAcid        *float64
+	IngredientLotID   int64
+	IngredientLotUUID string // Joined from ingredient_lot table
+	AlphaAcid         *float64
+	BetaAcid          *float64
 	entity.Timestamps
 }
 
 type IngredientLotYeastDetail struct {
 	entity.Identifiers
-	IngredientLotID  int64
-	ViabilityPercent *float64
-	Generation       *int
+	IngredientLotID   int64
+	IngredientLotUUID string // Joined from ingredient_lot table
+	ViabilityPercent  *float64
+	Generation        *int
 	entity.Timestamps
 }
 
@@ -192,10 +200,12 @@ type InventoryAdjustment struct {
 
 type InventoryTransfer struct {
 	entity.Identifiers
-	SourceLocationID int64
-	DestLocationID   int64
-	TransferredAt    time.Time
-	Notes            *string
+	SourceLocationID   int64
+	SourceLocationUUID string // Joined from stock_location table
+	DestLocationID     int64
+	DestLocationUUID   string // Joined from stock_location table
+	TransferredAt      time.Time
+	Notes              *string
 	entity.Timestamps
 }
 
@@ -210,18 +220,25 @@ type BeerLot struct {
 
 type InventoryMovement struct {
 	entity.Identifiers
-	IngredientLotID *int64
-	BeerLotID       *int64
-	StockLocationID int64
-	Direction       string
-	Reason          string
-	Amount          int64
-	AmountUnit      string
-	OccurredAt      time.Time
-	ReceiptID       *int64
-	UsageID         *int64
-	AdjustmentID    *int64
-	TransferID      *int64
-	Notes           *string
+	IngredientLotID   *int64
+	IngredientLotUUID *string // Joined from ingredient_lot table
+	BeerLotID         *int64
+	BeerLotUUID       *string // Joined from beer_lot table
+	StockLocationID   int64
+	StockLocationUUID string // Joined from stock_location table
+	Direction         string
+	Reason            string
+	Amount            int64
+	AmountUnit        string
+	OccurredAt        time.Time
+	ReceiptID         *int64
+	ReceiptUUID       *string // Joined from inventory_receipt table
+	UsageID           *int64
+	UsageUUID         *string // Joined from inventory_usage table
+	AdjustmentID      *int64
+	AdjustmentUUID    *string // Joined from inventory_adjustment table
+	TransferID        *int64
+	TransferUUID      *string // Joined from inventory_transfer table
+	Notes             *string
 	entity.Timestamps
 }

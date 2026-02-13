@@ -57,6 +57,16 @@ type OccupancyWithVessel struct {
 	Vessel    Vessel
 }
 
+// GetBatchSummaryByUUID returns a batch summary by resolving the UUID to an internal ID.
+func (c *Client) GetBatchSummaryByUUID(ctx context.Context, batchUUID string) (BatchSummary, error) {
+	batch, err := c.GetBatchByUUID(ctx, batchUUID)
+	if err != nil {
+		return BatchSummary{}, fmt.Errorf("resolving batch uuid: %w", err)
+	}
+
+	return c.GetBatchSummary(ctx, batch.ID)
+}
+
 func (c *Client) GetBatchSummary(ctx context.Context, batchID int64) (BatchSummary, error) {
 	var summary BatchSummary
 

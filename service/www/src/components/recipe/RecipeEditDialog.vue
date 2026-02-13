@@ -33,7 +33,7 @@
             density="comfortable"
             hint="Select an existing style or type a new one"
             item-title="name"
-            item-value="id"
+            item-value="uuid"
             :items="styles"
             label="Style"
             :loading="stylesLoading"
@@ -113,8 +113,8 @@
       form.notes = props.recipe.notes ?? ''
 
       // Set the style
-      if (props.recipe.style_id) {
-        const matchingStyle = props.styles.find(s => s.id === props.recipe.style_id)
+      if (props.recipe.style_uuid) {
+        const matchingStyle = props.styles.find(s => s.uuid === props.recipe.style_uuid)
         form.style = matchingStyle ?? props.recipe.style_name
       } else if (props.recipe.style_name) {
         form.style = props.recipe.style_name
@@ -135,12 +135,12 @@
   function handleSubmit () {
     if (!isFormValid.value) return
 
-    let styleId: number | null = null
+    let styleUuid: string | null = null
     let styleName: string | null = null
 
     if (form.style) {
-      if (typeof form.style === 'object' && form.style.id) {
-        styleId = form.style.id
+      if (typeof form.style === 'object' && form.style.uuid) {
+        styleUuid = form.style.uuid
         styleName = form.style.name
       } else if (typeof form.style === 'string') {
         styleName = form.style.trim() || null
@@ -149,7 +149,7 @@
 
     const data: UpdateRecipeRequest = {
       name: form.name.trim(),
-      style_id: styleId,
+      style_uuid: styleUuid,
       style_name: styleName,
       notes: form.notes.trim() || null,
     }

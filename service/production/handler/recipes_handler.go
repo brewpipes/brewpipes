@@ -15,6 +15,7 @@ import (
 type RecipeStore interface {
 	CreateRecipe(context.Context, storage.Recipe) (storage.Recipe, error)
 	GetRecipe(context.Context, string, *storage.RecipeQueryOpts) (storage.Recipe, error)
+	GetStyleByUUID(context.Context, string) (storage.Style, error)
 	ListRecipes(context.Context) ([]storage.Recipe, error)
 	UpdateRecipe(context.Context, string, storage.Recipe) (storage.Recipe, error)
 	DeleteRecipe(context.Context, string) error
@@ -50,7 +51,6 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 
 			recipe := storage.Recipe{
 				Name:                req.Name,
-				StyleID:             req.StyleID,
 				StyleName:           req.StyleName,
 				Notes:               req.Notes,
 				BatchSize:           req.BatchSize,
@@ -70,6 +70,20 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 				TargetCarbonation:   req.TargetCarbonation,
 				IBUMethod:           req.IBUMethod,
 				BrewhouseEfficiency: req.BrewhouseEfficiency,
+			}
+
+			// Resolve style UUID to internal ID if provided
+			if req.StyleUUID != nil {
+				style, err := db.GetStyleByUUID(r.Context(), *req.StyleUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "style not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving style uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				recipe.StyleID = &style.ID
 			}
 
 			created, err := db.CreateRecipe(r.Context(), recipe)
@@ -123,7 +137,6 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 
 			recipe := storage.Recipe{
 				Name:                req.Name,
-				StyleID:             req.StyleID,
 				StyleName:           req.StyleName,
 				Notes:               req.Notes,
 				BatchSize:           req.BatchSize,
@@ -143,6 +156,20 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 				TargetCarbonation:   req.TargetCarbonation,
 				IBUMethod:           req.IBUMethod,
 				BrewhouseEfficiency: req.BrewhouseEfficiency,
+			}
+
+			// Resolve style UUID to internal ID if provided
+			if req.StyleUUID != nil {
+				style, err := db.GetStyleByUUID(r.Context(), *req.StyleUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "style not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving style uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				recipe.StyleID = &style.ID
 			}
 
 			updated, err := db.UpdateRecipe(r.Context(), recipeUUID, recipe)

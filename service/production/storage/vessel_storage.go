@@ -193,3 +193,41 @@ func (c *Client) UpdateVessel(ctx context.Context, id int64, vessel Vessel) (Ves
 
 	return vessel, nil
 }
+
+func (c *Client) UpdateVesselByUUID(ctx context.Context, vesselUUID string, vessel Vessel) (Vessel, error) {
+	err := c.db.QueryRow(ctx, `
+		UPDATE vessel
+		SET type = $1, name = $2, capacity = $3, capacity_unit = $4, make = $5, model = $6, status = $7, updated_at = timezone('utc', now())
+		WHERE uuid = $8 AND deleted_at IS NULL
+		RETURNING id, uuid, type, name, capacity, capacity_unit, make, model, status, created_at, updated_at, deleted_at`,
+		vessel.Type,
+		vessel.Name,
+		vessel.Capacity,
+		vessel.CapacityUnit,
+		vessel.Make,
+		vessel.Model,
+		vessel.Status,
+		vesselUUID,
+	).Scan(
+		&vessel.ID,
+		&vessel.UUID,
+		&vessel.Type,
+		&vessel.Name,
+		&vessel.Capacity,
+		&vessel.CapacityUnit,
+		&vessel.Make,
+		&vessel.Model,
+		&vessel.Status,
+		&vessel.CreatedAt,
+		&vessel.UpdatedAt,
+		&vessel.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Vessel{}, service.ErrNotFound
+		}
+		return Vessel{}, fmt.Errorf("updating vessel by uuid: %w", err)
+	}
+
+	return vessel, nil
+}

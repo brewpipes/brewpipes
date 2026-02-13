@@ -18,7 +18,6 @@ const (
 // BatchSummaryResponse provides an aggregated view of batch data with derived metrics.
 type BatchSummaryResponse struct {
 	// Core batch info
-	ID        int64      `json:"id"`
 	UUID      string     `json:"uuid"`
 	ShortName string     `json:"short_name"`
 	BrewDate  *time.Time `json:"brew_date,omitempty"`
@@ -64,7 +63,7 @@ type BatchSummaryResponse struct {
 
 // BrewSessionSummary is a simplified view of a brew session for the batch summary.
 type BrewSessionSummary struct {
-	ID       int64     `json:"id"`
+	UUID     string    `json:"uuid"`
 	BrewedAt time.Time `json:"brewed_at"`
 	Notes    *string   `json:"notes,omitempty"`
 }
@@ -72,7 +71,6 @@ type BrewSessionSummary struct {
 // NewBatchSummaryResponse creates a BatchSummaryResponse from a BatchSummary.
 func NewBatchSummaryResponse(summary storage.BatchSummary) BatchSummaryResponse {
 	resp := BatchSummaryResponse{
-		ID:        summary.Batch.ID,
 		UUID:      summary.Batch.UUID.String(),
 		ShortName: summary.Batch.ShortName,
 		BrewDate:  summary.Batch.BrewDate,
@@ -92,7 +90,7 @@ func NewBatchSummaryResponse(summary storage.BatchSummary) BatchSummaryResponse 
 	resp.BrewSessions = make([]BrewSessionSummary, 0, len(summary.BrewSessions))
 	for _, session := range summary.BrewSessions {
 		resp.BrewSessions = append(resp.BrewSessions, BrewSessionSummary{
-			ID:       session.ID,
+			UUID:     session.UUID.String(),
 			BrewedAt: session.BrewedAt,
 			Notes:    session.Notes,
 		})

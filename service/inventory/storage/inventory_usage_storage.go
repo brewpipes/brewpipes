@@ -75,6 +75,35 @@ func (c *Client) GetInventoryUsage(ctx context.Context, id int64) (InventoryUsag
 	return usage, nil
 }
 
+func (c *Client) GetInventoryUsageByUUID(ctx context.Context, usageUUID string) (InventoryUsage, error) {
+	var usage InventoryUsage
+	var productionUUID pgtype.UUID
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, production_ref_uuid, used_at, notes, created_at, updated_at, deleted_at
+		FROM inventory_usage
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		usageUUID,
+	).Scan(
+		&usage.ID,
+		&usage.UUID,
+		&productionUUID,
+		&usage.UsedAt,
+		&usage.Notes,
+		&usage.CreatedAt,
+		&usage.UpdatedAt,
+		&usage.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return InventoryUsage{}, service.ErrNotFound
+		}
+		return InventoryUsage{}, fmt.Errorf("getting inventory usage by uuid: %w", err)
+	}
+
+	assignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
+	return usage, nil
+}
+
 func (c *Client) ListInventoryUsage(ctx context.Context) ([]InventoryUsage, error) {
 	rows, err := c.db.Query(ctx, `
 		SELECT id, uuid, production_ref_uuid, used_at, notes, created_at, updated_at, deleted_at

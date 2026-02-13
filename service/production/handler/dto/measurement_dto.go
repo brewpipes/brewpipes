@@ -8,29 +8,29 @@ import (
 )
 
 type CreateMeasurementRequest struct {
-	BatchID     *int64     `json:"batch_id"`
-	OccupancyID *int64     `json:"occupancy_id"`
-	VolumeID    *int64     `json:"volume_id"`
-	Kind        string     `json:"kind"`
-	Value       float64    `json:"value"`
-	Unit        *string    `json:"unit"`
-	ObservedAt  *time.Time `json:"observed_at"`
-	Notes       *string    `json:"notes"`
+	BatchUUID     *string    `json:"batch_uuid"`
+	OccupancyUUID *string    `json:"occupancy_uuid"`
+	VolumeUUID    *string    `json:"volume_uuid"`
+	Kind          string     `json:"kind"`
+	Value         float64    `json:"value"`
+	Unit          *string    `json:"unit"`
+	ObservedAt    *time.Time `json:"observed_at"`
+	Notes         *string    `json:"notes"`
 }
 
 func (r CreateMeasurementRequest) Validate() error {
 	targetCount := 0
-	if r.BatchID != nil {
+	if r.BatchUUID != nil {
 		targetCount++
 	}
-	if r.OccupancyID != nil {
+	if r.OccupancyUUID != nil {
 		targetCount++
 	}
-	if r.VolumeID != nil {
+	if r.VolumeUUID != nil {
 		targetCount++
 	}
 	if targetCount != 1 {
-		return fmt.Errorf("exactly one of batch_id, occupancy_id, or volume_id is required")
+		return fmt.Errorf("exactly one of batch_uuid, occupancy_uuid, or volume_uuid is required")
 	}
 	if err := validateRequired(r.Kind, "kind"); err != nil {
 		return err
@@ -40,36 +40,34 @@ func (r CreateMeasurementRequest) Validate() error {
 }
 
 type MeasurementResponse struct {
-	ID          int64      `json:"id"`
-	UUID        string     `json:"uuid"`
-	BatchID     *int64     `json:"batch_id,omitempty"`
-	OccupancyID *int64     `json:"occupancy_id,omitempty"`
-	VolumeID    *int64     `json:"volume_id,omitempty"`
-	Kind        string     `json:"kind"`
-	Value       float64    `json:"value"`
-	Unit        *string    `json:"unit,omitempty"`
-	ObservedAt  time.Time  `json:"observed_at"`
-	Notes       *string    `json:"notes,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	UUID          string     `json:"uuid"`
+	BatchUUID     *string    `json:"batch_uuid,omitempty"`
+	OccupancyUUID *string    `json:"occupancy_uuid,omitempty"`
+	VolumeUUID    *string    `json:"volume_uuid,omitempty"`
+	Kind          string     `json:"kind"`
+	Value         float64    `json:"value"`
+	Unit          *string    `json:"unit,omitempty"`
+	ObservedAt    time.Time  `json:"observed_at"`
+	Notes         *string    `json:"notes,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewMeasurementResponse(measurement storage.Measurement) MeasurementResponse {
 	return MeasurementResponse{
-		ID:          measurement.ID,
-		UUID:        measurement.UUID.String(),
-		BatchID:     measurement.BatchID,
-		OccupancyID: measurement.OccupancyID,
-		VolumeID:    measurement.VolumeID,
-		Kind:        measurement.Kind,
-		Value:       measurement.Value,
-		Unit:        measurement.Unit,
-		ObservedAt:  measurement.ObservedAt,
-		Notes:       measurement.Notes,
-		CreatedAt:   measurement.CreatedAt,
-		UpdatedAt:   measurement.UpdatedAt,
-		DeletedAt:   measurement.DeletedAt,
+		UUID:          measurement.UUID.String(),
+		BatchUUID:     measurement.BatchUUID,
+		OccupancyUUID: measurement.OccupancyUUID,
+		VolumeUUID:    measurement.VolumeUUID,
+		Kind:          measurement.Kind,
+		Value:         measurement.Value,
+		Unit:          measurement.Unit,
+		ObservedAt:    measurement.ObservedAt,
+		Notes:         measurement.Notes,
+		CreatedAt:     measurement.CreatedAt,
+		UpdatedAt:     measurement.UpdatedAt,
+		DeletedAt:     measurement.DeletedAt,
 	}
 }
 

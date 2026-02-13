@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS batch_process_phase_batch_id_phase_at_idx;

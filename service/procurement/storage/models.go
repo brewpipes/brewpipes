@@ -54,12 +54,13 @@ type SupplierUpdate struct {
 
 type PurchaseOrder struct {
 	entity.Identifiers
-	SupplierID  int64
-	OrderNumber string
-	Status      string
-	OrderedAt   *time.Time
-	ExpectedAt  *time.Time
-	Notes       *string
+	SupplierID   int64
+	SupplierUUID *string
+	OrderNumber  string
+	Status       string
+	OrderedAt    *time.Time
+	ExpectedAt   *time.Time
+	Notes        *string
 	entity.Timestamps
 }
 
@@ -74,6 +75,7 @@ type PurchaseOrderUpdate struct {
 type PurchaseOrderLine struct {
 	entity.Identifiers
 	PurchaseOrderID   int64
+	PurchaseOrderUUID *string
 	LineNumber        int
 	ItemType          string
 	ItemName          string
@@ -98,10 +100,11 @@ type PurchaseOrderLineUpdate struct {
 
 type PurchaseOrderFee struct {
 	entity.Identifiers
-	PurchaseOrderID int64
-	FeeType         string
-	AmountCents     int64
-	Currency        string
+	PurchaseOrderID   int64
+	PurchaseOrderUUID *string
+	FeeType           string
+	AmountCents       int64
+	Currency          string
 	entity.Timestamps
 }
 

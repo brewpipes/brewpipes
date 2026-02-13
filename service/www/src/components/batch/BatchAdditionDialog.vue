@@ -11,10 +11,9 @@
         />
         <v-text-field
           v-if="form.target === 'occupancy'"
-          label="Occupancy ID"
-          :model-value="form.occupancy_id"
-          type="number"
-          @update:model-value="updateForm('occupancy_id', $event)"
+          label="Occupancy"
+          :model-value="form.occupancy_uuid"
+          @update:model-value="updateForm('occupancy_uuid', $event)"
         />
         <v-select
           :items="additionTypeOptions"
@@ -78,7 +77,7 @@
 
   export type AdditionForm = {
     target: 'batch' | 'occupancy'
-    occupancy_id: string
+    occupancy_uuid: string
     addition_type: AdditionType
     stage: string
     inventory_lot_uuid: string
@@ -116,7 +115,7 @@
 
   const isValid = computed(() => {
     if (!props.form.amount) return false
-    if (props.form.target === 'occupancy' && !props.form.occupancy_id) return false
+    if (props.form.target === 'occupancy' && !props.form.occupancy_uuid) return false
     return true
   })
 

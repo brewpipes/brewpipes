@@ -16,7 +16,7 @@ import (
 
 type InventoryUsageStore interface {
 	CreateInventoryUsage(context.Context, storage.InventoryUsage) (storage.InventoryUsage, error)
-	GetInventoryUsage(context.Context, int64) (storage.InventoryUsage, error)
+	GetInventoryUsageByUUID(context.Context, string) (storage.InventoryUsage, error)
 	ListInventoryUsage(context.Context) ([]storage.InventoryUsage, error)
 }
 
@@ -79,26 +79,21 @@ func HandleInventoryUsage(db InventoryUsageStore) http.HandlerFunc {
 	}
 }
 
-// HandleInventoryUsageByID handles [GET /inventory-usage/{id}].
-func HandleInventoryUsageByID(db InventoryUsageStore) http.HandlerFunc {
+// HandleInventoryUsageByUUID handles [GET /inventory-usage/{uuid}].
+func HandleInventoryUsageByUUID(db InventoryUsageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		usageID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		usageUUID := r.PathValue("uuid")
+		if usageUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		usage, err := db.GetInventoryUsage(r.Context(), usageID)
+		usage, err := db.GetInventoryUsageByUUID(r.Context(), usageUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "inventory usage not found", http.StatusNotFound)
 			return

@@ -56,6 +56,12 @@ func (c *Client) CreatePurchaseOrder(ctx context.Context, order PurchaseOrder) (
 			&order.DeletedAt,
 		)
 		if err == nil {
+			// Resolve supplier UUID
+			var supplierUUID string
+			sErr := c.db.QueryRow(ctx, `SELECT uuid FROM supplier WHERE id = $1`, order.SupplierID).Scan(&supplierUUID)
+			if sErr == nil {
+				order.SupplierUUID = &supplierUUID
+			}
 			return order, nil
 		}
 
@@ -114,6 +120,62 @@ func (c *Client) UpdatePurchaseOrder(ctx context.Context, id int64, update Purch
 		return PurchaseOrder{}, fmt.Errorf("updating purchase order: %w", err)
 	}
 
+	// Resolve supplier UUID
+	var supplierUUID string
+	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM supplier WHERE id = $1`, order.SupplierID).Scan(&supplierUUID)
+	if sErr == nil {
+		order.SupplierUUID = &supplierUUID
+	}
+
+	return order, nil
+}
+
+func (c *Client) UpdatePurchaseOrderByUUID(ctx context.Context, orderUUID string, update PurchaseOrderUpdate) (PurchaseOrder, error) {
+	var order PurchaseOrder
+	err := c.db.QueryRow(ctx, `
+		UPDATE purchase_order
+		SET
+			order_number = COALESCE($1, order_number),
+			status = COALESCE($2, status),
+			ordered_at = COALESCE($3, ordered_at),
+			expected_at = COALESCE($4, expected_at),
+			notes = COALESCE($5, notes),
+			updated_at = timezone('utc', now())
+		WHERE uuid = $6 AND deleted_at IS NULL
+		RETURNING id, uuid, supplier_id, order_number, status, ordered_at, expected_at, notes, created_at, updated_at, deleted_at`,
+		update.OrderNumber,
+		update.Status,
+		update.OrderedAt,
+		update.ExpectedAt,
+		update.Notes,
+		orderUUID,
+	).Scan(
+		&order.ID,
+		&order.UUID,
+		&order.SupplierID,
+		&order.OrderNumber,
+		&order.Status,
+		&order.OrderedAt,
+		&order.ExpectedAt,
+		&order.Notes,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+		&order.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return PurchaseOrder{}, service.ErrNotFound
+		}
+		return PurchaseOrder{}, fmt.Errorf("updating purchase order by uuid: %w", err)
+	}
+
+	// Resolve supplier UUID
+	var supplierUUID string
+	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM supplier WHERE id = $1`, order.SupplierID).Scan(&supplierUUID)
+	if sErr == nil {
+		order.SupplierUUID = &supplierUUID
+	}
+
 	return order, nil
 }
 
@@ -141,14 +203,16 @@ func (c *Client) nextPurchaseOrderNumber(ctx context.Context, now time.Time) (st
 func (c *Client) GetPurchaseOrder(ctx context.Context, id int64) (PurchaseOrder, error) {
 	var order PurchaseOrder
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, supplier_id, order_number, status, ordered_at, expected_at, notes, created_at, updated_at, deleted_at
-		FROM purchase_order
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT po.id, po.uuid, po.supplier_id, s.uuid, po.order_number, po.status, po.ordered_at, po.expected_at, po.notes, po.created_at, po.updated_at, po.deleted_at
+		FROM purchase_order po
+		JOIN supplier s ON s.id = po.supplier_id
+		WHERE po.id = $1 AND po.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&order.ID,
 		&order.UUID,
 		&order.SupplierID,
+		&order.SupplierUUID,
 		&order.OrderNumber,
 		&order.Status,
 		&order.OrderedAt,
@@ -168,12 +232,45 @@ func (c *Client) GetPurchaseOrder(ctx context.Context, id int64) (PurchaseOrder,
 	return order, nil
 }
 
+func (c *Client) GetPurchaseOrderByUUID(ctx context.Context, orderUUID string) (PurchaseOrder, error) {
+	var order PurchaseOrder
+	err := c.db.QueryRow(ctx, `
+		SELECT po.id, po.uuid, po.supplier_id, s.uuid, po.order_number, po.status, po.ordered_at, po.expected_at, po.notes, po.created_at, po.updated_at, po.deleted_at
+		FROM purchase_order po
+		JOIN supplier s ON s.id = po.supplier_id
+		WHERE po.uuid = $1 AND po.deleted_at IS NULL`,
+		orderUUID,
+	).Scan(
+		&order.ID,
+		&order.UUID,
+		&order.SupplierID,
+		&order.SupplierUUID,
+		&order.OrderNumber,
+		&order.Status,
+		&order.OrderedAt,
+		&order.ExpectedAt,
+		&order.Notes,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+		&order.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return PurchaseOrder{}, service.ErrNotFound
+		}
+		return PurchaseOrder{}, fmt.Errorf("getting purchase order by uuid: %w", err)
+	}
+
+	return order, nil
+}
+
 func (c *Client) ListPurchaseOrders(ctx context.Context) ([]PurchaseOrder, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, supplier_id, order_number, status, ordered_at, expected_at, notes, created_at, updated_at, deleted_at
-		FROM purchase_order
-		WHERE deleted_at IS NULL
-		ORDER BY created_at DESC`,
+		SELECT po.id, po.uuid, po.supplier_id, s.uuid, po.order_number, po.status, po.ordered_at, po.expected_at, po.notes, po.created_at, po.updated_at, po.deleted_at
+		FROM purchase_order po
+		JOIN supplier s ON s.id = po.supplier_id
+		WHERE po.deleted_at IS NULL
+		ORDER BY po.created_at DESC`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("listing purchase orders: %w", err)
@@ -187,6 +284,7 @@ func (c *Client) ListPurchaseOrders(ctx context.Context) ([]PurchaseOrder, error
 			&order.ID,
 			&order.UUID,
 			&order.SupplierID,
+			&order.SupplierUUID,
 			&order.OrderNumber,
 			&order.Status,
 			&order.OrderedAt,
@@ -207,16 +305,17 @@ func (c *Client) ListPurchaseOrders(ctx context.Context) ([]PurchaseOrder, error
 	return orders, nil
 }
 
-func (c *Client) ListPurchaseOrdersBySupplier(ctx context.Context, supplierID int64) ([]PurchaseOrder, error) {
+func (c *Client) ListPurchaseOrdersBySupplierUUID(ctx context.Context, supplierUUID string) ([]PurchaseOrder, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, supplier_id, order_number, status, ordered_at, expected_at, notes, created_at, updated_at, deleted_at
-		FROM purchase_order
-		WHERE supplier_id = $1 AND deleted_at IS NULL
-		ORDER BY created_at DESC`,
-		supplierID,
+		SELECT po.id, po.uuid, po.supplier_id, s.uuid, po.order_number, po.status, po.ordered_at, po.expected_at, po.notes, po.created_at, po.updated_at, po.deleted_at
+		FROM purchase_order po
+		JOIN supplier s ON s.id = po.supplier_id
+		WHERE s.uuid = $1 AND po.deleted_at IS NULL
+		ORDER BY po.created_at DESC`,
+		supplierUUID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("listing purchase orders by supplier: %w", err)
+		return nil, fmt.Errorf("listing purchase orders by supplier uuid: %w", err)
 	}
 	defer rows.Close()
 
@@ -227,6 +326,7 @@ func (c *Client) ListPurchaseOrdersBySupplier(ctx context.Context, supplierID in
 			&order.ID,
 			&order.UUID,
 			&order.SupplierID,
+			&order.SupplierUUID,
 			&order.OrderNumber,
 			&order.Status,
 			&order.OrderedAt,
@@ -241,7 +341,7 @@ func (c *Client) ListPurchaseOrdersBySupplier(ctx context.Context, supplierID in
 		orders = append(orders, order)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("listing purchase orders by supplier: %w", err)
+		return nil, fmt.Errorf("listing purchase orders by supplier uuid: %w", err)
 	}
 
 	return orders, nil

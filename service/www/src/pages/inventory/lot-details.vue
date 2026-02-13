@@ -15,7 +15,7 @@
               <v-card-title>Lot lookup</v-card-title>
               <v-card-text>
                 <v-select
-                  v-model="detailLotId"
+                  v-model="detailLotUuid"
                   :items="lotSelectItems"
                   label="Ingredient lot"
                 />
@@ -23,7 +23,7 @@
                   block
                   class="mb-2"
                   color="primary"
-                  :disabled="!detailLotId"
+                  :disabled="!detailLotUuid"
                   @click="loadLotDetails"
                 >
                   Load details
@@ -51,7 +51,7 @@
                     <v-btn
                       block
                       color="primary"
-                      :disabled="!detailLotId"
+                      :disabled="!detailLotUuid"
                       @click="createLotMaltDetail"
                     >
                       Save malt lot detail
@@ -75,7 +75,7 @@
                     <v-btn
                       block
                       color="primary"
-                      :disabled="!detailLotId"
+                      :disabled="!detailLotUuid"
                       @click="createLotHopDetail"
                     >
                       Save hop lot detail
@@ -99,7 +99,7 @@
                     <v-btn
                       block
                       color="primary"
-                      :disabled="!detailLotId"
+                      :disabled="!detailLotUuid"
                       @click="createLotYeastDetail"
                     >
                       Save yeast lot detail
@@ -126,33 +126,33 @@
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   type Ingredient = {
-    id: number
+    uuid: string
     name: string
   }
 
   type IngredientLot = {
-    id: number
-    ingredient_id: number
+    uuid: string
+    ingredient_uuid: string
     received_amount: number
     received_unit: string
   }
 
   type IngredientLotMaltDetail = {
-    id: number
-    ingredient_lot_id: number
+    uuid: string
+    ingredient_lot_uuid: string
     moisture_percent: number | null
   }
 
   type IngredientLotHopDetail = {
-    id: number
-    ingredient_lot_id: number
+    uuid: string
+    ingredient_lot_uuid: string
     alpha_acid: number | null
     beta_acid: number | null
   }
 
   type IngredientLotYeastDetail = {
-    id: number
-    ingredient_lot_id: number
+    uuid: string
+    ingredient_lot_uuid: string
     viability_percent: number | null
     generation: number | null
   }
@@ -163,7 +163,7 @@
 
   const ingredients = ref<Ingredient[]>([])
   const lots = ref<IngredientLot[]>([])
-  const detailLotId = ref<number | null>(null)
+  const detailLotUuid = ref<string | null>(null)
   const loading = ref(false)
 
   const lotMaltDetail = ref<IngredientLotMaltDetail | null>(null)
@@ -192,12 +192,12 @@
 
   const lotSelectItems = computed(() =>
     lots.value.map(lot => ({
-      title: `${ingredientName(lot.ingredient_id)} (${formatAmountPreferred(lot.received_amount, lot.received_unit)})`,
-      value: lot.id,
+      title: `${ingredientName(lot.ingredient_uuid)} (${formatAmountPreferred(lot.received_amount, lot.received_unit)})`,
+      value: lot.uuid,
     })),
   )
 
-  watch(detailLotId, () => {
+  watch(detailLotUuid, () => {
     lotMaltDetail.value = null
     lotHopDetail.value = null
     lotYeastDetail.value = null
@@ -205,9 +205,9 @@
 
   onMounted(async () => {
     await loadLots()
-    const queryId = route.query.lot_id
-    if (typeof queryId === 'string') {
-      detailLotId.value = Number(queryId)
+    const queryUuid = route.query.lot_uuid
+    if (typeof queryUuid === 'string') {
+      detailLotUuid.value = queryUuid
       await loadLotDetails()
     }
   })
@@ -236,26 +236,26 @@
   }
 
   async function loadLotDetails () {
-    if (!detailLotId.value) {
+    if (!detailLotUuid.value) {
       return
     }
     try {
       lotMaltDetail.value = await request<IngredientLotMaltDetail>(
-        `/ingredient-lot-malt-details?ingredient_lot_id=${detailLotId.value}`,
+        `/ingredient-lot-malt-details?ingredient_lot_uuid=${detailLotUuid.value}`,
       )
     } catch {
       lotMaltDetail.value = null
     }
     try {
       lotHopDetail.value = await request<IngredientLotHopDetail>(
-        `/ingredient-lot-hop-details?ingredient_lot_id=${detailLotId.value}`,
+        `/ingredient-lot-hop-details?ingredient_lot_uuid=${detailLotUuid.value}`,
       )
     } catch {
       lotHopDetail.value = null
     }
     try {
       lotYeastDetail.value = await request<IngredientLotYeastDetail>(
-        `/ingredient-lot-yeast-details?ingredient_lot_id=${detailLotId.value}`,
+        `/ingredient-lot-yeast-details?ingredient_lot_uuid=${detailLotUuid.value}`,
       )
     } catch {
       lotYeastDetail.value = null
@@ -263,19 +263,19 @@
   }
 
   function clearLotDetails () {
-    detailLotId.value = null
+    detailLotUuid.value = null
     lotMaltDetail.value = null
     lotHopDetail.value = null
     lotYeastDetail.value = null
   }
 
   async function createLotMaltDetail () {
-    if (!detailLotId.value) {
+    if (!detailLotUuid.value) {
       return
     }
     try {
       const payload = {
-        ingredient_lot_id: detailLotId.value,
+        ingredient_lot_uuid: detailLotUuid.value,
         moisture_percent: toNumber(lotMaltDetailForm.moisture_percent),
       }
       await request<IngredientLotMaltDetail>('/ingredient-lot-malt-details', {
@@ -291,12 +291,12 @@
   }
 
   async function createLotHopDetail () {
-    if (!detailLotId.value) {
+    if (!detailLotUuid.value) {
       return
     }
     try {
       const payload = {
-        ingredient_lot_id: detailLotId.value,
+        ingredient_lot_uuid: detailLotUuid.value,
         alpha_acid: toNumber(lotHopDetailForm.alpha_acid),
         beta_acid: toNumber(lotHopDetailForm.beta_acid),
       }
@@ -313,12 +313,12 @@
   }
 
   async function createLotYeastDetail () {
-    if (!detailLotId.value) {
+    if (!detailLotUuid.value) {
       return
     }
     try {
       const payload = {
-        ingredient_lot_id: detailLotId.value,
+        ingredient_lot_uuid: detailLotUuid.value,
         viability_percent: toNumber(lotYeastDetailForm.viability_percent),
         generation: toNumber(lotYeastDetailForm.generation),
       }
@@ -334,8 +334,8 @@
     }
   }
 
-  function ingredientName (ingredientId: number) {
-    return ingredients.value.find(ingredient => ingredient.id === ingredientId)?.name ?? `Ingredient ${ingredientId}`
+  function ingredientName (ingredientUuid: string) {
+    return ingredients.value.find(ingredient => ingredient.uuid === ingredientUuid)?.name ?? 'Unknown Ingredient'
   }
 </script>
 

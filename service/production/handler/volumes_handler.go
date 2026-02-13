@@ -14,7 +14,7 @@ import (
 
 type VolumeStore interface {
 	ListVolumes(context.Context) ([]storage.Volume, error)
-	GetVolume(context.Context, int64) (storage.Volume, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 	CreateVolume(context.Context, storage.Volume) (storage.Volume, error)
 }
 
@@ -63,40 +63,30 @@ func HandleVolumes(db VolumeStore) http.HandlerFunc {
 	}
 }
 
-// HandleVolumeByID handles [GET /volumes/{id}].
-func HandleVolumeByID(db VolumeStore) http.HandlerFunc {
+// HandleVolumeByUUID handles [GET /volumes/{uuid}].
+func HandleVolumeByUUID(db VolumeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		volumeID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		volumeUUID := r.PathValue("uuid")
+		if volumeUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		volume, err := db.GetVolume(r.Context(), volumeID)
+		volume, err := db.GetVolumeByUUID(r.Context(), volumeUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "volume not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting volume", "error", err)
+			slog.Error("error getting volume", "error", err, "volume_uuid", volumeUUID)
 			service.InternalError(w, err.Error())
 			return
 		}
 
 		service.JSON(w, dto.NewVolumeResponse(volume))
 	}
-}
-
-// HandleGetVolumes is kept for backward compatibility.
-func HandleGetVolumes(db VolumeStore) http.HandlerFunc {
-	return HandleVolumes(db)
 }

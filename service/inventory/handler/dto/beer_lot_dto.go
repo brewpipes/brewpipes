@@ -18,7 +18,6 @@ func (r CreateBeerLotRequest) Validate() error {
 }
 
 type BeerLotResponse struct {
-	ID                  int64      `json:"id"`
 	UUID                string     `json:"uuid"`
 	ProductionBatchUUID string     `json:"production_batch_uuid"`
 	LotCode             *string    `json:"lot_code,omitempty"`
@@ -31,7 +30,6 @@ type BeerLotResponse struct {
 
 func NewBeerLotResponse(lot storage.BeerLot) BeerLotResponse {
 	return BeerLotResponse{
-		ID:                  lot.ID,
 		UUID:                lot.UUID.String(),
 		ProductionBatchUUID: lot.ProductionBatchUUID.String(),
 		LotCode:             lot.LotCode,

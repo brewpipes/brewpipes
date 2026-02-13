@@ -180,10 +180,6 @@
             <v-card-text>
               <v-list density="compact" lines="two">
                 <v-list-item>
-                  <v-list-item-title>ID</v-list-item-title>
-                  <v-list-item-subtitle>{{ vessel.id }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
                   <v-list-item-title>UUID</v-list-item-title>
                   <v-list-item-subtitle class="text-mono">{{ vessel.uuid }}</v-list-item-subtitle>
                 </v-list-item>
@@ -233,7 +229,7 @@
 
   const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const { request } = useApiClient(productionApiBase)
-  const { getActiveOccupancies, getVesselByUUID, updateVessel } = useProductionApi()
+  const { getActiveOccupancies, getVessel, updateVessel } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
@@ -269,12 +265,12 @@
 
   const currentOccupancy = computed(() => {
     if (!vessel.value) return null
-    return occupancies.value.find(occ => occ.vessel_id === vessel.value!.id) ?? null
+    return occupancies.value.find(occ => occ.vessel_uuid === vessel.value!.uuid) ?? null
   })
 
   const occupancyBatch = computed(() => {
-    if (!currentOccupancy.value || !currentOccupancy.value.batch_id) return null
-    return batches.value.find(b => b.id === currentOccupancy.value!.batch_id) ?? null
+    if (!currentOccupancy.value || !currentOccupancy.value.batch_uuid) return null
+    return batches.value.find(b => b.uuid === currentOccupancy.value!.batch_uuid) ?? null
   })
 
   function showNotice (text: string, color = 'success') {
@@ -296,7 +292,7 @@
       error.value = null
 
       // Fetch vessel by UUID directly, then fetch related data
-      const vesselData = await getVesselByUUID(uuid)
+      const vesselData = await getVessel(uuid)
       vessel.value = vesselData
 
       // Fetch occupancies and batches in parallel
@@ -338,7 +334,7 @@
     editDialogRef.value?.clearError()
 
     try {
-      const updated = await updateVessel(vessel.value.id, data)
+      const updated = await updateVessel(vessel.value.uuid, data)
       vessel.value = updated
       editDialogOpen.value = false
       showNotice('Vessel updated successfully')

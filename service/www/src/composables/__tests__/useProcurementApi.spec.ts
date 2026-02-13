@@ -110,18 +110,18 @@ describe('useProcurementApi', () => {
 
   describe('request function usage', () => {
     it('request can be used for GET requests', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, supplier: 'Malt Co' }])
+      mockRequest.mockResolvedValue([{ uuid: 'po-uuid-1', supplier: 'Malt Co' }])
 
       const { request } = useProcurementApi()
       const result = await request('/purchase-orders')
 
       expect(mockRequest).toHaveBeenCalledWith('/purchase-orders')
-      expect(result).toEqual([{ id: 1, supplier: 'Malt Co' }])
+      expect(result).toEqual([{ uuid: 'po-uuid-1', supplier: 'Malt Co' }])
     })
 
     it('request can be used for POST requests', async () => {
-      const newOrder = { supplier_id: 1, total_cents: 50_000 }
-      mockRequest.mockResolvedValue({ id: 1, ...newOrder })
+      const newOrder = { supplier_uuid: 'sup-uuid-1', total_cents: 50_000 }
+      mockRequest.mockResolvedValue({ uuid: 'po-uuid-1', ...newOrder })
 
       const { request } = useProcurementApi()
       const result = await request('/purchase-orders', {
@@ -133,52 +133,52 @@ describe('useProcurementApi', () => {
         method: 'POST',
         body: JSON.stringify(newOrder),
       })
-      expect(result).toEqual({ id: 1, ...newOrder })
+      expect(result).toEqual({ uuid: 'po-uuid-1', ...newOrder })
     })
 
     it('request can be used for PUT requests', async () => {
       const updateData = { status: 'received', received_at: '2024-01-15T10:00:00Z' }
-      mockRequest.mockResolvedValue({ id: 1, ...updateData })
+      mockRequest.mockResolvedValue({ uuid: 'po-uuid-1', ...updateData })
 
       const { request } = useProcurementApi()
-      const result = await request('/purchase-orders/1', {
+      const result = await request('/purchase-orders/po-uuid-1', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
 
-      expect(mockRequest).toHaveBeenCalledWith('/purchase-orders/1', {
+      expect(mockRequest).toHaveBeenCalledWith('/purchase-orders/po-uuid-1', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
-      expect(result).toEqual({ id: 1, ...updateData })
+      expect(result).toEqual({ uuid: 'po-uuid-1', ...updateData })
     })
 
     it('request can be used for PATCH requests', async () => {
       const patchData = { status: 'shipped' }
-      mockRequest.mockResolvedValue({ id: 1, ...patchData })
+      mockRequest.mockResolvedValue({ uuid: 'po-uuid-1', ...patchData })
 
       const { request } = useProcurementApi()
-      const result = await request('/purchase-orders/1/status', {
+      const result = await request('/purchase-orders/po-uuid-1/status', {
         method: 'PATCH',
         body: JSON.stringify(patchData),
       })
 
-      expect(mockRequest).toHaveBeenCalledWith('/purchase-orders/1/status', {
+      expect(mockRequest).toHaveBeenCalledWith('/purchase-orders/po-uuid-1/status', {
         method: 'PATCH',
         body: JSON.stringify(patchData),
       })
-      expect(result).toEqual({ id: 1, ...patchData })
+      expect(result).toEqual({ uuid: 'po-uuid-1', ...patchData })
     })
 
     it('request can be used for DELETE requests', async () => {
       mockRequest.mockResolvedValue(null)
 
       const { request } = useProcurementApi()
-      const result = await request('/purchase-orders/1', {
+      const result = await request('/purchase-orders/po-uuid-1', {
         method: 'DELETE',
       })
 
-      expect(mockRequest).toHaveBeenCalledWith('/purchase-orders/1', {
+      expect(mockRequest).toHaveBeenCalledWith('/purchase-orders/po-uuid-1', {
         method: 'DELETE',
       })
       expect(result).toBeNull()
@@ -204,7 +204,7 @@ describe('useProcurementApi', () => {
       await expect(
         request('/purchase-orders', {
           method: 'POST',
-          body: JSON.stringify({ supplier_id: null }),
+          body: JSON.stringify({ supplier_uuid: null }),
         }),
       ).rejects.toThrow('Invalid supplier')
     })
@@ -259,8 +259,8 @@ describe('useProcurementApi', () => {
   describe('typical procurement workflows', () => {
     it('can fetch suppliers', async () => {
       mockRequest.mockResolvedValue([
-        { id: 1, name: 'Malt Supplier Inc' },
-        { id: 2, name: 'Hops Direct' },
+        { uuid: 'sup-uuid-1', name: 'Malt Supplier Inc' },
+        { uuid: 'sup-uuid-2', name: 'Hops Direct' },
       ])
 
       const { request } = useProcurementApi()
@@ -272,14 +272,14 @@ describe('useProcurementApi', () => {
 
     it('can create a purchase order', async () => {
       const orderData = {
-        supplier_id: 1,
+        supplier_uuid: 'sup-uuid-1',
         items: [
-          { ingredient_id: 1, quantity: 100, unit_price_cents: 500 },
+          { ingredient_uuid: 'ing-uuid-1', quantity: 100, unit_price_cents: 500 },
         ],
         total_cents: 50_000,
         currency: 'USD',
       }
-      mockRequest.mockResolvedValue({ id: 1, status: 'pending', ...orderData })
+      mockRequest.mockResolvedValue({ uuid: 'po-uuid-1', status: 'pending', ...orderData })
 
       const { request } = useProcurementApi()
       const result = await request('/purchase-orders', {
@@ -287,15 +287,15 @@ describe('useProcurementApi', () => {
         body: JSON.stringify(orderData),
       })
 
-      expect(result).toHaveProperty('id', 1)
+      expect(result).toHaveProperty('uuid', 'po-uuid-1')
       expect(result).toHaveProperty('status', 'pending')
     })
 
     it('can update order status', async () => {
-      mockRequest.mockResolvedValue({ id: 1, status: 'received' })
+      mockRequest.mockResolvedValue({ uuid: 'po-uuid-1', status: 'received' })
 
       const { request } = useProcurementApi()
-      const result = await request('/purchase-orders/1/status', {
+      const result = await request('/purchase-orders/po-uuid-1/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'received' }),
       })

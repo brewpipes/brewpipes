@@ -74,13 +74,13 @@
                   density="compact"
                   :headers="lotHeaders"
                   hover
-                  item-value="id"
+                  item-value="uuid"
                   :items="maltLots"
                   :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
-                  <template #item.ingredient_id="{ item }">
-                    {{ ingredientName(item.ingredient_id) }}
+                  <template #item.ingredient_uuid="{ item }">
+                    {{ ingredientName(item.ingredient_uuid) }}
                   </template>
                   <template #item.received_amount="{ item }">
                     {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
@@ -137,13 +137,13 @@
                   density="compact"
                   :headers="lotHeaders"
                   hover
-                  item-value="id"
+                  item-value="uuid"
                   :items="hopLots"
                   :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
-                  <template #item.ingredient_id="{ item }">
-                    {{ ingredientName(item.ingredient_id) }}
+                  <template #item.ingredient_uuid="{ item }">
+                    {{ ingredientName(item.ingredient_uuid) }}
                   </template>
                   <template #item.received_amount="{ item }">
                     {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
@@ -200,13 +200,13 @@
                   density="compact"
                   :headers="lotHeaders"
                   hover
-                  item-value="id"
+                  item-value="uuid"
                   :items="yeastLots"
                   :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
-                  <template #item.ingredient_id="{ item }">
-                    {{ ingredientName(item.ingredient_id) }}
+                  <template #item.ingredient_uuid="{ item }">
+                    {{ ingredientName(item.ingredient_uuid) }}
                   </template>
                   <template #item.received_amount="{ item }">
                     {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
@@ -263,17 +263,17 @@
                   density="compact"
                   :headers="otherLotHeaders"
                   hover
-                  item-value="id"
+                  item-value="uuid"
                   :items="otherLots"
                   :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.id)"
+                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
-                  <template #item.ingredient_id="{ item }">
-                    {{ ingredientName(item.ingredient_id) }}
+                  <template #item.ingredient_uuid="{ item }">
+                    {{ ingredientName(item.ingredient_uuid) }}
                   </template>
                   <template #item.category="{ item }">
                     <v-chip density="compact" size="small" variant="tonal">
-                      {{ ingredientCategory(item.ingredient_id) }}
+                      {{ ingredientCategory(item.ingredient_uuid) }}
                     </v-chip>
                   </template>
                   <template #item.received_amount="{ item }">
@@ -330,7 +330,7 @@
                   class="data-table"
                   density="compact"
                   :headers="usageHeaders"
-                  item-value="id"
+                  item-value="uuid"
                   :items="usages"
                   :loading="usageLoading"
                 >
@@ -385,7 +385,7 @@
                   class="data-table"
                   density="compact"
                   :headers="receiptHeaders"
-                  item-value="id"
+                  item-value="uuid"
                   :items="receipts"
                   :loading="receiptLoading"
                 >
@@ -423,14 +423,14 @@
       <v-card-title class="text-h6">Create ingredient lot</v-card-title>
       <v-card-text>
         <v-select
-          v-model="lotForm.ingredient_id"
+          v-model="lotForm.ingredient_uuid"
           density="comfortable"
           :items="filteredIngredientSelectItems"
           label="Ingredient"
           :rules="[rules.required]"
         />
         <v-select
-          v-model="lotForm.receipt_id"
+          v-model="lotForm.receipt_uuid"
           clearable
           density="comfortable"
           :items="receiptSelectItems"
@@ -649,7 +649,6 @@
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   type Ingredient = {
-    id: number
     uuid: string
     name: string
     category: string
@@ -660,7 +659,6 @@
   }
 
   type InventoryReceipt = {
-    id: number
     uuid: string
     supplier_uuid: string
     reference_code: string
@@ -671,9 +669,9 @@
   }
 
   type IngredientLot = {
-    id: number
-    ingredient_id: number
-    receipt_id: number | null
+    uuid: string
+    ingredient_uuid: string
+    receipt_uuid: string | null
     received_amount: number
     received_unit: string
     best_by_at: string
@@ -688,7 +686,6 @@
   }
 
   type InventoryUsage = {
-    id: number
     uuid: string
     production_ref_uuid: string
     used_at: string
@@ -765,8 +762,8 @@
   })
 
   const lotForm = reactive({
-    ingredient_id: null as number | null,
-    receipt_id: null as number | null,
+    ingredient_uuid: null as string | null,
+    receipt_uuid: null as string | null,
     supplier_uuid: '',
     brewery_lot_code: '',
     originator_lot_code: '',
@@ -793,13 +790,13 @@
   })
 
   const rules = {
-    required: (v: string | number | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
+    required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
   }
 
   // Table headers
   const lotHeaders = [
     { title: 'Lot Code', key: 'brewery_lot_code', sortable: true },
-    { title: 'Ingredient', key: 'ingredient_id', sortable: true },
+    { title: 'Ingredient', key: 'ingredient_uuid', sortable: true },
     { title: 'Received Amount', key: 'received_amount', sortable: true },
     { title: 'Received Date', key: 'received_at', sortable: true },
     { title: 'Best By', key: 'best_by_at', sortable: true },
@@ -809,7 +806,7 @@
 
   const otherLotHeaders = [
     { title: 'Lot Code', key: 'brewery_lot_code', sortable: true },
-    { title: 'Ingredient', key: 'ingredient_id', sortable: true },
+    { title: 'Ingredient', key: 'ingredient_uuid', sortable: true },
     { title: 'Category', key: 'category', sortable: true },
     { title: 'Received Amount', key: 'received_amount', sortable: true },
     { title: 'Received Date', key: 'received_at', sortable: true },
@@ -834,21 +831,21 @@
   // Computed: Filter lots by category
   const maltLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
       return ingredient?.category === 'fermentable'
     })
   })
 
   const hopLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
       return ingredient?.category === 'hop'
     })
   })
 
   const yeastLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
       return ingredient?.category === 'yeast'
     })
   })
@@ -857,7 +854,7 @@
 
   const otherLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
+      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
       return ingredient && otherCategories.includes(ingredient.category)
     })
   })
@@ -873,20 +870,20 @@
       .filter(ingredient => categoriesToInclude.includes(ingredient.category))
       .map(ingredient => ({
         title: ingredient.name,
-        value: ingredient.id,
+        value: ingredient.uuid,
       }))
   })
 
   const receiptSelectItems = computed(() =>
     receipts.value.map(receipt => ({
-      title: receipt.reference_code || `Receipt ${receipt.id}`,
-      value: receipt.id,
+      title: receipt.reference_code || 'Unknown Receipt',
+      value: receipt.uuid,
     })),
   )
 
   // Computed: Form validation
   const isLotFormValid = computed(() => {
-    return lotForm.ingredient_id && lotForm.received_amount && lotForm.received_unit
+    return lotForm.ingredient_uuid && lotForm.received_amount && lotForm.received_unit
   })
 
   const isIngredientFormValid = computed(() => {
@@ -986,8 +983,8 @@
 
   function openLotDialog (category: string) {
     lotDialogCategory.value = category
-    lotForm.ingredient_id = null
-    lotForm.receipt_id = null
+    lotForm.ingredient_uuid = null
+    lotForm.receipt_uuid = null
     lotForm.supplier_uuid = ''
     lotForm.brewery_lot_code = ''
     lotForm.originator_lot_code = ''
@@ -1086,8 +1083,8 @@
 
     try {
       const payload = {
-        ingredient_id: lotForm.ingredient_id,
-        receipt_id: lotForm.receipt_id,
+        ingredient_uuid: lotForm.ingredient_uuid,
+        receipt_uuid: lotForm.receipt_uuid,
         supplier_uuid: normalizeText(lotForm.supplier_uuid),
         brewery_lot_code: normalizeText(lotForm.brewery_lot_code),
         originator_lot_code: normalizeText(lotForm.originator_lot_code),
@@ -1142,12 +1139,12 @@
     }
   }
 
-  function ingredientName (ingredientId: number) {
-    return ingredients.value.find(ingredient => ingredient.id === ingredientId)?.name ?? `Ingredient ${ingredientId}`
+  function ingredientName (ingredientUuid: string) {
+    return ingredients.value.find(ingredient => ingredient.uuid === ingredientUuid)?.name ?? 'Unknown Ingredient'
   }
 
-  function ingredientCategory (ingredientId: number) {
-    const category = ingredients.value.find(ingredient => ingredient.id === ingredientId)?.category
+  function ingredientCategory (ingredientUuid: string) {
+    const category = ingredients.value.find(ingredient => ingredient.uuid === ingredientUuid)?.category
     // Return a display-friendly label
     const labels: Record<string, string> = {
       adjunct: 'Adjunct',
@@ -1159,10 +1156,10 @@
     return labels[category ?? ''] ?? category ?? 'Unknown'
   }
 
-  function openLotDetails (lotId: number) {
+  function openLotDetails (lotUuid: string) {
     router.push({
       path: '/inventory/lot-details',
-      query: { lot_id: String(lotId) },
+      query: { lot_uuid: lotUuid },
     })
   }
 </script>

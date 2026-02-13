@@ -68,6 +68,34 @@ func (c *Client) GetIngredient(ctx context.Context, id int64) (Ingredient, error
 	return ingredient, nil
 }
 
+func (c *Client) GetIngredientByUUID(ctx context.Context, ingredientUUID string) (Ingredient, error) {
+	var ingredient Ingredient
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, name, category, default_unit, description, created_at, updated_at, deleted_at
+		FROM ingredient
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		ingredientUUID,
+	).Scan(
+		&ingredient.ID,
+		&ingredient.UUID,
+		&ingredient.Name,
+		&ingredient.Category,
+		&ingredient.DefaultUnit,
+		&ingredient.Description,
+		&ingredient.CreatedAt,
+		&ingredient.UpdatedAt,
+		&ingredient.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Ingredient{}, service.ErrNotFound
+		}
+		return Ingredient{}, fmt.Errorf("getting ingredient by uuid: %w", err)
+	}
+
+	return ingredient, nil
+}
+
 func (c *Client) ListIngredients(ctx context.Context) ([]Ingredient, error) {
 	rows, err := c.db.Query(ctx, `
 		SELECT id, uuid, name, category, default_unit, description, created_at, updated_at, deleted_at

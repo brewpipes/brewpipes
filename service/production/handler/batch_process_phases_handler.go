@@ -15,8 +15,9 @@ import (
 
 type BatchProcessPhaseStore interface {
 	CreateBatchProcessPhase(context.Context, storage.BatchProcessPhase) (storage.BatchProcessPhase, error)
-	GetBatchProcessPhase(context.Context, int64) (storage.BatchProcessPhase, error)
-	ListBatchProcessPhases(context.Context, int64) ([]storage.BatchProcessPhase, error)
+	GetBatchProcessPhaseByUUID(context.Context, string) (storage.BatchProcessPhase, error)
+	ListBatchProcessPhasesByBatchUUID(context.Context, string) ([]storage.BatchProcessPhase, error)
+	GetBatchByUUID(context.Context, string) (storage.Batch, error)
 }
 
 // HandleBatchProcessPhases handles [GET /batch-process-phases] and [POST /batch-process-phases].
@@ -24,19 +25,17 @@ func HandleBatchProcessPhases(db BatchProcessPhaseStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			batchValue := r.URL.Query().Get("batch_id")
-			if batchValue == "" {
-				http.Error(w, "batch_id is required", http.StatusBadRequest)
-				return
-			}
-			batchID, err := parseInt64Param(batchValue)
-			if err != nil {
-				http.Error(w, "invalid batch_id", http.StatusBadRequest)
+			batchUUID := r.URL.Query().Get("batch_uuid")
+			if batchUUID == "" {
+				http.Error(w, "batch_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			phases, err := db.ListBatchProcessPhases(r.Context(), batchID)
-			if err != nil {
+			phases, err := db.ListBatchProcessPhasesByBatchUUID(r.Context(), batchUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusNotFound)
+				return
+			} else if err != nil {
 				slog.Error("error listing batch process phases", "error", err)
 				service.InternalError(w, err.Error())
 				return
@@ -54,13 +53,24 @@ func HandleBatchProcessPhases(db BatchProcessPhaseStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve batch UUID to internal ID
+			batch, err := db.GetBatchByUUID(r.Context(), req.BatchUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving batch uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			phaseAt := time.Time{}
 			if req.PhaseAt != nil {
 				phaseAt = *req.PhaseAt
 			}
 
 			phase := storage.BatchProcessPhase{
-				BatchID:      req.BatchID,
+				BatchID:      batch.ID,
 				ProcessPhase: req.ProcessPhase,
 				PhaseAt:      phaseAt,
 			}
@@ -79,31 +89,26 @@ func HandleBatchProcessPhases(db BatchProcessPhaseStore) http.HandlerFunc {
 	}
 }
 
-// HandleBatchProcessPhaseByID handles [GET /batch-process-phases/{id}].
-func HandleBatchProcessPhaseByID(db BatchProcessPhaseStore) http.HandlerFunc {
+// HandleBatchProcessPhaseByUUID handles [GET /batch-process-phases/{uuid}].
+func HandleBatchProcessPhaseByUUID(db BatchProcessPhaseStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		phaseID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		phaseUUID := r.PathValue("uuid")
+		if phaseUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		phase, err := db.GetBatchProcessPhase(r.Context(), phaseID)
+		phase, err := db.GetBatchProcessPhaseByUUID(r.Context(), phaseUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "batch process phase not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting batch process phase", "error", err)
+			slog.Error("error getting batch process phase", "error", err, "phase_uuid", phaseUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

@@ -8,7 +8,7 @@ import (
 
 type CreateRecipeRequest struct {
 	Name                string   `json:"name"`
-	StyleID             *int64   `json:"style_id,omitempty"`
+	StyleUUID           *string  `json:"style_uuid,omitempty"`
 	StyleName           *string  `json:"style_name,omitempty"`
 	Notes               *string  `json:"notes,omitempty"`
 	BatchSize           *float64 `json:"batch_size,omitempty"`
@@ -53,7 +53,7 @@ func (r CreateRecipeRequest) Validate() error {
 
 type UpdateRecipeRequest struct {
 	Name                string   `json:"name"`
-	StyleID             *int64   `json:"style_id,omitempty"`
+	StyleUUID           *string  `json:"style_uuid,omitempty"`
 	StyleName           *string  `json:"style_name,omitempty"`
 	Notes               *string  `json:"notes,omitempty"`
 	BatchSize           *float64 `json:"batch_size,omitempty"`
@@ -99,7 +99,7 @@ func (r UpdateRecipeRequest) Validate() error {
 type RecipeResponse struct {
 	UUID                string     `json:"uuid"`
 	Name                string     `json:"name"`
-	StyleID             *int64     `json:"style_id,omitempty"`
+	StyleUUID           *string    `json:"style_uuid,omitempty"`
 	StyleName           *string    `json:"style_name,omitempty"`
 	Notes               *string    `json:"notes,omitempty"`
 	BatchSize           *float64   `json:"batch_size,omitempty"`
@@ -138,7 +138,7 @@ func NewRecipeResponse(recipe storage.Recipe) RecipeResponse {
 	return RecipeResponse{
 		UUID:                recipe.UUID.String(),
 		Name:                recipe.Name,
-		StyleID:             recipe.StyleID,
+		StyleUUID:           recipe.StyleUUID,
 		StyleName:           recipe.StyleName,
 		Notes:               recipe.Notes,
 		BatchSize:           recipe.BatchSize,

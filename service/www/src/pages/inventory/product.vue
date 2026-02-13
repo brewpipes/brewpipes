@@ -38,7 +38,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="beerLot in beerLots" :key="beerLot.id">
+                        <tr v-for="beerLot in beerLots" :key="beerLot.uuid">
                           <td>{{ beerLot.production_batch_uuid }}</td>
                           <td>{{ beerLot.lot_code || 'n/a' }}</td>
                           <td>{{ formatDateTime(beerLot.packaged_at) }}</td>
@@ -92,7 +92,6 @@
   import { useInventoryApi } from '@/composables/useInventoryApi'
 
   type BeerLot = {
-    id: number
     uuid: string
     production_batch_uuid: string
     lot_code: string

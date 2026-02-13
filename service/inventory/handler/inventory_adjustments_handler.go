@@ -15,7 +15,7 @@ import (
 
 type InventoryAdjustmentStore interface {
 	CreateInventoryAdjustment(context.Context, storage.InventoryAdjustment) (storage.InventoryAdjustment, error)
-	GetInventoryAdjustment(context.Context, int64) (storage.InventoryAdjustment, error)
+	GetInventoryAdjustmentByUUID(context.Context, string) (storage.InventoryAdjustment, error)
 	ListInventoryAdjustments(context.Context) ([]storage.InventoryAdjustment, error)
 }
 
@@ -68,26 +68,21 @@ func HandleInventoryAdjustments(db InventoryAdjustmentStore) http.HandlerFunc {
 	}
 }
 
-// HandleInventoryAdjustmentByID handles [GET /inventory-adjustments/{id}].
-func HandleInventoryAdjustmentByID(db InventoryAdjustmentStore) http.HandlerFunc {
+// HandleInventoryAdjustmentByUUID handles [GET /inventory-adjustments/{uuid}].
+func HandleInventoryAdjustmentByUUID(db InventoryAdjustmentStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		adjustmentID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		adjustmentUUID := r.PathValue("uuid")
+		if adjustmentUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		adjustment, err := db.GetInventoryAdjustment(r.Context(), adjustmentID)
+		adjustment, err := db.GetInventoryAdjustmentByUUID(r.Context(), adjustmentUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "inventory adjustment not found", http.StatusNotFound)
 			return

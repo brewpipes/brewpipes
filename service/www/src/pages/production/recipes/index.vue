@@ -51,7 +51,7 @@
           density="compact"
           :headers="headers"
           hover
-          item-value="id"
+          item-value="uuid"
           :items="filteredRecipes"
           :loading="loading"
           @click:row="onRowClick"
@@ -381,8 +381,8 @@
     recipeForm.notes = recipe.notes ?? ''
 
     // Set the style - find matching style object or use the name as string
-    if (recipe.style_id) {
-      const matchingStyle = styles.value.find(s => s.id === recipe.style_id)
+    if (recipe.style_uuid) {
+      const matchingStyle = styles.value.find(s => s.uuid === recipe.style_uuid)
       recipeForm.style = matchingStyle ?? recipe.style_name
     } else if (recipe.style_name) {
       recipeForm.style = recipe.style_name
@@ -408,14 +408,14 @@
     errorMessage.value = ''
 
     try {
-      // Determine style_id and style_name from the form value
-      let styleId: number | null = null
+      // Determine style_uuid and style_name from the form value
+      let styleUuid: string | null = null
       let styleName: string | null = null
 
       if (recipeForm.style) {
-        if (typeof recipeForm.style === 'object' && recipeForm.style.id) {
+        if (typeof recipeForm.style === 'object' && recipeForm.style.uuid) {
           // User selected an existing style
-          styleId = recipeForm.style.id
+          styleUuid = recipeForm.style.uuid
           styleName = recipeForm.style.name
         } else if (typeof recipeForm.style === 'string') {
           // User typed a new style name
@@ -425,7 +425,7 @@
 
       const payload = {
         name: recipeForm.name.trim(),
-        style_id: styleId,
+        style_uuid: styleUuid,
         style_name: styleName,
         notes: normalizeText(recipeForm.notes),
       }

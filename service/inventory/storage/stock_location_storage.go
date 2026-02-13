@@ -64,6 +64,33 @@ func (c *Client) GetStockLocation(ctx context.Context, id int64) (StockLocation,
 	return location, nil
 }
 
+func (c *Client) GetStockLocationByUUID(ctx context.Context, locationUUID string) (StockLocation, error) {
+	var location StockLocation
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, name, location_type, description, created_at, updated_at, deleted_at
+		FROM stock_location
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		locationUUID,
+	).Scan(
+		&location.ID,
+		&location.UUID,
+		&location.Name,
+		&location.LocationType,
+		&location.Description,
+		&location.CreatedAt,
+		&location.UpdatedAt,
+		&location.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return StockLocation{}, service.ErrNotFound
+		}
+		return StockLocation{}, fmt.Errorf("getting stock location by uuid: %w", err)
+	}
+
+	return location, nil
+}
+
 func (c *Client) ListStockLocations(ctx context.Context) ([]StockLocation, error) {
 	rows, err := c.db.Query(ctx, `
 		SELECT id, uuid, name, location_type, description, created_at, updated_at, deleted_at

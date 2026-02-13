@@ -8,20 +8,26 @@ import (
 )
 
 type CreateTransferRequest struct {
-	SourceOccupancyID int64      `json:"source_occupancy_id"`
-	DestVesselID      int64      `json:"dest_vessel_id"`
-	VolumeID          int64      `json:"volume_id"`
-	Amount            int64      `json:"amount"`
-	AmountUnit        string     `json:"amount_unit"`
-	LossAmount        *int64     `json:"loss_amount"`
-	LossUnit          *string    `json:"loss_unit"`
-	StartedAt         *time.Time `json:"started_at"`
-	EndedAt           *time.Time `json:"ended_at"`
+	SourceOccupancyUUID string     `json:"source_occupancy_uuid"`
+	DestVesselUUID      string     `json:"dest_vessel_uuid"`
+	VolumeUUID          string     `json:"volume_uuid"`
+	Amount              int64      `json:"amount"`
+	AmountUnit          string     `json:"amount_unit"`
+	LossAmount          *int64     `json:"loss_amount"`
+	LossUnit            *string    `json:"loss_unit"`
+	StartedAt           *time.Time `json:"started_at"`
+	EndedAt             *time.Time `json:"ended_at"`
 }
 
 func (r CreateTransferRequest) Validate() error {
-	if r.SourceOccupancyID <= 0 || r.DestVesselID <= 0 || r.VolumeID <= 0 {
-		return fmt.Errorf("source_occupancy_id, dest_vessel_id, and volume_id are required")
+	if err := validateRequired(r.SourceOccupancyUUID, "source_occupancy_uuid"); err != nil {
+		return err
+	}
+	if err := validateRequired(r.DestVesselUUID, "dest_vessel_uuid"); err != nil {
+		return err
+	}
+	if err := validateRequired(r.VolumeUUID, "volume_uuid"); err != nil {
+		return err
 	}
 	if r.Amount <= 0 {
 		return fmt.Errorf("amount must be greater than zero")
@@ -50,19 +56,18 @@ func (r CreateTransferRequest) Validate() error {
 }
 
 type TransferResponse struct {
-	ID                int64      `json:"id"`
-	UUID              string     `json:"uuid"`
-	SourceOccupancyID int64      `json:"source_occupancy_id"`
-	DestOccupancyID   int64      `json:"dest_occupancy_id"`
-	Amount            int64      `json:"amount"`
-	AmountUnit        string     `json:"amount_unit"`
-	LossAmount        *int64     `json:"loss_amount,omitempty"`
-	LossUnit          *string    `json:"loss_unit,omitempty"`
-	StartedAt         time.Time  `json:"started_at"`
-	EndedAt           *time.Time `json:"ended_at,omitempty"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
-	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
+	UUID                     string     `json:"uuid"`
+	SourceOccupancyUUID      string     `json:"source_occupancy_uuid"`
+	DestinationOccupancyUUID string     `json:"dest_occupancy_uuid"`
+	Amount                   int64      `json:"amount"`
+	AmountUnit               string     `json:"amount_unit"`
+	LossAmount               *int64     `json:"loss_amount,omitempty"`
+	LossUnit                 *string    `json:"loss_unit,omitempty"`
+	StartedAt                time.Time  `json:"started_at"`
+	EndedAt                  *time.Time `json:"ended_at,omitempty"`
+	CreatedAt                time.Time  `json:"created_at"`
+	UpdatedAt                time.Time  `json:"updated_at"`
+	DeletedAt                *time.Time `json:"deleted_at,omitempty"`
 }
 
 type TransferRecordResponse struct {
@@ -72,19 +77,18 @@ type TransferRecordResponse struct {
 
 func NewTransferResponse(transfer storage.Transfer) TransferResponse {
 	return TransferResponse{
-		ID:                transfer.ID,
-		UUID:              transfer.UUID.String(),
-		SourceOccupancyID: transfer.SourceOccupancyID,
-		DestOccupancyID:   transfer.DestOccupancyID,
-		Amount:            transfer.Amount,
-		AmountUnit:        transfer.AmountUnit,
-		LossAmount:        transfer.LossAmount,
-		LossUnit:          transfer.LossUnit,
-		StartedAt:         transfer.StartedAt,
-		EndedAt:           transfer.EndedAt,
-		CreatedAt:         transfer.CreatedAt,
-		UpdatedAt:         transfer.UpdatedAt,
-		DeletedAt:         transfer.DeletedAt,
+		UUID:                     transfer.UUID.String(),
+		SourceOccupancyUUID:      transfer.SourceOccupancyUUID,
+		DestinationOccupancyUUID: transfer.DestOccupancyUUID,
+		Amount:                   transfer.Amount,
+		AmountUnit:               transfer.AmountUnit,
+		LossAmount:               transfer.LossAmount,
+		LossUnit:                 transfer.LossUnit,
+		StartedAt:                transfer.StartedAt,
+		EndedAt:                  transfer.EndedAt,
+		CreatedAt:                transfer.CreatedAt,
+		UpdatedAt:                transfer.UpdatedAt,
+		DeletedAt:                transfer.DeletedAt,
 	}
 }
 

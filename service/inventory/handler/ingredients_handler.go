@@ -14,7 +14,7 @@ import (
 
 type IngredientStore interface {
 	ListIngredients(context.Context) ([]storage.Ingredient, error)
-	GetIngredient(context.Context, int64) (storage.Ingredient, error)
+	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
 	CreateIngredient(context.Context, storage.Ingredient) (storage.Ingredient, error)
 }
 
@@ -63,26 +63,21 @@ func HandleIngredients(db IngredientStore) http.HandlerFunc {
 	}
 }
 
-// HandleIngredientByID handles [GET /ingredients/{id}].
-func HandleIngredientByID(db IngredientStore) http.HandlerFunc {
+// HandleIngredientByUUID handles [GET /ingredients/{uuid}].
+func HandleIngredientByUUID(db IngredientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		ingredientID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		ingredientUUID := r.PathValue("uuid")
+		if ingredientUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		ingredient, err := db.GetIngredient(r.Context(), ingredientID)
+		ingredient, err := db.GetIngredientByUUID(r.Context(), ingredientUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "ingredient not found", http.StatusNotFound)
 			return

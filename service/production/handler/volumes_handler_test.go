@@ -10,9 +10,9 @@ import (
 )
 
 type VolumeStore struct {
-	ListVolumesFunc  func(context.Context) ([]storage.Volume, error)
-	GetVolumeFunc    func(context.Context, int64) (storage.Volume, error)
-	CreateVolumeFunc func(context.Context, storage.Volume) (storage.Volume, error)
+	ListVolumesFunc     func(context.Context) ([]storage.Volume, error)
+	GetVolumeByUUIDFunc func(context.Context, string) (storage.Volume, error)
+	CreateVolumeFunc    func(context.Context, storage.Volume) (storage.Volume, error)
 }
 
 func (v VolumeStore) ListVolumes(ctx context.Context) ([]storage.Volume, error) {
@@ -22,11 +22,11 @@ func (v VolumeStore) ListVolumes(ctx context.Context) ([]storage.Volume, error) 
 	return v.ListVolumesFunc(ctx)
 }
 
-func (v VolumeStore) GetVolume(ctx context.Context, id int64) (storage.Volume, error) {
-	if v.GetVolumeFunc == nil {
+func (v VolumeStore) GetVolumeByUUID(ctx context.Context, volumeUUID string) (storage.Volume, error) {
+	if v.GetVolumeByUUIDFunc == nil {
 		return storage.Volume{}, nil
 	}
-	return v.GetVolumeFunc(ctx, id)
+	return v.GetVolumeByUUIDFunc(ctx, volumeUUID)
 }
 
 func (v VolumeStore) CreateVolume(ctx context.Context, volume storage.Volume) (storage.Volume, error) {

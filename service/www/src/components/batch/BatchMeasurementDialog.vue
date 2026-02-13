@@ -11,10 +11,9 @@
         />
         <v-text-field
           v-if="form.target === 'occupancy'"
-          label="Occupancy ID"
-          :model-value="form.occupancy_id"
-          type="number"
-          @update:model-value="updateForm('occupancy_id', $event)"
+          label="Occupancy"
+          :model-value="form.occupancy_uuid"
+          @update:model-value="updateForm('occupancy_uuid', $event)"
         />
         <v-text-field
           label="Kind"
@@ -66,7 +65,7 @@
 
   export type MeasurementForm = {
     target: 'batch' | 'occupancy'
-    occupancy_id: string
+    occupancy_uuid: string
     kind: string
     value: string
     unit: string
@@ -93,7 +92,7 @@
   const isValid = computed(() => {
     if (!props.form.kind.trim()) return false
     if (!props.form.value) return false
-    if (props.form.target === 'occupancy' && !props.form.occupancy_id) return false
+    if (props.form.target === 'occupancy' && !props.form.occupancy_uuid) return false
     return true
   })
 

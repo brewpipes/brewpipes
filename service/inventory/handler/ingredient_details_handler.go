@@ -14,8 +14,9 @@ import (
 
 type IngredientMaltDetailStore interface {
 	CreateIngredientMaltDetail(context.Context, storage.IngredientMaltDetail) (storage.IngredientMaltDetail, error)
-	GetIngredientMaltDetail(context.Context, int64) (storage.IngredientMaltDetail, error)
-	GetIngredientMaltDetailByIngredient(context.Context, int64) (storage.IngredientMaltDetail, error)
+	GetIngredientMaltDetailByUUID(context.Context, string) (storage.IngredientMaltDetail, error)
+	GetIngredientMaltDetailByIngredient(context.Context, string) (storage.IngredientMaltDetail, error)
+	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
 }
 
 // HandleIngredientMaltDetails handles [GET /ingredient-malt-details] and [POST /ingredient-malt-details].
@@ -23,18 +24,13 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ingredientValue := r.URL.Query().Get("ingredient_id")
+			ingredientValue := r.URL.Query().Get("ingredient_uuid")
 			if ingredientValue == "" {
-				http.Error(w, "ingredient_id is required", http.StatusBadRequest)
-				return
-			}
-			ingredientID, err := parseInt64Param(ingredientValue)
-			if err != nil {
-				http.Error(w, "invalid ingredient_id", http.StatusBadRequest)
+				http.Error(w, "ingredient_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			detail, err := db.GetIngredientMaltDetailByIngredient(r.Context(), ingredientID)
+			detail, err := db.GetIngredientMaltDetailByIngredient(r.Context(), ingredientValue)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "ingredient malt detail not found", http.StatusNotFound)
 				return
@@ -56,8 +52,19 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 				return
 			}
 
+			// Resolve ingredient UUID to internal ID
+			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving ingredient uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			detail := storage.IngredientMaltDetail{
-				IngredientID:   req.IngredientID,
+				IngredientID:   ingredient.ID,
 				MaltsterName:   req.MaltsterName,
 				Variety:        req.Variety,
 				Lovibond:       req.Lovibond,
@@ -79,26 +86,21 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 	}
 }
 
-// HandleIngredientMaltDetailByID handles [GET /ingredient-malt-details/{id}].
-func HandleIngredientMaltDetailByID(db IngredientMaltDetailStore) http.HandlerFunc {
+// HandleIngredientMaltDetailByUUID handles [GET /ingredient-malt-details/{uuid}].
+func HandleIngredientMaltDetailByUUID(db IngredientMaltDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		detailID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		detailUUID := r.PathValue("uuid")
+		if detailUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		detail, err := db.GetIngredientMaltDetail(r.Context(), detailID)
+		detail, err := db.GetIngredientMaltDetailByUUID(r.Context(), detailUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "ingredient malt detail not found", http.StatusNotFound)
 			return
@@ -114,8 +116,9 @@ func HandleIngredientMaltDetailByID(db IngredientMaltDetailStore) http.HandlerFu
 
 type IngredientHopDetailStore interface {
 	CreateIngredientHopDetail(context.Context, storage.IngredientHopDetail) (storage.IngredientHopDetail, error)
-	GetIngredientHopDetail(context.Context, int64) (storage.IngredientHopDetail, error)
-	GetIngredientHopDetailByIngredient(context.Context, int64) (storage.IngredientHopDetail, error)
+	GetIngredientHopDetailByUUID(context.Context, string) (storage.IngredientHopDetail, error)
+	GetIngredientHopDetailByIngredient(context.Context, string) (storage.IngredientHopDetail, error)
+	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
 }
 
 // HandleIngredientHopDetails handles [GET /ingredient-hop-details] and [POST /ingredient-hop-details].
@@ -123,18 +126,13 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ingredientValue := r.URL.Query().Get("ingredient_id")
+			ingredientValue := r.URL.Query().Get("ingredient_uuid")
 			if ingredientValue == "" {
-				http.Error(w, "ingredient_id is required", http.StatusBadRequest)
-				return
-			}
-			ingredientID, err := parseInt64Param(ingredientValue)
-			if err != nil {
-				http.Error(w, "invalid ingredient_id", http.StatusBadRequest)
+				http.Error(w, "ingredient_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			detail, err := db.GetIngredientHopDetailByIngredient(r.Context(), ingredientID)
+			detail, err := db.GetIngredientHopDetailByIngredient(r.Context(), ingredientValue)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "ingredient hop detail not found", http.StatusNotFound)
 				return
@@ -156,8 +154,19 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve ingredient UUID to internal ID
+			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving ingredient uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			detail := storage.IngredientHopDetail{
-				IngredientID: req.IngredientID,
+				IngredientID: ingredient.ID,
 				ProducerName: req.ProducerName,
 				Variety:      req.Variety,
 				CropYear:     req.CropYear,
@@ -180,26 +189,21 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 	}
 }
 
-// HandleIngredientHopDetailByID handles [GET /ingredient-hop-details/{id}].
-func HandleIngredientHopDetailByID(db IngredientHopDetailStore) http.HandlerFunc {
+// HandleIngredientHopDetailByUUID handles [GET /ingredient-hop-details/{uuid}].
+func HandleIngredientHopDetailByUUID(db IngredientHopDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		detailID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		detailUUID := r.PathValue("uuid")
+		if detailUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		detail, err := db.GetIngredientHopDetail(r.Context(), detailID)
+		detail, err := db.GetIngredientHopDetailByUUID(r.Context(), detailUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "ingredient hop detail not found", http.StatusNotFound)
 			return
@@ -215,8 +219,9 @@ func HandleIngredientHopDetailByID(db IngredientHopDetailStore) http.HandlerFunc
 
 type IngredientYeastDetailStore interface {
 	CreateIngredientYeastDetail(context.Context, storage.IngredientYeastDetail) (storage.IngredientYeastDetail, error)
-	GetIngredientYeastDetail(context.Context, int64) (storage.IngredientYeastDetail, error)
-	GetIngredientYeastDetailByIngredient(context.Context, int64) (storage.IngredientYeastDetail, error)
+	GetIngredientYeastDetailByUUID(context.Context, string) (storage.IngredientYeastDetail, error)
+	GetIngredientYeastDetailByIngredient(context.Context, string) (storage.IngredientYeastDetail, error)
+	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
 }
 
 // HandleIngredientYeastDetails handles [GET /ingredient-yeast-details] and [POST /ingredient-yeast-details].
@@ -224,18 +229,13 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ingredientValue := r.URL.Query().Get("ingredient_id")
+			ingredientValue := r.URL.Query().Get("ingredient_uuid")
 			if ingredientValue == "" {
-				http.Error(w, "ingredient_id is required", http.StatusBadRequest)
-				return
-			}
-			ingredientID, err := parseInt64Param(ingredientValue)
-			if err != nil {
-				http.Error(w, "invalid ingredient_id", http.StatusBadRequest)
+				http.Error(w, "ingredient_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			detail, err := db.GetIngredientYeastDetailByIngredient(r.Context(), ingredientID)
+			detail, err := db.GetIngredientYeastDetailByIngredient(r.Context(), ingredientValue)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "ingredient yeast detail not found", http.StatusNotFound)
 				return
@@ -257,8 +257,19 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 				return
 			}
 
+			// Resolve ingredient UUID to internal ID
+			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving ingredient uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			detail := storage.IngredientYeastDetail{
-				IngredientID: req.IngredientID,
+				IngredientID: ingredient.ID,
 				LabName:      req.LabName,
 				Strain:       req.Strain,
 				Form:         req.Form,
@@ -278,26 +289,21 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 	}
 }
 
-// HandleIngredientYeastDetailByID handles [GET /ingredient-yeast-details/{id}].
-func HandleIngredientYeastDetailByID(db IngredientYeastDetailStore) http.HandlerFunc {
+// HandleIngredientYeastDetailByUUID handles [GET /ingredient-yeast-details/{uuid}].
+func HandleIngredientYeastDetailByUUID(db IngredientYeastDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		detailID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		detailUUID := r.PathValue("uuid")
+		if detailUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		detail, err := db.GetIngredientYeastDetail(r.Context(), detailID)
+		detail, err := db.GetIngredientYeastDetailByUUID(r.Context(), detailUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "ingredient yeast detail not found", http.StatusNotFound)
 			return

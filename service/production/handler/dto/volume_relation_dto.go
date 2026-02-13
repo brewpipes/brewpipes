@@ -8,19 +8,22 @@ import (
 )
 
 type CreateVolumeRelationRequest struct {
-	ParentVolumeID int64  `json:"parent_volume_id"`
-	ChildVolumeID  int64  `json:"child_volume_id"`
-	RelationType   string `json:"relation_type"`
-	Amount         int64  `json:"amount"`
-	AmountUnit     string `json:"amount_unit"`
+	ParentVolumeUUID string `json:"parent_volume_uuid"`
+	ChildVolumeUUID  string `json:"child_volume_uuid"`
+	RelationType     string `json:"relation_type"`
+	Amount           int64  `json:"amount"`
+	AmountUnit       string `json:"amount_unit"`
 }
 
 func (r CreateVolumeRelationRequest) Validate() error {
-	if r.ParentVolumeID <= 0 || r.ChildVolumeID <= 0 {
-		return fmt.Errorf("parent_volume_id and child_volume_id are required")
+	if err := validateRequired(r.ParentVolumeUUID, "parent_volume_uuid"); err != nil {
+		return err
 	}
-	if r.ParentVolumeID == r.ChildVolumeID {
-		return fmt.Errorf("parent_volume_id and child_volume_id must differ")
+	if err := validateRequired(r.ChildVolumeUUID, "child_volume_uuid"); err != nil {
+		return err
+	}
+	if r.ParentVolumeUUID == r.ChildVolumeUUID {
+		return fmt.Errorf("parent_volume_uuid and child_volume_uuid must differ")
 	}
 	if err := validateRelationType(r.RelationType); err != nil {
 		return err
@@ -36,30 +39,28 @@ func (r CreateVolumeRelationRequest) Validate() error {
 }
 
 type VolumeRelationResponse struct {
-	ID             int64      `json:"id"`
-	UUID           string     `json:"uuid"`
-	ParentVolumeID int64      `json:"parent_volume_id"`
-	ChildVolumeID  int64      `json:"child_volume_id"`
-	RelationType   string     `json:"relation_type"`
-	Amount         int64      `json:"amount"`
-	AmountUnit     string     `json:"amount_unit"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	DeletedAt      *time.Time `json:"deleted_at,omitempty"`
+	UUID             string     `json:"uuid"`
+	ParentVolumeUUID string     `json:"parent_volume_uuid"`
+	ChildVolumeUUID  string     `json:"child_volume_uuid"`
+	RelationType     string     `json:"relation_type"`
+	Amount           int64      `json:"amount"`
+	AmountUnit       string     `json:"amount_unit"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	DeletedAt        *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewVolumeRelationResponse(relation storage.VolumeRelation) VolumeRelationResponse {
 	return VolumeRelationResponse{
-		ID:             relation.ID,
-		UUID:           relation.UUID.String(),
-		ParentVolumeID: relation.ParentVolumeID,
-		ChildVolumeID:  relation.ChildVolumeID,
-		RelationType:   relation.RelationType,
-		Amount:         relation.Amount,
-		AmountUnit:     relation.AmountUnit,
-		CreatedAt:      relation.CreatedAt,
-		UpdatedAt:      relation.UpdatedAt,
-		DeletedAt:      relation.DeletedAt,
+		UUID:             relation.UUID.String(),
+		ParentVolumeUUID: relation.ParentVolumeUUID,
+		ChildVolumeUUID:  relation.ChildVolumeUUID,
+		RelationType:     relation.RelationType,
+		Amount:           relation.Amount,
+		AmountUnit:       relation.AmountUnit,
+		CreatedAt:        relation.CreatedAt,
+		UpdatedAt:        relation.UpdatedAt,
+		DeletedAt:        relation.DeletedAt,
 	}
 }
 

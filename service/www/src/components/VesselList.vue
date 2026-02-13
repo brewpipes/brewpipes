@@ -19,9 +19,9 @@
       <v-list active-color="primary" class="vessel-list" lines="two">
         <v-list-item
           v-for="vessel in sortedVessels"
-          :key="vessel.id"
-          :active="vessel.id === selectedVesselId"
-          @click="emit('select', vessel.id)"
+          :key="vessel.uuid"
+          :active="vessel.uuid === selectedVesselUuid"
+          @click="emit('select', vessel.uuid)"
         >
           <v-list-item-title>
             {{ vessel.name }}
@@ -31,11 +31,11 @@
           </v-list-item-subtitle>
           <template #append>
             <v-chip
-              :color="isVesselOccupied(vessel.id) ? 'primary' : 'grey'"
+              :color="isVesselOccupied(vessel.uuid) ? 'primary' : 'grey'"
               size="x-small"
               variant="tonal"
             >
-              {{ isVesselOccupied(vessel.id) ? 'Occupied' : 'Available' }}
+              {{ isVesselOccupied(vessel.uuid) ? 'Occupied' : 'Available' }}
             </v-chip>
           </template>
         </v-list-item>
@@ -58,7 +58,7 @@
     defineProps<{
       vessels: Vessel[]
       occupancies: Occupancy[]
-      selectedVesselId: number | null
+      selectedVesselUuid: string | null
       loading?: boolean
     }>(),
     {
@@ -67,25 +67,25 @@
   )
 
   const emit = defineEmits<{
-    select: [vesselId: number]
+    select: [vesselUuid: string]
     refresh: []
   }>()
 
   const { formatVolumePreferred } = useUnitPreferences()
 
   const occupancyMap = computed(
-    () => new Map(props.occupancies.map(occupancy => [occupancy.vessel_id, occupancy])),
+    () => new Map(props.occupancies.map(occupancy => [occupancy.vessel_uuid, occupancy])),
   )
 
-  function isVesselOccupied (vesselId: number): boolean {
-    return occupancyMap.value.has(vesselId)
+  function isVesselOccupied (vesselUuid: string): boolean {
+    return occupancyMap.value.has(vesselUuid)
   }
 
   // Sort: occupied vessels first, then alphabetically by name
   const sortedVessels = computed(() => {
     return props.vessels.toSorted((a, b) => {
-      const aOccupied = isVesselOccupied(a.id)
-      const bOccupied = isVesselOccupied(b.id)
+      const aOccupied = isVesselOccupied(a.uuid)
+      const bOccupied = isVesselOccupied(b.uuid)
 
       // Occupied vessels first
       if (aOccupied && !bOccupied) return -1

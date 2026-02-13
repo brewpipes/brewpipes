@@ -52,7 +52,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="supplier in suppliers" :key="supplier.id">
+                    <tr v-for="supplier in suppliers" :key="supplier.uuid">
                       <td>{{ supplier.name }}</td>
                       <td>{{ supplier.contact_name || 'n/a' }}</td>
                       <td>{{ supplier.email || 'n/a' }}</td>
@@ -158,7 +158,7 @@
 
   // Dialog state
   const supplierDialog = ref(false)
-  const editingSupplierId = ref<number | null>(null)
+  const editingSupplierUuid = ref<string | null>(null)
 
   const supplierForm = reactive({
     name: '',
@@ -180,7 +180,7 @@
   })
 
   // Computed
-  const isEditing = computed(() => editingSupplierId.value !== null)
+  const isEditing = computed(() => editingSupplierUuid.value !== null)
 
   // Lifecycle
   onMounted(async () => {
@@ -208,13 +208,13 @@
   }
 
   function openCreateDialog () {
-    editingSupplierId.value = null
+    editingSupplierUuid.value = null
     resetForm()
     supplierDialog.value = true
   }
 
   function openEditDialog (supplier: Supplier) {
-    editingSupplierId.value = supplier.id
+    editingSupplierUuid.value = supplier.uuid
     supplierForm.name = supplier.name
     supplierForm.contact_name = supplier.contact_name ?? ''
     supplierForm.email = supplier.email ?? ''
@@ -230,7 +230,7 @@
 
   function closeSupplierDialog () {
     supplierDialog.value = false
-    editingSupplierId.value = null
+    editingSupplierUuid.value = null
   }
 
   async function loadSuppliers () {
@@ -268,8 +268,8 @@
         country: normalizeText(supplierForm.country),
       }
 
-      if (isEditing.value && editingSupplierId.value) {
-        await updateSupplier(editingSupplierId.value, payload)
+      if (isEditing.value && editingSupplierUuid.value) {
+        await updateSupplier(editingSupplierUuid.value, payload)
         showNotice('Supplier updated')
       } else {
         await createSupplier(payload)

@@ -1,21 +1,20 @@
 package dto
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
 type CreateBatchProcessPhaseRequest struct {
-	BatchID      int64      `json:"batch_id"`
+	BatchUUID    string     `json:"batch_uuid"`
 	ProcessPhase string     `json:"process_phase"`
 	PhaseAt      *time.Time `json:"phase_at"`
 }
 
 func (r CreateBatchProcessPhaseRequest) Validate() error {
-	if r.BatchID <= 0 {
-		return fmt.Errorf("batch_id is required")
+	if err := validateRequired(r.BatchUUID, "batch_uuid"); err != nil {
+		return err
 	}
 	if err := validateProcessPhase(r.ProcessPhase); err != nil {
 		return err
@@ -25,9 +24,8 @@ func (r CreateBatchProcessPhaseRequest) Validate() error {
 }
 
 type BatchProcessPhaseResponse struct {
-	ID           int64      `json:"id"`
 	UUID         string     `json:"uuid"`
-	BatchID      int64      `json:"batch_id"`
+	BatchUUID    string     `json:"batch_uuid"`
 	ProcessPhase string     `json:"process_phase"`
 	PhaseAt      time.Time  `json:"phase_at"`
 	CreatedAt    time.Time  `json:"created_at"`
@@ -37,9 +35,8 @@ type BatchProcessPhaseResponse struct {
 
 func NewBatchProcessPhaseResponse(phase storage.BatchProcessPhase) BatchProcessPhaseResponse {
 	return BatchProcessPhaseResponse{
-		ID:           phase.ID,
 		UUID:         phase.UUID.String(),
-		BatchID:      phase.BatchID,
+		BatchUUID:    phase.BatchUUID,
 		ProcessPhase: phase.ProcessPhase,
 		PhaseAt:      phase.PhaseAt,
 		CreatedAt:    phase.CreatedAt,

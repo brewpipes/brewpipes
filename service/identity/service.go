@@ -53,9 +53,9 @@ func NewService(ctx context.Context, cfg *Config) (*Service, error) {
 			},
 			{Method: http.MethodGet, Path: "/users", Handler: handler.HandleUsers(stg)},
 			{Method: http.MethodPost, Path: "/users", Handler: handler.HandleUsers(stg)},
-			{Method: http.MethodGet, Path: "/users/{id}", Handler: handler.HandleUserByID(stg)},
-			{Method: http.MethodPut, Path: "/users/{id}", Handler: handler.HandleUserByID(stg)},
-			{Method: http.MethodDelete, Path: "/users/{id}", Handler: handler.HandleUserByID(stg)},
+			{Method: http.MethodGet, Path: "/users/{uuid}", Handler: handler.HandleUserByUUID(stg)},
+			{Method: http.MethodPut, Path: "/users/{uuid}", Handler: handler.HandleUserByUUID(stg)},
+			{Method: http.MethodDelete, Path: "/users/{uuid}", Handler: handler.HandleUserByUUID(stg)},
 		},
 	}, nil
 }

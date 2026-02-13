@@ -26,7 +26,6 @@ func (r CreateStockLocationRequest) Validate() error {
 }
 
 type StockLocationResponse struct {
-	ID           int64      `json:"id"`
 	UUID         string     `json:"uuid"`
 	Name         string     `json:"name"`
 	LocationType *string    `json:"location_type,omitempty"`
@@ -38,7 +37,6 @@ type StockLocationResponse struct {
 
 func NewStockLocationResponse(location storage.StockLocation) StockLocationResponse {
 	return StockLocationResponse{
-		ID:           location.ID,
 		UUID:         location.UUID.String(),
 		Name:         location.Name,
 		LocationType: location.LocationType,

@@ -14,11 +14,12 @@ import (
 
 type BatchStore interface {
 	CreateBatch(context.Context, storage.Batch) (storage.Batch, error)
-	GetBatch(context.Context, int64) (storage.Batch, error)
+	GetBatchByUUID(context.Context, string) (storage.Batch, error)
 	ListBatches(context.Context) ([]storage.Batch, error)
-	UpdateBatch(context.Context, int64, storage.Batch) (storage.Batch, error)
-	GetBatchDependencies(context.Context, int64) (storage.BatchDependencies, error)
-	DeleteBatch(context.Context, int64) error
+	UpdateBatchByUUID(context.Context, string, storage.Batch) (storage.Batch, error)
+	GetBatchDependenciesByUUID(context.Context, string) (storage.BatchDependencies, error)
+	DeleteBatchByUUID(context.Context, string) error
+	GetRecipe(context.Context, string, *storage.RecipeQueryOpts) (storage.Recipe, error)
 }
 
 // HandleBatches handles [GET /batches] and [POST /batches].
@@ -52,7 +53,20 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 				ShortName: req.ShortName,
 				BrewDate:  req.BrewDate,
 				Notes:     req.Notes,
-				RecipeID:  req.RecipeID,
+			}
+
+			// Resolve recipe UUID to internal ID if provided
+			if req.RecipeUUID != nil {
+				recipe, err := db.GetRecipe(r.Context(), *req.RecipeUUID, nil)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "recipe not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving recipe uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				batch.RecipeID = &recipe.ID
 			}
 
 			created, err := db.CreateBatch(r.Context(), batch)
@@ -62,7 +76,7 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 				return
 			}
 
-			slog.Info("batch created", "batch_id", created.ID, "short_name", created.ShortName)
+			slog.Info("batch created", "batch_uuid", created.UUID, "short_name", created.ShortName)
 
 			service.JSON(w, dto.NewBatchResponse(created))
 		default:
@@ -71,23 +85,18 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 	}
 }
 
-// HandleBatchByID handles [GET /batches/{id}], [PATCH /batches/{id}], and [DELETE /batches/{id}].
-func HandleBatchByID(db BatchStore) http.HandlerFunc {
+// HandleBatchByUUID handles [GET /batches/{uuid}], [PATCH /batches/{uuid}], and [DELETE /batches/{uuid}].
+func HandleBatchByUUID(db BatchStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		batchID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		batchUUID := r.PathValue("uuid")
+		if batchUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			batch, err := db.GetBatch(r.Context(), batchID)
+			batch, err := db.GetBatchByUUID(r.Context(), batchUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
@@ -113,10 +122,23 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 				ShortName: req.ShortName,
 				BrewDate:  req.BrewDate,
 				Notes:     req.Notes,
-				RecipeID:  req.RecipeID,
 			}
 
-			updated, err := db.UpdateBatch(r.Context(), batchID, batch)
+			// Resolve recipe UUID to internal ID if provided
+			if req.RecipeUUID != nil {
+				recipe, err := db.GetRecipe(r.Context(), *req.RecipeUUID, nil)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "recipe not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving recipe uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				batch.RecipeID = &recipe.ID
+			}
+
+			updated, err := db.UpdateBatchByUUID(r.Context(), batchUUID, batch)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
@@ -126,18 +148,18 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 				return
 			}
 
-			slog.Info("batch updated", "batch_id", updated.ID, "short_name", updated.ShortName)
+			slog.Info("batch updated", "batch_uuid", batchUUID, "short_name", updated.ShortName)
 
 			service.JSON(w, dto.NewBatchResponse(updated))
 		case http.MethodDelete:
 			// Log what will be deleted for audit purposes
-			deps, err := db.GetBatchDependencies(r.Context(), batchID)
+			deps, err := db.GetBatchDependenciesByUUID(r.Context(), batchUUID)
 			if err != nil {
-				slog.Warn("could not check batch dependencies before delete", "batch_id", batchID, "error", err)
+				slog.Warn("could not check batch dependencies before delete", "batch_uuid", batchUUID, "error", err)
 				// Continue with deletion anyway - this is just for logging
 			} else if deps.HasDependencies() {
 				slog.Info("deleting batch with related records",
-					"batch_id", batchID,
+					"batch_uuid", batchUUID,
 					"batch_volumes", deps.BatchVolumeCount,
 					"process_phases", deps.BatchProcessPhaseCount,
 					"brew_sessions", deps.BrewSessionCount,
@@ -147,7 +169,7 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 			}
 
 			// Cascade soft-delete the batch and all related records
-			err = db.DeleteBatch(r.Context(), batchID)
+			err = db.DeleteBatchByUUID(r.Context(), batchUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
@@ -157,7 +179,7 @@ func HandleBatchByID(db BatchStore) http.HandlerFunc {
 				return
 			}
 
-			slog.Info("batch deleted", "batch_id", batchID)
+			slog.Info("batch deleted", "batch_uuid", batchUUID)
 
 			w.WriteHeader(http.StatusNoContent)
 		default:

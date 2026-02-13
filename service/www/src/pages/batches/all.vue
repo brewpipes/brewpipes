@@ -66,7 +66,7 @@
           class="data-table batches-table"
           density="compact"
           :headers="headers"
-          item-value="id"
+          item-value="uuid"
           :items="sortedBatches"
           :loading="loading"
           :search="search"
@@ -294,28 +294,12 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Batch } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { BatchDeleteDialog, BatchEditDialog, type BatchEditForm } from '@/components/batch'
   import { useApiClient } from '@/composables/useApiClient'
   import { type Recipe, type UpdateBatchRequest, useProductionApi } from '@/composables/useProductionApi'
-
-  type Batch = {
-    id: number
-    uuid: string
-    short_name: string
-    brew_date: string | null
-    recipe_id: number | null
-    recipe_uuid: string | null
-    notes: string | null
-    created_at: string
-    updated_at: string
-  }
-
-  type BatchWithSummary = Batch & {
-    recipe_name?: string | null
-    current_phase?: string | null
-  }
 
   type ImportRowError = {
     row: number | null
@@ -346,10 +330,10 @@
   const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const router = useRouter()
   const { request } = useApiClient(apiBase)
-  const { getRecipes, getBatchSummary, updateBatch, deleteBatch, normalizeText } = useProductionApi()
+  const { getRecipes, updateBatch, deleteBatch, normalizeText } = useProductionApi()
 
   // State
-  const batches = ref<BatchWithSummary[]>([])
+  const batches = ref<Batch[]>([])
   const recipes = ref<Recipe[]>([])
   const loading = ref(false)
   const recipesLoading = ref(false)
@@ -363,12 +347,12 @@
 
   // Edit/Delete state
   const editBatchDialog = ref(false)
-  const editingBatch = ref<BatchWithSummary | null>(null)
+  const editingBatch = ref<Batch | null>(null)
   const savingBatchEdit = ref(false)
   const editBatchError = ref('')
 
   const deleteBatchDialog = ref(false)
-  const deletingBatchItem = ref<BatchWithSummary | null>(null)
+  const deletingBatchItem = ref<Batch | null>(null)
   const deletingBatch = ref(false)
   const deleteBatchError = ref('')
 
@@ -520,30 +504,7 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      const batchList = await request<Batch[]>('/batches')
-
-      // Enrich batches with summary data (recipe name, current phase)
-      const enrichedBatches = await Promise.all(
-        batchList.map(async batch => {
-          try {
-            const summary = await getBatchSummary(batch.id)
-            return {
-              ...batch,
-              recipe_name: summary.recipe_name,
-              current_phase: summary.current_phase,
-            }
-          } catch {
-            // If summary fails, return batch without enrichment
-            return {
-              ...batch,
-              recipe_name: null,
-              current_phase: null,
-            }
-          }
-        }),
-      )
-
-      batches.value = enrichedBatches
+      batches.value = await request<Batch[]>('/batches')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load batches'
       errorMessage.value = message
@@ -610,12 +571,12 @@
     }
   }
 
-  function onRowClick (_event: Event, { item }: { item: BatchWithSummary }) {
+  function onRowClick (_event: Event, { item }: { item: Batch }) {
     router.push(`/batches/${item.uuid}`)
   }
 
   // Edit/Delete functions
-  function openEditDialog (batch: BatchWithSummary) {
+  function openEditDialog (batch: Batch) {
     editingBatch.value = batch
     editBatchError.value = ''
     editBatchDialog.value = true
@@ -635,7 +596,7 @@
         notes: normalizeText(form.notes),
       }
 
-      await updateBatch(editingBatch.value.id, payload)
+      await updateBatch(editingBatch.value.uuid, payload)
       showNotice('Batch updated')
       editBatchDialog.value = false
       editingBatch.value = null
@@ -648,7 +609,7 @@
     }
   }
 
-  function openDeleteDialog (batch: BatchWithSummary) {
+  function openDeleteDialog (batch: Batch) {
     deletingBatchItem.value = batch
     deleteBatchError.value = ''
     deleteBatchDialog.value = true
@@ -661,7 +622,7 @@
     deleteBatchError.value = ''
 
     try {
-      await deleteBatch(deletingBatchItem.value.id)
+      await deleteBatch(deletingBatchItem.value.uuid)
       showNotice('Batch deleted')
       deleteBatchDialog.value = false
       deletingBatchItem.value = null

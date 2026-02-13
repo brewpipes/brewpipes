@@ -16,7 +16,7 @@ import (
 
 type BeerLotStore interface {
 	CreateBeerLot(context.Context, storage.BeerLot) (storage.BeerLot, error)
-	GetBeerLot(context.Context, int64) (storage.BeerLot, error)
+	GetBeerLotByUUID(context.Context, string) (storage.BeerLot, error)
 	ListBeerLots(context.Context) ([]storage.BeerLot, error)
 	ListBeerLotsByBatchUUID(context.Context, uuid.UUID) ([]storage.BeerLot, error)
 }
@@ -96,26 +96,21 @@ func HandleBeerLots(db BeerLotStore) http.HandlerFunc {
 	}
 }
 
-// HandleBeerLotByID handles [GET /beer-lots/{id}].
-func HandleBeerLotByID(db BeerLotStore) http.HandlerFunc {
+// HandleBeerLotByUUID handles [GET /beer-lots/{uuid}].
+func HandleBeerLotByUUID(db BeerLotStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		lotID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		lotUUID := r.PathValue("uuid")
+		if lotUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		lot, err := db.GetBeerLot(r.Context(), lotID)
+		lot, err := db.GetBeerLotByUUID(r.Context(), lotUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "beer lot not found", http.StatusNotFound)
 			return

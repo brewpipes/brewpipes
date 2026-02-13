@@ -2,11 +2,11 @@
   <v-container class="vessels-page" fluid>
     <!-- Mobile: Show list or detail based on selection -->
     <v-row v-if="$vuetify.display.smAndDown" align="stretch">
-      <v-col v-if="!selectedVesselId" cols="12">
+      <v-col v-if="!selectedVesselUuid" cols="12">
         <VesselList
           :loading="loading"
           :occupancies="occupancies"
-          :selected-vessel-id="selectedVesselId"
+          :selected-vessel-uuid="selectedVesselUuid"
           :vessels="activeVessels"
           @refresh="refreshVessels"
           @select="selectVessel"
@@ -32,7 +32,7 @@
         <VesselList
           :loading="loading"
           :occupancies="occupancies"
-          :selected-vessel-id="selectedVesselId"
+          :selected-vessel-uuid="selectedVesselUuid"
           :vessels="activeVessels"
           @refresh="refreshVessels"
           @select="selectVessel"
@@ -85,7 +85,7 @@
 
   const vessels = ref<Vessel[]>([])
   const occupancies = ref<Occupancy[]>([])
-  const selectedVesselId = ref<number | null>(null)
+  const selectedVesselUuid = ref<string | null>(null)
   const loading = ref(false)
 
   // Edit dialog state
@@ -108,33 +108,33 @@
   )
 
   const selectedVessel = computed(() =>
-    vessels.value.find(vessel => vessel.id === selectedVesselId.value) ?? null,
+    vessels.value.find(vessel => vessel.uuid === selectedVesselUuid.value) ?? null,
   )
 
   const occupancyMap = computed(
-    () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_id, occupancy])),
+    () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_uuid, occupancy])),
   )
 
   const selectedVesselOccupancy = computed(() => {
-    if (!selectedVesselId.value) return null
-    return occupancyMap.value.get(selectedVesselId.value) ?? null
+    if (!selectedVesselUuid.value) return null
+    return occupancyMap.value.get(selectedVesselUuid.value) ?? null
   })
 
   onMounted(async () => {
     await refreshVessels()
   })
 
-  watch(selectedVesselId, async () => {
+  watch(selectedVesselUuid, async () => {
     // Refresh occupancies when vessel selection changes
     await loadOccupancies()
   })
 
-  function selectVessel (id: number) {
-    selectedVesselId.value = id
+  function selectVessel (uuid: string) {
+    selectedVesselUuid.value = uuid
   }
 
   function clearSelection () {
-    selectedVesselId.value = null
+    selectedVesselUuid.value = null
   }
 
   function showNotice (text: string, color = 'success') {
@@ -154,8 +154,8 @@
 
       // Auto-select first active vessel if none selected
       const firstVessel = activeVessels.value[0]
-      if (!selectedVesselId.value && firstVessel) {
-        selectedVesselId.value = firstVessel.id
+      if (!selectedVesselUuid.value && firstVessel) {
+        selectedVesselUuid.value = firstVessel.uuid
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load vessels'
@@ -173,9 +173,9 @@
     }
   }
 
-  async function changeOccupancyStatus (occupancyId: number, status: OccupancyStatus) {
+  async function changeOccupancyStatus (occupancyUuid: string, status: OccupancyStatus) {
     try {
-      await updateOccupancyStatus(occupancyId, status)
+      await updateOccupancyStatus(occupancyUuid, status)
       showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
       await loadOccupancies()
     } catch (error) {
@@ -197,9 +197,9 @@
     editDialogRef.value?.clearError()
 
     try {
-      const updated = await updateVessel(selectedVessel.value.id, data)
+      const updated = await updateVessel(selectedVessel.value.uuid, data)
       // Update the vessel in the list
-      const index = vessels.value.findIndex(v => v.id === updated.id)
+      const index = vessels.value.findIndex(v => v.uuid === updated.uuid)
       if (index !== -1) {
         vessels.value[index] = updated
       }

@@ -15,11 +15,12 @@ import (
 
 type PurchaseOrderLineStore interface {
 	ListPurchaseOrderLines(context.Context) ([]storage.PurchaseOrderLine, error)
-	ListPurchaseOrderLinesByOrder(context.Context, int64) ([]storage.PurchaseOrderLine, error)
-	GetPurchaseOrderLine(context.Context, int64) (storage.PurchaseOrderLine, error)
+	ListPurchaseOrderLinesByOrderUUID(context.Context, string) ([]storage.PurchaseOrderLine, error)
+	GetPurchaseOrderLineByUUID(context.Context, string) (storage.PurchaseOrderLine, error)
+	GetPurchaseOrderByUUID(context.Context, string) (storage.PurchaseOrder, error)
 	CreatePurchaseOrderLine(context.Context, storage.PurchaseOrderLine) (storage.PurchaseOrderLine, error)
-	UpdatePurchaseOrderLine(context.Context, int64, storage.PurchaseOrderLineUpdate) (storage.PurchaseOrderLine, error)
-	DeletePurchaseOrderLine(context.Context, int64) (storage.PurchaseOrderLine, error)
+	UpdatePurchaseOrderLineByUUID(context.Context, string, storage.PurchaseOrderLineUpdate) (storage.PurchaseOrderLine, error)
+	DeletePurchaseOrderLineByUUID(context.Context, string) (storage.PurchaseOrderLine, error)
 }
 
 // HandlePurchaseOrderLines handles [GET /purchase-order-lines] and [POST /purchase-order-lines].
@@ -27,15 +28,9 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			orderValue := r.URL.Query().Get("purchase_order_id")
-			if orderValue != "" {
-				orderID, err := parseInt64Param(orderValue)
-				if err != nil {
-					http.Error(w, "invalid purchase_order_id", http.StatusBadRequest)
-					return
-				}
-
-				lines, err := db.ListPurchaseOrderLinesByOrder(r.Context(), orderID)
+			orderUUID := r.URL.Query().Get("purchase_order_uuid")
+			if orderUUID != "" {
+				lines, err := db.ListPurchaseOrderLinesByOrderUUID(r.Context(), orderUUID)
 				if err != nil {
 					slog.Error("error listing purchase order lines by order", "error", err)
 					service.InternalError(w, err.Error())
@@ -65,6 +60,17 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve purchase order UUID to internal ID
+			order, err := db.GetPurchaseOrderByUUID(r.Context(), req.PurchaseOrderUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "purchase order not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving purchase order uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			inventoryItemUUID, err := parseUUIDPointer(req.InventoryItemUUID)
 			if err != nil {
 				http.Error(w, "invalid inventory_item_uuid", http.StatusBadRequest)
@@ -72,7 +78,7 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 			}
 
 			line := storage.PurchaseOrderLine{
-				PurchaseOrderID:   req.PurchaseOrderID,
+				PurchaseOrderID:   order.ID,
 				LineNumber:        req.LineNumber,
 				ItemType:          req.ItemType,
 				ItemName:          req.ItemName,
@@ -97,23 +103,18 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 	}
 }
 
-// HandlePurchaseOrderLineByID handles [GET /purchase-order-lines/{id}], [PATCH /purchase-order-lines/{id}], and [DELETE /purchase-order-lines/{id}].
-func HandlePurchaseOrderLineByID(db PurchaseOrderLineStore) http.HandlerFunc {
+// HandlePurchaseOrderLineByUUID handles [GET /purchase-order-lines/{uuid}], [PATCH /purchase-order-lines/{uuid}], and [DELETE /purchase-order-lines/{uuid}].
+func HandlePurchaseOrderLineByUUID(db PurchaseOrderLineStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		lineID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		lineUUID := r.PathValue("uuid")
+		if lineUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			line, err := db.GetPurchaseOrderLine(r.Context(), lineID)
+			line, err := db.GetPurchaseOrderLineByUUID(r.Context(), lineUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order line not found", http.StatusNotFound)
 				return
@@ -156,7 +157,7 @@ func HandlePurchaseOrderLineByID(db PurchaseOrderLineStore) http.HandlerFunc {
 				Currency:          req.Currency,
 			}
 
-			line, err := db.UpdatePurchaseOrderLine(r.Context(), lineID, update)
+			line, err := db.UpdatePurchaseOrderLineByUUID(r.Context(), lineUUID, update)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order line not found", http.StatusNotFound)
 				return
@@ -168,7 +169,7 @@ func HandlePurchaseOrderLineByID(db PurchaseOrderLineStore) http.HandlerFunc {
 
 			service.JSON(w, dto.NewPurchaseOrderLineResponse(line))
 		case http.MethodDelete:
-			line, err := db.DeletePurchaseOrderLine(r.Context(), lineID)
+			line, err := db.DeletePurchaseOrderLineByUUID(r.Context(), lineUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "purchase order line not found", http.StatusNotFound)
 				return

@@ -21,7 +21,7 @@
         <v-row class="mb-4">
           <v-col cols="12" md="4">
             <v-select
-              v-model="filters.ingredient_lot_id"
+              v-model="filters.ingredient_lot_uuid"
               clearable
               density="compact"
               hide-details
@@ -32,7 +32,7 @@
           </v-col>
           <v-col cols="12" md="4">
             <v-select
-              v-model="filters.beer_lot_id"
+              v-model="filters.beer_lot_uuid"
               clearable
               density="compact"
               hide-details
@@ -68,7 +68,7 @@
             <tr v-else-if="movements.length === 0">
               <td class="text-medium-emphasis" colspan="6">No activity yet.</td>
             </tr>
-            <tr v-for="movement in movements" v-else :key="movement.id">
+            <tr v-for="movement in movements" v-else :key="movement.uuid">
               <td>{{ getItemName(movement) }}</td>
               <td>{{ getLotCode(movement) }}</td>
               <td class="text-center">
@@ -133,7 +133,7 @@
                 </template>
               </td>
               <td>{{ formatAmountPreferred(movement.amount, movement.amount_unit) }}</td>
-              <td>{{ locationName(movement.stock_location_id) }}</td>
+              <td>{{ locationName(movement.stock_location_uuid) }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -151,7 +151,6 @@
 
   // Types
   type Ingredient = {
-    id: number
     uuid: string
     name: string
     category: string
@@ -159,42 +158,41 @@
   }
 
   type IngredientLot = {
-    id: number
-    ingredient_id: number
+    uuid: string
+    ingredient_uuid: string
     brewery_lot_code: string | null
     received_amount: number
     received_unit: string
   }
 
   type StockLocation = {
-    id: number
+    uuid: string
     name: string
   }
 
   type BeerLot = {
-    id: number
+    uuid: string
     lot_code: string | null
   }
 
   type InventoryMovement = {
-    id: number
-    ingredient_lot_id: number | null
-    beer_lot_id: number | null
-    stock_location_id: number
+    uuid: string
+    ingredient_lot_uuid: string | null
+    beer_lot_uuid: string | null
+    stock_location_uuid: string
     direction: string
     reason: string
     amount: number
     amount_unit: string
     occurred_at: string
-    receipt_id: number | null
-    usage_id: number | null
-    adjustment_id: number | null
-    transfer_id: number | null
+    receipt_uuid: string | null
+    usage_uuid: string | null
+    adjustment_uuid: string | null
+    transfer_uuid: string | null
     notes: string | null
   }
 
   type InventoryReceipt = {
-    id: number
     uuid: string
     supplier_uuid: string | null
     reference_code: string | null
@@ -203,7 +201,6 @@
   }
 
   type InventoryUsage = {
-    id: number
     uuid: string
     production_ref_uuid: string | null
     used_at: string
@@ -211,7 +208,6 @@
   }
 
   type InventoryAdjustment = {
-    id: number
     uuid: string
     reason: string
     adjusted_at: string
@@ -219,16 +215,14 @@
   }
 
   type InventoryTransfer = {
-    id: number
     uuid: string
-    source_location_id: number
-    dest_location_id: number
+    source_location_uuid: string
+    dest_location_uuid: string
     transferred_at: string
     notes: string | null
   }
 
   type Supplier = {
-    id: number
     uuid: string
     name: string
   }
@@ -261,41 +255,41 @@
   const errorMessage = ref('')
 
   const filters = reactive({
-    ingredient_lot_id: null as number | null,
-    beer_lot_id: null as number | null,
+    ingredient_lot_uuid: null as string | null,
+    beer_lot_uuid: null as string | null,
   })
 
   // Lookup maps for efficient data resolution
   const ingredientMap = computed(() =>
-    new Map(ingredients.value.map(i => [i.id, i])),
+    new Map(ingredients.value.map(i => [i.uuid, i])),
   )
 
   const ingredientLotMap = computed(() =>
-    new Map(lots.value.map(l => [l.id, l])),
+    new Map(lots.value.map(l => [l.uuid, l])),
   )
 
   const beerLotMap = computed(() =>
-    new Map(beerLots.value.map(l => [l.id, l])),
+    new Map(beerLots.value.map(l => [l.uuid, l])),
   )
 
   const locationMap = computed(() =>
-    new Map(locations.value.map(l => [l.id, l])),
+    new Map(locations.value.map(l => [l.uuid, l])),
   )
 
   const receiptMap = computed(() =>
-    new Map(receipts.value.map(r => [r.id, r])),
+    new Map(receipts.value.map(r => [r.uuid, r])),
   )
 
   const usageMap = computed(() =>
-    new Map(usages.value.map(u => [u.id, u])),
+    new Map(usages.value.map(u => [u.uuid, u])),
   )
 
   const adjustmentMap = computed(() =>
-    new Map(adjustments.value.map(a => [a.id, a])),
+    new Map(adjustments.value.map(a => [a.uuid, a])),
   )
 
   const transferMap = computed(() =>
-    new Map(transfers.value.map(t => [t.id, t])),
+    new Map(transfers.value.map(t => [t.uuid, t])),
   )
 
   const batchByUuidMap = computed(() =>
@@ -309,20 +303,20 @@
   // Select items for filters
   const lotSelectItems = computed(() =>
     lots.value.map(lot => {
-      const ingredient = ingredientMap.value.get(lot.ingredient_id)
+      const ingredient = ingredientMap.value.get(lot.ingredient_uuid)
       const ingredientName = ingredient?.name ?? 'Unknown'
-      const lotCode = lot.brewery_lot_code ?? `Lot ${lot.id}`
+      const lotCode = lot.brewery_lot_code ?? 'Unknown Lot'
       return {
         title: `${ingredientName} - ${lotCode} (${lot.received_amount} ${lot.received_unit})`,
-        value: lot.id,
+        value: lot.uuid,
       }
     }),
   )
 
   const beerLotSelectItems = computed(() =>
     beerLots.value.map(lot => ({
-      title: lot.lot_code || `Beer lot ${lot.id}`,
-      value: lot.id,
+      title: lot.lot_code || 'Unknown Beer Lot',
+      value: lot.uuid,
     })),
   )
 
@@ -377,11 +371,11 @@
 
   async function loadMovements () {
     const query = new URLSearchParams()
-    if (filters.ingredient_lot_id) {
-      query.set('ingredient_lot_id', String(filters.ingredient_lot_id))
+    if (filters.ingredient_lot_uuid) {
+      query.set('ingredient_lot_uuid', filters.ingredient_lot_uuid)
     }
-    if (filters.beer_lot_id) {
-      query.set('beer_lot_id', String(filters.beer_lot_id))
+    if (filters.beer_lot_uuid) {
+      query.set('beer_lot_uuid', filters.beer_lot_uuid)
     }
     const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
     movements.value = await inventoryRequest<InventoryMovement[]>(path) ?? []
@@ -421,32 +415,32 @@
 
   // Display helpers
   function getItemName (movement: InventoryMovement): string {
-    if (movement.ingredient_lot_id) {
-      const lot = ingredientLotMap.value.get(movement.ingredient_lot_id)
+    if (movement.ingredient_lot_uuid) {
+      const lot = ingredientLotMap.value.get(movement.ingredient_lot_uuid)
       if (lot) {
-        const ingredient = ingredientMap.value.get(lot.ingredient_id)
-        return ingredient?.name ?? `Ingredient ${lot.ingredient_id}`
+        const ingredient = ingredientMap.value.get(lot.ingredient_uuid)
+        return ingredient?.name ?? 'Unknown Ingredient'
       }
-      return `Lot ${movement.ingredient_lot_id}`
+      return 'Unknown Lot'
     }
 
-    if (movement.beer_lot_id) {
-      const beerLot = beerLotMap.value.get(movement.beer_lot_id)
-      return beerLot?.lot_code ?? `Beer lot ${movement.beer_lot_id}`
+    if (movement.beer_lot_uuid) {
+      const beerLot = beerLotMap.value.get(movement.beer_lot_uuid)
+      return beerLot?.lot_code ?? 'Unknown Beer Lot'
     }
 
     return 'Unknown'
   }
 
   function getLotCode (movement: InventoryMovement): string {
-    if (movement.ingredient_lot_id) {
-      const lot = ingredientLotMap.value.get(movement.ingredient_lot_id)
-      return lot?.brewery_lot_code ?? `Lot ${movement.ingredient_lot_id}`
+    if (movement.ingredient_lot_uuid) {
+      const lot = ingredientLotMap.value.get(movement.ingredient_lot_uuid)
+      return lot?.brewery_lot_code ?? 'Unknown Lot'
     }
 
-    if (movement.beer_lot_id) {
-      const beerLot = beerLotMap.value.get(movement.beer_lot_id)
-      return beerLot?.lot_code ?? `Beer lot ${movement.beer_lot_id}`
+    if (movement.beer_lot_uuid) {
+      const beerLot = beerLotMap.value.get(movement.beer_lot_uuid)
+      return beerLot?.lot_code ?? 'Unknown Beer Lot'
     }
 
     return 'Unknown'
@@ -456,15 +450,15 @@
     return direction === 'in' ? 'Received' : 'Used/Transferred/Adjusted'
   }
 
-  function locationName (locationId: number): string {
-    return locationMap.value.get(locationId)?.name ?? `Location ${locationId}`
+  function locationName (locationUuid: string): string {
+    return locationMap.value.get(locationUuid)?.name ?? 'Unknown Location'
   }
 
   // Reason-specific helpers
   function getUsageBatch (movement: InventoryMovement): Batch | undefined {
-    if (!movement.usage_id) return undefined
+    if (!movement.usage_uuid) return undefined
 
-    const usage = usageMap.value.get(movement.usage_id)
+    const usage = usageMap.value.get(movement.usage_uuid)
     if (!usage?.production_ref_uuid) return undefined
 
     return batchByUuidMap.value.get(usage.production_ref_uuid)
@@ -477,27 +471,27 @@
   }
 
   function getReceiptSupplier (movement: InventoryMovement): Supplier | undefined {
-    if (!movement.receipt_id) return undefined
+    if (!movement.receipt_uuid) return undefined
 
-    const receipt = receiptMap.value.get(movement.receipt_id)
+    const receipt = receiptMap.value.get(movement.receipt_uuid)
     if (!receipt?.supplier_uuid) return undefined
 
     return supplierByUuidMap.value.get(receipt.supplier_uuid)
   }
 
   function getAdjustmentNotes (movement: InventoryMovement): string | null {
-    if (!movement.adjustment_id) return null
+    if (!movement.adjustment_uuid) return null
 
-    const adjustment = adjustmentMap.value.get(movement.adjustment_id)
+    const adjustment = adjustmentMap.value.get(movement.adjustment_uuid)
     return adjustment?.notes ?? null
   }
 
   function formatAdjustmentReason (movement: InventoryMovement): string {
-    if (!movement.adjustment_id) {
+    if (!movement.adjustment_uuid) {
       return movement.reason === 'waste' ? 'Waste' : 'Adjustment'
     }
 
-    const adjustment = adjustmentMap.value.get(movement.adjustment_id)
+    const adjustment = adjustmentMap.value.get(movement.adjustment_uuid)
     if (!adjustment) {
       return movement.reason === 'waste' ? 'Waste' : 'Adjustment'
     }
@@ -516,20 +510,20 @@
   }
 
   function getTransferNotes (movement: InventoryMovement): string | null {
-    if (!movement.transfer_id) return null
+    if (!movement.transfer_uuid) return null
 
-    const transfer = transferMap.value.get(movement.transfer_id)
+    const transfer = transferMap.value.get(movement.transfer_uuid)
     return transfer?.notes ?? null
   }
 
   function formatTransferReason (movement: InventoryMovement): string {
-    if (!movement.transfer_id) return 'Transferred'
+    if (!movement.transfer_uuid) return 'Transferred'
 
-    const transfer = transferMap.value.get(movement.transfer_id)
+    const transfer = transferMap.value.get(movement.transfer_uuid)
     if (!transfer) return 'Transferred'
 
-    const sourceLoc = locationMap.value.get(transfer.source_location_id)
-    const destLoc = locationMap.value.get(transfer.dest_location_id)
+    const sourceLoc = locationMap.value.get(transfer.source_location_uuid)
+    const destLoc = locationMap.value.get(transfer.dest_location_uuid)
 
     if (movement.direction === 'out' && destLoc) {
       return `Transferred to ${destLoc.name}`

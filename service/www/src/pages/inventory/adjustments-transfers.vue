@@ -28,7 +28,7 @@
               clearable
               density="compact"
               hide-details
-              label="Search lots by name or ID"
+              label="Search lots by name"
               variant="outlined"
             />
           </v-col>
@@ -37,7 +37,7 @@
           </v-col>
           <v-col cols="12" md="4">
             <v-select
-              v-model="selectedLocationId"
+              v-model="selectedLocationUuid"
               clearable
               density="compact"
               hide-details
@@ -94,7 +94,7 @@
           <template #no-data>
             <div class="text-center py-4">
               <div class="text-body-2 text-medium-emphasis">
-                {{ search || selectedLocationId ? 'No matching lots found.' : 'Search or select a location to view inventory.' }}
+                {{ search || selectedLocationUuid ? 'No matching lots found.' : 'Search or select a location to view inventory.' }}
               </div>
             </div>
           </template>
@@ -115,7 +115,7 @@
         <div v-if="selectedItem" class="mb-4 pa-3 selected-item-summary rounded">
           <div class="text-subtitle-2 font-weight-bold">{{ selectedItem.name }}</div>
           <div class="text-caption text-medium-emphasis">
-            {{ selectedItem.type === 'ingredient' ? 'Ingredient lot' : 'Beer lot' }} #{{ selectedItem.lotId }}
+            {{ selectedItem.type === 'ingredient' ? 'Ingredient lot' : 'Beer lot' }}
             <span class="mx-1">|</span>
             {{ selectedItem.locationName }}
           </div>
@@ -178,7 +178,7 @@
         <div v-if="selectedItem" class="mb-4 pa-3 selected-item-summary rounded">
           <div class="text-subtitle-2 font-weight-bold">{{ selectedItem.name }}</div>
           <div class="text-caption text-medium-emphasis">
-            {{ selectedItem.type === 'ingredient' ? 'Ingredient lot' : 'Beer lot' }} #{{ selectedItem.lotId }}
+            {{ selectedItem.type === 'ingredient' ? 'Ingredient lot' : 'Beer lot' }}
           </div>
           <div class="text-body-2 mt-1">
             Available: <strong>{{ formatAmountPreferred(selectedItem.quantity, selectedItem.unit) }}</strong>
@@ -192,7 +192,7 @@
           label="From location"
         />
         <v-select
-          v-model="transferForm.to_location_id"
+          v-model="transferForm.to_location_uuid"
           class="mt-2"
           density="comfortable"
           :items="transferDestinationItems"
@@ -246,19 +246,19 @@
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   type StockLocation = {
-    id: number
+    uuid: string
     name: string
   }
 
   type Ingredient = {
-    id: number
+    uuid: string
     name: string
   }
 
   type IngredientLot = {
-    id: number
-    ingredient_id: number
-    stock_location_id: number
+    uuid: string
+    ingredient_uuid: string
+    stock_location_uuid: string
     received_amount: number
     received_unit: string
     current_amount: number
@@ -266,9 +266,9 @@
   }
 
   type BeerLot = {
-    id: number
+    uuid: string
     lot_code: string
-    stock_location_id: number
+    stock_location_uuid: string
     volume: number
     volume_unit: string
   }
@@ -276,11 +276,11 @@
   type InventoryItem = {
     key: string
     type: 'ingredient' | 'beer'
-    lotId: number
+    lotUuid: string
     name: string
     quantity: number
     unit: string
-    locationId: number
+    locationUuid: string
     locationName: string
   }
 
@@ -298,7 +298,7 @@
   const saving = ref(false)
   const errorMessage = ref('')
   const search = ref('')
-  const selectedLocationId = ref<number | null>(null)
+  const selectedLocationUuid = ref<string | null>(null)
 
   // Dialogs
   const adjustDialog = ref(false)
@@ -315,7 +315,7 @@
 
   const transferForm = reactive({
     from_location: '',
-    to_location_id: null as number | null,
+    to_location_uuid: null as string | null,
     quantity: '',
     notes: '',
     transferred_at: '',
@@ -328,8 +328,8 @@
   })
 
   const rules = {
-    required: (v: string | number | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
-    positiveNumber: (v: string | number | null) => {
+    required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
+    positiveNumber: (v: string | null) => {
       if (v === null || v === '') return true // Let required handle empty
       const num = Number(v)
       return (Number.isFinite(num) && num > 0) || 'Must be a positive number'
@@ -339,7 +339,6 @@
   // Table headers
   const headers = [
     { title: 'Type', key: 'type', sortable: true },
-    { title: 'Lot', key: 'lotId', sortable: true },
     { title: 'Name', key: 'name', sortable: true },
     { title: 'Quantity', key: 'quantity', sortable: true },
     { title: 'Location', key: 'location', sortable: true },
@@ -350,17 +349,17 @@
   const locationSelectItems = computed(() =>
     locations.value.map(loc => ({
       title: loc.name,
-      value: loc.id,
+      value: loc.uuid,
     })),
   )
 
   const transferDestinationItems = computed(() => {
     if (!selectedItem.value) return locationSelectItems.value
     return locations.value
-      .filter(loc => loc.id !== selectedItem.value?.locationId)
+      .filter(loc => loc.uuid !== selectedItem.value?.locationUuid)
       .map(loc => ({
         title: loc.name,
-        value: loc.id,
+        value: loc.uuid,
       }))
   })
 
@@ -369,32 +368,32 @@
 
     // Add ingredient lots
     for (const lot of ingredientLots.value) {
-      const ingredient = ingredients.value.find(i => i.id === lot.ingredient_id)
-      const location = locations.value.find(l => l.id === lot.stock_location_id)
+      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
+      const location = locations.value.find(l => l.uuid === lot.stock_location_uuid)
       items.push({
-        key: `ingredient-${lot.id}`,
+        key: `ingredient-${lot.uuid}`,
         type: 'ingredient',
-        lotId: lot.id,
-        name: ingredient?.name ?? `Ingredient #${lot.ingredient_id}`,
+        lotUuid: lot.uuid,
+        name: ingredient?.name ?? 'Unknown Ingredient',
         quantity: lot.current_amount ?? lot.received_amount,
         unit: lot.current_unit ?? lot.received_unit,
-        locationId: lot.stock_location_id,
-        locationName: location?.name ?? `Location #${lot.stock_location_id}`,
+        locationUuid: lot.stock_location_uuid,
+        locationName: location?.name ?? 'Unknown Location',
       })
     }
 
     // Add beer lots
     for (const lot of beerLots.value) {
-      const location = locations.value.find(l => l.id === lot.stock_location_id)
+      const location = locations.value.find(l => l.uuid === lot.stock_location_uuid)
       items.push({
-        key: `beer-${lot.id}`,
+        key: `beer-${lot.uuid}`,
         type: 'beer',
-        lotId: lot.id,
-        name: lot.lot_code || `Beer lot #${lot.id}`,
+        lotUuid: lot.uuid,
+        name: lot.lot_code || 'Unknown Beer Lot',
         quantity: lot.volume,
         unit: lot.volume_unit,
-        locationId: lot.stock_location_id,
-        locationName: location?.name ?? `Location #${lot.stock_location_id}`,
+        locationUuid: lot.stock_location_uuid,
+        locationName: location?.name ?? 'Unknown Location',
       })
     }
 
@@ -405,16 +404,15 @@
     let items = allInventory.value
 
     // Filter by location if selected
-    if (selectedLocationId.value) {
-      items = items.filter(item => item.locationId === selectedLocationId.value)
+    if (selectedLocationUuid.value) {
+      items = items.filter(item => item.locationUuid === selectedLocationUuid.value)
     }
 
     // Filter by search term
     if (search.value) {
       const query = search.value.toLowerCase()
       items = items.filter(item =>
-        item.name.toLowerCase().includes(query)
-        || String(item.lotId).includes(query),
+        item.name.toLowerCase().includes(query),
       )
     }
 
@@ -426,7 +424,7 @@
   })
 
   const isTransferFormValid = computed(() => {
-    if (transferForm.to_location_id === null || transferForm.quantity === '') {
+    if (transferForm.to_location_uuid === null || transferForm.quantity === '') {
       return false
     }
     const qty = Number(transferForm.quantity)
@@ -518,9 +516,9 @@
 
     try {
       const payload = {
-        ingredient_lot_id: selectedItem.value.type === 'ingredient' ? selectedItem.value.lotId : null,
-        beer_lot_id: selectedItem.value.type === 'beer' ? selectedItem.value.lotId : null,
-        stock_location_id: selectedItem.value.locationId,
+        ingredient_lot_uuid: selectedItem.value.type === 'ingredient' ? selectedItem.value.lotUuid : null,
+        beer_lot_uuid: selectedItem.value.type === 'beer' ? selectedItem.value.lotUuid : null,
+        stock_location_uuid: selectedItem.value.locationUuid,
         amount: Number(adjustForm.amount),
         amount_unit: selectedItem.value.unit,
         reason: adjustForm.reason.trim(),
@@ -546,7 +544,7 @@
   function openTransferDialog (item: InventoryItem) {
     selectedItem.value = item
     transferForm.from_location = item.locationName
-    transferForm.to_location_id = null
+    transferForm.to_location_uuid = null
     transferForm.quantity = ''
     transferForm.notes = ''
     transferForm.transferred_at = getDefaultDateTime()
@@ -568,10 +566,10 @@
 
     try {
       const payload = {
-        ingredient_lot_id: selectedItem.value.type === 'ingredient' ? selectedItem.value.lotId : null,
-        beer_lot_id: selectedItem.value.type === 'beer' ? selectedItem.value.lotId : null,
-        source_location_id: selectedItem.value.locationId,
-        dest_location_id: transferForm.to_location_id,
+        ingredient_lot_uuid: selectedItem.value.type === 'ingredient' ? selectedItem.value.lotUuid : null,
+        beer_lot_uuid: selectedItem.value.type === 'beer' ? selectedItem.value.lotUuid : null,
+        source_location_uuid: selectedItem.value.locationUuid,
+        dest_location_uuid: transferForm.to_location_uuid,
         quantity: Number(transferForm.quantity),
         quantity_unit: selectedItem.value.unit,
         notes: normalizeText(transferForm.notes),

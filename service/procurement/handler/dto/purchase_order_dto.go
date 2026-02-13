@@ -9,17 +9,17 @@ import (
 )
 
 type CreatePurchaseOrderRequest struct {
-	SupplierID  int64      `json:"supplier_id"`
-	OrderNumber string     `json:"order_number"`
-	Status      string     `json:"status"`
-	OrderedAt   *time.Time `json:"ordered_at"`
-	ExpectedAt  *time.Time `json:"expected_at"`
-	Notes       *string    `json:"notes"`
+	SupplierUUID string     `json:"supplier_uuid"`
+	OrderNumber  string     `json:"order_number"`
+	Status       string     `json:"status"`
+	OrderedAt    *time.Time `json:"ordered_at"`
+	ExpectedAt   *time.Time `json:"expected_at"`
+	Notes        *string    `json:"notes"`
 }
 
 func (r CreatePurchaseOrderRequest) Validate() error {
-	if r.SupplierID <= 0 {
-		return fmt.Errorf("supplier_id is required")
+	if strings.TrimSpace(r.SupplierUUID) == "" {
+		return fmt.Errorf("supplier_uuid is required")
 	}
 	status := strings.TrimSpace(r.Status)
 	if status != "" {
@@ -62,32 +62,34 @@ func (r UpdatePurchaseOrderRequest) Validate() error {
 }
 
 type PurchaseOrderResponse struct {
-	ID          int64      `json:"id"`
-	UUID        string     `json:"uuid"`
-	SupplierID  int64      `json:"supplier_id"`
-	OrderNumber string     `json:"order_number"`
-	Status      string     `json:"status"`
-	OrderedAt   *time.Time `json:"ordered_at,omitempty"`
-	ExpectedAt  *time.Time `json:"expected_at,omitempty"`
-	Notes       *string    `json:"notes,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	UUID         string     `json:"uuid"`
+	SupplierUUID string     `json:"supplier_uuid"`
+	OrderNumber  string     `json:"order_number"`
+	Status       string     `json:"status"`
+	OrderedAt    *time.Time `json:"ordered_at,omitempty"`
+	ExpectedAt   *time.Time `json:"expected_at,omitempty"`
+	Notes        *string    `json:"notes,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewPurchaseOrderResponse(order storage.PurchaseOrder) PurchaseOrderResponse {
+	var supplierUUID string
+	if order.SupplierUUID != nil {
+		supplierUUID = *order.SupplierUUID
+	}
 	return PurchaseOrderResponse{
-		ID:          order.ID,
-		UUID:        order.UUID.String(),
-		SupplierID:  order.SupplierID,
-		OrderNumber: order.OrderNumber,
-		Status:      order.Status,
-		OrderedAt:   order.OrderedAt,
-		ExpectedAt:  order.ExpectedAt,
-		Notes:       order.Notes,
-		CreatedAt:   order.CreatedAt,
-		UpdatedAt:   order.UpdatedAt,
-		DeletedAt:   order.DeletedAt,
+		UUID:         order.UUID.String(),
+		SupplierUUID: supplierUUID,
+		OrderNumber:  order.OrderNumber,
+		Status:       order.Status,
+		OrderedAt:    order.OrderedAt,
+		ExpectedAt:   order.ExpectedAt,
+		Notes:        order.Notes,
+		CreatedAt:    order.CreatedAt,
+		UpdatedAt:    order.UpdatedAt,
+		DeletedAt:    order.DeletedAt,
 	}
 }
 

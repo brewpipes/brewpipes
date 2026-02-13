@@ -48,6 +48,19 @@ Small craft breweries where 1-2 people wear multiple hats, managing both the bus
 - Keep logging and error handling stable and predictable.
 - Embrace rapid iteration on non-core enhancements with clear rollback paths.
 
+## API conventions
+
+### UUID-only identifiers
+
+All API endpoints use UUIDs as the sole external identifier for entities. Internal integer database primary keys are never exposed in API responses, request parameters, or URL paths.
+
+- **Routes**: All entity routes use `{uuid}` path parameters (e.g., `/api/batches/{uuid}`, `/api/suppliers/{uuid}`)
+- **Response DTOs**: Only the `uuid` field is included; no `id` field is returned
+- **Foreign key references**: All FK fields in responses use `_uuid` suffix with string values (e.g., `batch_uuid`, `vessel_uuid`, `supplier_uuid`)
+- **Request DTOs**: Create/update requests accept UUID strings for FK references (e.g., `recipe_uuid`, `supplier_uuid`)
+- **Query parameters**: List endpoint filters use `_uuid` suffix (e.g., `?batch_uuid=xxx`, `?supplier_uuid=xxx`)
+- **Frontend**: All entity types use `uuid: string` as the primary identifier; no numeric `id` fields exist in type definitions
+
 ## Implementation context
 
 - Services live under `service/` and run independently or via the monolith entrypoint.
@@ -133,7 +146,7 @@ The Vessels section now mirrors the Batches navigation pattern with two sub-view
 
 ### All Vessels page
 
-- Data table with columns: ID, Name, Type, Capacity, Status, Occupancy, Updated
+- Data table with columns: Name, Type, Capacity, Status, Occupancy, Updated
 - Search filtering across all columns
 - Status chips with colors: active (green), inactive (grey), retired (red)
 - Occupancy column shows batch short_name as link when occupied, "Unoccupied" otherwise
@@ -171,7 +184,7 @@ Enhance batch tracking to capture the full brewing lifecycle from recipe through
 
 ### Entity modifications
 
-**Batch** - Add `recipe_id` (nullable FK to recipe). The `brew_date` field becomes a convenience/derived field (earliest brew session date).
+**Batch** - Add `recipe_uuid` (nullable FK to recipe). The `brew_date` field becomes a convenience/derived field (earliest brew session date).
 
 **Occupancy** - Add `status` field for granular liquid-in-vessel state: `fermenting`, `conditioning`, `cold_crashing`, `dry_hopping`, `carbonating`, `holding`, `packaging`.
 
@@ -193,7 +206,7 @@ Enhance batch tracking to capture the full brewing lifecycle from recipe through
 
 ### Batch summary endpoint
 
-New `GET /batches/{id}/summary` endpoint aggregates:
+New `GET /batches/{uuid}/summary` endpoint aggregates:
 - Recipe name and style
 - Brew session dates and volumes
 - Current phase and vessel

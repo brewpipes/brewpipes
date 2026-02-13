@@ -64,3 +64,13 @@ In short:
 - Fees can be attached to a purchase order with fee type, amount, and currency.
 - Purchase orders can store expected arrival timestamps and notes for receiving coordination.
 - Procurement records retain traceability for inventory and production without shared tables or cross-service foreign keys.
+
+## API Convention: UUID-Only
+
+All procurement API endpoints use UUIDs exclusively for resource identification:
+- Path parameters use `{uuid}` (e.g., `/suppliers/{uuid}`, `/purchase-orders/{uuid}`).
+- Request bodies use `_uuid` suffix for FK references (e.g., `supplier_uuid`, `purchase_order_uuid`).
+- Response bodies include `uuid` fields, never internal `id` fields.
+- Query parameters use `_uuid` suffix (e.g., `supplier_uuid`, `purchase_order_uuid`).
+- Internal storage models retain both `ID int64` and UUID fields; int64 is for DB operations only.
+- Handlers resolve UUID→internal ID for creates via small lookup queries before INSERT.

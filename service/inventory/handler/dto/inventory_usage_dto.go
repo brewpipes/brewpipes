@@ -17,7 +17,6 @@ func (r CreateInventoryUsageRequest) Validate() error {
 }
 
 type InventoryUsageResponse struct {
-	ID                int64      `json:"id"`
 	UUID              string     `json:"uuid"`
 	ProductionRefUUID *string    `json:"production_ref_uuid,omitempty"`
 	UsedAt            time.Time  `json:"used_at"`
@@ -29,7 +28,6 @@ type InventoryUsageResponse struct {
 
 func NewInventoryUsageResponse(usage storage.InventoryUsage) InventoryUsageResponse {
 	return InventoryUsageResponse{
-		ID:                usage.ID,
 		UUID:              usage.UUID.String(),
 		ProductionRefUUID: uuidToStringPointer(usage.ProductionRefUUID),
 		UsedAt:            usage.UsedAt,

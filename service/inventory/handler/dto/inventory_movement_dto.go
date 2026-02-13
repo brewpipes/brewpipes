@@ -8,33 +8,37 @@ import (
 )
 
 type CreateInventoryMovementRequest struct {
-	IngredientLotID *int64     `json:"ingredient_lot_id"`
-	BeerLotID       *int64     `json:"beer_lot_id"`
-	StockLocationID int64      `json:"stock_location_id"`
-	Direction       string     `json:"direction"`
-	Reason          string     `json:"reason"`
-	Amount          int64      `json:"amount"`
-	AmountUnit      string     `json:"amount_unit"`
-	OccurredAt      *time.Time `json:"occurred_at"`
-	ReceiptID       *int64     `json:"receipt_id"`
-	UsageID         *int64     `json:"usage_id"`
-	AdjustmentID    *int64     `json:"adjustment_id"`
-	TransferID      *int64     `json:"transfer_id"`
-	Notes           *string    `json:"notes"`
+	IngredientLotUUID *string    `json:"ingredient_lot_uuid"`
+	BeerLotUUID       *string    `json:"beer_lot_uuid"`
+	StockLocationUUID string     `json:"stock_location_uuid"`
+	Direction         string     `json:"direction"`
+	Reason            string     `json:"reason"`
+	Amount            int64      `json:"amount"`
+	AmountUnit        string     `json:"amount_unit"`
+	OccurredAt        *time.Time `json:"occurred_at"`
+	ReceiptUUID       *string    `json:"receipt_uuid"`
+	UsageUUID         *string    `json:"usage_uuid"`
+	AdjustmentUUID    *string    `json:"adjustment_uuid"`
+	TransferUUID      *string    `json:"transfer_uuid"`
+	Notes             *string    `json:"notes"`
 }
 
 func (r CreateInventoryMovementRequest) Validate() error {
-	if (r.IngredientLotID == nil && r.BeerLotID == nil) || (r.IngredientLotID != nil && r.BeerLotID != nil) {
-		return fmt.Errorf("ingredient_lot_id or beer_lot_id is required")
+	if (r.IngredientLotUUID == nil && r.BeerLotUUID == nil) || (r.IngredientLotUUID != nil && r.BeerLotUUID != nil) {
+		return fmt.Errorf("exactly one of ingredient_lot_uuid or beer_lot_uuid is required")
 	}
-	if r.IngredientLotID != nil && *r.IngredientLotID <= 0 {
-		return fmt.Errorf("ingredient_lot_id must be greater than zero")
+	if r.IngredientLotUUID != nil {
+		if err := validateRequired(*r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
+			return err
+		}
 	}
-	if r.BeerLotID != nil && *r.BeerLotID <= 0 {
-		return fmt.Errorf("beer_lot_id must be greater than zero")
+	if r.BeerLotUUID != nil {
+		if err := validateRequired(*r.BeerLotUUID, "beer_lot_uuid"); err != nil {
+			return err
+		}
 	}
-	if r.StockLocationID <= 0 {
-		return fmt.Errorf("stock_location_id is required")
+	if err := validateRequired(r.StockLocationUUID, "stock_location_uuid"); err != nil {
+		return err
 	}
 	if err := validateMovementDirection(r.Direction); err != nil {
 		return err
@@ -50,50 +54,50 @@ func (r CreateInventoryMovementRequest) Validate() error {
 	}
 
 	referenceCount := 0
-	if r.ReceiptID != nil {
-		if *r.ReceiptID <= 0 {
-			return fmt.Errorf("receipt_id must be greater than zero")
+	if r.ReceiptUUID != nil {
+		if err := validateRequired(*r.ReceiptUUID, "receipt_uuid"); err != nil {
+			return err
 		}
 		referenceCount++
 	}
-	if r.UsageID != nil {
-		if *r.UsageID <= 0 {
-			return fmt.Errorf("usage_id must be greater than zero")
+	if r.UsageUUID != nil {
+		if err := validateRequired(*r.UsageUUID, "usage_uuid"); err != nil {
+			return err
 		}
 		referenceCount++
 	}
-	if r.AdjustmentID != nil {
-		if *r.AdjustmentID <= 0 {
-			return fmt.Errorf("adjustment_id must be greater than zero")
+	if r.AdjustmentUUID != nil {
+		if err := validateRequired(*r.AdjustmentUUID, "adjustment_uuid"); err != nil {
+			return err
 		}
 		referenceCount++
 	}
-	if r.TransferID != nil {
-		if *r.TransferID <= 0 {
-			return fmt.Errorf("transfer_id must be greater than zero")
+	if r.TransferUUID != nil {
+		if err := validateRequired(*r.TransferUUID, "transfer_uuid"); err != nil {
+			return err
 		}
 		referenceCount++
 	}
 	if referenceCount > 1 {
-		return fmt.Errorf("only one of receipt_id, usage_id, adjustment_id, transfer_id may be set")
+		return fmt.Errorf("only one of receipt_uuid, usage_uuid, adjustment_uuid, transfer_uuid may be set")
 	}
 
 	switch r.Reason {
 	case storage.MovementReasonReceive:
-		if r.ReceiptID == nil {
-			return fmt.Errorf("receipt_id is required for receive movements")
+		if r.ReceiptUUID == nil {
+			return fmt.Errorf("receipt_uuid is required for receive movements")
 		}
 	case storage.MovementReasonUse:
-		if r.UsageID == nil {
-			return fmt.Errorf("usage_id is required for use movements")
+		if r.UsageUUID == nil {
+			return fmt.Errorf("usage_uuid is required for use movements")
 		}
 	case storage.MovementReasonTransfer:
-		if r.TransferID == nil {
-			return fmt.Errorf("transfer_id is required for transfer movements")
+		if r.TransferUUID == nil {
+			return fmt.Errorf("transfer_uuid is required for transfer movements")
 		}
 	case storage.MovementReasonAdjust, storage.MovementReasonWaste:
-		if r.AdjustmentID == nil {
-			return fmt.Errorf("adjustment_id is required for adjust or waste movements")
+		if r.AdjustmentUUID == nil {
+			return fmt.Errorf("adjustment_uuid is required for adjust or waste movements")
 		}
 	}
 
@@ -101,46 +105,44 @@ func (r CreateInventoryMovementRequest) Validate() error {
 }
 
 type InventoryMovementResponse struct {
-	ID              int64      `json:"id"`
-	UUID            string     `json:"uuid"`
-	IngredientLotID *int64     `json:"ingredient_lot_id,omitempty"`
-	BeerLotID       *int64     `json:"beer_lot_id,omitempty"`
-	StockLocationID int64      `json:"stock_location_id"`
-	Direction       string     `json:"direction"`
-	Reason          string     `json:"reason"`
-	Amount          int64      `json:"amount"`
-	AmountUnit      string     `json:"amount_unit"`
-	OccurredAt      time.Time  `json:"occurred_at"`
-	ReceiptID       *int64     `json:"receipt_id,omitempty"`
-	UsageID         *int64     `json:"usage_id,omitempty"`
-	AdjustmentID    *int64     `json:"adjustment_id,omitempty"`
-	TransferID      *int64     `json:"transfer_id,omitempty"`
-	Notes           *string    `json:"notes,omitempty"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
+	UUID              string     `json:"uuid"`
+	IngredientLotUUID *string    `json:"ingredient_lot_uuid,omitempty"`
+	BeerLotUUID       *string    `json:"beer_lot_uuid,omitempty"`
+	StockLocationUUID string     `json:"stock_location_uuid"`
+	Direction         string     `json:"direction"`
+	Reason            string     `json:"reason"`
+	Amount            int64      `json:"amount"`
+	AmountUnit        string     `json:"amount_unit"`
+	OccurredAt        time.Time  `json:"occurred_at"`
+	ReceiptUUID       *string    `json:"receipt_uuid,omitempty"`
+	UsageUUID         *string    `json:"usage_uuid,omitempty"`
+	AdjustmentUUID    *string    `json:"adjustment_uuid,omitempty"`
+	TransferUUID      *string    `json:"transfer_uuid,omitempty"`
+	Notes             *string    `json:"notes,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewInventoryMovementResponse(movement storage.InventoryMovement) InventoryMovementResponse {
 	return InventoryMovementResponse{
-		ID:              movement.ID,
-		UUID:            movement.UUID.String(),
-		IngredientLotID: movement.IngredientLotID,
-		BeerLotID:       movement.BeerLotID,
-		StockLocationID: movement.StockLocationID,
-		Direction:       movement.Direction,
-		Reason:          movement.Reason,
-		Amount:          movement.Amount,
-		AmountUnit:      movement.AmountUnit,
-		OccurredAt:      movement.OccurredAt,
-		ReceiptID:       movement.ReceiptID,
-		UsageID:         movement.UsageID,
-		AdjustmentID:    movement.AdjustmentID,
-		TransferID:      movement.TransferID,
-		Notes:           movement.Notes,
-		CreatedAt:       movement.CreatedAt,
-		UpdatedAt:       movement.UpdatedAt,
-		DeletedAt:       movement.DeletedAt,
+		UUID:              movement.UUID.String(),
+		IngredientLotUUID: movement.IngredientLotUUID,
+		BeerLotUUID:       movement.BeerLotUUID,
+		StockLocationUUID: movement.StockLocationUUID,
+		Direction:         movement.Direction,
+		Reason:            movement.Reason,
+		Amount:            movement.Amount,
+		AmountUnit:        movement.AmountUnit,
+		OccurredAt:        movement.OccurredAt,
+		ReceiptUUID:       movement.ReceiptUUID,
+		UsageUUID:         movement.UsageUUID,
+		AdjustmentUUID:    movement.AdjustmentUUID,
+		TransferUUID:      movement.TransferUUID,
+		Notes:             movement.Notes,
+		CreatedAt:         movement.CreatedAt,
+		UpdatedAt:         movement.UpdatedAt,
+		DeletedAt:         movement.DeletedAt,
 	}
 }
 

@@ -25,19 +25,18 @@ export type AdditionType
     | 'other'
 
 export type Batch = {
-  id: number
   uuid: string
   short_name: string
   brew_date: string | null
-  recipe_id: number | null
   recipe_uuid: string | null
+  recipe_name: string | null
+  current_phase: string | null
   notes: string | null
   created_at: string
   updated_at: string
 }
 
 export type Volume = {
-  id: number
   uuid: string
   name: string | null
   description: string | null
@@ -48,10 +47,9 @@ export type Volume = {
 }
 
 export type VolumeRelation = {
-  id: number
   uuid: string
-  parent_volume_id: number
-  child_volume_id: number
+  parent_volume_uuid: string
+  child_volume_uuid: string
   relation_type: RelationType
   amount: number
   amount_unit: Unit
@@ -60,10 +58,9 @@ export type VolumeRelation = {
 }
 
 export type BatchVolume = {
-  id: number
   uuid: string
-  batch_id: number
-  volume_id: number
+  batch_uuid: string
+  volume_uuid: string
   liquid_phase: LiquidPhase
   phase_at: string
   created_at: string
@@ -71,9 +68,8 @@ export type BatchVolume = {
 }
 
 export type BatchProcessPhase = {
-  id: number
   uuid: string
-  batch_id: number
+  batch_uuid: string
   process_phase: ProcessPhase
   phase_at: string
   created_at: string
@@ -81,10 +77,9 @@ export type BatchProcessPhase = {
 }
 
 export type Addition = {
-  id: number
   uuid: string
-  batch_id: number | null
-  occupancy_id: number | null
+  batch_uuid: string | null
+  occupancy_uuid: string | null
   addition_type: AdditionType
   stage: string | null
   inventory_lot_uuid: string | null
@@ -97,10 +92,9 @@ export type Addition = {
 }
 
 export type Measurement = {
-  id: number
   uuid: string
-  batch_id: number | null
-  occupancy_id: number | null
+  batch_uuid: string | null
+  occupancy_uuid: string | null
   kind: string
   value: number
   unit: string | null

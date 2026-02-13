@@ -28,7 +28,7 @@
                   {{ errorMessage }}
                 </v-alert>
                 <v-select
-                  v-model="filters.purchase_order_id"
+                  v-model="filters.purchase_order_uuid"
                   clearable
                   :items="orderSelectItems"
                   label="Filter by purchase order"
@@ -44,8 +44,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="line in lines" :key="line.id">
-                      <td>{{ orderNumber(line.purchase_order_id) }}</td>
+                    <tr v-for="line in lines" :key="line.uuid">
+                      <td>{{ orderNumber(line.purchase_order_uuid) }}</td>
                       <td>{{ line.line_number }}</td>
                       <td>{{ line.item_name }}</td>
                       <td>{{ `${line.quantity} ${line.quantity_unit}` }}</td>
@@ -64,7 +64,7 @@
               <v-card-title>Create order line</v-card-title>
               <v-card-text>
                 <v-select
-                  v-model="lineForm.purchase_order_id"
+                  v-model="lineForm.purchase_order_uuid"
                   :items="orderSelectItems"
                   label="Purchase order"
                 />
@@ -92,7 +92,7 @@
                   block
                   color="primary"
                   :disabled="
-                    !lineForm.purchase_order_id ||
+                    !lineForm.purchase_order_uuid ||
                       !lineForm.line_number ||
                       !lineForm.item_type ||
                       !lineForm.item_name.trim() ||
@@ -124,14 +124,13 @@
   import { useProcurementApi } from '@/composables/useProcurementApi'
 
   type PurchaseOrder = {
-    id: number
+    uuid: string
     order_number: string
   }
 
   type PurchaseOrderLine = {
-    id: number
     uuid: string
-    purchase_order_id: number
+    purchase_order_uuid: string
     line_number: number
     item_type: string
     item_name: string
@@ -157,11 +156,11 @@
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
   const filters = reactive({
-    purchase_order_id: null as number | null,
+    purchase_order_uuid: null as string | null,
   })
 
   const lineForm = reactive({
-    purchase_order_id: null as number | null,
+    purchase_order_uuid: null as string | null,
     line_number: '',
     item_type: '',
     item_name: '',
@@ -181,15 +180,15 @@
   const orderSelectItems = computed(() =>
     orders.value.map(order => ({
       title: order.order_number,
-      value: order.id,
+      value: order.uuid,
     })),
   )
 
   onMounted(async () => {
     await refreshAll()
-    const queryId = route.query.purchase_order_id
-    if (typeof queryId === 'string') {
-      filters.purchase_order_id = Number(queryId)
+    const queryUuid = route.query.purchase_order_uuid
+    if (typeof queryUuid === 'string') {
+      filters.purchase_order_uuid = queryUuid
       await loadLines()
     }
   })
@@ -219,8 +218,8 @@
 
   async function loadLines () {
     const query = new URLSearchParams()
-    if (filters.purchase_order_id) {
-      query.set('purchase_order_id', String(filters.purchase_order_id))
+    if (filters.purchase_order_uuid) {
+      query.set('purchase_order_uuid', filters.purchase_order_uuid)
     }
     const path = query.toString() ? `/purchase-order-lines?${query.toString()}` : '/purchase-order-lines'
     lines.value = await request<PurchaseOrderLine[]>(path)
@@ -229,7 +228,7 @@
   async function createLine () {
     try {
       const payload = {
-        purchase_order_id: lineForm.purchase_order_id,
+        purchase_order_uuid: lineForm.purchase_order_uuid,
         line_number: toNumber(lineForm.line_number),
         item_type: lineForm.item_type,
         item_name: lineForm.item_name.trim(),
@@ -243,7 +242,7 @@
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      lineForm.purchase_order_id = null
+      lineForm.purchase_order_uuid = null
       lineForm.line_number = ''
       lineForm.item_type = ''
       lineForm.item_name = ''
@@ -261,8 +260,9 @@
     }
   }
 
-  function orderNumber (orderId: number) {
-    return orders.value.find(order => order.id === orderId)?.order_number ?? `PO ${orderId}`
+  function orderNumber (orderUuid: string) {
+    const order = orders.value.find(o => o.uuid === orderUuid)
+    return order?.order_number ?? 'Unknown PO'
   }
 </script>
 

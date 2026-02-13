@@ -18,7 +18,6 @@ func (r CreateInventoryReceiptRequest) Validate() error {
 }
 
 type InventoryReceiptResponse struct {
-	ID            int64      `json:"id"`
 	UUID          string     `json:"uuid"`
 	SupplierUUID  *string    `json:"supplier_uuid,omitempty"`
 	ReferenceCode *string    `json:"reference_code,omitempty"`
@@ -31,7 +30,6 @@ type InventoryReceiptResponse struct {
 
 func NewInventoryReceiptResponse(receipt storage.InventoryReceipt) InventoryReceiptResponse {
 	return InventoryReceiptResponse{
-		ID:            receipt.ID,
 		UUID:          receipt.UUID.String(),
 		SupplierUUID:  uuidToStringPointer(receipt.SupplierUUID),
 		ReferenceCode: receipt.ReferenceCode,

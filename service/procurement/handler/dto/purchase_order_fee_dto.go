@@ -8,15 +8,15 @@ import (
 )
 
 type CreatePurchaseOrderFeeRequest struct {
-	PurchaseOrderID int64  `json:"purchase_order_id"`
-	FeeType         string `json:"fee_type"`
-	AmountCents     int64  `json:"amount_cents"`
-	Currency        string `json:"currency"`
+	PurchaseOrderUUID string `json:"purchase_order_uuid"`
+	FeeType           string `json:"fee_type"`
+	AmountCents       int64  `json:"amount_cents"`
+	Currency          string `json:"currency"`
 }
 
 func (r CreatePurchaseOrderFeeRequest) Validate() error {
-	if r.PurchaseOrderID <= 0 {
-		return fmt.Errorf("purchase_order_id is required")
+	if err := validateRequired(r.PurchaseOrderUUID, "purchase_order_uuid"); err != nil {
+		return err
 	}
 	if err := validateRequired(r.FeeType, "fee_type"); err != nil {
 		return err
@@ -59,28 +59,30 @@ func (r UpdatePurchaseOrderFeeRequest) Validate() error {
 }
 
 type PurchaseOrderFeeResponse struct {
-	ID              int64      `json:"id"`
-	UUID            string     `json:"uuid"`
-	PurchaseOrderID int64      `json:"purchase_order_id"`
-	FeeType         string     `json:"fee_type"`
-	AmountCents     int64      `json:"amount_cents"`
-	Currency        string     `json:"currency"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
+	UUID              string     `json:"uuid"`
+	PurchaseOrderUUID string     `json:"purchase_order_uuid"`
+	FeeType           string     `json:"fee_type"`
+	AmountCents       int64      `json:"amount_cents"`
+	Currency          string     `json:"currency"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewPurchaseOrderFeeResponse(fee storage.PurchaseOrderFee) PurchaseOrderFeeResponse {
+	var purchaseOrderUUID string
+	if fee.PurchaseOrderUUID != nil {
+		purchaseOrderUUID = *fee.PurchaseOrderUUID
+	}
 	return PurchaseOrderFeeResponse{
-		ID:              fee.ID,
-		UUID:            fee.UUID.String(),
-		PurchaseOrderID: fee.PurchaseOrderID,
-		FeeType:         fee.FeeType,
-		AmountCents:     fee.AmountCents,
-		Currency:        fee.Currency,
-		CreatedAt:       fee.CreatedAt,
-		UpdatedAt:       fee.UpdatedAt,
-		DeletedAt:       fee.DeletedAt,
+		UUID:              fee.UUID.String(),
+		PurchaseOrderUUID: purchaseOrderUUID,
+		FeeType:           fee.FeeType,
+		AmountCents:       fee.AmountCents,
+		Currency:          fee.Currency,
+		CreatedAt:         fee.CreatedAt,
+		UpdatedAt:         fee.UpdatedAt,
+		DeletedAt:         fee.DeletedAt,
 	}
 }
 

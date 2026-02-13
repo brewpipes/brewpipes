@@ -16,10 +16,13 @@ import (
 
 type AdditionStore interface {
 	CreateAddition(context.Context, storage.Addition) (storage.Addition, error)
-	GetAddition(context.Context, int64) (storage.Addition, error)
-	ListAdditionsByBatch(context.Context, int64) ([]storage.Addition, error)
-	ListAdditionsByOccupancy(context.Context, int64) ([]storage.Addition, error)
-	ListAdditionsByVolume(context.Context, int64) ([]storage.Addition, error)
+	GetAdditionByUUID(context.Context, string) (storage.Addition, error)
+	ListAdditionsByBatchUUID(context.Context, string) ([]storage.Addition, error)
+	ListAdditionsByOccupancyUUID(context.Context, string) ([]storage.Addition, error)
+	ListAdditionsByVolumeUUID(context.Context, string) ([]storage.Addition, error)
+	GetBatchByUUID(context.Context, string) (storage.Batch, error)
+	GetOccupancyByUUID(context.Context, string) (storage.Occupancy, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
 
 // HandleAdditions handles [GET /additions] and [POST /additions].
@@ -27,15 +30,12 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			if batchValue := r.URL.Query().Get("batch_id"); batchValue != "" {
-				batchID, err := parseInt64Param(batchValue)
-				if err != nil {
-					http.Error(w, "invalid batch_id", http.StatusBadRequest)
+			if batchUUID := r.URL.Query().Get("batch_uuid"); batchUUID != "" {
+				additions, err := db.ListAdditionsByBatchUUID(r.Context(), batchUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "batch not found", http.StatusNotFound)
 					return
-				}
-
-				additions, err := db.ListAdditionsByBatch(r.Context(), batchID)
-				if err != nil {
+				} else if err != nil {
 					slog.Error("error listing additions", "error", err)
 					service.InternalError(w, err.Error())
 					return
@@ -45,15 +45,12 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 				return
 			}
 
-			if occupancyValue := r.URL.Query().Get("occupancy_id"); occupancyValue != "" {
-				occupancyID, err := parseInt64Param(occupancyValue)
-				if err != nil {
-					http.Error(w, "invalid occupancy_id", http.StatusBadRequest)
+			if occupancyUUID := r.URL.Query().Get("occupancy_uuid"); occupancyUUID != "" {
+				additions, err := db.ListAdditionsByOccupancyUUID(r.Context(), occupancyUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "occupancy not found", http.StatusNotFound)
 					return
-				}
-
-				additions, err := db.ListAdditionsByOccupancy(r.Context(), occupancyID)
-				if err != nil {
+				} else if err != nil {
 					slog.Error("error listing additions", "error", err)
 					service.InternalError(w, err.Error())
 					return
@@ -63,15 +60,12 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 				return
 			}
 
-			if volumeValue := r.URL.Query().Get("volume_id"); volumeValue != "" {
-				volumeID, err := parseInt64Param(volumeValue)
-				if err != nil {
-					http.Error(w, "invalid volume_id", http.StatusBadRequest)
+			if volumeUUID := r.URL.Query().Get("volume_uuid"); volumeUUID != "" {
+				additions, err := db.ListAdditionsByVolumeUUID(r.Context(), volumeUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "volume not found", http.StatusNotFound)
 					return
-				}
-
-				additions, err := db.ListAdditionsByVolume(r.Context(), volumeID)
-				if err != nil {
+				} else if err != nil {
 					slog.Error("error listing additions", "error", err)
 					service.InternalError(w, err.Error())
 					return
@@ -81,7 +75,7 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 				return
 			}
 
-			http.Error(w, "batch_id, occupancy_id, or volume_id is required", http.StatusBadRequest)
+			http.Error(w, "batch_uuid, occupancy_uuid, or volume_uuid is required", http.StatusBadRequest)
 		case http.MethodPost:
 			var req dto.CreateAdditionRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -109,9 +103,6 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 			}
 
 			addition := storage.Addition{
-				BatchID:          req.BatchID,
-				OccupancyID:      req.OccupancyID,
-				VolumeID:         req.VolumeID,
 				AdditionType:     req.AdditionType,
 				Stage:            req.Stage,
 				InventoryLotUUID: inventoryUUID,
@@ -119,6 +110,44 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 				AmountUnit:       req.AmountUnit,
 				AddedAt:          addedAt,
 				Notes:            req.Notes,
+			}
+
+			// Resolve FK UUIDs to internal IDs
+			if req.BatchUUID != nil {
+				batch, err := db.GetBatchByUUID(r.Context(), *req.BatchUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "batch not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving batch uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				addition.BatchID = &batch.ID
+			}
+			if req.OccupancyUUID != nil {
+				occ, err := db.GetOccupancyByUUID(r.Context(), *req.OccupancyUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "occupancy not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving occupancy uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				addition.OccupancyID = &occ.ID
+			}
+			if req.VolumeUUID != nil {
+				vol, err := db.GetVolumeByUUID(r.Context(), *req.VolumeUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "volume not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving volume uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				addition.VolumeID = &vol.ID
 			}
 
 			created, err := db.CreateAddition(r.Context(), addition)
@@ -135,31 +164,26 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 	}
 }
 
-// HandleAdditionByID handles [GET /additions/{id}].
-func HandleAdditionByID(db AdditionStore) http.HandlerFunc {
+// HandleAdditionByUUID handles [GET /additions/{uuid}].
+func HandleAdditionByUUID(db AdditionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		additionID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		additionUUID := r.PathValue("uuid")
+		if additionUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		addition, err := db.GetAddition(r.Context(), additionID)
+		addition, err := db.GetAdditionByUUID(r.Context(), additionUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "addition not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting addition", "error", err)
+			slog.Error("error getting addition", "error", err, "addition_uuid", additionUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

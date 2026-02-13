@@ -14,9 +14,9 @@ import (
 
 type SupplierStore interface {
 	ListSuppliers(context.Context) ([]storage.Supplier, error)
-	GetSupplier(context.Context, int64) (storage.Supplier, error)
+	GetSupplierByUUID(context.Context, string) (storage.Supplier, error)
 	CreateSupplier(context.Context, storage.Supplier) (storage.Supplier, error)
-	UpdateSupplier(context.Context, int64, storage.SupplierUpdate) (storage.Supplier, error)
+	UpdateSupplierByUUID(context.Context, string, storage.SupplierUpdate) (storage.Supplier, error)
 }
 
 // HandleSuppliers handles [GET /suppliers] and [POST /suppliers].
@@ -70,23 +70,18 @@ func HandleSuppliers(db SupplierStore) http.HandlerFunc {
 	}
 }
 
-// HandleSupplierByID handles [GET /suppliers/{id}] and [PATCH /suppliers/{id}].
-func HandleSupplierByID(db SupplierStore) http.HandlerFunc {
+// HandleSupplierByUUID handles [GET /suppliers/{uuid}] and [PATCH /suppliers/{uuid}].
+func HandleSupplierByUUID(db SupplierStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		supplierID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		supplierUUID := r.PathValue("uuid")
+		if supplierUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			supplier, err := db.GetSupplier(r.Context(), supplierID)
+			supplier, err := db.GetSupplierByUUID(r.Context(), supplierUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "supplier not found", http.StatusNotFound)
 				return
@@ -121,7 +116,7 @@ func HandleSupplierByID(db SupplierStore) http.HandlerFunc {
 				Country:      req.Country,
 			}
 
-			supplier, err := db.UpdateSupplier(r.Context(), supplierID, update)
+			supplier, err := db.UpdateSupplierByUUID(r.Context(), supplierUUID, update)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "supplier not found", http.StatusNotFound)
 				return
@@ -131,7 +126,7 @@ func HandleSupplierByID(db SupplierStore) http.HandlerFunc {
 				return
 			}
 
-			slog.Info("supplier updated", "supplier_id", supplier.ID, "name", supplier.Name)
+			slog.Info("supplier updated", "supplier_uuid", supplierUUID, "name", supplier.Name)
 			service.JSON(w, dto.NewSupplierResponse(supplier))
 		default:
 			methodNotAllowed(w)

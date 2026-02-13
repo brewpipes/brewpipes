@@ -15,14 +15,10 @@ import (
 
 type VesselStore interface {
 	CreateVessel(context.Context, storage.Vessel) (storage.Vessel, error)
-	GetVessel(context.Context, int64) (storage.Vessel, error)
 	GetVesselByUUID(context.Context, string) (storage.Vessel, error)
 	ListVessels(context.Context) ([]storage.Vessel, error)
-	UpdateVessel(context.Context, int64, storage.Vessel) (storage.Vessel, error)
-}
-
-type VesselOccupancyChecker interface {
-	HasActiveOccupancy(context.Context, int64) (bool, error)
+	UpdateVesselByUUID(context.Context, string, storage.Vessel) (storage.Vessel, error)
+	HasActiveOccupancyByVesselUUID(context.Context, string) (bool, error)
 }
 
 // HandleVessels handles [GET /vessels] and [POST /vessels].
@@ -78,34 +74,23 @@ func HandleVessels(db VesselStore) http.HandlerFunc {
 	}
 }
 
-// VesselByIDStore combines vessel storage and occupancy checking for the by-ID handler.
-type VesselByIDStore interface {
-	VesselStore
-	VesselOccupancyChecker
-}
-
-// HandleVesselByID handles [GET /vessels/{id}] and [PATCH /vessels/{id}].
-func HandleVesselByID(db VesselByIDStore) http.HandlerFunc {
+// HandleVesselByUUID handles [GET /vessels/{uuid}] and [PATCH /vessels/{uuid}].
+func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		vesselID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		vesselUUID := r.PathValue("uuid")
+		if vesselUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			vessel, err := db.GetVessel(r.Context(), vesselID)
+			vessel, err := db.GetVesselByUUID(r.Context(), vesselUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "vessel not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting vessel", "error", err)
+				slog.Error("error getting vessel", "error", err, "vessel_uuid", vesselUUID)
 				service.InternalError(w, err.Error())
 				return
 			}
@@ -123,7 +108,7 @@ func HandleVesselByID(db VesselByIDStore) http.HandlerFunc {
 			}
 
 			// Get current vessel to check status change
-			currentVessel, err := db.GetVessel(r.Context(), vesselID)
+			currentVessel, err := db.GetVesselByUUID(r.Context(), vesselUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "vessel not found", http.StatusNotFound)
 				return
@@ -136,9 +121,9 @@ func HandleVesselByID(db VesselByIDStore) http.HandlerFunc {
 			// Check if status is changing to inactive or retired
 			if currentVessel.Status == storage.VesselStatusActive &&
 				(req.Status == storage.VesselStatusInactive || req.Status == storage.VesselStatusRetired) {
-				hasActive, err := db.HasActiveOccupancy(r.Context(), vesselID)
+				hasActive, err := db.HasActiveOccupancyByVesselUUID(r.Context(), vesselUUID)
 				if err != nil {
-					slog.Error("error checking active occupancy", "error", err, "vessel_id", vesselID)
+					slog.Error("error checking active occupancy", "error", err, "vessel_uuid", vesselUUID)
 					service.InternalError(w, err.Error())
 					return
 				}
@@ -162,7 +147,7 @@ func HandleVesselByID(db VesselByIDStore) http.HandlerFunc {
 				Status:       req.Status,
 			}
 
-			updated, err := db.UpdateVessel(r.Context(), vesselID, vessel)
+			updated, err := db.UpdateVesselByUUID(r.Context(), vesselUUID, vessel)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "vessel not found", http.StatusNotFound)
 				return
@@ -172,45 +157,11 @@ func HandleVesselByID(db VesselByIDStore) http.HandlerFunc {
 				return
 			}
 
-			slog.Info("vessel updated", "vessel_id", updated.ID, "name", updated.Name)
+			slog.Info("vessel updated", "vessel_uuid", vesselUUID, "name", updated.Name)
 
 			service.JSON(w, dto.NewVesselResponse(updated))
 		default:
 			methodNotAllowed(w)
 		}
-	}
-}
-
-// HandleVesselByUUID handles [GET /vessels/uuid/{uuid}].
-func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
-		uuidValue := r.PathValue("uuid")
-		if uuidValue == "" {
-			http.Error(w, "uuid is required", http.StatusBadRequest)
-			return
-		}
-
-		parsedUUID, err := parseUUIDParam(uuidValue)
-		if err != nil {
-			http.Error(w, "invalid uuid format", http.StatusBadRequest)
-			return
-		}
-
-		vessel, err := db.GetVesselByUUID(r.Context(), parsedUUID.String())
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "vessel not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			slog.Error("error getting vessel by uuid", "error", err, "uuid", uuidValue)
-			service.InternalError(w, err.Error())
-			return
-		}
-
-		service.JSON(w, dto.NewVesselResponse(vessel))
 	}
 }

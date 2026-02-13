@@ -31,20 +31,25 @@ func (c *Client) CreateIngredientLotMaltDetail(ctx context.Context, detail Ingre
 		return IngredientLotMaltDetail{}, fmt.Errorf("creating ingredient lot malt detail: %w", err)
 	}
 
+	// Resolve ingredient lot UUID
+	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, detail.IngredientLotID).Scan(&detail.IngredientLotUUID)
+
 	return detail, nil
 }
 
 func (c *Client) GetIngredientLotMaltDetail(ctx context.Context, id int64) (IngredientLotMaltDetail, error) {
 	var detail IngredientLotMaltDetail
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_lot_id, moisture_percent, created_at, updated_at, deleted_at
-		FROM ingredient_lot_malt_detail
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.moisture_percent, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_malt_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE d.id = $1 AND d.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&detail.ID,
 		&detail.UUID,
 		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
 		&detail.MoisturePercent,
 		&detail.CreatedAt,
 		&detail.UpdatedAt,
@@ -60,17 +65,47 @@ func (c *Client) GetIngredientLotMaltDetail(ctx context.Context, id int64) (Ingr
 	return detail, nil
 }
 
-func (c *Client) GetIngredientLotMaltDetailByLot(ctx context.Context, lotID int64) (IngredientLotMaltDetail, error) {
+func (c *Client) GetIngredientLotMaltDetailByUUID(ctx context.Context, detailUUID string) (IngredientLotMaltDetail, error) {
 	var detail IngredientLotMaltDetail
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_lot_id, moisture_percent, created_at, updated_at, deleted_at
-		FROM ingredient_lot_malt_detail
-		WHERE ingredient_lot_id = $1 AND deleted_at IS NULL`,
-		lotID,
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.moisture_percent, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_malt_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE d.uuid = $1 AND d.deleted_at IS NULL`,
+		detailUUID,
 	).Scan(
 		&detail.ID,
 		&detail.UUID,
 		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
+		&detail.MoisturePercent,
+		&detail.CreatedAt,
+		&detail.UpdatedAt,
+		&detail.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IngredientLotMaltDetail{}, service.ErrNotFound
+		}
+		return IngredientLotMaltDetail{}, fmt.Errorf("getting ingredient lot malt detail by uuid: %w", err)
+	}
+
+	return detail, nil
+}
+
+func (c *Client) GetIngredientLotMaltDetailByLot(ctx context.Context, lotUUID string) (IngredientLotMaltDetail, error) {
+	var detail IngredientLotMaltDetail
+	err := c.db.QueryRow(ctx, `
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.moisture_percent, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_malt_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE il.uuid = $1 AND d.deleted_at IS NULL`,
+		lotUUID,
+	).Scan(
+		&detail.ID,
+		&detail.UUID,
+		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
 		&detail.MoisturePercent,
 		&detail.CreatedAt,
 		&detail.UpdatedAt,
@@ -111,20 +146,25 @@ func (c *Client) CreateIngredientLotHopDetail(ctx context.Context, detail Ingred
 		return IngredientLotHopDetail{}, fmt.Errorf("creating ingredient lot hop detail: %w", err)
 	}
 
+	// Resolve ingredient lot UUID
+	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, detail.IngredientLotID).Scan(&detail.IngredientLotUUID)
+
 	return detail, nil
 }
 
 func (c *Client) GetIngredientLotHopDetail(ctx context.Context, id int64) (IngredientLotHopDetail, error) {
 	var detail IngredientLotHopDetail
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_lot_id, alpha_acid, beta_acid, created_at, updated_at, deleted_at
-		FROM ingredient_lot_hop_detail
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.alpha_acid, d.beta_acid, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_hop_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE d.id = $1 AND d.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&detail.ID,
 		&detail.UUID,
 		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
 		&detail.AlphaAcid,
 		&detail.BetaAcid,
 		&detail.CreatedAt,
@@ -141,17 +181,48 @@ func (c *Client) GetIngredientLotHopDetail(ctx context.Context, id int64) (Ingre
 	return detail, nil
 }
 
-func (c *Client) GetIngredientLotHopDetailByLot(ctx context.Context, lotID int64) (IngredientLotHopDetail, error) {
+func (c *Client) GetIngredientLotHopDetailByUUID(ctx context.Context, detailUUID string) (IngredientLotHopDetail, error) {
 	var detail IngredientLotHopDetail
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_lot_id, alpha_acid, beta_acid, created_at, updated_at, deleted_at
-		FROM ingredient_lot_hop_detail
-		WHERE ingredient_lot_id = $1 AND deleted_at IS NULL`,
-		lotID,
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.alpha_acid, d.beta_acid, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_hop_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE d.uuid = $1 AND d.deleted_at IS NULL`,
+		detailUUID,
 	).Scan(
 		&detail.ID,
 		&detail.UUID,
 		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
+		&detail.AlphaAcid,
+		&detail.BetaAcid,
+		&detail.CreatedAt,
+		&detail.UpdatedAt,
+		&detail.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IngredientLotHopDetail{}, service.ErrNotFound
+		}
+		return IngredientLotHopDetail{}, fmt.Errorf("getting ingredient lot hop detail by uuid: %w", err)
+	}
+
+	return detail, nil
+}
+
+func (c *Client) GetIngredientLotHopDetailByLot(ctx context.Context, lotUUID string) (IngredientLotHopDetail, error) {
+	var detail IngredientLotHopDetail
+	err := c.db.QueryRow(ctx, `
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.alpha_acid, d.beta_acid, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_hop_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE il.uuid = $1 AND d.deleted_at IS NULL`,
+		lotUUID,
+	).Scan(
+		&detail.ID,
+		&detail.UUID,
+		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
 		&detail.AlphaAcid,
 		&detail.BetaAcid,
 		&detail.CreatedAt,
@@ -193,20 +264,25 @@ func (c *Client) CreateIngredientLotYeastDetail(ctx context.Context, detail Ingr
 		return IngredientLotYeastDetail{}, fmt.Errorf("creating ingredient lot yeast detail: %w", err)
 	}
 
+	// Resolve ingredient lot UUID
+	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, detail.IngredientLotID).Scan(&detail.IngredientLotUUID)
+
 	return detail, nil
 }
 
 func (c *Client) GetIngredientLotYeastDetail(ctx context.Context, id int64) (IngredientLotYeastDetail, error) {
 	var detail IngredientLotYeastDetail
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_lot_id, viability_percent, generation, created_at, updated_at, deleted_at
-		FROM ingredient_lot_yeast_detail
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.viability_percent, d.generation, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_yeast_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE d.id = $1 AND d.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&detail.ID,
 		&detail.UUID,
 		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
 		&detail.ViabilityPercent,
 		&detail.Generation,
 		&detail.CreatedAt,
@@ -223,17 +299,48 @@ func (c *Client) GetIngredientLotYeastDetail(ctx context.Context, id int64) (Ing
 	return detail, nil
 }
 
-func (c *Client) GetIngredientLotYeastDetailByLot(ctx context.Context, lotID int64) (IngredientLotYeastDetail, error) {
+func (c *Client) GetIngredientLotYeastDetailByUUID(ctx context.Context, detailUUID string) (IngredientLotYeastDetail, error) {
 	var detail IngredientLotYeastDetail
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, ingredient_lot_id, viability_percent, generation, created_at, updated_at, deleted_at
-		FROM ingredient_lot_yeast_detail
-		WHERE ingredient_lot_id = $1 AND deleted_at IS NULL`,
-		lotID,
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.viability_percent, d.generation, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_yeast_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE d.uuid = $1 AND d.deleted_at IS NULL`,
+		detailUUID,
 	).Scan(
 		&detail.ID,
 		&detail.UUID,
 		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
+		&detail.ViabilityPercent,
+		&detail.Generation,
+		&detail.CreatedAt,
+		&detail.UpdatedAt,
+		&detail.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IngredientLotYeastDetail{}, service.ErrNotFound
+		}
+		return IngredientLotYeastDetail{}, fmt.Errorf("getting ingredient lot yeast detail by uuid: %w", err)
+	}
+
+	return detail, nil
+}
+
+func (c *Client) GetIngredientLotYeastDetailByLot(ctx context.Context, lotUUID string) (IngredientLotYeastDetail, error) {
+	var detail IngredientLotYeastDetail
+	err := c.db.QueryRow(ctx, `
+		SELECT d.id, d.uuid, d.ingredient_lot_id, il.uuid, d.viability_percent, d.generation, d.created_at, d.updated_at, d.deleted_at
+		FROM ingredient_lot_yeast_detail d
+		JOIN ingredient_lot il ON il.id = d.ingredient_lot_id
+		WHERE il.uuid = $1 AND d.deleted_at IS NULL`,
+		lotUUID,
+	).Scan(
+		&detail.ID,
+		&detail.UUID,
+		&detail.IngredientLotID,
+		&detail.IngredientLotUUID,
 		&detail.ViabilityPercent,
 		&detail.Generation,
 		&detail.CreatedAt,

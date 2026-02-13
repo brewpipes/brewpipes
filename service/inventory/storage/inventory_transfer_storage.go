@@ -43,21 +43,28 @@ func (c *Client) CreateInventoryTransfer(ctx context.Context, transfer Inventory
 		return InventoryTransfer{}, fmt.Errorf("creating inventory transfer: %w", err)
 	}
 
+	// Resolve location UUIDs
+	c.resolveTransferLocationUUIDs(ctx, &transfer)
 	return transfer, nil
 }
 
 func (c *Client) GetInventoryTransfer(ctx context.Context, id int64) (InventoryTransfer, error) {
 	var transfer InventoryTransfer
 	err := c.db.QueryRow(ctx, `
-		SELECT id, uuid, source_location_id, dest_location_id, transferred_at, notes, created_at, updated_at, deleted_at
-		FROM inventory_transfer
-		WHERE id = $1 AND deleted_at IS NULL`,
+		SELECT t.id, t.uuid, t.source_location_id, sl.uuid, t.dest_location_id, dl.uuid,
+		       t.transferred_at, t.notes, t.created_at, t.updated_at, t.deleted_at
+		FROM inventory_transfer t
+		JOIN stock_location sl ON sl.id = t.source_location_id
+		JOIN stock_location dl ON dl.id = t.dest_location_id
+		WHERE t.id = $1 AND t.deleted_at IS NULL`,
 		id,
 	).Scan(
 		&transfer.ID,
 		&transfer.UUID,
 		&transfer.SourceLocationID,
+		&transfer.SourceLocationUUID,
 		&transfer.DestLocationID,
+		&transfer.DestLocationUUID,
 		&transfer.TransferredAt,
 		&transfer.Notes,
 		&transfer.CreatedAt,
@@ -74,12 +81,48 @@ func (c *Client) GetInventoryTransfer(ctx context.Context, id int64) (InventoryT
 	return transfer, nil
 }
 
+func (c *Client) GetInventoryTransferByUUID(ctx context.Context, transferUUID string) (InventoryTransfer, error) {
+	var transfer InventoryTransfer
+	err := c.db.QueryRow(ctx, `
+		SELECT t.id, t.uuid, t.source_location_id, sl.uuid, t.dest_location_id, dl.uuid,
+		       t.transferred_at, t.notes, t.created_at, t.updated_at, t.deleted_at
+		FROM inventory_transfer t
+		JOIN stock_location sl ON sl.id = t.source_location_id
+		JOIN stock_location dl ON dl.id = t.dest_location_id
+		WHERE t.uuid = $1 AND t.deleted_at IS NULL`,
+		transferUUID,
+	).Scan(
+		&transfer.ID,
+		&transfer.UUID,
+		&transfer.SourceLocationID,
+		&transfer.SourceLocationUUID,
+		&transfer.DestLocationID,
+		&transfer.DestLocationUUID,
+		&transfer.TransferredAt,
+		&transfer.Notes,
+		&transfer.CreatedAt,
+		&transfer.UpdatedAt,
+		&transfer.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return InventoryTransfer{}, service.ErrNotFound
+		}
+		return InventoryTransfer{}, fmt.Errorf("getting inventory transfer by uuid: %w", err)
+	}
+
+	return transfer, nil
+}
+
 func (c *Client) ListInventoryTransfers(ctx context.Context) ([]InventoryTransfer, error) {
 	rows, err := c.db.Query(ctx, `
-		SELECT id, uuid, source_location_id, dest_location_id, transferred_at, notes, created_at, updated_at, deleted_at
-		FROM inventory_transfer
-		WHERE deleted_at IS NULL
-		ORDER BY transferred_at DESC`,
+		SELECT t.id, t.uuid, t.source_location_id, sl.uuid, t.dest_location_id, dl.uuid,
+		       t.transferred_at, t.notes, t.created_at, t.updated_at, t.deleted_at
+		FROM inventory_transfer t
+		JOIN stock_location sl ON sl.id = t.source_location_id
+		JOIN stock_location dl ON dl.id = t.dest_location_id
+		WHERE t.deleted_at IS NULL
+		ORDER BY t.transferred_at DESC`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("listing inventory transfers: %w", err)
@@ -93,7 +136,9 @@ func (c *Client) ListInventoryTransfers(ctx context.Context) ([]InventoryTransfe
 			&transfer.ID,
 			&transfer.UUID,
 			&transfer.SourceLocationID,
+			&transfer.SourceLocationUUID,
 			&transfer.DestLocationID,
+			&transfer.DestLocationUUID,
 			&transfer.TransferredAt,
 			&transfer.Notes,
 			&transfer.CreatedAt,
@@ -109,4 +154,17 @@ func (c *Client) ListInventoryTransfers(ctx context.Context) ([]InventoryTransfe
 	}
 
 	return transfers, nil
+}
+
+// resolveTransferLocationUUIDs resolves source and dest location UUIDs after INSERT.
+func (c *Client) resolveTransferLocationUUIDs(ctx context.Context, transfer *InventoryTransfer) {
+	var srcUUID, dstUUID string
+	err := c.db.QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.SourceLocationID).Scan(&srcUUID)
+	if err == nil {
+		transfer.SourceLocationUUID = srcUUID
+	}
+	err = c.db.QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.DestLocationID).Scan(&dstUUID)
+	if err == nil {
+		transfer.DestLocationUUID = dstUUID
+	}
 }

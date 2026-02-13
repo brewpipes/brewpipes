@@ -13,11 +13,10 @@ const vuetify = createVuetify({
 
 function createBatch (overrides: Partial<Batch> = {}): Batch {
   return {
-    id: 1,
     uuid: 'test-uuid-1',
     short_name: 'Test Batch',
     brew_date: '2024-06-15T10:00:00Z',
-    recipe_id: null,
+    recipe_uuid: null,
     notes: null,
     created_at: '2024-06-15T10:00:00Z',
     updated_at: '2024-06-15T12:00:00Z',
@@ -27,7 +26,7 @@ function createBatch (overrides: Partial<Batch> = {}): Batch {
 
 function mountBatchList (props: {
   batches?: Batch[]
-  selectedBatchId?: number | null
+  selectedBatchUuid?: string | null
   loading?: boolean
   showCreateButton?: boolean
   showBulkImport?: boolean
@@ -38,7 +37,7 @@ function mountBatchList (props: {
     },
     props: {
       batches: props.batches ?? [],
-      selectedBatchId: props.selectedBatchId ?? null,
+      selectedBatchUuid: props.selectedBatchUuid ?? null,
       loading: props.loading ?? false,
       showCreateButton: props.showCreateButton ?? true,
       showBulkImport: props.showBulkImport ?? true,
@@ -55,8 +54,8 @@ describe('BatchList', () => {
 
     it('renders batch list items', () => {
       const batches = [
-        createBatch({ id: 1, short_name: 'IPA Batch 001' }),
-        createBatch({ id: 2, short_name: 'Stout Batch 002' }),
+        createBatch({ uuid: 'uuid-1', short_name: 'IPA Batch 001' }),
+        createBatch({ uuid: 'uuid-2', short_name: 'Stout Batch 002' }),
       ]
       const wrapper = mountBatchList({ batches })
 
@@ -64,13 +63,12 @@ describe('BatchList', () => {
       expect(wrapper.text()).toContain('Stout Batch 002')
     })
 
-    it('renders batch ID and formatted brew date', () => {
+    it('renders formatted brew date', () => {
       const batches = [
-        createBatch({ id: 42, brew_date: '2024-06-15T10:00:00Z' }),
+        createBatch({ brew_date: '2024-06-15T10:00:00Z' }),
       ]
       const wrapper = mountBatchList({ batches })
 
-      expect(wrapper.text()).toContain('#42')
       expect(wrapper.text()).toMatch(/Jun/)
       expect(wrapper.text()).toMatch(/15/)
       expect(wrapper.text()).toMatch(/2024/)
@@ -125,20 +123,20 @@ describe('BatchList', () => {
   describe('selection', () => {
     it('marks selected batch as active', async () => {
       const batches = [
-        createBatch({ id: 1, short_name: 'Batch 1' }),
-        createBatch({ id: 2, short_name: 'Batch 2' }),
+        createBatch({ uuid: 'batch-uuid-1', short_name: 'Batch 1' }),
+        createBatch({ uuid: 'batch-uuid-2', short_name: 'Batch 2' }),
       ]
-      const wrapper = mountBatchList({ batches, selectedBatchId: 2 })
+      const wrapper = mountBatchList({ batches, selectedBatchUuid: 'batch-uuid-2' })
 
       const listItems = wrapper.findAll('.v-list-item')
-      // The second batch (id: 2) should be active
+      // The second batch (uuid: batch-uuid-2) should be active
       expect(listItems[1].classes()).toContain('v-list-item--active')
     })
 
     it('emits select event when batch is clicked', async () => {
       const batches = [
-        createBatch({ id: 1, short_name: 'Batch 1' }),
-        createBatch({ id: 2, short_name: 'Batch 2' }),
+        createBatch({ uuid: 'batch-uuid-1', short_name: 'Batch 1' }),
+        createBatch({ uuid: 'batch-uuid-2', short_name: 'Batch 2' }),
       ]
       const wrapper = mountBatchList({ batches })
 
@@ -146,7 +144,7 @@ describe('BatchList', () => {
       await listItems[0].trigger('click')
 
       expect(wrapper.emitted('select')).toBeTruthy()
-      expect(wrapper.emitted('select')![0]).toEqual([1])
+      expect(wrapper.emitted('select')![0]).toEqual(['batch-uuid-1'])
     })
   })
 

@@ -20,10 +20,12 @@ The big picture: the system tracks your beer as it moves through tanks, gets spl
 Batch
 - A batch is the overall production run you care about (e.g., "IPA 24‑07").
 - It's the top‑level record you plan, brew, ferment, and eventually package.
-- Batches can be updated via `PATCH /batches/{id}` with editable fields: `short_name`, `brew_date`, `recipe_id`, `notes`.
-- Batches can be soft-deleted via `DELETE /batches/{id}`, which sets `deleted_at`.
+- Batches can be updated via `PATCH /batches/{uuid}` with editable fields: `short_name`, `brew_date`, `recipe_uuid`, `notes`.
+- Batches can be soft-deleted via `DELETE /batches/{uuid}`, which sets `deleted_at`.
 - Deletion cascades soft-delete to all related records: batch volumes, process phases, brew sessions, additions, and measurements.
 - The cascade is performed in a single transaction to ensure data consistency.
+- `GET /batches` and `GET /batches/{uuid}` responses include `recipe_name` (joined from recipe table, omitted if null).
+- `GET /batches` and `GET /batches/{uuid}` responses also include `current_phase` (most recent `batch_process_phase.process_phase`, omitted if null) via a lateral subquery.
 
 Volume
 - A volume is a specific quantity of liquid at a point in time (e.g., “10,000 liters of wort”).
@@ -40,13 +42,13 @@ Modeling blends
 Vessel
 - A vessel is any physical container (mash tun, kettle, fermenter, brite tank).
 - It has a capacity and type so the system knows what it can hold.
-- Vessels can be looked up by internal ID (`GET /vessels/{id}`) or by UUID (`GET /vessels/uuid/{uuid}`).
+- All API endpoints use UUIDs: `GET /vessels/{uuid}`, `PATCH /vessels/{uuid}`.
 
 Occupancy
 - Occupancy is the idea of "this volume is in this vessel during this time."
 - When you move beer from one vessel to another, the occupancy changes to reflect where the liquid is now.
-- Active occupancies are listed with `GET /occupancies?active=true`; single active lookups use `GET /occupancies/active` with `active_vessel_id` or `active_volume_id`.
-- Active occupancy responses include a derived `batch_id` field (from the most recent batch_volume record for that volume) to help clients display which batch is in each vessel.
+- Active occupancies are listed with `GET /occupancies?active=true`; single active lookups use `GET /occupancies/active` with `active_vessel_uuid` or `active_volume_uuid`.
+- Active occupancy responses include a derived `batch_uuid` field (from the most recent batch_volume record for that volume) to help clients display which batch is in each vessel.
 
 Transfer
 - A transfer records a move from one occupancy to another (e.g., fermenter A to brite tank B).
@@ -82,7 +84,7 @@ Style
 
 Recipe
 - A beer formulation with name and optional style reference.
-- Batches can reference a recipe via `recipe_id` (internal FK).
+- Batches can reference a recipe via `recipe_uuid` in the API (resolved to internal FK).
 - All API endpoints use UUIDs, not internal IDs.
 - Includes target specifications: batch size, OG/FG ranges, IBU/SRM ranges, carbonation, brewhouse efficiency.
 - `target_abv` is calculated from `target_og` and `target_fg` using `(OG - FG) × 131.25` (not stored in DB).
@@ -104,22 +106,22 @@ Recipe Ingredient
 
 Brew Session
 - Captures hot-side wort production (mash → boil → knockout).
-- Points to the wort volume produced via `wort_volume_id`.
+- Points to the wort volume produced via `wort_volume_uuid`.
 - A batch can have multiple brew sessions (double batching).
-- References mash and boil vessels for traceability.
+- References mash and boil vessels by UUID for traceability.
 
 ## Batch Summary
 
-The `GET /batches/{id}/summary` endpoint provides an aggregated view of a batch with derived metrics:
+The `GET /batches/{uuid}/summary` endpoint provides an aggregated view of a batch with derived metrics:
 
 ### Core batch info
-- `id`, `uuid`, `short_name`, `brew_date`, `notes`
+- `uuid`, `short_name`, `brew_date`, `notes`
 
 ### Recipe and style
 - `recipe_name`, `style_name` (from linked recipe)
 
 ### Brew sessions
-- Array of `brew_sessions` with `id`, `brewed_at`, `notes`
+- Array of `brew_sessions` with `uuid`, `brewed_at`, `notes`
 
 ### Current state
 - `current_phase` (most recent process phase)
@@ -191,7 +193,17 @@ In short:
 - Splits and blends are represented so a brewmaster can see parent/child batch relationships and the related volume changes.
 - Production records retain traceability to inventory/procurement via opaque UUIDs, without requiring shared tables or foreign keys.
 - The full brew‑day flow can be reconstructed chronologically from additions, measurements, transfers, and phase changes for a given batch.
-- A brewmaster can view a batch summary with aggregated metrics including recipe/style, brew sessions, current state, OG/FG/ABV/IBU, duration metrics, and loss calculations via `GET /batches/{id}/summary`.
+- A brewmaster can view a batch summary with aggregated metrics including recipe/style, brew sessions, current state, OG/FG/ABV/IBU, duration metrics, and loss calculations via `GET /batches/{uuid}/summary`.
 - ABV is auto-calculated from OG and FG measurements using `(OG - FG) × 131.25` when no manual ABV measurement exists.
 - A brewmaster can define recipe target specifications including batch size, OG/FG/IBU/SRM ranges, carbonation, and brewhouse efficiency.
-- A brewmaster can manage recipe ingredient bills with full CRUD operations on `/recipes/{recipe_id}/ingredients`.
+- A brewmaster can manage recipe ingredient bills with full CRUD operations on `/recipes/{uuid}/ingredients`.
+
+## API Convention: UUID-Only
+
+All production API endpoints use UUIDs exclusively for resource identification:
+- Path parameters use `{uuid}` (e.g., `/batches/{uuid}`, `/vessels/{uuid}`).
+- Request bodies use `_uuid` suffix for FK references (e.g., `recipe_uuid`, `vessel_uuid`, `batch_uuid`).
+- Response bodies include `uuid` fields, never internal `id` fields.
+- Query parameters use `_uuid` suffix (e.g., `batch_uuid`, `active_vessel_uuid`).
+- Internal storage models retain both `ID int64` and UUID fields; int64 is for DB operations only.
+- Handlers resolve UUID→internal ID for creates via small lookup queries before INSERT.

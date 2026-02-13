@@ -24,10 +24,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="addition in additionsSorted" :key="addition.id">
+              <tr v-for="addition in additionsSorted" :key="addition.uuid">
                 <td>{{ addition.addition_type }}</td>
                 <td>{{ formatAmount(addition.amount, addition.amount_unit) }}</td>
-                <td>{{ addition.occupancy_id ?? addition.batch_id }}</td>
+                <td>{{ addition.occupancy_uuid ? 'Occupancy' : 'Batch' }}</td>
                 <td>{{ formatDateTime(addition.added_at) }}</td>
               </tr>
               <tr v-if="additionsSorted.length === 0">

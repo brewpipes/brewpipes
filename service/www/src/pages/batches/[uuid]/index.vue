@@ -22,7 +22,7 @@
       v-else
       back-button-route="/batches/all"
       back-button-text="Back to All Batches"
-      :batch-id="batchId"
+      :batch-uuid="batchUuid"
       :show-back-button="true"
       @back="handleBack"
     />
@@ -36,11 +36,9 @@
   import { useApiClient } from '@/composables/useApiClient'
 
   type Batch = {
-    id: number
     uuid: string
     short_name: string
     brew_date: string | null
-    recipe_id: number | null
     recipe_uuid: string | null
     notes: string | null
     created_at: string
@@ -57,7 +55,7 @@
   const error = ref<string | null>(null)
   const batch = ref<Batch | null>(null)
 
-  const batchId = computed(() => batch.value?.id ?? null)
+  const batchUuid = computed(() => batch.value?.uuid ?? null)
 
   const routeUuid = computed(() => {
     const params = route.params

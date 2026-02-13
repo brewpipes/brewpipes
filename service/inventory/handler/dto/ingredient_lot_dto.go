@@ -8,8 +8,8 @@ import (
 )
 
 type CreateIngredientLotRequest struct {
-	IngredientID      int64      `json:"ingredient_id"`
-	ReceiptID         *int64     `json:"receipt_id"`
+	IngredientUUID    string     `json:"ingredient_uuid"`
+	ReceiptUUID       *string    `json:"receipt_uuid"`
 	SupplierUUID      *string    `json:"supplier_uuid"`
 	BreweryLotCode    *string    `json:"brewery_lot_code"`
 	OriginatorLotCode *string    `json:"originator_lot_code"`
@@ -24,8 +24,8 @@ type CreateIngredientLotRequest struct {
 }
 
 func (r CreateIngredientLotRequest) Validate() error {
-	if r.IngredientID <= 0 {
-		return fmt.Errorf("ingredient_id is required")
+	if err := validateRequired(r.IngredientUUID, "ingredient_uuid"); err != nil {
+		return err
 	}
 	if r.ReceivedAmount <= 0 {
 		return fmt.Errorf("received_amount must be greater than zero")
@@ -48,10 +48,9 @@ func (r CreateIngredientLotRequest) Validate() error {
 }
 
 type IngredientLotResponse struct {
-	ID                int64      `json:"id"`
 	UUID              string     `json:"uuid"`
-	IngredientID      int64      `json:"ingredient_id"`
-	ReceiptID         *int64     `json:"receipt_id,omitempty"`
+	IngredientUUID    string     `json:"ingredient_uuid"`
+	ReceiptUUID       *string    `json:"receipt_uuid,omitempty"`
 	SupplierUUID      *string    `json:"supplier_uuid,omitempty"`
 	BreweryLotCode    *string    `json:"brewery_lot_code,omitempty"`
 	OriginatorLotCode *string    `json:"originator_lot_code,omitempty"`
@@ -70,10 +69,9 @@ type IngredientLotResponse struct {
 
 func NewIngredientLotResponse(lot storage.IngredientLot) IngredientLotResponse {
 	return IngredientLotResponse{
-		ID:                lot.ID,
 		UUID:              lot.UUID.String(),
-		IngredientID:      lot.IngredientID,
-		ReceiptID:         lot.ReceiptID,
+		IngredientUUID:    lot.IngredientUUID,
+		ReceiptUUID:       lot.ReceiptUUID,
 		SupplierUUID:      uuidToStringPointer(lot.SupplierUUID),
 		BreweryLotCode:    lot.BreweryLotCode,
 		OriginatorLotCode: lot.OriginatorLotCode,

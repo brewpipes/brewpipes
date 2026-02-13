@@ -72,17 +72,17 @@ func HandleUsers(db UserStore) http.HandlerFunc {
 	}
 }
 
-// HandleUserByID handles [GET /users/{id}], [PUT /users/{id}], and [DELETE /users/{id}].
-func HandleUserByID(db UserStore) http.HandlerFunc {
+// HandleUserByUUID handles [GET /users/{uuid}], [PUT /users/{uuid}], and [DELETE /users/{uuid}].
+func HandleUserByUUID(db UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		uuidValue := r.PathValue("uuid")
+		if uuidValue == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
-		userUUID, err := parseUUIDParam(idValue)
+		userUUID, err := parseUUIDParam(uuidValue)
 		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 

@@ -41,10 +41,10 @@
           </v-card-title>
           <v-card-text>
             <v-list class="batch-list" lines="two">
-              <v-list-item v-for="item in inProgressBatches" :key="item.batch.id" :to="item.route">
+              <v-list-item v-for="item in inProgressBatches" :key="item.batch.uuid" :to="item.route">
                 <v-list-item-title>{{ item.batch.short_name }}</v-list-item-title>
                 <v-list-item-subtitle>
-                  #{{ item.batch.id }} · Brewed {{ formatBrewDate(item.batch.brew_date) }}
+                  Brewed {{ formatBrewDate(item.batch.brew_date) }}
                 </v-list-item-subtitle>
                 <div class="text-caption text-medium-emphasis">
                   {{ item.phaseLabel }} · Updated {{ formatDateTime(item.phaseAt) }}
@@ -81,10 +81,10 @@
           </v-card-title>
           <v-card-text>
             <v-list class="batch-list" lines="two">
-              <v-list-item v-for="item in plannedBatches" :key="item.batch.id" :to="item.route">
+              <v-list-item v-for="item in plannedBatches" :key="item.batch.uuid" :to="item.route">
                 <v-list-item-title>{{ item.batch.short_name }}</v-list-item-title>
                 <v-list-item-subtitle>
-                  #{{ item.batch.id }} · {{ plannedSubtitle(item) }}
+                  {{ plannedSubtitle(item) }}
                 </v-list-item-subtitle>
                 <div class="text-caption text-medium-emphasis">
                   {{ plannedMeta(item) }}
@@ -132,7 +132,7 @@
             </div>
 
             <v-list class="vessel-list" lines="two">
-              <v-list-item v-for="item in vesselCards" :key="item.vessel.id">
+              <v-list-item v-for="item in vesselCards" :key="item.vessel.uuid">
                 <v-list-item-title class="d-flex align-center flex-wrap ga-1">
                   {{ item.vessel.name }}
                   <v-chip class="ml-2" :color="item.occupancyTone" size="x-small" variant="tonal">
@@ -190,7 +190,6 @@
       | 'finished'
 
   type Batch = {
-    id: number
     uuid: string
     short_name: string
     brew_date: string | null
@@ -198,15 +197,14 @@
   }
 
   type BatchProcessPhase = {
-    id: number
-    batch_id: number
+    uuid: string
+    batch_uuid: string
     process_phase: ProcessPhase
     phase_at: string
     created_at: string
   }
 
   type Vessel = {
-    id: number
     uuid: string
     type: string
     name: string
@@ -217,7 +215,6 @@
   }
 
   type Volume = {
-    id: number
     uuid: string
     name: string | null
     description: string | null
@@ -227,9 +224,10 @@
   }
 
   type Occupancy = {
-    id: number
-    vessel_id: number
-    volume_id: number
+    uuid: string
+    vessel_uuid: string
+    volume_uuid: string
+    batch_uuid: string | null
     status: string | null
     in_at: string
     out_at: string | null
@@ -274,15 +272,15 @@
   const { breweryName } = useUserSettings()
 
   const volumeNameMap = computed(
-    () => new Map(volumes.value.map(volume => [volume.id, volume.name ?? `Volume ${volume.id}`])),
+    () => new Map(volumes.value.map(volume => [volume.uuid, volume.name ?? `Volume ${volume.uuid.slice(0, 8)}`])),
   )
 
   const latestPhaseByBatch = computed(() => {
-    const map = new Map<number, BatchProcessPhase>()
+    const map = new Map<string, BatchProcessPhase>()
     for (const phase of processPhases.value) {
-      const current = map.get(phase.batch_id)
+      const current = map.get(phase.batch_uuid)
       if (!current || toTimestamp(phase.phase_at || phase.created_at) > toTimestamp(current.phase_at || current.created_at)) {
-        map.set(phase.batch_id, phase)
+        map.set(phase.batch_uuid, phase)
       }
     }
     return map
@@ -290,7 +288,7 @@
 
   const batchPhaseItems = computed<BatchPhaseItem[]>(() =>
     batches.value.map(batch => {
-      const phase = latestPhaseByBatch.value.get(batch.id) ?? null
+      const phase = latestPhaseByBatch.value.get(batch.uuid) ?? null
       const phaseAt = phase
         ? normalizeTimestamp(phase.phase_at, phase.created_at || batch.updated_at)
         : batch.updated_at
@@ -320,15 +318,15 @@
   const plannedCount = computed(() => plannedAll.value.length)
 
   const occupancyMap = computed(
-    () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_id, occupancy])),
+    () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_uuid, occupancy])),
   )
 
   const vesselCards = computed<VesselCard[]>(() => {
     return [...vessels.value]
       .map(vessel => {
-        const occupancy = occupancyMap.value.get(vessel.id) ?? null
+        const occupancy = occupancyMap.value.get(vessel.uuid) ?? null
         const volumeName = occupancy
-          ? volumeNameMap.value.get(occupancy.volume_id) ?? `Volume ${occupancy.volume_id}`
+          ? volumeNameMap.value.get(occupancy.volume_uuid) ?? `Volume ${occupancy.volume_uuid.slice(0, 8)}`
           : null
         const isActive = vessel.status === 'active'
         const hasOccupancy = Boolean(occupancy)
@@ -418,7 +416,7 @@
       return
     }
     const results = await Promise.allSettled(
-      batches.value.map(batch => request<BatchProcessPhase[]>(`/batch-process-phases?batch_id=${batch.id}`)),
+      batches.value.map(batch => request<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batch.uuid}`)),
     )
     const phases: BatchProcessPhase[] = []
     const errors = results.filter(result => result.status === 'rejected') as PromiseRejectedResult[]

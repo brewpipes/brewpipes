@@ -60,27 +60,27 @@ describe('useProductionApi', () => {
 
   describe('Styles API', () => {
     it('getStyles calls correct endpoint', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, name: 'IPA' }])
+      mockRequest.mockResolvedValue([{ uuid: 'style-uuid-1', name: 'IPA' }])
 
       const { getStyles } = useProductionApi()
       const result = await getStyles()
 
       expect(mockRequest).toHaveBeenCalledWith('/styles')
-      expect(result).toEqual([{ id: 1, name: 'IPA' }])
+      expect(result).toEqual([{ uuid: 'style-uuid-1', name: 'IPA' }])
     })
 
-    it('getStyle calls correct endpoint with id', async () => {
-      mockRequest.mockResolvedValue({ id: 1, name: 'IPA' })
+    it('getStyle calls correct endpoint with uuid', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'style-uuid-1', name: 'IPA' })
 
       const { getStyle } = useProductionApi()
-      const result = await getStyle(1)
+      const result = await getStyle('style-uuid-1')
 
-      expect(mockRequest).toHaveBeenCalledWith('/styles/1')
-      expect(result).toEqual({ id: 1, name: 'IPA' })
+      expect(mockRequest).toHaveBeenCalledWith('/styles/style-uuid-1')
+      expect(result).toEqual({ uuid: 'style-uuid-1', name: 'IPA' })
     })
 
     it('createStyle sends POST with correct body', async () => {
-      mockRequest.mockResolvedValue({ id: 1, name: 'Stout' })
+      mockRequest.mockResolvedValue({ uuid: 'style-uuid-1', name: 'Stout' })
 
       const { createStyle } = useProductionApi()
       const result = await createStyle({ name: 'Stout' })
@@ -89,7 +89,7 @@ describe('useProductionApi', () => {
         method: 'POST',
         body: JSON.stringify({ name: 'Stout' }),
       })
-      expect(result).toEqual({ id: 1, name: 'Stout' })
+      expect(result).toEqual({ uuid: 'style-uuid-1', name: 'Stout' })
     })
   })
 
@@ -115,7 +115,7 @@ describe('useProductionApi', () => {
     })
 
     it('createRecipe sends POST with correct body', async () => {
-      const recipeData = { name: 'New Recipe', style_id: 1, notes: 'Test notes' }
+      const recipeData = { name: 'New Recipe', style_uuid: 'style-uuid-1', notes: 'Test notes' }
       mockRequest.mockResolvedValue({ uuid: 'def-456', ...recipeData })
 
       const { createRecipe } = useProductionApi()
@@ -129,7 +129,7 @@ describe('useProductionApi', () => {
     })
 
     it('updateRecipe sends PATCH with correct body', async () => {
-      const updateData = { name: 'Updated Recipe', style_id: 2 }
+      const updateData = { name: 'Updated Recipe', style_uuid: 'style-uuid-2' }
       mockRequest.mockResolvedValue({ uuid: 'abc-123', ...updateData })
 
       const { updateRecipe } = useProductionApi()
@@ -156,61 +156,50 @@ describe('useProductionApi', () => {
 
   describe('Vessels API', () => {
     it('getVessels calls correct endpoint', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, name: 'Fermenter 1' }])
+      mockRequest.mockResolvedValue([{ uuid: 'vessel-uuid-1', name: 'Fermenter 1' }])
 
       const { getVessels } = useProductionApi()
       const result = await getVessels()
 
       expect(mockRequest).toHaveBeenCalledWith('/vessels')
-      expect(result).toEqual([{ id: 1, name: 'Fermenter 1' }])
+      expect(result).toEqual([{ uuid: 'vessel-uuid-1', name: 'Fermenter 1' }])
     })
 
-    it('getVessel calls correct endpoint with id', async () => {
-      mockRequest.mockResolvedValue({ id: 1, name: 'Fermenter 1' })
+    it('getVessel calls correct endpoint with uuid', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'vessel-uuid-1', name: 'Fermenter 1' })
 
       const { getVessel } = useProductionApi()
-      const result = await getVessel(1)
+      const result = await getVessel('vessel-uuid-1')
 
-      expect(mockRequest).toHaveBeenCalledWith('/vessels/1')
-      expect(result).toEqual({ id: 1, name: 'Fermenter 1' })
-    })
-
-    it('getVesselByUUID calls correct endpoint with uuid', async () => {
-      const uuid = 'abc-123-def'
-      mockRequest.mockResolvedValue({ id: 1, uuid, name: 'Fermenter 1' })
-
-      const { getVesselByUUID } = useProductionApi()
-      const result = await getVesselByUUID(uuid)
-
-      expect(mockRequest).toHaveBeenCalledWith(`/vessels/uuid/${uuid}`)
-      expect(result).toEqual({ id: 1, uuid, name: 'Fermenter 1' })
+      expect(mockRequest).toHaveBeenCalledWith('/vessels/vessel-uuid-1')
+      expect(result).toEqual({ uuid: 'vessel-uuid-1', name: 'Fermenter 1' })
     })
   })
 
   describe('Volumes API', () => {
     it('getVolumes calls correct endpoint', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, amount: 10, amount_unit: 'bbl' }])
+      mockRequest.mockResolvedValue([{ uuid: 'vol-uuid-1', amount: 10, amount_unit: 'bbl' }])
 
       const { getVolumes } = useProductionApi()
       const result = await getVolumes()
 
       expect(mockRequest).toHaveBeenCalledWith('/volumes')
-      expect(result).toEqual([{ id: 1, amount: 10, amount_unit: 'bbl' }])
+      expect(result).toEqual([{ uuid: 'vol-uuid-1', amount: 10, amount_unit: 'bbl' }])
     })
 
-    it('getVolume calls correct endpoint with id', async () => {
-      mockRequest.mockResolvedValue({ id: 1, amount: 10, amount_unit: 'bbl' })
+    it('getVolume calls correct endpoint with uuid', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'vol-uuid-1', amount: 10, amount_unit: 'bbl' })
 
       const { getVolume } = useProductionApi()
-      const result = await getVolume(1)
+      const result = await getVolume('vol-uuid-1')
 
-      expect(mockRequest).toHaveBeenCalledWith('/volumes/1')
-      expect(result).toEqual({ id: 1, amount: 10, amount_unit: 'bbl' })
+      expect(mockRequest).toHaveBeenCalledWith('/volumes/vol-uuid-1')
+      expect(result).toEqual({ uuid: 'vol-uuid-1', amount: 10, amount_unit: 'bbl' })
     })
 
     it('createVolume sends POST with correct body', async () => {
       const volumeData = { amount: 15, amount_unit: 'bbl' as const }
-      mockRequest.mockResolvedValue({ id: 2, ...volumeData })
+      mockRequest.mockResolvedValue({ uuid: 'vol-uuid-2', ...volumeData })
 
       const { createVolume } = useProductionApi()
       const result = await createVolume(volumeData)
@@ -219,34 +208,34 @@ describe('useProductionApi', () => {
         method: 'POST',
         body: JSON.stringify(volumeData),
       })
-      expect(result).toEqual({ id: 2, ...volumeData })
+      expect(result).toEqual({ uuid: 'vol-uuid-2', ...volumeData })
     })
   })
 
   describe('Brew Sessions API', () => {
-    it('getBrewSessions calls correct endpoint with batch_id query param', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, batch_id: 5 }])
+    it('getBrewSessions calls correct endpoint with batch_uuid query param', async () => {
+      mockRequest.mockResolvedValue([{ uuid: 'session-uuid-1', batch_uuid: 'batch-uuid-5' }])
 
       const { getBrewSessions } = useProductionApi()
-      const result = await getBrewSessions(5)
+      const result = await getBrewSessions('batch-uuid-5')
 
-      expect(mockRequest).toHaveBeenCalledWith('/brew-sessions?batch_id=5')
-      expect(result).toEqual([{ id: 1, batch_id: 5 }])
+      expect(mockRequest).toHaveBeenCalledWith('/brew-sessions?batch_uuid=batch-uuid-5')
+      expect(result).toEqual([{ uuid: 'session-uuid-1', batch_uuid: 'batch-uuid-5' }])
     })
 
-    it('getBrewSession calls correct endpoint with id', async () => {
-      mockRequest.mockResolvedValue({ id: 1, batch_id: 5 })
+    it('getBrewSession calls correct endpoint with uuid', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'session-uuid-1', batch_uuid: 'batch-uuid-5' })
 
       const { getBrewSession } = useProductionApi()
-      const result = await getBrewSession(1)
+      const result = await getBrewSession('session-uuid-1')
 
-      expect(mockRequest).toHaveBeenCalledWith('/brew-sessions/1')
-      expect(result).toEqual({ id: 1, batch_id: 5 })
+      expect(mockRequest).toHaveBeenCalledWith('/brew-sessions/session-uuid-1')
+      expect(result).toEqual({ uuid: 'session-uuid-1', batch_uuid: 'batch-uuid-5' })
     })
 
     it('createBrewSession sends POST with correct body', async () => {
-      const sessionData = { batch_id: 5, brewed_at: '2024-01-15T10:00:00Z' }
-      mockRequest.mockResolvedValue({ id: 1, ...sessionData })
+      const sessionData = { batch_uuid: 'batch-uuid-5', brewed_at: '2024-01-15T10:00:00Z' }
+      mockRequest.mockResolvedValue({ uuid: 'session-uuid-1', ...sessionData })
 
       const { createBrewSession } = useProductionApi()
       const result = await createBrewSession(sessionData)
@@ -255,43 +244,43 @@ describe('useProductionApi', () => {
         method: 'POST',
         body: JSON.stringify(sessionData),
       })
-      expect(result).toEqual({ id: 1, ...sessionData })
+      expect(result).toEqual({ uuid: 'session-uuid-1', ...sessionData })
     })
 
     it('updateBrewSession sends PUT with correct body', async () => {
-      const updateData = { batch_id: 5, brewed_at: '2024-01-16T10:00:00Z', notes: 'Updated' }
-      mockRequest.mockResolvedValue({ id: 1, ...updateData })
+      const updateData = { batch_uuid: 'batch-uuid-5', brewed_at: '2024-01-16T10:00:00Z', notes: 'Updated' }
+      mockRequest.mockResolvedValue({ uuid: 'session-uuid-1', ...updateData })
 
       const { updateBrewSession } = useProductionApi()
-      const result = await updateBrewSession(1, updateData)
+      const result = await updateBrewSession('session-uuid-1', updateData)
 
-      expect(mockRequest).toHaveBeenCalledWith('/brew-sessions/1', {
+      expect(mockRequest).toHaveBeenCalledWith('/brew-sessions/session-uuid-1', {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
-      expect(result).toEqual({ id: 1, ...updateData })
+      expect(result).toEqual({ uuid: 'session-uuid-1', ...updateData })
     })
   })
 
   describe('Additions API', () => {
-    it('getAdditionsByVolume calls correct endpoint with volume_id query param', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, volume_id: 3, addition_type: 'hop' }])
+    it('getAdditionsByVolume calls correct endpoint with volume_uuid query param', async () => {
+      mockRequest.mockResolvedValue([{ uuid: 'add-uuid-1', volume_uuid: 'vol-uuid-3', addition_type: 'hop' }])
 
       const { getAdditionsByVolume } = useProductionApi()
-      const result = await getAdditionsByVolume(3)
+      const result = await getAdditionsByVolume('vol-uuid-3')
 
-      expect(mockRequest).toHaveBeenCalledWith('/additions?volume_id=3')
-      expect(result).toEqual([{ id: 1, volume_id: 3, addition_type: 'hop' }])
+      expect(mockRequest).toHaveBeenCalledWith('/additions?volume_uuid=vol-uuid-3')
+      expect(result).toEqual([{ uuid: 'add-uuid-1', volume_uuid: 'vol-uuid-3', addition_type: 'hop' }])
     })
 
     it('createAddition sends POST with correct body', async () => {
       const additionData = {
-        volume_id: 3,
+        volume_uuid: 'vol-uuid-3',
         addition_type: 'hop' as const,
         amount: 5,
         amount_unit: 'ml' as const,
       }
-      mockRequest.mockResolvedValue({ id: 1, ...additionData })
+      mockRequest.mockResolvedValue({ uuid: 'add-uuid-1', ...additionData })
 
       const { createAddition } = useProductionApi()
       const result = await createAddition(additionData)
@@ -300,29 +289,29 @@ describe('useProductionApi', () => {
         method: 'POST',
         body: JSON.stringify(additionData),
       })
-      expect(result).toEqual({ id: 1, ...additionData })
+      expect(result).toEqual({ uuid: 'add-uuid-1', ...additionData })
     })
   })
 
   describe('Measurements API', () => {
-    it('getMeasurementsByVolume calls correct endpoint with volume_id query param', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, volume_id: 3, kind: 'gravity' }])
+    it('getMeasurementsByVolume calls correct endpoint with volume_uuid query param', async () => {
+      mockRequest.mockResolvedValue([{ uuid: 'meas-uuid-1', volume_uuid: 'vol-uuid-3', kind: 'gravity' }])
 
       const { getMeasurementsByVolume } = useProductionApi()
-      const result = await getMeasurementsByVolume(3)
+      const result = await getMeasurementsByVolume('vol-uuid-3')
 
-      expect(mockRequest).toHaveBeenCalledWith('/measurements?volume_id=3')
-      expect(result).toEqual([{ id: 1, volume_id: 3, kind: 'gravity' }])
+      expect(mockRequest).toHaveBeenCalledWith('/measurements?volume_uuid=vol-uuid-3')
+      expect(result).toEqual([{ uuid: 'meas-uuid-1', volume_uuid: 'vol-uuid-3', kind: 'gravity' }])
     })
 
     it('createMeasurement sends POST with correct body', async () => {
       const measurementData = {
-        volume_id: 3,
+        volume_uuid: 'vol-uuid-3',
         kind: 'gravity',
         value: 1.05,
         unit: 'SG',
       }
-      mockRequest.mockResolvedValue({ id: 1, ...measurementData })
+      mockRequest.mockResolvedValue({ uuid: 'meas-uuid-1', ...measurementData })
 
       const { createMeasurement } = useProductionApi()
       const result = await createMeasurement(measurementData)
@@ -331,14 +320,14 @@ describe('useProductionApi', () => {
         method: 'POST',
         body: JSON.stringify(measurementData),
       })
-      expect(result).toEqual({ id: 1, ...measurementData })
+      expect(result).toEqual({ uuid: 'meas-uuid-1', ...measurementData })
     })
   })
 
   describe('Batch Summary API', () => {
-    it('getBatchSummary calls correct endpoint with id', async () => {
+    it('getBatchSummary calls correct endpoint with uuid', async () => {
       const summary = {
-        id: 1,
+        uuid: 'batch-uuid-1',
         short_name: 'Batch 001',
         original_gravity: 1.055,
         final_gravity: 1.012,
@@ -346,45 +335,45 @@ describe('useProductionApi', () => {
       mockRequest.mockResolvedValue(summary)
 
       const { getBatchSummary } = useProductionApi()
-      const result = await getBatchSummary(1)
+      const result = await getBatchSummary('batch-uuid-1')
 
-      expect(mockRequest).toHaveBeenCalledWith('/batches/1/summary')
+      expect(mockRequest).toHaveBeenCalledWith('/batches/batch-uuid-1/summary')
       expect(result).toEqual(summary)
     })
   })
 
   describe('Occupancy API', () => {
     it('getActiveOccupancies calls correct endpoint with active query param', async () => {
-      mockRequest.mockResolvedValue([{ id: 1, status: 'fermenting' }])
+      mockRequest.mockResolvedValue([{ uuid: 'occ-uuid-1', status: 'fermenting' }])
 
       const { getActiveOccupancies } = useProductionApi()
       const result = await getActiveOccupancies()
 
       expect(mockRequest).toHaveBeenCalledWith('/occupancies?active=true')
-      expect(result).toEqual([{ id: 1, status: 'fermenting' }])
+      expect(result).toEqual([{ uuid: 'occ-uuid-1', status: 'fermenting' }])
     })
 
-    it('getOccupancy calls correct endpoint with id', async () => {
-      mockRequest.mockResolvedValue({ id: 1, status: 'fermenting' })
+    it('getOccupancy calls correct endpoint with uuid', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'occ-uuid-1', status: 'fermenting' })
 
       const { getOccupancy } = useProductionApi()
-      const result = await getOccupancy(1)
+      const result = await getOccupancy('occ-uuid-1')
 
-      expect(mockRequest).toHaveBeenCalledWith('/occupancies/1')
-      expect(result).toEqual({ id: 1, status: 'fermenting' })
+      expect(mockRequest).toHaveBeenCalledWith('/occupancies/occ-uuid-1')
+      expect(result).toEqual({ uuid: 'occ-uuid-1', status: 'fermenting' })
     })
 
     it('updateOccupancyStatus sends PATCH with correct body', async () => {
-      mockRequest.mockResolvedValue({ id: 1, status: 'conditioning' })
+      mockRequest.mockResolvedValue({ uuid: 'occ-uuid-1', status: 'conditioning' })
 
       const { updateOccupancyStatus } = useProductionApi()
-      const result = await updateOccupancyStatus(1, 'conditioning')
+      const result = await updateOccupancyStatus('occ-uuid-1', 'conditioning')
 
-      expect(mockRequest).toHaveBeenCalledWith('/occupancies/1/status', {
+      expect(mockRequest).toHaveBeenCalledWith('/occupancies/occ-uuid-1/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'conditioning' }),
       })
-      expect(result).toEqual({ id: 1, status: 'conditioning' })
+      expect(result).toEqual({ uuid: 'occ-uuid-1', status: 'conditioning' })
     })
   })
 

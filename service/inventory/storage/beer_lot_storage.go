@@ -75,6 +75,34 @@ func (c *Client) GetBeerLot(ctx context.Context, id int64) (BeerLot, error) {
 	return lot, nil
 }
 
+func (c *Client) GetBeerLotByUUID(ctx context.Context, lotUUID string) (BeerLot, error) {
+	var lot BeerLot
+	err := c.db.QueryRow(ctx, `
+		SELECT id, uuid, production_batch_uuid, lot_code, packaged_at, notes, created_at, updated_at, deleted_at
+		FROM beer_lot
+		WHERE uuid = $1 AND deleted_at IS NULL`,
+		lotUUID,
+	).Scan(
+		&lot.ID,
+		&lot.UUID,
+		&lot.ProductionBatchUUID,
+		&lot.LotCode,
+		&lot.PackagedAt,
+		&lot.Notes,
+		&lot.CreatedAt,
+		&lot.UpdatedAt,
+		&lot.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return BeerLot{}, service.ErrNotFound
+		}
+		return BeerLot{}, fmt.Errorf("getting beer lot by uuid: %w", err)
+	}
+
+	return lot, nil
+}
+
 func (c *Client) ListBeerLots(ctx context.Context) ([]BeerLot, error) {
 	rows, err := c.db.Query(ctx, `
 		SELECT id, uuid, production_batch_uuid, lot_code, packaged_at, notes, created_at, updated_at, deleted_at

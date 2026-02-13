@@ -21,7 +21,7 @@ func (r CreateUserRequest) Validate() error {
 	return validateRequired(r.Password, "password")
 }
 
-// UpdateUserRequest is the request body [PUT /users/{id}].
+// UpdateUserRequest is the request body [PUT /users/{uuid}].
 type UpdateUserRequest struct {
 	Username *string `json:"username"`
 	Password *string `json:"password"`
@@ -48,7 +48,6 @@ func (r UpdateUserRequest) Validate() error {
 
 // UserResponse is the DTO for queried user objects.
 type UserResponse struct {
-	ID       int64  `json:"id"`
 	UUID     string `json:"uuid"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
@@ -76,7 +75,6 @@ func NewUsersResponse(entities []storage.User) UsersResponse {
 
 func newUser(u storage.User) UserResponse {
 	return UserResponse{
-		ID:        u.ID,
 		UUID:      u.UUID.String(),
 		Username:  u.Username,
 		Role:      "user",

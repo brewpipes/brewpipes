@@ -8,46 +8,47 @@ import (
 )
 
 type CreateInventoryTransferRequest struct {
-	SourceLocationID int64      `json:"source_location_id"`
-	DestLocationID   int64      `json:"dest_location_id"`
-	TransferredAt    *time.Time `json:"transferred_at"`
-	Notes            *string    `json:"notes"`
+	SourceLocationUUID string     `json:"source_location_uuid"`
+	DestLocationUUID   string     `json:"dest_location_uuid"`
+	TransferredAt      *time.Time `json:"transferred_at"`
+	Notes              *string    `json:"notes"`
 }
 
 func (r CreateInventoryTransferRequest) Validate() error {
-	if r.SourceLocationID <= 0 || r.DestLocationID <= 0 {
-		return fmt.Errorf("source_location_id and dest_location_id are required")
+	if err := validateRequired(r.SourceLocationUUID, "source_location_uuid"); err != nil {
+		return err
 	}
-	if r.SourceLocationID == r.DestLocationID {
-		return fmt.Errorf("source_location_id and dest_location_id must differ")
+	if err := validateRequired(r.DestLocationUUID, "dest_location_uuid"); err != nil {
+		return err
+	}
+	if r.SourceLocationUUID == r.DestLocationUUID {
+		return fmt.Errorf("source_location_uuid and dest_location_uuid must differ")
 	}
 
 	return nil
 }
 
 type InventoryTransferResponse struct {
-	ID               int64      `json:"id"`
-	UUID             string     `json:"uuid"`
-	SourceLocationID int64      `json:"source_location_id"`
-	DestLocationID   int64      `json:"dest_location_id"`
-	TransferredAt    time.Time  `json:"transferred_at"`
-	Notes            *string    `json:"notes,omitempty"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-	DeletedAt        *time.Time `json:"deleted_at,omitempty"`
+	UUID               string     `json:"uuid"`
+	SourceLocationUUID string     `json:"source_location_uuid"`
+	DestLocationUUID   string     `json:"dest_location_uuid"`
+	TransferredAt      time.Time  `json:"transferred_at"`
+	Notes              *string    `json:"notes,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	DeletedAt          *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewInventoryTransferResponse(transfer storage.InventoryTransfer) InventoryTransferResponse {
 	return InventoryTransferResponse{
-		ID:               transfer.ID,
-		UUID:             transfer.UUID.String(),
-		SourceLocationID: transfer.SourceLocationID,
-		DestLocationID:   transfer.DestLocationID,
-		TransferredAt:    transfer.TransferredAt,
-		Notes:            transfer.Notes,
-		CreatedAt:        transfer.CreatedAt,
-		UpdatedAt:        transfer.UpdatedAt,
-		DeletedAt:        transfer.DeletedAt,
+		UUID:               transfer.UUID.String(),
+		SourceLocationUUID: transfer.SourceLocationUUID,
+		DestLocationUUID:   transfer.DestLocationUUID,
+		TransferredAt:      transfer.TransferredAt,
+		Notes:              transfer.Notes,
+		CreatedAt:          transfer.CreatedAt,
+		UpdatedAt:          transfer.UpdatedAt,
+		DeletedAt:          transfer.DeletedAt,
 	}
 }
 

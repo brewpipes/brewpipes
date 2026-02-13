@@ -8,18 +8,21 @@ import (
 )
 
 type CreateBatchRelationRequest struct {
-	ParentBatchID int64  `json:"parent_batch_id"`
-	ChildBatchID  int64  `json:"child_batch_id"`
-	RelationType  string `json:"relation_type"`
-	VolumeID      *int64 `json:"volume_id"`
+	ParentBatchUUID string  `json:"parent_batch_uuid"`
+	ChildBatchUUID  string  `json:"child_batch_uuid"`
+	RelationType    string  `json:"relation_type"`
+	VolumeUUID      *string `json:"volume_uuid"`
 }
 
 func (r CreateBatchRelationRequest) Validate() error {
-	if r.ParentBatchID <= 0 || r.ChildBatchID <= 0 {
-		return fmt.Errorf("parent_batch_id and child_batch_id are required")
+	if err := validateRequired(r.ParentBatchUUID, "parent_batch_uuid"); err != nil {
+		return err
 	}
-	if r.ParentBatchID == r.ChildBatchID {
-		return fmt.Errorf("parent_batch_id and child_batch_id must differ")
+	if err := validateRequired(r.ChildBatchUUID, "child_batch_uuid"); err != nil {
+		return err
+	}
+	if r.ParentBatchUUID == r.ChildBatchUUID {
+		return fmt.Errorf("parent_batch_uuid and child_batch_uuid must differ")
 	}
 	if err := validateRelationType(r.RelationType); err != nil {
 		return err
@@ -29,28 +32,26 @@ func (r CreateBatchRelationRequest) Validate() error {
 }
 
 type BatchRelationResponse struct {
-	ID            int64      `json:"id"`
-	UUID          string     `json:"uuid"`
-	ParentBatchID int64      `json:"parent_batch_id"`
-	ChildBatchID  int64      `json:"child_batch_id"`
-	RelationType  string     `json:"relation_type"`
-	VolumeID      *int64     `json:"volume_id,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
+	UUID            string     `json:"uuid"`
+	ParentBatchUUID string     `json:"parent_batch_uuid"`
+	ChildBatchUUID  string     `json:"child_batch_uuid"`
+	RelationType    string     `json:"relation_type"`
+	VolumeUUID      *string    `json:"volume_uuid,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewBatchRelationResponse(relation storage.BatchRelation) BatchRelationResponse {
 	return BatchRelationResponse{
-		ID:            relation.ID,
-		UUID:          relation.UUID.String(),
-		ParentBatchID: relation.ParentBatchID,
-		ChildBatchID:  relation.ChildBatchID,
-		RelationType:  relation.RelationType,
-		VolumeID:      relation.VolumeID,
-		CreatedAt:     relation.CreatedAt,
-		UpdatedAt:     relation.UpdatedAt,
-		DeletedAt:     relation.DeletedAt,
+		UUID:            relation.UUID.String(),
+		ParentBatchUUID: relation.ParentBatchUUID,
+		ChildBatchUUID:  relation.ChildBatchUUID,
+		RelationType:    relation.RelationType,
+		VolumeUUID:      relation.VolumeUUID,
+		CreatedAt:       relation.CreatedAt,
+		UpdatedAt:       relation.UpdatedAt,
+		DeletedAt:       relation.DeletedAt,
 	}
 }
 

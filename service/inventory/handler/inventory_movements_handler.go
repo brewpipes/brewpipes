@@ -15,10 +15,17 @@ import (
 
 type InventoryMovementStore interface {
 	ListInventoryMovements(context.Context) ([]storage.InventoryMovement, error)
-	ListInventoryMovementsByIngredientLot(context.Context, int64) ([]storage.InventoryMovement, error)
-	ListInventoryMovementsByBeerLot(context.Context, int64) ([]storage.InventoryMovement, error)
-	GetInventoryMovement(context.Context, int64) (storage.InventoryMovement, error)
+	ListInventoryMovementsByIngredientLot(context.Context, string) ([]storage.InventoryMovement, error)
+	ListInventoryMovementsByBeerLot(context.Context, string) ([]storage.InventoryMovement, error)
+	GetInventoryMovementByUUID(context.Context, string) (storage.InventoryMovement, error)
 	CreateInventoryMovement(context.Context, storage.InventoryMovement) (storage.InventoryMovement, error)
+	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
+	GetBeerLotByUUID(context.Context, string) (storage.BeerLot, error)
+	GetStockLocationByUUID(context.Context, string) (storage.StockLocation, error)
+	GetInventoryReceiptByUUID(context.Context, string) (storage.InventoryReceipt, error)
+	GetInventoryUsageByUUID(context.Context, string) (storage.InventoryUsage, error)
+	GetInventoryAdjustmentByUUID(context.Context, string) (storage.InventoryAdjustment, error)
+	GetInventoryTransferByUUID(context.Context, string) (storage.InventoryTransfer, error)
 }
 
 // HandleInventoryMovements handles [GET /inventory-movements] and [POST /inventory-movements].
@@ -26,21 +33,15 @@ func HandleInventoryMovements(db InventoryMovementStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ingredientValue := r.URL.Query().Get("ingredient_lot_id")
-			beerValue := r.URL.Query().Get("beer_lot_id")
+			ingredientValue := r.URL.Query().Get("ingredient_lot_uuid")
+			beerValue := r.URL.Query().Get("beer_lot_uuid")
 			if ingredientValue != "" && beerValue != "" {
-				http.Error(w, "ingredient_lot_id and beer_lot_id cannot both be set", http.StatusBadRequest)
+				http.Error(w, "ingredient_lot_uuid and beer_lot_uuid cannot both be set", http.StatusBadRequest)
 				return
 			}
 
 			if ingredientValue != "" {
-				lotID, err := parseInt64Param(ingredientValue)
-				if err != nil {
-					http.Error(w, "invalid ingredient_lot_id", http.StatusBadRequest)
-					return
-				}
-
-				movements, err := db.ListInventoryMovementsByIngredientLot(r.Context(), lotID)
+				movements, err := db.ListInventoryMovementsByIngredientLot(r.Context(), ingredientValue)
 				if err != nil {
 					slog.Error("error listing inventory movements by ingredient lot", "error", err)
 					service.InternalError(w, err.Error())
@@ -52,13 +53,7 @@ func HandleInventoryMovements(db InventoryMovementStore) http.HandlerFunc {
 			}
 
 			if beerValue != "" {
-				lotID, err := parseInt64Param(beerValue)
-				if err != nil {
-					http.Error(w, "invalid beer_lot_id", http.StatusBadRequest)
-					return
-				}
-
-				movements, err := db.ListInventoryMovementsByBeerLot(r.Context(), lotID)
+				movements, err := db.ListInventoryMovementsByBeerLot(r.Context(), beerValue)
 				if err != nil {
 					slog.Error("error listing inventory movements by beer lot", "error", err)
 					service.InternalError(w, err.Error())
@@ -93,19 +88,120 @@ func HandleInventoryMovements(db InventoryMovementStore) http.HandlerFunc {
 				occurredAt = *req.OccurredAt
 			}
 
+			// Resolve stock location UUID to internal ID
+			stockLocation, err := db.GetStockLocationByUUID(r.Context(), req.StockLocationUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "stock location not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving stock location uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve ingredient lot UUID to internal ID if provided
+			var ingredientLotID *int64
+			if req.IngredientLotUUID != nil {
+				lot, err := db.GetIngredientLotByUUID(r.Context(), *req.IngredientLotUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "ingredient lot not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving ingredient lot uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				ingredientLotID = &lot.ID
+			}
+
+			// Resolve beer lot UUID to internal ID if provided
+			var beerLotID *int64
+			if req.BeerLotUUID != nil {
+				lot, err := db.GetBeerLotByUUID(r.Context(), *req.BeerLotUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "beer lot not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving beer lot uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				beerLotID = &lot.ID
+			}
+
+			// Resolve receipt UUID to internal ID if provided
+			var receiptID *int64
+			if req.ReceiptUUID != nil {
+				receipt, err := db.GetInventoryReceiptByUUID(r.Context(), *req.ReceiptUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "receipt not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving receipt uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				receiptID = &receipt.ID
+			}
+
+			// Resolve usage UUID to internal ID if provided
+			var usageID *int64
+			if req.UsageUUID != nil {
+				usage, err := db.GetInventoryUsageByUUID(r.Context(), *req.UsageUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "usage not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving usage uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				usageID = &usage.ID
+			}
+
+			// Resolve adjustment UUID to internal ID if provided
+			var adjustmentID *int64
+			if req.AdjustmentUUID != nil {
+				adjustment, err := db.GetInventoryAdjustmentByUUID(r.Context(), *req.AdjustmentUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "adjustment not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving adjustment uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				adjustmentID = &adjustment.ID
+			}
+
+			// Resolve transfer UUID to internal ID if provided
+			var transferID *int64
+			if req.TransferUUID != nil {
+				transfer, err := db.GetInventoryTransferByUUID(r.Context(), *req.TransferUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "transfer not found", http.StatusBadRequest)
+					return
+				} else if err != nil {
+					slog.Error("error resolving transfer uuid", "error", err)
+					service.InternalError(w, err.Error())
+					return
+				}
+				transferID = &transfer.ID
+			}
+
 			movement := storage.InventoryMovement{
-				IngredientLotID: req.IngredientLotID,
-				BeerLotID:       req.BeerLotID,
-				StockLocationID: req.StockLocationID,
+				IngredientLotID: ingredientLotID,
+				BeerLotID:       beerLotID,
+				StockLocationID: stockLocation.ID,
 				Direction:       req.Direction,
 				Reason:          req.Reason,
 				Amount:          req.Amount,
 				AmountUnit:      req.AmountUnit,
 				OccurredAt:      occurredAt,
-				ReceiptID:       req.ReceiptID,
-				UsageID:         req.UsageID,
-				AdjustmentID:    req.AdjustmentID,
-				TransferID:      req.TransferID,
+				ReceiptID:       receiptID,
+				UsageID:         usageID,
+				AdjustmentID:    adjustmentID,
+				TransferID:      transferID,
 				Notes:           req.Notes,
 			}
 
@@ -123,26 +219,21 @@ func HandleInventoryMovements(db InventoryMovementStore) http.HandlerFunc {
 	}
 }
 
-// HandleInventoryMovementByID handles [GET /inventory-movements/{id}].
-func HandleInventoryMovementByID(db InventoryMovementStore) http.HandlerFunc {
+// HandleInventoryMovementByUUID handles [GET /inventory-movements/{uuid}].
+func HandleInventoryMovementByUUID(db InventoryMovementStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		movementID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		movementUUID := r.PathValue("uuid")
+		if movementUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		movement, err := db.GetInventoryMovement(r.Context(), movementID)
+		movement, err := db.GetInventoryMovementByUUID(r.Context(), movementUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "inventory movement not found", http.StatusNotFound)
 			return

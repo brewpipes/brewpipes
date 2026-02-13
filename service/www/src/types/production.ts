@@ -10,7 +10,6 @@ import type { VolumeUnit } from './units'
 
 /** Beer style definition */
 export interface Style {
-  id: number
   uuid: string
   name: string
   created_at: string
@@ -30,7 +29,7 @@ export interface CreateStyleRequest {
 export interface Recipe {
   uuid: string
   name: string
-  style_id: number | null
+  style_uuid: string | null
   style_name: string | null
   notes: string | null
   // Target specifications
@@ -59,7 +58,7 @@ export interface Recipe {
 /** Request payload for creating a new recipe */
 export interface CreateRecipeRequest {
   name: string
-  style_id?: number | null
+  style_uuid?: string | null
   style_name?: string | null
   notes?: string | null
 }
@@ -67,7 +66,7 @@ export interface CreateRecipeRequest {
 /** Request payload for updating an existing recipe */
 export interface UpdateRecipeRequest {
   name: string
-  style_id?: number | null
+  style_uuid?: string | null
   style_name?: string | null
   notes?: string | null
   // Target specifications
@@ -226,12 +225,12 @@ export interface UpdateRecipeIngredientRequest {
 
 /** A production batch of beer */
 export interface Batch {
-  id: number
   uuid: string
   short_name: string
   brew_date: string | null
-  recipe_id: number | null
   recipe_uuid: string | null
+  recipe_name: string | null
+  current_phase: string | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -242,7 +241,6 @@ export interface UpdateBatchRequest {
   short_name: string
   brew_date?: string | null
   notes?: string | null
-  recipe_id?: number | null
   recipe_uuid?: string | null
 }
 
@@ -285,7 +283,6 @@ export const VESSEL_TYPE_VALUES: VesselType[] = [
 
 /** A brewing vessel (fermenter, brite tank, kettle, etc.) */
 export interface Vessel {
-  id: number
   uuid: string
   type: string
   name: string
@@ -316,7 +313,6 @@ export interface UpdateVesselRequest {
 
 /** A tracked volume of liquid (wort, beer, etc.) */
 export interface Volume {
-  id: number
   uuid: string
   name: string | null
   description: string | null
@@ -341,12 +337,11 @@ export interface CreateVolumeRequest {
 
 /** A brew session representing a single brew day */
 export interface BrewSession {
-  id: number
   uuid: string
-  batch_id: number | null
-  wort_volume_id: number | null
-  mash_vessel_id: number | null
-  boil_vessel_id: number | null
+  batch_uuid: string | null
+  wort_volume_uuid: string | null
+  mash_vessel_uuid: string | null
+  boil_vessel_uuid: string | null
   brewed_at: string
   notes: string | null
   created_at: string
@@ -356,20 +351,20 @@ export interface BrewSession {
 
 /** Request payload for creating a new brew session */
 export interface CreateBrewSessionRequest {
-  batch_id?: number | null
-  wort_volume_id?: number | null
-  mash_vessel_id?: number | null
-  boil_vessel_id?: number | null
+  batch_uuid?: string | null
+  wort_volume_uuid?: string | null
+  mash_vessel_uuid?: string | null
+  boil_vessel_uuid?: string | null
   brewed_at: string
   notes?: string | null
 }
 
 /** Request payload for updating an existing brew session */
 export interface UpdateBrewSessionRequest {
-  batch_id?: number | null
-  wort_volume_id?: number | null
-  mash_vessel_id?: number | null
-  boil_vessel_id?: number | null
+  batch_uuid?: string | null
+  wort_volume_uuid?: string | null
+  mash_vessel_uuid?: string | null
+  boil_vessel_uuid?: string | null
   brewed_at: string
   notes?: string | null
 }
@@ -390,11 +385,10 @@ export type AdditionType
 
 /** An ingredient or material addition to a batch or volume */
 export interface Addition {
-  id: number
   uuid: string
-  batch_id: number | null
-  occupancy_id: number | null
-  volume_id: number | null
+  batch_uuid: string | null
+  occupancy_uuid: string | null
+  volume_uuid: string | null
   addition_type: AdditionType
   stage: string | null
   inventory_lot_uuid: string | null
@@ -409,9 +403,9 @@ export interface Addition {
 
 /** Request payload for creating a new addition */
 export interface CreateAdditionRequest {
-  batch_id?: number | null
-  occupancy_id?: number | null
-  volume_id?: number | null
+  batch_uuid?: string | null
+  occupancy_uuid?: string | null
+  volume_uuid?: string | null
   addition_type: AdditionType
   stage?: string | null
   inventory_lot_uuid?: string | null
@@ -427,11 +421,10 @@ export interface CreateAdditionRequest {
 
 /** A measurement observation (temperature, gravity, pH, etc.) */
 export interface Measurement {
-  id: number
   uuid: string
-  batch_id: number | null
-  occupancy_id: number | null
-  volume_id: number | null
+  batch_uuid: string | null
+  occupancy_uuid: string | null
+  volume_uuid: string | null
   kind: string
   value: number
   unit: string | null
@@ -444,9 +437,9 @@ export interface Measurement {
 
 /** Request payload for creating a new measurement */
 export interface CreateMeasurementRequest {
-  batch_id?: number | null
-  occupancy_id?: number | null
-  volume_id?: number | null
+  batch_uuid?: string | null
+  occupancy_uuid?: string | null
+  volume_uuid?: string | null
   kind: string
   value: number
   unit?: string | null
@@ -481,11 +474,10 @@ export const OCCUPANCY_STATUS_VALUES: OccupancyStatus[] = [
 
 /** A vessel occupancy record tracking what's in a vessel and when */
 export interface Occupancy {
-  id: number
   uuid: string
-  vessel_id: number
-  volume_id: number
-  batch_id: number | null
+  vessel_uuid: string
+  volume_uuid: string
+  batch_uuid: string | null
   status: OccupancyStatus | null
   in_at: string
   out_at: string | null
@@ -499,14 +491,13 @@ export interface Occupancy {
 
 /** Brew session info within a batch summary */
 export interface BatchSummaryBrewSession {
-  id: number
+  uuid: string
   brewed_at: string
   notes: string | null
 }
 
 /** Comprehensive batch summary with computed metrics */
 export interface BatchSummary {
-  id: number
   uuid: string
   short_name: string
   brew_date: string | null
@@ -517,7 +508,7 @@ export interface BatchSummary {
   current_phase: string | null
   current_vessel: string | null
   current_occupancy_status: string | null
-  current_occupancy_id: number | null
+  current_occupancy_uuid: string | null
   original_gravity: number | null
   final_gravity: number | null
   abv: number | null

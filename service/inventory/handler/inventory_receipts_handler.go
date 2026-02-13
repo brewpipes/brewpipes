@@ -16,7 +16,7 @@ import (
 
 type InventoryReceiptStore interface {
 	CreateInventoryReceipt(context.Context, storage.InventoryReceipt) (storage.InventoryReceipt, error)
-	GetInventoryReceipt(context.Context, int64) (storage.InventoryReceipt, error)
+	GetInventoryReceiptByUUID(context.Context, string) (storage.InventoryReceipt, error)
 	ListInventoryReceipts(context.Context) ([]storage.InventoryReceipt, error)
 }
 
@@ -80,26 +80,21 @@ func HandleInventoryReceipts(db InventoryReceiptStore) http.HandlerFunc {
 	}
 }
 
-// HandleInventoryReceiptByID handles [GET /inventory-receipts/{id}].
-func HandleInventoryReceiptByID(db InventoryReceiptStore) http.HandlerFunc {
+// HandleInventoryReceiptByUUID handles [GET /inventory-receipts/{uuid}].
+func HandleInventoryReceiptByUUID(db InventoryReceiptStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		receiptID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		receiptUUID := r.PathValue("uuid")
+		if receiptUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		receipt, err := db.GetInventoryReceipt(r.Context(), receiptID)
+		receipt, err := db.GetInventoryReceiptByUUID(r.Context(), receiptUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "inventory receipt not found", http.StatusNotFound)
 			return

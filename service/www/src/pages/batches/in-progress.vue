@@ -2,11 +2,11 @@
   <v-container class="production-page" fluid>
     <!-- Mobile: Show list or detail based on selection -->
     <v-row v-if="$vuetify.display.smAndDown" align="stretch">
-      <v-col v-if="!selectedBatchId" cols="12">
+      <v-col v-if="!selectedBatchUuid" cols="12">
         <BatchList
           :batches="inProgressBatches"
           :loading="loading"
-          :selected-batch-id="selectedBatchId"
+          :selected-batch-uuid="selectedBatchUuid"
           :show-bulk-import="false"
           @create="createBatchDialog = true"
           @select="selectBatch"
@@ -15,7 +15,7 @@
 
       <v-col v-else cols="12">
         <BatchDetails
-          :batch-id="selectedBatchId"
+          :batch-uuid="selectedBatchUuid"
           @cleared="clearSelection"
         />
       </v-col>
@@ -27,7 +27,7 @@
         <BatchList
           :batches="inProgressBatches"
           :loading="loading"
-          :selected-batch-id="selectedBatchId"
+          :selected-batch-uuid="selectedBatchUuid"
           :show-bulk-import="false"
           @create="createBatchDialog = true"
           @select="selectBatch"
@@ -36,7 +36,7 @@
 
       <v-col cols="12" md="8">
         <BatchDetails
-          :batch-id="selectedBatchId"
+          :batch-uuid="selectedBatchUuid"
           @cleared="clearSelection"
         />
       </v-col>
@@ -110,28 +110,16 @@
   import { useApiClient } from '@/composables/useApiClient'
   import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
 
-  type ProcessPhase
-    = | 'planning'
-      | 'mashing'
-      | 'heating'
-      | 'boiling'
-      | 'cooling'
-      | 'fermenting'
-      | 'conditioning'
-      | 'packaging'
-      | 'finished'
-
   const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const { request } = useApiClient(apiBase)
-  const { getRecipes, getBatchSummary } = useProductionApi()
+  const { getRecipes } = useProductionApi()
 
   const loading = ref(false)
   const batches = ref<Batch[]>([])
-  const batchCurrentPhases = ref<Map<number, ProcessPhase | null>>(new Map())
   const recipes = ref<Recipe[]>([])
   const recipesLoading = ref(false)
 
-  const selectedBatchId = ref<number | null>(null)
+  const selectedBatchUuid = ref<string | null>(null)
   const createBatchDialog = ref(false)
 
   const snackbar = reactive({
@@ -150,17 +138,7 @@
   // Filter batches to only show in-progress ones
   // In-progress = not finished (phase !== 'finished')
   const inProgressBatches = computed(() => {
-    return batches.value.filter(batch => {
-      const phase = batchCurrentPhases.value.get(batch.id)
-
-      // If the batch is finished, exclude it
-      if (phase === 'finished') {
-        return false
-      }
-
-      // Include all other batches (planning, active brewing, fermenting, etc.)
-      return true
-    })
+    return batches.value.filter(batch => batch.current_phase !== 'finished')
   })
 
   const recipeSelectItems = computed(() =>
@@ -175,12 +153,12 @@
     await refreshAll()
   })
 
-  function selectBatch (id: number) {
-    selectedBatchId.value = id
+  function selectBatch (uuid: string) {
+    selectedBatchUuid.value = uuid
   }
 
   function clearSelection () {
-    selectedBatchId.value = null
+    selectedBatchUuid.value = null
   }
 
   function showNotice (text: string, color = 'success') {
@@ -203,8 +181,8 @@
       await Promise.all([loadBatches(), loadRecipesData()])
       // Auto-select first batch if none selected
       const firstBatch = inProgressBatches.value[0]
-      if (!selectedBatchId.value && firstBatch) {
-        selectedBatchId.value = firstBatch.id
+      if (!selectedBatchUuid.value && firstBatch) {
+        selectedBatchUuid.value = firstBatch.uuid
       }
     } catch (error) {
       handleError(error)
@@ -214,24 +192,7 @@
   }
 
   async function loadBatches () {
-    const batchesData = await get<Batch[]>('/batches')
-    batches.value = batchesData
-
-    // Load batch summaries to get current phases (in parallel)
-    const phaseMap = new Map<number, ProcessPhase | null>()
-    await Promise.all(
-      batchesData.map(async batch => {
-        try {
-          const summary = await getBatchSummary(batch.id)
-          phaseMap.set(batch.id, (summary.current_phase as ProcessPhase) ?? null)
-        } catch {
-          // If summary fails, treat as no phase
-          phaseMap.set(batch.id, null)
-        }
-      }),
-    )
-
-    batchCurrentPhases.value = phaseMap
+    batches.value = await get<Batch[]>('/batches')
   }
 
   async function loadRecipesData () {
@@ -261,7 +222,7 @@
       newBatch.recipe_uuid = null
       newBatch.notes = ''
       await loadBatches()
-      selectedBatchId.value = created.id
+      selectedBatchUuid.value = created.uuid
       createBatchDialog.value = false
     } catch (error) {
       handleError(error)

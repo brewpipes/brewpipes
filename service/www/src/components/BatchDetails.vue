@@ -35,7 +35,7 @@
     </v-card-title>
     <v-card-text>
       <v-alert
-        v-if="!batchId"
+        v-if="!batchUuid"
         density="comfortable"
         type="info"
         variant="tonal"
@@ -147,7 +147,7 @@
             <BatchBrewSessionsTab
               :additions="wortAdditions"
               :measurements="wortMeasurements"
-              :selected-session-id="selectedBrewSessionId"
+              :selected-session-uuid="selectedBrewSessionUuid"
               :sessions="brewSessions"
               :vessels="vessels"
               :volumes="allVolumes"
@@ -342,7 +342,7 @@
   // Props
   const props = withDefaults(
     defineProps<{
-      batchId: number | null
+      batchUuid: string | null
       showBackButton?: boolean
       backButtonText?: string
       backButtonRoute?: string
@@ -411,7 +411,7 @@
 
   const additionForm = reactive({
     target: 'batch' as 'batch' | 'occupancy',
-    occupancy_id: '',
+    occupancy_uuid: '',
     addition_type: 'malt' as AdditionType,
     stage: '',
     inventory_lot_uuid: '',
@@ -423,7 +423,7 @@
 
   const measurementForm = reactive({
     target: 'batch' as 'batch' | 'occupancy',
-    occupancy_id: '',
+    occupancy_uuid: '',
     kind: '',
     value: '',
     unit: '',
@@ -458,20 +458,20 @@
   const brewSessions = ref<BrewSession[]>([])
   const vessels = ref<Vessel[]>([])
   const allVolumes = ref<ProductionVolume[]>([])
-  const selectedBrewSessionId = ref<number | null>(null)
+  const selectedBrewSessionUuid = ref<string | null>(null)
   const wortAdditions = ref<ProductionAddition[]>([])
   const wortMeasurements = ref<ProductionMeasurement[]>([])
 
   // Brew Session dialogs and forms
   const brewSessionDialog = ref(false)
-  const editingBrewSessionId = ref<number | null>(null)
+  const editingBrewSessionUuid = ref<string | null>(null)
   const savingBrewSession = ref(false)
 
   const brewSessionForm = reactive({
     brewed_at: '',
-    mash_vessel_id: null as number | null,
-    boil_vessel_id: null as number | null,
-    wort_volume_id: null as number | null,
+    mash_vessel_uuid: null as string | null,
+    boil_vessel_uuid: null as string | null,
+    wort_volume_uuid: null as string | null,
     notes: '',
   })
 
@@ -543,16 +543,16 @@
     return hasTemperature || hasGravity || hasNotes
   })
 
-  const isEditingBrewSession = computed(() => editingBrewSessionId.value !== null)
+  const isEditingBrewSession = computed(() => editingBrewSessionUuid.value !== null)
 
   const selectedBrewSession = computed(() =>
-    brewSessions.value.find(session => session.id === selectedBrewSessionId.value) ?? null,
+    brewSessions.value.find(session => session.uuid === selectedBrewSessionUuid.value) ?? null,
   )
 
   const volumeNameMap = computed(
     () =>
       new Map(
-        volumes.value.map(volume => [volume.id, volume.name ?? `Volume ${volume.id}`]),
+        volumes.value.map(volume => [volume.uuid, volume.name ?? 'Unnamed Volume']),
       ),
   )
 
@@ -597,16 +597,16 @@
 
   const flowNodes = computed<FlowNode[]>(() => {
     const nodes = new Map<string, FlowNode>()
-    const labelFor = (volumeId: number) => volumeNameMap.value.get(volumeId) ?? `Volume ${volumeId}`
+    const labelFor = (volumeUuid: string) => volumeNameMap.value.get(volumeUuid) ?? 'Unnamed Volume'
 
     for (const relation of flowRelations.value) {
-      const parentId = `volume-${relation.parent_volume_id}`
-      const childId = `volume-${relation.child_volume_id}`
+      const parentId = `volume-${relation.parent_volume_uuid}`
+      const childId = `volume-${relation.child_volume_uuid}`
       if (!nodes.has(parentId)) {
-        nodes.set(parentId, { id: parentId, label: labelFor(relation.parent_volume_id) })
+        nodes.set(parentId, { id: parentId, label: labelFor(relation.parent_volume_uuid) })
       }
       if (!nodes.has(childId)) {
-        nodes.set(childId, { id: childId, label: labelFor(relation.child_volume_id) })
+        nodes.set(childId, { id: childId, label: labelFor(relation.child_volume_uuid) })
       }
     }
 
@@ -617,8 +617,8 @@
     const links = new Map<string, FlowLink>()
 
     for (const relation of flowRelations.value) {
-      const source = `volume-${relation.parent_volume_id}`
-      const target = `volume-${relation.child_volume_id}`
+      const source = `volume-${relation.parent_volume_uuid}`
+      const target = `volume-${relation.child_volume_uuid}`
       const key = `${source}-${target}-${relation.amount_unit ?? ''}`
       const existing = links.get(key)
       if (existing) {
@@ -642,7 +642,7 @@
 
     for (const addition of additions.value) {
       items.push({
-        id: `addition-${addition.id}`,
+        id: `addition-${addition.uuid}`,
         title: `Addition: ${addition.addition_type}`,
         subtitle: `${formatAmount(addition.amount, addition.amount_unit)} ${addition.stage ?? ''}`.trim(),
         at: addition.added_at ?? addition.created_at,
@@ -669,9 +669,9 @@
 
     for (const phase of processPhases.value) {
       items.push({
-        id: `process-${phase.id}`,
+        id: `process-${phase.uuid}`,
         title: `Process phase: ${phase.process_phase}`,
-        subtitle: `Batch ${phase.batch_id}`,
+        subtitle: selectedBatch.value?.short_name ?? 'Batch',
         at: phase.phase_at ?? phase.created_at,
         color: 'success',
         icon: 'mdi-progress-check',
@@ -680,9 +680,9 @@
 
     for (const phase of batchVolumes.value) {
       items.push({
-        id: `liquid-${phase.id}`,
+        id: `liquid-${phase.uuid}`,
         title: `Liquid phase: ${phase.liquid_phase}`,
-        subtitle: `Volume ${phase.volume_id}`,
+        subtitle: volumeNameMap.value.get(phase.volume_uuid) ?? 'Unnamed Volume',
         at: phase.phase_at ?? phase.created_at,
         color: 'warning',
         icon: 'mdi-water',
@@ -693,25 +693,25 @@
     return [...items].sort((a, b) => toTimestamp(b.at) - toTimestamp(a.at))
   })
 
-  // Watch for batchId changes
-  watch(() => props.batchId, async newId => {
-    if (newId) {
-      await loadBatchData(newId)
+  // Watch for batchUuid changes
+  watch(() => props.batchUuid, async newUuid => {
+    if (newUuid) {
+      await loadBatchData(newUuid)
     } else {
       clearData()
     }
   }, { immediate: true })
 
   // Watch for brew session selection to load wort additions/measurements
-  watch(selectedBrewSessionId, async sessionId => {
-    if (!sessionId) {
+  watch(selectedBrewSessionUuid, async sessionUuid => {
+    if (!sessionUuid) {
       wortAdditions.value = []
       wortMeasurements.value = []
       return
     }
-    const session = brewSessions.value.find(s => s.id === sessionId)
-    if (session?.wort_volume_id) {
-      await loadWortData(session.wort_volume_id)
+    const session = brewSessions.value.find(s => s.uuid === sessionUuid)
+    if (session?.wort_volume_uuid) {
+      await loadWortData(session.wort_volume_uuid)
     } else {
       wortAdditions.value = []
       wortMeasurements.value = []
@@ -724,8 +724,8 @@
 
   // Exposed methods
   function refresh () {
-    if (props.batchId) {
-      loadBatchData(props.batchId)
+    if (props.batchUuid) {
+      loadBatchData(props.batchUuid)
     }
   }
 
@@ -751,7 +751,7 @@
     volumeRelations.value = []
     batchSummary.value = null
     brewSessions.value = []
-    selectedBrewSessionId.value = null
+    selectedBrewSessionUuid.value = null
     wortAdditions.value = []
     wortMeasurements.value = []
   }
@@ -798,16 +798,16 @@
     }
   }
 
-  async function loadBatchData (batchId: number) {
+  async function loadBatchData (batchUuid: string) {
     loading.value = true
     try {
       const [batchData, batchVolumesData, processPhasesData, additionsData, measurementsData, brewSessionsData] = await Promise.all([
-        get<Batch>(`/batches/${batchId}`),
-        get<BatchVolume[]>(`/batch-volumes?batch_id=${batchId}`),
-        get<BatchProcessPhase[]>(`/batch-process-phases?batch_id=${batchId}`),
-        get<Addition[]>(`/additions?batch_id=${batchId}`),
-        get<Measurement[]>(`/measurements?batch_id=${batchId}`),
-        getBrewSessions(batchId),
+        get<Batch>(`/batches/${batchUuid}`),
+        get<BatchVolume[]>(`/batch-volumes?batch_uuid=${batchUuid}`),
+        get<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batchUuid}`),
+        get<Addition[]>(`/additions?batch_uuid=${batchUuid}`),
+        get<Measurement[]>(`/measurements?batch_uuid=${batchUuid}`),
+        getBrewSessions(batchUuid),
       ])
 
       selectedBatch.value = batchData
@@ -818,12 +818,12 @@
       brewSessions.value = brewSessionsData
 
       // Clear brew session selection when batch changes
-      selectedBrewSessionId.value = null
+      selectedBrewSessionUuid.value = null
       wortAdditions.value = []
       wortMeasurements.value = []
 
       // Load batch summary in parallel (non-blocking)
-      loadBatchSummary(batchId)
+      loadBatchSummary(batchUuid)
 
       await loadVolumeRelations(batchVolumesData)
     } catch (error) {
@@ -834,11 +834,11 @@
     }
   }
 
-  async function loadBatchSummary (batchId: number) {
+  async function loadBatchSummary (batchUuid: string) {
     batchSummaryLoading.value = true
     batchSummary.value = null
     try {
-      batchSummary.value = await getBatchSummary(batchId)
+      batchSummary.value = await getBatchSummary(batchUuid)
     } catch (error) {
       console.error('Failed to load batch summary:', error)
     } finally {
@@ -846,11 +846,11 @@
     }
   }
 
-  async function loadWortData (volumeId: number) {
+  async function loadWortData (volumeUuid: string) {
     try {
       const [additionsData, measurementsData] = await Promise.all([
-        getAdditionsByVolume(volumeId),
-        getMeasurementsByVolume(volumeId),
+        getAdditionsByVolume(volumeUuid),
+        getMeasurementsByVolume(volumeUuid),
       ])
       wortAdditions.value = additionsData
       wortMeasurements.value = measurementsData
@@ -860,16 +860,16 @@
   }
 
   async function loadVolumeRelations (batchVolumeData: BatchVolume[]) {
-    const volumeIds = Array.from(
-      new Set(batchVolumeData.map(item => item.volume_id)),
+    const volumeUuids = Array.from(
+      new Set(batchVolumeData.map(item => item.volume_uuid)),
     )
-    if (volumeIds.length === 0) {
+    if (volumeUuids.length === 0) {
       volumeRelations.value = []
       return
     }
 
     const results = await Promise.allSettled(
-      volumeIds.map(id => get<VolumeRelation[]>(`/volume-relations?volume_id=${id}`)),
+      volumeUuids.map(uuid => get<VolumeRelation[]>(`/volume-relations?volume_uuid=${uuid}`)),
     )
 
     volumeRelations.value = results.flatMap(result =>
@@ -877,325 +877,28 @@
     )
   }
 
-  async function recordAddition () {
-    if (!props.batchId) {
-      return
-    }
-    if (!additionForm.amount) {
-      return
-    }
-    if (additionForm.target === 'occupancy' && !additionForm.occupancy_id) {
-      return
-    }
-    try {
-      const payload = {
-        batch_id: additionForm.target === 'batch' ? props.batchId : null,
-        occupancy_id: additionForm.target === 'occupancy' ? toNumber(additionForm.occupancy_id) : null,
-        addition_type: additionForm.addition_type,
-        stage: normalizeText(additionForm.stage),
-        inventory_lot_uuid: normalizeText(additionForm.inventory_lot_uuid),
-        amount: toNumber(additionForm.amount),
-        amount_unit: additionForm.amount_unit,
-        added_at: normalizeDateTime(additionForm.added_at),
-        notes: normalizeText(additionForm.notes),
-      }
-      await post<Addition>('/additions', payload)
-      showNotice('Addition recorded')
-      additionForm.stage = ''
-      additionForm.inventory_lot_uuid = ''
-      additionForm.amount = ''
-      additionForm.added_at = ''
-      additionForm.notes = ''
-      createAdditionDialog.value = false
-      await loadBatchData(props.batchId)
-    } catch (error) {
-      handleError(error)
-    }
-  }
-
-  async function recordMeasurement () {
-    if (!props.batchId) {
-      return
-    }
-    if (!measurementForm.kind.trim() || !measurementForm.value) {
-      return
-    }
-    if (measurementForm.target === 'occupancy' && !measurementForm.occupancy_id) {
-      return
-    }
-    try {
-      const payload = {
-        batch_id: measurementForm.target === 'batch' ? props.batchId : null,
-        occupancy_id: measurementForm.target === 'occupancy' ? toNumber(measurementForm.occupancy_id) : null,
-        kind: measurementForm.kind.trim(),
-        value: toNumber(measurementForm.value),
-        unit: normalizeText(measurementForm.unit),
-        observed_at: normalizeDateTime(measurementForm.observed_at),
-        notes: normalizeText(measurementForm.notes),
-      }
-      await post<Measurement>('/measurements', payload)
-      showNotice('Measurement recorded')
-      measurementForm.kind = ''
-      measurementForm.value = ''
-      measurementForm.unit = ''
-      measurementForm.observed_at = ''
-      measurementForm.notes = ''
-      createMeasurementDialog.value = false
-      await loadBatchData(props.batchId)
-    } catch (error) {
-      handleError(error)
-    }
-  }
-
-  function openTimelineExtendedDialog () {
-    resetTimelineExtended()
-    const temperature = parseTemperatureInput(timelineReading.temperature)
-    const gravityValue = parseNumericInput(timelineReading.gravity)
-    timelineExtended.observed_at = timelineReading.observed_at || nowInputValue()
-    timelineExtended.temperature = temperature.value === null ? '' : String(temperature.value)
-    timelineExtended.temperature_unit = temperature.unit ?? ''
-    timelineExtended.gravity = gravityValue === null ? '' : String(gravityValue)
-    timelineExtended.notes = timelineReading.notes
-    timelineExtendedDialog.value = true
-  }
-
-  async function recordTimelineReading () {
-    if (!props.batchId) {
-      return
-    }
-
-    const temperature = parseTemperatureInput(timelineReading.temperature)
-    const gravityValue = parseNumericInput(timelineReading.gravity)
-    const noteText = normalizeText(timelineReading.notes)
-
-    if (temperature.value === null && gravityValue === null && !noteText) {
-      return
-    }
-
-    try {
-      const observedAt = timelineReading.observed_at
-        ? normalizeDateTime(timelineReading.observed_at)
-        : new Date().toISOString()
-      const payloads: Array<{
-        batch_id: number
-        occupancy_id: null
-        kind: string
-        value: number
-        unit: string | null
-        observed_at: string | null
-        notes: string | null
-      }> = []
-
-      if (temperature.value !== null) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'temperature',
-          value: temperature.value,
-          unit: temperature.unit,
-          observed_at: observedAt,
-          notes: null,
-        })
-      }
-      if (gravityValue !== null) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'gravity',
-          value: gravityValue,
-          unit: null,
-          observed_at: observedAt,
-          notes: null,
-        })
-      }
-      if (noteText) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'note',
-          value: 0,
-          unit: null,
-          observed_at: observedAt,
-          notes: noteText,
-        })
-      }
-
-      await Promise.all(payloads.map(payload => post<Measurement>('/measurements', payload)))
-      showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
-      resetTimelineReading()
-      await loadBatchData(props.batchId)
-    } catch (error) {
-      handleError(error)
-    }
-  }
-
-  async function recordTimelineExtended () {
-    if (!props.batchId) {
-      return
-    }
-
-    const temperatureValue = toNumber(timelineExtended.temperature)
-    const gravityValue = toNumber(timelineExtended.gravity)
-    const phValue = toNumber(timelineExtended.ph)
-    const extraKind = timelineExtended.extra_kind.trim()
-    const extraValue = toNumber(timelineExtended.extra_value)
-    const noteText = normalizeText(timelineExtended.notes)
-
-    if (extraKind && extraValue === null) {
-      return
-    }
-
-    if (
-      temperatureValue === null
-      && gravityValue === null
-      && phValue === null
-      && !extraKind
-      && !noteText
-    ) {
-      return
-    }
-
-    try {
-      const observedAt = timelineExtended.observed_at
-        ? normalizeDateTime(timelineExtended.observed_at)
-        : new Date().toISOString()
-      const payloads: Array<{
-        batch_id: number
-        occupancy_id: null
-        kind: string
-        value: number
-        unit: string | null
-        observed_at: string | null
-        notes: string | null
-      }> = []
-
-      if (temperatureValue !== null) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'temperature',
-          value: temperatureValue,
-          unit: normalizeText(timelineExtended.temperature_unit),
-          observed_at: observedAt,
-          notes: null,
-        })
-      }
-      if (gravityValue !== null) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'gravity',
-          value: gravityValue,
-          unit: normalizeText(timelineExtended.gravity_unit),
-          observed_at: observedAt,
-          notes: null,
-        })
-      }
-      if (phValue !== null) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'ph',
-          value: phValue,
-          unit: normalizeText(timelineExtended.ph_unit),
-          observed_at: observedAt,
-          notes: null,
-        })
-      }
-      if (extraKind && extraValue !== null) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: extraKind,
-          value: extraValue,
-          unit: normalizeText(timelineExtended.extra_unit),
-          observed_at: observedAt,
-          notes: null,
-        })
-      }
-      if (noteText) {
-        payloads.push({
-          batch_id: props.batchId,
-          occupancy_id: null,
-          kind: 'note',
-          value: 0,
-          unit: null,
-          observed_at: observedAt,
-          notes: noteText,
-        })
-      }
-
-      await Promise.all(payloads.map(payload => post<Measurement>('/measurements', payload)))
-      showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
-      resetTimelineReading()
-      resetTimelineExtended()
-      timelineExtendedDialog.value = false
-      await loadBatchData(props.batchId)
-    } catch (error) {
-      handleError(error)
-    }
-  }
-
-  function resetTimelineReading () {
-    timelineReading.observed_at = ''
-    timelineReading.temperature = ''
-    timelineReading.gravity = ''
-    timelineReading.notes = ''
-  }
-
-  function updateTimelineReading (reading: { observed_at: string, temperature: string, gravity: string, notes: string }) {
-    timelineReading.observed_at = reading.observed_at
-    timelineReading.temperature = reading.temperature
-    timelineReading.gravity = reading.gravity
-    timelineReading.notes = reading.notes
-  }
-
-  function resetTimelineExtended () {
-    timelineExtended.observed_at = ''
-    timelineExtended.temperature = ''
-    timelineExtended.temperature_unit = ''
-    timelineExtended.gravity = ''
-    timelineExtended.gravity_unit = ''
-    timelineExtended.ph = ''
-    timelineExtended.ph_unit = ''
-    timelineExtended.extra_kind = ''
-    timelineExtended.extra_value = ''
-    timelineExtended.extra_unit = ''
-    timelineExtended.notes = ''
-  }
-
-  // ==================== Brew Session Functions ====================
-
-  function selectBrewSession (id: number) {
-    selectedBrewSessionId.value = id
-  }
-
-  function clearBrewSessionSelection () {
-    selectedBrewSessionId.value = null
-  }
-
   function openCreateBrewSessionDialog () {
-    editingBrewSessionId.value = null
+    editingBrewSessionUuid.value = null
     brewSessionForm.brewed_at = nowInputValue()
-    brewSessionForm.mash_vessel_id = null
-    brewSessionForm.boil_vessel_id = null
-    brewSessionForm.wort_volume_id = null
+    brewSessionForm.mash_vessel_uuid = null
+    brewSessionForm.boil_vessel_uuid = null
+    brewSessionForm.wort_volume_uuid = null
     brewSessionForm.notes = ''
     brewSessionDialog.value = true
   }
 
   function openEditBrewSessionDialog (session: BrewSession) {
-    editingBrewSessionId.value = session.id
+    editingBrewSessionUuid.value = session.uuid
     brewSessionForm.brewed_at = toLocalDateTimeInput(session.brewed_at)
-    brewSessionForm.mash_vessel_id = session.mash_vessel_id
-    brewSessionForm.boil_vessel_id = session.boil_vessel_id
-    brewSessionForm.wort_volume_id = session.wort_volume_id
+    brewSessionForm.mash_vessel_uuid = session.mash_vessel_uuid
+    brewSessionForm.boil_vessel_uuid = session.boil_vessel_uuid
+    brewSessionForm.wort_volume_uuid = session.wort_volume_uuid
     brewSessionForm.notes = session.notes ?? ''
     brewSessionDialog.value = true
   }
 
   async function saveBrewSession () {
-    if (!props.batchId || !brewSessionForm.brewed_at.trim()) {
+    if (!props.batchUuid || !brewSessionForm.brewed_at.trim()) {
       return
     }
 
@@ -1203,16 +906,16 @@
 
     try {
       const payload = {
-        batch_id: props.batchId,
-        wort_volume_id: brewSessionForm.wort_volume_id,
-        mash_vessel_id: brewSessionForm.mash_vessel_id,
-        boil_vessel_id: brewSessionForm.boil_vessel_id,
+        batch_uuid: props.batchUuid,
+        wort_volume_uuid: brewSessionForm.wort_volume_uuid,
+        mash_vessel_uuid: brewSessionForm.mash_vessel_uuid,
+        boil_vessel_uuid: brewSessionForm.boil_vessel_uuid,
         brewed_at: new Date(brewSessionForm.brewed_at).toISOString(),
         notes: normalizeText(brewSessionForm.notes),
       }
 
-      if (isEditingBrewSession.value && editingBrewSessionId.value) {
-        await updateBrewSession(editingBrewSessionId.value, payload)
+      if (isEditingBrewSession.value && editingBrewSessionUuid.value) {
+        await updateBrewSession(editingBrewSessionUuid.value, payload)
         showNotice('Brew session updated')
       } else {
         await createBrewSession(payload)
@@ -1220,9 +923,9 @@
       }
 
       brewSessionDialog.value = false
-      editingBrewSessionId.value = null
-      if (props.batchId) {
-        await loadBatchData(props.batchId)
+      editingBrewSessionUuid.value = null
+      if (props.batchUuid) {
+        await loadBatchData(props.batchUuid)
       }
     } catch (error) {
       handleError(error)
@@ -1260,7 +963,7 @@
 
       // Update volumes list and select the new volume
       await loadAllVolumesData()
-      brewSessionForm.wort_volume_id = created.id
+      brewSessionForm.wort_volume_uuid = created.uuid
 
       createVolumeDialog.value = false
     } catch (error) {
@@ -1268,6 +971,303 @@
     } finally {
       savingVolume.value = false
     }
+  }
+
+  async function recordAddition () {
+    if (!props.batchUuid) {
+      return
+    }
+    if (!additionForm.amount) {
+      return
+    }
+    if (additionForm.target === 'occupancy' && !additionForm.occupancy_uuid) {
+      return
+    }
+    try {
+      const payload = {
+        batch_uuid: additionForm.target === 'batch' ? props.batchUuid : null,
+        occupancy_uuid: additionForm.target === 'occupancy' ? additionForm.occupancy_uuid : null,
+        addition_type: additionForm.addition_type,
+        stage: normalizeText(additionForm.stage),
+        inventory_lot_uuid: normalizeText(additionForm.inventory_lot_uuid),
+        amount: toNumber(additionForm.amount),
+        amount_unit: additionForm.amount_unit,
+        added_at: normalizeDateTime(additionForm.added_at),
+        notes: normalizeText(additionForm.notes),
+      }
+      await post<Addition>('/additions', payload)
+      showNotice('Addition recorded')
+      additionForm.stage = ''
+      additionForm.inventory_lot_uuid = ''
+      additionForm.amount = ''
+      additionForm.added_at = ''
+      additionForm.notes = ''
+      createAdditionDialog.value = false
+      await loadBatchData(props.batchUuid)
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function recordMeasurement () {
+    if (!props.batchUuid) {
+      return
+    }
+    if (!measurementForm.kind.trim() || !measurementForm.value) {
+      return
+    }
+    if (measurementForm.target === 'occupancy' && !measurementForm.occupancy_uuid) {
+      return
+    }
+    try {
+      const payload = {
+        batch_uuid: measurementForm.target === 'batch' ? props.batchUuid : null,
+        occupancy_uuid: measurementForm.target === 'occupancy' ? measurementForm.occupancy_uuid : null,
+        kind: measurementForm.kind.trim(),
+        value: toNumber(measurementForm.value),
+        unit: normalizeText(measurementForm.unit),
+        observed_at: normalizeDateTime(measurementForm.observed_at),
+        notes: normalizeText(measurementForm.notes),
+      }
+      await post<Measurement>('/measurements', payload)
+      showNotice('Measurement recorded')
+      measurementForm.kind = ''
+      measurementForm.value = ''
+      measurementForm.unit = ''
+      measurementForm.observed_at = ''
+      measurementForm.notes = ''
+      createMeasurementDialog.value = false
+      await loadBatchData(props.batchUuid)
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  function openTimelineExtendedDialog () {
+    resetTimelineExtended()
+    const temperature = parseTemperatureInput(timelineReading.temperature)
+    const gravityValue = parseNumericInput(timelineReading.gravity)
+    timelineExtended.observed_at = timelineReading.observed_at || nowInputValue()
+    timelineExtended.temperature = temperature.value === null ? '' : String(temperature.value)
+    timelineExtended.temperature_unit = temperature.unit ?? ''
+    timelineExtended.gravity = gravityValue === null ? '' : String(gravityValue)
+    timelineExtended.notes = timelineReading.notes
+    timelineExtendedDialog.value = true
+  }
+
+  async function recordTimelineReading () {
+    if (!props.batchUuid) {
+      return
+    }
+
+    const temperature = parseTemperatureInput(timelineReading.temperature)
+    const gravityValue = parseNumericInput(timelineReading.gravity)
+    const noteText = normalizeText(timelineReading.notes)
+
+    if (temperature.value === null && gravityValue === null && !noteText) {
+      return
+    }
+
+    try {
+      const observedAt = timelineReading.observed_at
+        ? normalizeDateTime(timelineReading.observed_at)
+        : new Date().toISOString()
+      const payloads: Array<{
+        batch_uuid: string
+        occupancy_uuid: null
+        kind: string
+        value: number
+        unit: string | null
+        observed_at: string | null
+        notes: string | null
+      }> = []
+
+      if (temperature.value !== null) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'temperature',
+          value: temperature.value,
+          unit: temperature.unit,
+          observed_at: observedAt,
+          notes: null,
+        })
+      }
+      if (gravityValue !== null) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'gravity',
+          value: gravityValue,
+          unit: null,
+          observed_at: observedAt,
+          notes: null,
+        })
+      }
+      if (noteText) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'note',
+          value: 0,
+          unit: null,
+          observed_at: observedAt,
+          notes: noteText,
+        })
+      }
+
+      await Promise.all(payloads.map(payload => post<Measurement>('/measurements', payload)))
+      showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
+      resetTimelineReading()
+      await loadBatchData(props.batchUuid)
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function recordTimelineExtended () {
+    if (!props.batchUuid) {
+      return
+    }
+
+    const temperatureValue = toNumber(timelineExtended.temperature)
+    const gravityValue = toNumber(timelineExtended.gravity)
+    const phValue = toNumber(timelineExtended.ph)
+    const extraKind = timelineExtended.extra_kind.trim()
+    const extraValue = toNumber(timelineExtended.extra_value)
+    const noteText = normalizeText(timelineExtended.notes)
+
+    if (extraKind && extraValue === null) {
+      return
+    }
+
+    if (
+      temperatureValue === null
+      && gravityValue === null
+      && phValue === null
+      && !extraKind
+      && !noteText
+    ) {
+      return
+    }
+
+    try {
+      const observedAt = timelineExtended.observed_at
+        ? normalizeDateTime(timelineExtended.observed_at)
+        : new Date().toISOString()
+      const payloads: Array<{
+        batch_uuid: string
+        occupancy_uuid: null
+        kind: string
+        value: number
+        unit: string | null
+        observed_at: string | null
+        notes: string | null
+      }> = []
+
+      if (temperatureValue !== null) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'temperature',
+          value: temperatureValue,
+          unit: normalizeText(timelineExtended.temperature_unit),
+          observed_at: observedAt,
+          notes: null,
+        })
+      }
+      if (gravityValue !== null) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'gravity',
+          value: gravityValue,
+          unit: normalizeText(timelineExtended.gravity_unit),
+          observed_at: observedAt,
+          notes: null,
+        })
+      }
+      if (phValue !== null) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'ph',
+          value: phValue,
+          unit: normalizeText(timelineExtended.ph_unit),
+          observed_at: observedAt,
+          notes: null,
+        })
+      }
+      if (extraKind && extraValue !== null) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: extraKind,
+          value: extraValue,
+          unit: normalizeText(timelineExtended.extra_unit),
+          observed_at: observedAt,
+          notes: null,
+        })
+      }
+      if (noteText) {
+        payloads.push({
+          batch_uuid: props.batchUuid,
+          occupancy_uuid: null,
+          kind: 'note',
+          value: 0,
+          unit: null,
+          observed_at: observedAt,
+          notes: noteText,
+        })
+      }
+
+      await Promise.all(payloads.map(payload => post<Measurement>('/measurements', payload)))
+      showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
+      resetTimelineReading()
+      resetTimelineExtended()
+      timelineExtendedDialog.value = false
+      await loadBatchData(props.batchUuid)
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  function resetTimelineReading () {
+    timelineReading.observed_at = ''
+    timelineReading.temperature = ''
+    timelineReading.gravity = ''
+    timelineReading.notes = ''
+  }
+
+  function updateTimelineReading (reading: { observed_at: string, temperature: string, gravity: string, notes: string }) {
+    timelineReading.observed_at = reading.observed_at
+    timelineReading.temperature = reading.temperature
+    timelineReading.gravity = reading.gravity
+    timelineReading.notes = reading.notes
+  }
+
+  function resetTimelineExtended () {
+    timelineExtended.observed_at = ''
+    timelineExtended.temperature = ''
+    timelineExtended.temperature_unit = ''
+    timelineExtended.gravity = ''
+    timelineExtended.gravity_unit = ''
+    timelineExtended.ph = ''
+    timelineExtended.ph_unit = ''
+    timelineExtended.extra_kind = ''
+    timelineExtended.extra_value = ''
+    timelineExtended.extra_unit = ''
+    timelineExtended.notes = ''
+  }
+
+  // ==================== Brew Session Functions ====================
+
+  function selectBrewSession (uuid: string) {
+    selectedBrewSessionUuid.value = uuid
+  }
+
+  function clearBrewSessionSelection () {
+    selectedBrewSessionUuid.value = null
   }
 
   // ==================== Hot-Side Addition/Measurement Functions ====================
@@ -1285,7 +1285,7 @@
 
   async function recordHotSideAddition () {
     const session = selectedBrewSession.value
-    if (!session?.wort_volume_id || !hotSideAdditionForm.amount) {
+    if (!session?.wort_volume_uuid || !hotSideAdditionForm.amount) {
       return
     }
 
@@ -1293,7 +1293,7 @@
 
     try {
       const payload = {
-        volume_id: session.wort_volume_id,
+        volume_uuid: session.wort_volume_uuid,
         addition_type: hotSideAdditionForm.addition_type,
         stage: normalizeText(hotSideAdditionForm.stage),
         inventory_lot_uuid: normalizeText(hotSideAdditionForm.inventory_lot_uuid),
@@ -1307,7 +1307,7 @@
       showNotice('Hot-side addition recorded')
 
       hotSideAdditionDialog.value = false
-      await loadWortData(session.wort_volume_id)
+      await loadWortData(session.wort_volume_uuid)
     } catch (error) {
       handleError(error)
     } finally {
@@ -1326,7 +1326,7 @@
 
   async function recordHotSideMeasurement () {
     const session = selectedBrewSession.value
-    if (!session?.wort_volume_id || !hotSideMeasurementForm.kind || !hotSideMeasurementForm.value) {
+    if (!session?.wort_volume_uuid || !hotSideMeasurementForm.kind || !hotSideMeasurementForm.value) {
       return
     }
 
@@ -1334,7 +1334,7 @@
 
     try {
       const payload = {
-        volume_id: session.wort_volume_id,
+        volume_uuid: session.wort_volume_uuid,
         kind: hotSideMeasurementForm.kind,
         value: Number(hotSideMeasurementForm.value),
         unit: normalizeText(hotSideMeasurementForm.unit) ?? getDefaultUnitForKind(hotSideMeasurementForm.kind),
@@ -1346,7 +1346,7 @@
       showNotice('Hot-side measurement recorded')
 
       hotSideMeasurementDialog.value = false
-      await loadWortData(session.wort_volume_id)
+      await loadWortData(session.wort_volume_uuid)
     } catch (error) {
       handleError(error)
     } finally {
@@ -1385,13 +1385,13 @@
 
   // ==================== Occupancy Status Functions ====================
 
-  async function changeOccupancyStatus (occupancyId: number, status: OccupancyStatus) {
-    if (!props.batchId) {
+  async function changeOccupancyStatus (occupancyUuid: string, status: OccupancyStatus) {
+    if (!props.batchUuid) {
       return
     }
 
     try {
-      await updateOccupancyStatus(occupancyId, status)
+      await updateOccupancyStatus(occupancyUuid, status)
       const statusLabels: Record<string, string> = {
         fermenting: 'Fermenting',
         conditioning: 'Conditioning',
@@ -1404,7 +1404,7 @@
       const label = statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
       showNotice(`Status updated to ${label}`)
       // Reload batch summary to reflect the change
-      await loadBatchSummary(props.batchId)
+      await loadBatchSummary(props.batchUuid)
     } catch (error) {
       handleError(error)
     }
@@ -1431,7 +1431,7 @@
   }
 
   async function saveBatchEdit (form: BatchEditForm) {
-    if (!props.batchId || !selectedBatch.value) return
+    if (!props.batchUuid || !selectedBatch.value) return
 
     savingBatch.value = true
     editBatchError.value = ''
@@ -1444,10 +1444,10 @@
         notes: normalizeText(form.notes),
       }
 
-      await updateBatch(props.batchId, payload)
+      await updateBatch(props.batchUuid, payload)
       showNotice('Batch updated')
       editBatchDialog.value = false
-      await loadBatchData(props.batchId)
+      await loadBatchData(props.batchUuid)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update batch'
       editBatchError.value = message
@@ -1463,13 +1463,13 @@
   }
 
   async function confirmDeleteBatch () {
-    if (!props.batchId || !selectedBatch.value) return
+    if (!props.batchUuid || !selectedBatch.value) return
 
     deletingBatch.value = true
     deleteBatchError.value = ''
 
     try {
-      await deleteBatch(props.batchId)
+      await deleteBatch(props.batchUuid)
       showNotice('Batch deleted')
       deleteBatchDialog.value = false
       // Navigate back to batch list

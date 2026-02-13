@@ -26,22 +26,22 @@
           <v-list v-else class="brew-session-list" lines="three">
             <v-list-item
               v-for="session in sessionsSorted"
-              :key="session.id"
-              :active="session.id === selectedSessionId"
-              @click="emit('select-session', session.id)"
+              :key="session.uuid"
+              :active="session.uuid === selectedSessionUuid"
+              @click="emit('select-session', session.uuid)"
             >
               <v-list-item-title>
                 {{ formatDateTime(session.brewed_at) }}
               </v-list-item-title>
               <v-list-item-subtitle>
-                <span v-if="getVesselName(session.mash_vessel_id)">
-                  Mash: {{ getVesselName(session.mash_vessel_id) }}
+                <span v-if="getVesselName(session.mash_vessel_uuid)">
+                  Mash: {{ getVesselName(session.mash_vessel_uuid) }}
                 </span>
-                <span v-if="getVesselName(session.boil_vessel_id)">
-                  &bull; Boil: {{ getVesselName(session.boil_vessel_id) }}
+                <span v-if="getVesselName(session.boil_vessel_uuid)">
+                  &bull; Boil: {{ getVesselName(session.boil_vessel_uuid) }}
                 </span>
-                <span v-if="getVolumeName(session.wort_volume_id)">
-                  &bull; {{ getVolumeName(session.wort_volume_id) }}
+                <span v-if="getVolumeName(session.wort_volume_uuid)">
+                  &bull; {{ getVolumeName(session.wort_volume_uuid) }}
                 </span>
               </v-list-item-subtitle>
               <v-list-item-subtitle v-if="session.notes" class="text-medium-emphasis">
@@ -76,24 +76,24 @@
         </v-card-title>
         <v-card-text>
           <v-row dense>
-            <v-col v-if="getVesselName(selectedSession.mash_vessel_id)" cols="12" md="4">
+            <v-col v-if="getVesselName(selectedSession.mash_vessel_uuid)" cols="12" md="4">
               <div class="text-caption text-medium-emphasis">Mash Vessel</div>
               <div class="text-body-2 font-weight-medium">
-                {{ getVesselName(selectedSession.mash_vessel_id) }}
+                {{ getVesselName(selectedSession.mash_vessel_uuid) }}
               </div>
             </v-col>
-            <v-col v-if="getVesselName(selectedSession.boil_vessel_id)" cols="12" md="4">
+            <v-col v-if="getVesselName(selectedSession.boil_vessel_uuid)" cols="12" md="4">
               <div class="text-caption text-medium-emphasis">Boil Vessel</div>
               <div class="text-body-2 font-weight-medium">
-                {{ getVesselName(selectedSession.boil_vessel_id) }}
+                {{ getVesselName(selectedSession.boil_vessel_uuid) }}
               </div>
             </v-col>
-            <v-col v-if="getVolumeName(selectedSession.wort_volume_id)" cols="12" md="4">
+            <v-col v-if="getVolumeName(selectedSession.wort_volume_uuid)" cols="12" md="4">
               <div class="text-caption text-medium-emphasis">Wort Volume</div>
               <div class="text-body-2 font-weight-medium">
-                {{ getVolumeName(selectedSession.wort_volume_id) }}
-                <span v-if="getVolumeAmount(selectedSession.wort_volume_id)" class="text-medium-emphasis">
-                  ({{ getVolumeAmount(selectedSession.wort_volume_id) }})
+                {{ getVolumeName(selectedSession.wort_volume_uuid) }}
+                <span v-if="getVolumeAmount(selectedSession.wort_volume_uuid)" class="text-medium-emphasis">
+                  ({{ getVolumeAmount(selectedSession.wort_volume_uuid) }})
                 </span>
               </div>
             </v-col>
@@ -114,7 +114,7 @@
           <v-spacer />
           <v-btn
             aria-label="Add hot-side addition"
-            :disabled="!selectedSession.wort_volume_id"
+            :disabled="!selectedSession.wort_volume_uuid"
             icon="mdi-plus"
             size="x-small"
             variant="text"
@@ -131,7 +131,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="addition in additionsSorted" :key="addition.id">
+              <tr v-for="addition in additionsSorted" :key="addition.uuid">
                 <td>
                   <v-chip size="x-small" variant="tonal">{{ addition.addition_type }}</v-chip>
                   <span v-if="addition.stage" class="text-medium-emphasis ml-1">{{ addition.stage }}</span>
@@ -141,7 +141,7 @@
               </tr>
               <tr v-if="additionsSorted.length === 0">
                 <td class="text-medium-emphasis" colspan="3">
-                  {{ selectedSession.wort_volume_id ? 'No additions recorded.' : 'Select a wort volume first.' }}
+                  {{ selectedSession.wort_volume_uuid ? 'No additions recorded.' : 'Select a wort volume first.' }}
                 </td>
               </tr>
             </tbody>
@@ -158,7 +158,7 @@
           <v-spacer />
           <v-btn
             aria-label="Add hot-side measurement"
-            :disabled="!selectedSession.wort_volume_id"
+            :disabled="!selectedSession.wort_volume_uuid"
             icon="mdi-plus"
             size="x-small"
             variant="text"
@@ -175,14 +175,14 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="measurement in measurementsSorted" :key="measurement.id">
+              <tr v-for="measurement in measurementsSorted" :key="measurement.uuid">
                 <td>{{ formatMeasurementKind(measurement.kind) }}</td>
                 <td>{{ formatValue(measurement.value, measurement.unit) }}</td>
                 <td>{{ formatDateTime(measurement.observed_at) }}</td>
               </tr>
               <tr v-if="measurementsSorted.length === 0">
                 <td class="text-medium-emphasis" colspan="3">
-                  {{ selectedSession.wort_volume_id ? 'No measurements recorded.' : 'Select a wort volume first.' }}
+                  {{ selectedSession.wort_volume_uuid ? 'No measurements recorded.' : 'Select a wort volume first.' }}
                 </td>
               </tr>
             </tbody>
@@ -206,7 +206,7 @@
 
   const props = defineProps<{
     sessions: BrewSession[]
-    selectedSessionId: number | null
+    selectedSessionUuid: string | null
     vessels: Vessel[]
     volumes: ProductionVolume[]
     additions: ProductionAddition[]
@@ -216,7 +216,7 @@
   const emit = defineEmits<{
     'create-session': []
     'edit-session': [session: BrewSession]
-    'select-session': [id: number]
+    'select-session': [uuid: string]
     'clear-session': []
     'create-addition': []
     'create-measurement': []
@@ -232,7 +232,7 @@
   })
 
   const selectedSession = computed(() =>
-    props.sessions.find(session => session.id === props.selectedSessionId) ?? null,
+    props.sessions.find(session => session.uuid === props.selectedSessionUuid) ?? null,
   )
 
   const additionsSorted = computed(() => {
@@ -249,21 +249,21 @@
     )
   })
 
-  function getVesselName (vesselId: number | null): string {
-    if (!vesselId) return ''
-    const vessel = props.vessels.find(v => v.id === vesselId)
-    return vessel?.name ?? `Vessel #${vesselId}`
+  function getVesselName (vesselUuid: string | null): string {
+    if (!vesselUuid) return ''
+    const vessel = props.vessels.find(v => v.uuid === vesselUuid)
+    return vessel?.name ?? 'Unknown Vessel'
   }
 
-  function getVolumeName (volumeId: number | null): string {
-    if (!volumeId) return ''
-    const volume = props.volumes.find(v => v.id === volumeId)
-    return volume?.name ?? `Volume #${volumeId}`
+  function getVolumeName (volumeUuid: string | null): string {
+    if (!volumeUuid) return ''
+    const volume = props.volumes.find(v => v.uuid === volumeUuid)
+    return volume?.name ?? 'Unknown Volume'
   }
 
-  function getVolumeAmount (volumeId: number | null): string {
-    if (!volumeId) return ''
-    const volume = props.volumes.find(v => v.id === volumeId)
+  function getVolumeAmount (volumeUuid: string | null): string {
+    if (!volumeUuid) return ''
+    const volume = props.volumes.find(v => v.uuid === volumeUuid)
     if (!volume) return ''
     return `${volume.amount} ${volume.amount_unit}`
   }

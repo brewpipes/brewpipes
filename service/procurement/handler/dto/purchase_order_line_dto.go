@@ -8,7 +8,7 @@ import (
 )
 
 type CreatePurchaseOrderLineRequest struct {
-	PurchaseOrderID   int64   `json:"purchase_order_id"`
+	PurchaseOrderUUID string  `json:"purchase_order_uuid"`
 	LineNumber        int     `json:"line_number"`
 	ItemType          string  `json:"item_type"`
 	ItemName          string  `json:"item_name"`
@@ -20,8 +20,8 @@ type CreatePurchaseOrderLineRequest struct {
 }
 
 func (r CreatePurchaseOrderLineRequest) Validate() error {
-	if r.PurchaseOrderID <= 0 {
-		return fmt.Errorf("purchase_order_id is required")
+	if err := validateRequired(r.PurchaseOrderUUID, "purchase_order_uuid"); err != nil {
+		return err
 	}
 	if r.LineNumber <= 0 {
 		return fmt.Errorf("line_number must be greater than zero")
@@ -97,9 +97,8 @@ func (r UpdatePurchaseOrderLineRequest) Validate() error {
 }
 
 type PurchaseOrderLineResponse struct {
-	ID                int64      `json:"id"`
 	UUID              string     `json:"uuid"`
-	PurchaseOrderID   int64      `json:"purchase_order_id"`
+	PurchaseOrderUUID string     `json:"purchase_order_uuid"`
 	LineNumber        int        `json:"line_number"`
 	ItemType          string     `json:"item_type"`
 	ItemName          string     `json:"item_name"`
@@ -114,10 +113,13 @@ type PurchaseOrderLineResponse struct {
 }
 
 func NewPurchaseOrderLineResponse(line storage.PurchaseOrderLine) PurchaseOrderLineResponse {
+	var purchaseOrderUUID string
+	if line.PurchaseOrderUUID != nil {
+		purchaseOrderUUID = *line.PurchaseOrderUUID
+	}
 	return PurchaseOrderLineResponse{
-		ID:                line.ID,
 		UUID:              line.UUID.String(),
-		PurchaseOrderID:   line.PurchaseOrderID,
+		PurchaseOrderUUID: purchaseOrderUUID,
 		LineNumber:        line.LineNumber,
 		ItemType:          line.ItemType,
 		ItemName:          line.ItemName,

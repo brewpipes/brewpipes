@@ -15,7 +15,6 @@ func (r CreateStyleRequest) Validate() error {
 }
 
 type StyleResponse struct {
-	ID        int64      `json:"id"`
 	UUID      string     `json:"uuid"`
 	Name      string     `json:"name"`
 	CreatedAt time.Time  `json:"created_at"`
@@ -25,7 +24,6 @@ type StyleResponse struct {
 
 func NewStyleResponse(style storage.Style) StyleResponse {
 	return StyleResponse{
-		ID:        style.ID,
 		UUID:      style.UUID.String(),
 		Name:      style.Name,
 		CreatedAt: style.CreatedAt,

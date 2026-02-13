@@ -14,8 +14,9 @@ import (
 
 type VolumeRelationStore interface {
 	CreateVolumeRelation(context.Context, storage.VolumeRelation) (storage.VolumeRelation, error)
-	GetVolumeRelation(context.Context, int64) (storage.VolumeRelation, error)
-	ListVolumeRelations(context.Context, int64) ([]storage.VolumeRelation, error)
+	GetVolumeRelationByUUID(context.Context, string) (storage.VolumeRelation, error)
+	ListVolumeRelationsByVolumeUUID(context.Context, string) ([]storage.VolumeRelation, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
 
 // HandleVolumeRelations handles [GET /volume-relations] and [POST /volume-relations].
@@ -23,19 +24,17 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			volumeValue := r.URL.Query().Get("volume_id")
-			if volumeValue == "" {
-				http.Error(w, "volume_id is required", http.StatusBadRequest)
-				return
-			}
-			volumeID, err := parseInt64Param(volumeValue)
-			if err != nil {
-				http.Error(w, "invalid volume_id", http.StatusBadRequest)
+			volumeUUID := r.URL.Query().Get("volume_uuid")
+			if volumeUUID == "" {
+				http.Error(w, "volume_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			relations, err := db.ListVolumeRelations(r.Context(), volumeID)
-			if err != nil {
+			relations, err := db.ListVolumeRelationsByVolumeUUID(r.Context(), volumeUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "volume not found", http.StatusNotFound)
+				return
+			} else if err != nil {
 				slog.Error("error listing volume relations", "error", err)
 				service.InternalError(w, err.Error())
 				return
@@ -53,9 +52,31 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve parent volume UUID to internal ID
+			parentVol, err := db.GetVolumeByUUID(r.Context(), req.ParentVolumeUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "parent volume not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving parent volume uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve child volume UUID to internal ID
+			childVol, err := db.GetVolumeByUUID(r.Context(), req.ChildVolumeUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "child volume not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving child volume uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			relation := storage.VolumeRelation{
-				ParentVolumeID: req.ParentVolumeID,
-				ChildVolumeID:  req.ChildVolumeID,
+				ParentVolumeID: parentVol.ID,
+				ChildVolumeID:  childVol.ID,
 				RelationType:   req.RelationType,
 				Amount:         req.Amount,
 				AmountUnit:     req.AmountUnit,
@@ -75,31 +96,26 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 	}
 }
 
-// HandleVolumeRelationByID handles [GET /volume-relations/{id}].
-func HandleVolumeRelationByID(db VolumeRelationStore) http.HandlerFunc {
+// HandleVolumeRelationByUUID handles [GET /volume-relations/{uuid}].
+func HandleVolumeRelationByUUID(db VolumeRelationStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		relationID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		relationUUID := r.PathValue("uuid")
+		if relationUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		relation, err := db.GetVolumeRelation(r.Context(), relationID)
+		relation, err := db.GetVolumeRelationByUUID(r.Context(), relationUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "volume relation not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting volume relation", "error", err)
+			slog.Error("error getting volume relation", "error", err, "relation_uuid", relationUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

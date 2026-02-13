@@ -16,11 +16,13 @@ import (
 
 type OccupancyStore interface {
 	CreateOccupancy(context.Context, storage.Occupancy) (storage.Occupancy, error)
-	GetOccupancy(context.Context, int64) (storage.Occupancy, error)
-	GetActiveOccupancyByVessel(context.Context, int64) (storage.Occupancy, error)
-	GetActiveOccupancyByVolume(context.Context, int64) (storage.Occupancy, error)
+	GetOccupancyByUUID(context.Context, string) (storage.Occupancy, error)
+	GetActiveOccupancyByVesselUUID(context.Context, string) (storage.Occupancy, error)
+	GetActiveOccupancyByVolumeUUID(context.Context, string) (storage.Occupancy, error)
 	ListActiveOccupancies(context.Context) ([]storage.Occupancy, error)
-	UpdateOccupancyStatus(context.Context, int64, *string) (storage.Occupancy, error)
+	UpdateOccupancyStatusByUUID(context.Context, string, *string) (storage.Occupancy, error)
+	GetVesselByUUID(context.Context, string) (storage.Vessel, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
 
 // HandleOccupancies handles [GET /occupancies].
@@ -75,14 +77,36 @@ func HandleCreateOccupancy(db OccupancyStore) http.HandlerFunc {
 			return
 		}
 
+		// Resolve vessel UUID to internal ID
+		vessel, err := db.GetVesselByUUID(r.Context(), req.VesselUUID)
+		if errors.Is(err, service.ErrNotFound) {
+			http.Error(w, "vessel not found", http.StatusBadRequest)
+			return
+		} else if err != nil {
+			slog.Error("error resolving vessel uuid", "error", err)
+			service.InternalError(w, err.Error())
+			return
+		}
+
+		// Resolve volume UUID to internal ID
+		volume, err := db.GetVolumeByUUID(r.Context(), req.VolumeUUID)
+		if errors.Is(err, service.ErrNotFound) {
+			http.Error(w, "volume not found", http.StatusBadRequest)
+			return
+		} else if err != nil {
+			slog.Error("error resolving volume uuid", "error", err)
+			service.InternalError(w, err.Error())
+			return
+		}
+
 		inAt := time.Time{}
 		if req.InAt != nil {
 			inAt = *req.InAt
 		}
 
 		occupancy := storage.Occupancy{
-			VesselID: req.VesselID,
-			VolumeID: req.VolumeID,
+			VesselID: vessel.ID,
+			VolumeID: volume.ID,
 			InAt:     inAt,
 			Status:   req.Status,
 		}
@@ -98,31 +122,26 @@ func HandleCreateOccupancy(db OccupancyStore) http.HandlerFunc {
 	}
 }
 
-// HandleOccupancyByID handles [GET /occupancies/{id}].
-func HandleOccupancyByID(db OccupancyStore) http.HandlerFunc {
+// HandleOccupancyByUUID handles [GET /occupancies/{uuid}].
+func HandleOccupancyByUUID(db OccupancyStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		occupancyID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		occupancyUUID := r.PathValue("uuid")
+		if occupancyUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		occupancy, err := db.GetOccupancy(r.Context(), occupancyID)
+		occupancy, err := db.GetOccupancyByUUID(r.Context(), occupancyUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "occupancy not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting occupancy", "error", err)
+			slog.Error("error getting occupancy", "error", err, "occupancy_uuid", occupancyUUID)
 			service.InternalError(w, err.Error())
 			return
 		}
@@ -139,30 +158,24 @@ func HandleActiveOccupancy(db OccupancyStore) http.HandlerFunc {
 			return
 		}
 
-		vesselValue := r.URL.Query().Get("active_vessel_id")
-		volumeValue := r.URL.Query().Get("active_volume_id")
-		if vesselValue != "" && volumeValue != "" {
-			http.Error(w, "active_vessel_id or active_volume_id is required", http.StatusBadRequest)
+		vesselUUID := r.URL.Query().Get("active_vessel_uuid")
+		volumeUUID := r.URL.Query().Get("active_volume_uuid")
+		if vesselUUID != "" && volumeUUID != "" {
+			http.Error(w, "active_vessel_uuid or active_volume_uuid is required", http.StatusBadRequest)
 			return
 		}
-		if vesselValue == "" && volumeValue == "" {
-			http.Error(w, "active_vessel_id or active_volume_id is required", http.StatusBadRequest)
+		if vesselUUID == "" && volumeUUID == "" {
+			http.Error(w, "active_vessel_uuid or active_volume_uuid is required", http.StatusBadRequest)
 			return
 		}
 
-		if vesselValue != "" {
-			vesselID, err := parseInt64Param(vesselValue)
-			if err != nil {
-				http.Error(w, "invalid active_vessel_id", http.StatusBadRequest)
-				return
-			}
-
-			occupancy, err := db.GetActiveOccupancyByVessel(r.Context(), vesselID)
+		if vesselUUID != "" {
+			occupancy, err := db.GetActiveOccupancyByVesselUUID(r.Context(), vesselUUID)
 			if errors.Is(err, service.ErrNotFound) {
 				http.Error(w, "occupancy not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting active occupancy by vessel", "error", err)
+				slog.Error("error getting active occupancy by vessel", "error", err, "vessel_uuid", vesselUUID)
 				service.InternalError(w, err.Error())
 				return
 			}
@@ -171,18 +184,12 @@ func HandleActiveOccupancy(db OccupancyStore) http.HandlerFunc {
 			return
 		}
 
-		volumeID, err := parseInt64Param(volumeValue)
-		if err != nil {
-			http.Error(w, "invalid active_volume_id", http.StatusBadRequest)
-			return
-		}
-
-		occupancy, err := db.GetActiveOccupancyByVolume(r.Context(), volumeID)
+		occupancy, err := db.GetActiveOccupancyByVolumeUUID(r.Context(), volumeUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "occupancy not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting active occupancy by volume", "error", err)
+			slog.Error("error getting active occupancy by volume", "error", err, "volume_uuid", volumeUUID)
 			service.InternalError(w, err.Error())
 			return
 		}
@@ -191,7 +198,7 @@ func HandleActiveOccupancy(db OccupancyStore) http.HandlerFunc {
 	}
 }
 
-// HandleOccupancyStatus handles [PATCH /occupancies/{id}/status].
+// HandleOccupancyStatus handles [PATCH /occupancies/{uuid}/status].
 func HandleOccupancyStatus(db OccupancyStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPatch {
@@ -199,14 +206,9 @@ func HandleOccupancyStatus(db OccupancyStore) http.HandlerFunc {
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		occupancyID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		occupancyUUID := r.PathValue("uuid")
+		if occupancyUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
@@ -220,17 +222,17 @@ func HandleOccupancyStatus(db OccupancyStore) http.HandlerFunc {
 			return
 		}
 
-		occupancy, err := db.UpdateOccupancyStatus(r.Context(), occupancyID, req.Status)
+		occupancy, err := db.UpdateOccupancyStatusByUUID(r.Context(), occupancyUUID, req.Status)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "occupancy not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error updating occupancy status", "error", err)
+			slog.Error("error updating occupancy status", "error", err, "occupancy_uuid", occupancyUUID)
 			service.InternalError(w, err.Error())
 			return
 		}
 
-		slog.Info("occupancy status updated", "occupancy_id", occupancyID, "status", req.Status)
+		slog.Info("occupancy status updated", "occupancy_uuid", occupancyUUID, "status", req.Status)
 
 		service.JSON(w, dto.NewOccupancyResponse(occupancy))
 	}

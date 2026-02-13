@@ -14,9 +14,12 @@ import (
 )
 
 type TransferStore interface {
-	GetTransfer(context.Context, int64) (storage.Transfer, error)
+	GetTransferByUUID(context.Context, string) (storage.Transfer, error)
 	RecordTransfer(context.Context, storage.TransferRecord) (storage.Transfer, storage.Occupancy, error)
-	ListTransfersByBatch(context.Context, int64) ([]storage.Transfer, error)
+	ListTransfersByBatchUUID(context.Context, string) ([]storage.Transfer, error)
+	GetOccupancyByUUID(context.Context, string) (storage.Occupancy, error)
+	GetVesselByUUID(context.Context, string) (storage.Vessel, error)
+	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
 
 // HandleTransfers handles [GET /transfers] and [POST /transfers].
@@ -24,19 +27,17 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			batchValue := r.URL.Query().Get("batch_id")
-			if batchValue == "" {
-				http.Error(w, "batch_id is required", http.StatusBadRequest)
-				return
-			}
-			batchID, err := parseInt64Param(batchValue)
-			if err != nil {
-				http.Error(w, "invalid batch_id", http.StatusBadRequest)
+			batchUUID := r.URL.Query().Get("batch_uuid")
+			if batchUUID == "" {
+				http.Error(w, "batch_uuid is required", http.StatusBadRequest)
 				return
 			}
 
-			transfers, err := db.ListTransfersByBatch(r.Context(), batchID)
-			if err != nil {
+			transfers, err := db.ListTransfersByBatchUUID(r.Context(), batchUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "batch not found", http.StatusNotFound)
+				return
+			} else if err != nil {
 				slog.Error("error listing transfers", "error", err)
 				service.InternalError(w, err.Error())
 				return
@@ -54,15 +55,48 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 				return
 			}
 
+			// Resolve source occupancy UUID to internal ID
+			sourceOcc, err := db.GetOccupancyByUUID(r.Context(), req.SourceOccupancyUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "source occupancy not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving source occupancy uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve dest vessel UUID to internal ID
+			destVessel, err := db.GetVesselByUUID(r.Context(), req.DestVesselUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "destination vessel not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving dest vessel uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
+			// Resolve volume UUID to internal ID
+			volume, err := db.GetVolumeByUUID(r.Context(), req.VolumeUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "volume not found", http.StatusBadRequest)
+				return
+			} else if err != nil {
+				slog.Error("error resolving volume uuid", "error", err)
+				service.InternalError(w, err.Error())
+				return
+			}
+
 			startedAt := time.Time{}
 			if req.StartedAt != nil {
 				startedAt = *req.StartedAt
 			}
 
 			record := storage.TransferRecord{
-				SourceOccupancyID: req.SourceOccupancyID,
-				DestVesselID:      req.DestVesselID,
-				VolumeID:          req.VolumeID,
+				SourceOccupancyID: sourceOcc.ID,
+				DestVesselID:      destVessel.ID,
+				VolumeID:          volume.ID,
 				Amount:            req.Amount,
 				AmountUnit:        req.AmountUnit,
 				LossAmount:        req.LossAmount,
@@ -85,31 +119,26 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 	}
 }
 
-// HandleTransferByID handles [GET /transfers/{id}].
-func HandleTransferByID(db TransferStore) http.HandlerFunc {
+// HandleTransferByUUID handles [GET /transfers/{uuid}].
+func HandleTransferByUUID(db TransferStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w)
 			return
 		}
 
-		idValue := r.PathValue("id")
-		if idValue == "" {
-			http.Error(w, "invalid id", http.StatusBadRequest)
-			return
-		}
-		transferID, err := parseInt64Param(idValue)
-		if err != nil {
-			http.Error(w, "invalid id", http.StatusBadRequest)
+		transferUUID := r.PathValue("uuid")
+		if transferUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
 			return
 		}
 
-		transfer, err := db.GetTransfer(r.Context(), transferID)
+		transfer, err := db.GetTransferByUUID(r.Context(), transferUUID)
 		if errors.Is(err, service.ErrNotFound) {
 			http.Error(w, "transfer not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting transfer", "error", err)
+			slog.Error("error getting transfer", "error", err, "transfer_uuid", transferUUID)
 			service.InternalError(w, err.Error())
 			return
 		}

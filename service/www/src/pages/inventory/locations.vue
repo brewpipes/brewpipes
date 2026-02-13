@@ -47,7 +47,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="location in locations" :key="location.id">
+            <tr v-for="location in locations" :key="location.uuid">
               <td>{{ location.name }}</td>
               <td>{{ location.location_type || 'n/a' }}</td>
               <td>{{ location.description || 'n/a' }}</td>
@@ -113,7 +113,6 @@
   import { useInventoryApi } from '@/composables/useInventoryApi'
 
   type StockLocation = {
-    id: number
     uuid: string
     name: string
     location_type: string

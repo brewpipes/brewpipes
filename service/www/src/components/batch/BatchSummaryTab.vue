@@ -45,7 +45,7 @@
           </v-col>
           <v-col cols="12" md="4">
             <div class="text-overline text-medium-emphasis">Occupancy Status</div>
-            <v-menu v-if="summary.current_occupancy_id" location="bottom">
+            <v-menu v-if="summary.current_occupancy_uuid" location="bottom">
               <template #activator="{ props }">
                 <v-chip
                   v-bind="props"
@@ -64,7 +64,7 @@
                   v-for="statusOption in occupancyStatusOptions"
                   :key="statusOption.value"
                   :active="statusOption.value === summary.current_occupancy_status"
-                  @click="emit('occupancy-status-change', summary.current_occupancy_id!, statusOption.value)"
+                    @click="emit('occupancy-status-change', summary.current_occupancy_uuid!, statusOption.value)"
                 >
                   <template #prepend>
                     <v-avatar
@@ -208,7 +208,7 @@
         >
           <v-list-item
             v-for="session in summary.brew_sessions"
-            :key="session.id"
+            :key="session.uuid"
           >
             <template #prepend>
               <v-icon icon="mdi-kettle-steam" size="small" />
@@ -266,7 +266,7 @@
   }>()
 
   const emit = defineEmits<{
-    'occupancy-status-change': [occupancyId: number, status: OccupancyStatus]
+    'occupancy-status-change': [occupancyUuid: string, status: OccupancyStatus]
   }>()
 
   const { formatDateTime } = useFormatters()

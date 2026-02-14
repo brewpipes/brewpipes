@@ -31,7 +31,7 @@
         <div>
           <div class="text-h5 font-weight-semibold">{{ vessel.name }}</div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ vessel.type }}
+            {{ formatVesselType(vessel.type) }}
           </div>
         </div>
         <v-spacer />
@@ -80,7 +80,7 @@
                 </v-list-item>
                 <v-list-item>
                   <v-list-item-title>Type</v-list-item-title>
-                  <v-list-item-subtitle>{{ vessel.type }}</v-list-item-subtitle>
+                  <v-list-item-subtitle>{{ formatVesselType(vessel.type) }}</v-list-item-subtitle>
                 </v-list-item>
                 <v-list-item>
                   <v-list-item-title>Status</v-list-item-title>
@@ -210,6 +210,7 @@
     useFormatters,
     useOccupancyStatusFormatters,
     useVesselStatusFormatters,
+    useVesselTypeFormatters,
   } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useRouteUuid } from '@/composables/useRouteUuid'
@@ -223,6 +224,7 @@
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
+  const { formatVesselType } = useVesselTypeFormatters()
   const { formatOccupancyStatus, getOccupancyStatusColor } = useOccupancyStatusFormatters()
   const { uuid: routeUuid } = useRouteUuid()
 

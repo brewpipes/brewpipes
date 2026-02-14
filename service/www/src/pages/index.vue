@@ -27,7 +27,20 @@
       </v-card-text>
     </v-card>
 
-    <v-row align="stretch" class="mt-4">
+    <!-- Loading skeleton -->
+    <v-row v-if="!dataReady && loading" class="mt-4">
+      <v-col cols="12" lg="7">
+        <v-skeleton-loader type="card" class="mb-4" />
+        <v-skeleton-loader type="card" />
+      </v-col>
+      <v-col cols="12" lg="5">
+        <v-skeleton-loader type="card" class="mb-4" />
+        <v-skeleton-loader type="card" />
+      </v-col>
+    </v-row>
+
+    <!-- Data sections (only rendered when all data is loaded) -->
+    <v-row v-if="dataReady" align="stretch" class="mt-4">
       <v-col cols="12" lg="7">
         <v-card class="section-card">
           <v-card-title class="d-flex align-center">
@@ -37,7 +50,10 @@
               {{ inProgressCount }}
             </v-chip>
             <v-spacer />
-            <v-btn size="small" to="/batches" variant="text">View all</v-btn>
+            <v-btn size="small" to="/batches" variant="text">
+              <span class="d-none d-sm-inline">View all</span>
+              <span class="d-sm-none">All</span>
+            </v-btn>
           </v-card-title>
           <v-card-text>
             <v-list class="batch-list" lines="two">
@@ -50,14 +66,9 @@
                   {{ item.phaseLabel }} · Updated {{ formatDateTime(item.phaseAt) }}
                 </div>
                 <template #append>
-                  <div class="d-flex flex-column align-end ga-1">
-                    <v-chip :color="item.phaseTone" size="x-small" variant="tonal">
-                      {{ item.phaseLabel }}
-                    </v-chip>
-                    <div class="text-caption text-medium-emphasis">
-                      {{ formatDate(item.batch.updated_at) }}
-                    </div>
-                  </div>
+                  <v-chip :color="item.phaseTone" size="x-small" variant="tonal">
+                    {{ item.phaseLabel }}
+                  </v-chip>
                 </template>
               </v-list-item>
 
@@ -191,7 +202,7 @@
                   </v-chip>
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ item.vessel.type }} · {{ formatVolumePreferred(item.vessel.capacity, item.vessel.capacity_unit) }}
+                  {{ formatVesselType(item.vessel.type) }} · {{ formatVolumePreferred(item.vessel.capacity, item.vessel.capacity_unit) }}
                 </v-list-item-subtitle>
                 <div class="text-caption text-medium-emphasis">
                   {{ item.occupancyDetail }}
@@ -225,6 +236,7 @@
     useOccupancyStatusFormatters,
     usePhaseFormatters,
     useVesselStatusFormatters,
+    useVesselTypeFormatters,
   } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProductionApi } from '@/composables/useProductionApi'
@@ -261,6 +273,7 @@
   const stockLevels = ref<StockLevel[]>([])
   const errorMessage = ref('')
   const loading = ref(false)
+  const dataReady = ref(false)
 
   const { getBatches, getVessels, getVolumes, getActiveOccupancies, request } = useProductionApi()
   const { getStockLevels } = useInventoryApi()
@@ -268,6 +281,7 @@
   const { breweryName } = useUserSettings()
   const { formatPhase, getPhaseColor } = usePhaseFormatters()
   const { formatVesselStatus } = useVesselStatusFormatters()
+  const { formatVesselType } = useVesselTypeFormatters()
   const { formatOccupancyStatus: formatOccupancyStatusLabel, getOccupancyStatusColor } = useOccupancyStatusFormatters()
 
   const volumeNameMap = computed(
@@ -411,6 +425,7 @@
       stockLevels.value = stockData
 
       await Promise.all([loadProcessPhases(), loadOccupancies()])
+      dataReady.value = true
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load dashboard'
       errorMessage.value = message

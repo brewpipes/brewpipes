@@ -33,7 +33,7 @@
                   {{ vessel.name }}
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
-                  {{ vessel.type }} - {{ vessel.status }}
+                  {{ formatVesselType(vessel.type) }} - {{ vessel.status }}
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
                   Capacity {{ formatVolumePreferred(vessel.capacity, vessel.capacity_unit) }}
@@ -138,7 +138,7 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import { useFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
+  import { useFormatters, useOccupancyStatusFormatters, useVesselTypeFormatters } from '@/composables/useFormatters'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { type Occupancy, OCCUPANCY_STATUS_VALUES, type OccupancyStatus, type Vessel } from '@/types'
 
@@ -162,6 +162,7 @@
 
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
+  const { formatVesselType } = useVesselTypeFormatters()
   const {
     formatOccupancyStatus,
     getOccupancyStatusColor,

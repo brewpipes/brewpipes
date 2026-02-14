@@ -27,7 +27,7 @@
             {{ vessel.name }}
           </v-list-item-title>
           <v-list-item-subtitle>
-            {{ vessel.type }} - {{ formatVolumePreferred(vessel.capacity, vessel.capacity_unit) }}
+            {{ formatVesselType(vessel.type) }} - {{ formatVolumePreferred(vessel.capacity, vessel.capacity_unit) }}
           </v-list-item-subtitle>
           <template #append>
             <v-chip
@@ -52,6 +52,7 @@
 <script lang="ts" setup>
   import type { Occupancy, Vessel } from '@/types'
   import { computed } from 'vue'
+  import { useVesselTypeFormatters } from '@/composables/useFormatters'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   const props = withDefaults(
@@ -72,6 +73,7 @@
   }>()
 
   const { formatVolumePreferred } = useUnitPreferences()
+  const { formatVesselType } = useVesselTypeFormatters()
 
   const occupancyMap = computed(
     () => new Map(props.occupancies.map(occupancy => [occupancy.vessel_uuid, occupancy])),

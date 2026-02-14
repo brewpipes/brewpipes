@@ -12,7 +12,7 @@ tools:
   grep: true
   apply_patch: false
   task: true
-  mcp: playwright
+  playwright*: true
 ---
 
 # BrewPipes Project Manager Agent

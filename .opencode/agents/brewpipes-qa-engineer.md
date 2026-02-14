@@ -11,7 +11,7 @@ tools:
   glob: true
   grep: true
   apply_patch: true
-  mcp: playwright
+  playwright*: true
 ---
 
 # BrewPipes QA Engineer Agent

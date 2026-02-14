@@ -1,5 +1,7 @@
 # Browser Interaction & Dev Server Lifecycle
 
+> **OpenCode frontmatter:** To enable Playwright MCP tools for an agent, add `playwright: true` to the agent's `tools:` section in the YAML frontmatter.
+
 ## Playwright MCP Browser Tools
 
 You have access to browser automation via the Playwright MCP server. This gives you tools to interact with the running BrewPipes web UI directly:

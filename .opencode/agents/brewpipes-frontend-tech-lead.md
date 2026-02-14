@@ -12,7 +12,7 @@ tools:
   grep: true
   apply_patch: true
   webfetch: true
-  mcp: playwright
+  playwright*: true
 ---
 
 # BrewPipes Vue App Tech Lead Agent

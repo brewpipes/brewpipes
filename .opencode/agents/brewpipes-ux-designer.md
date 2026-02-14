@@ -11,7 +11,7 @@ tools:
   glob: true
   grep: true
   webfetch: true
-  mcp: playwright
+  playwright*: true
 ---
 
 # BrewPipes UX Designer Agent

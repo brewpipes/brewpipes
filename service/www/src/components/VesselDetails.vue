@@ -33,7 +33,7 @@
                   {{ vessel.name }}
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
-                  {{ formatVesselType(vessel.type) }} - {{ vessel.status }}
+                  {{ formatVesselType(vessel.type) }} · {{ formatVesselStatus(vessel.status) }}
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
                   Capacity {{ formatVolumePreferred(vessel.capacity, vessel.capacity_unit) }}
@@ -111,9 +111,9 @@
                       </div>
                     </v-col>
                     <v-col cols="12" md="4">
-                      <div class="text-caption text-medium-emphasis">Volume</div>
+                      <div class="text-caption text-medium-emphasis">Batch</div>
                       <div class="text-body-2 font-weight-medium mt-1">
-                        {{ occupancy.volume_uuid.substring(0, 8) }}
+                        {{ batchName ?? 'Unknown batch' }}
                       </div>
                     </v-col>
                   </v-row>
@@ -138,7 +138,7 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import { useFormatters, useOccupancyStatusFormatters, useVesselTypeFormatters } from '@/composables/useFormatters'
+  import { useFormatters, useOccupancyStatusFormatters, useVesselStatusFormatters, useVesselTypeFormatters } from '@/composables/useFormatters'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { type Occupancy, OCCUPANCY_STATUS_VALUES, type OccupancyStatus, type Vessel } from '@/types'
 
@@ -146,9 +146,11 @@
     defineProps<{
       vessel: Vessel | null
       occupancy: Occupancy | null
+      batchName: string | null
       loading?: boolean
     }>(),
     {
+      batchName: null,
       loading: false,
     },
   )
@@ -162,6 +164,7 @@
 
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
+  const { formatVesselStatus } = useVesselStatusFormatters()
   const { formatVesselType } = useVesselTypeFormatters()
   const {
     formatOccupancyStatus,

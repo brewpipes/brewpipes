@@ -15,6 +15,7 @@
 
       <v-col v-else cols="12">
         <VesselDetails
+          :batch-name="selectedVesselBatchName"
           :loading="loading"
           :occupancy="selectedVesselOccupancy"
           :vessel="selectedVessel"
@@ -41,6 +42,7 @@
 
       <v-col cols="12" md="8">
         <VesselDetails
+          :batch-name="selectedVesselBatchName"
           :loading="loading"
           :occupancy="selectedVesselOccupancy"
           :vessel="selectedVessel"
@@ -64,7 +66,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Occupancy, OccupancyStatus, UpdateVesselRequest, Vessel } from '@/types'
+  import type { Batch, Occupancy, OccupancyStatus, UpdateVesselRequest, Vessel } from '@/types'
   import { computed, onMounted, ref, watch } from 'vue'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import VesselDetails from '@/components/VesselDetails.vue'
@@ -76,6 +78,7 @@
 
   const vessels = ref<Vessel[]>([])
   const occupancies = ref<Occupancy[]>([])
+  const batches = ref<Batch[]>([])
   const selectedVesselUuid = ref<string | null>(null)
   const loading = ref(false)
 
@@ -83,7 +86,7 @@
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
 
-  const { getVessels, getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
+  const { getVessels, getActiveOccupancies, getBatches, updateOccupancyStatus } = useProductionApi()
   const { formatOccupancyStatus } = useOccupancyStatusFormatters()
   const { saveVessel } = useVesselActions()
 
@@ -102,9 +105,19 @@
     () => new Map(occupancies.value.map(occupancy => [occupancy.vessel_uuid, occupancy])),
   )
 
+  const batchMap = computed(
+    () => new Map(batches.value.map(b => [b.uuid, b])),
+  )
+
   const selectedVesselOccupancy = computed(() => {
     if (!selectedVesselUuid.value) return null
     return occupancyMap.value.get(selectedVesselUuid.value) ?? null
+  })
+
+  const selectedVesselBatchName = computed(() => {
+    const occ = selectedVesselOccupancy.value
+    if (!occ?.batch_uuid) return null
+    return batchMap.value.get(occ.batch_uuid)?.short_name ?? null
   })
 
   onMounted(async () => {
@@ -127,11 +140,13 @@
   async function refreshVessels () {
     loading.value = true
     try {
-      const [vesselData] = await Promise.all([
+      const [vesselData, , batchData] = await Promise.all([
         getVessels(),
         loadOccupancies(),
+        getBatches(),
       ])
       vessels.value = vesselData
+      batches.value = batchData
 
       // Auto-select first active vessel if none selected
       const firstVessel = activeVessels.value[0]

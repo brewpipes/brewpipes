@@ -68,7 +68,7 @@
 
           <template #item.type="{ item }">
             <v-chip v-if="item.type" size="small" variant="tonal">
-              {{ item.type }}
+              {{ formatVesselType(item.type) }}
             </v-chip>
             <span v-else class="text-medium-emphasis">—</span>
           </template>
@@ -92,6 +92,7 @@
               v-if="getOccupancyBatchInfo(item.uuid)"
               class="batch-link"
               :to="`/batches/${getOccupancyBatchInfo(item.uuid)!.uuid}`"
+              @click.stop
             >
               {{ getOccupancyBatchInfo(item.uuid)!.short_name }}
             </router-link>
@@ -153,7 +154,13 @@
       <v-card-text>
         <v-row>
           <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.type" label="Type" placeholder="Fermenter" />
+            <v-select
+              v-model="newVessel.type"
+              :items="vesselTypeOptions"
+              item-title="title"
+              item-value="value"
+              label="Type"
+            />
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field v-model="newVessel.name" label="Name" placeholder="FV-01" />
@@ -172,6 +179,8 @@
             <v-select
               v-model="newVessel.status"
               :items="vesselStatusOptions"
+              item-title="title"
+              item-value="value"
               label="Status"
             />
           </v-col>
@@ -200,12 +209,14 @@
 
 <script lang="ts" setup>
   import type { Batch, Occupancy, UpdateVesselRequest, Vessel, VesselStatus, VolumeUnit } from '@/types'
+  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import {
     useFormatters,
     useVesselStatusFormatters,
+    useVesselTypeFormatters,
   } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
@@ -223,9 +234,23 @@
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatRelativeTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
+  const { formatVesselType } = useVesselTypeFormatters()
 
   const unitOptions = volumeOptions.map(opt => opt.value)
-  const vesselStatusOptions = ['active', 'inactive', 'retired']
+
+  const vesselTypeOptions = computed(() =>
+    VESSEL_TYPE_VALUES.map(type => ({
+      value: type,
+      title: formatVesselType(type),
+    })),
+  )
+
+  const vesselStatusOptions = computed(() =>
+    VESSEL_STATUS_VALUES.map(status => ({
+      value: status,
+      title: formatVesselStatus(status),
+    })),
+  )
 
   // State
   const vessels = ref<Vessel[]>([])

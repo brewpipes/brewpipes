@@ -137,8 +137,11 @@
         <v-window v-model="activeTab" class="mt-4">
           <v-window-item value="summary">
             <BatchSummaryTab
+              :has-volumes="hasBatchVolumes"
               :loading="batchSummaryLoading"
               :summary="batchSummary"
+              @assign-fermenter="openAssignFermenterDialog"
+              @mark-empty="openMarkEmptyDialog"
               @occupancy-status-change="changeOccupancyStatus"
             />
           </v-window-item>
@@ -276,12 +279,29 @@
     :error-message="deleteBatchError"
     @confirm="confirmDeleteBatch"
   />
+
+  <BatchAssignFermenterDialog
+    v-model="assignFermenterDialog"
+    :active-occupancies="activeOccupancies"
+    :batch-volumes="batchProductionVolumes"
+    :vessels="vessels"
+    @assigned="handleFermenterAssigned"
+  />
+
+  <BatchMarkEmptyDialog
+    v-model="markEmptyDialog"
+    :batch-name="selectedBatch?.short_name ?? ''"
+    :occupancy="markEmptyOccupancy"
+    :vessel-name="batchSummary?.current_vessel ?? ''"
+    @emptied="handleVesselEmptied"
+  />
 </template>
 
 <script lang="ts" setup>
   import type { BatchSummary,
                 BrewSession,
                 GravityUnit,
+                Occupancy,
                 OccupancyStatus,
                 Addition as ProductionAddition,
                 AdditionType as ProductionAdditionType,
@@ -310,8 +330,10 @@
     type Batch,
     BatchAdditionDialog,
     BatchAdditionsTab,
+    BatchAssignFermenterDialog,
     BatchBrewSessionDialog,
     BatchBrewSessionsTab,
+    BatchMarkEmptyDialog,
     BatchDeleteDialog,
     BatchEditDialog,
     type BatchEditForm,
@@ -374,6 +396,8 @@
     updateBatch,
     deleteBatch,
     getBatchSummary,
+    getActiveOccupancies,
+    getOccupancy,
     updateOccupancyStatus,
     getRecipes,
   } = useProductionApi()
@@ -517,6 +541,15 @@
   const deletingBatch = ref(false)
   const deleteBatchError = ref('')
 
+  // Assign fermenter dialog state
+  const assignFermenterDialog = ref(false)
+  const activeOccupancies = ref<Occupancy[]>([])
+  const batchProductionVolumes = ref<ProductionVolume[]>([])
+
+  // Mark empty dialog state
+  const markEmptyDialog = ref(false)
+  const markEmptyOccupancy = ref<Occupancy | null>(null)
+
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
   const latestLiquidPhase = computed(() => getLatest(batchVolumes.value, item => item.phase_at))
@@ -537,6 +570,8 @@
     const hasNotes = timelineReading.notes.trim().length > 0
     return hasTemperature || hasGravity || hasNotes
   })
+
+  const hasBatchVolumes = computed(() => batchProductionVolumes.value.length > 0)
 
   const isEditingBrewSession = computed(() => editingBrewSessionUuid.value !== null)
 
@@ -745,6 +780,9 @@
     measurements.value = []
     volumeRelations.value = []
     batchSummary.value = null
+    batchProductionVolumes.value = []
+    activeOccupancies.value = []
+    markEmptyOccupancy.value = null
     brewSessions.value = []
     selectedBrewSessionUuid.value = null
     wortAdditions.value = []
@@ -790,13 +828,14 @@
   async function loadBatchData (batchUuid: string) {
     loading.value = true
     try {
-      const [batchData, batchVolumesData, processPhasesData, additionsData, measurementsData, brewSessionsData] = await Promise.all([
+      const [batchData, batchVolumesData, processPhasesData, additionsData, measurementsData, brewSessionsData, batchProdVolumesData] = await Promise.all([
         get<Batch>(`/batches/${batchUuid}`),
         get<BatchVolume[]>(`/batch-volumes?batch_uuid=${batchUuid}`),
         get<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batchUuid}`),
         get<Addition[]>(`/additions?batch_uuid=${batchUuid}`),
         get<Measurement[]>(`/measurements?batch_uuid=${batchUuid}`),
         getBrewSessions(batchUuid),
+        get<ProductionVolume[]>(`/volumes?batch_uuid=${batchUuid}`),
       ])
 
       selectedBatch.value = batchData
@@ -805,6 +844,7 @@
       additions.value = additionsData
       measurements.value = measurementsData
       brewSessions.value = brewSessionsData
+      batchProductionVolumes.value = batchProdVolumesData
 
       // Clear brew session selection when batch changes
       selectedBrewSessionUuid.value = null
@@ -1362,6 +1402,53 @@
       default: {
         return ''
       }
+    }
+  }
+
+  // ==================== Assign Fermenter Functions ====================
+
+  async function openAssignFermenterDialog () {
+    try {
+      // Load active occupancies and batch volumes in parallel
+      const [occupanciesData, volumesData] = await Promise.all([
+        getActiveOccupancies(),
+        props.batchUuid
+          ? get<ProductionVolume[]>(`/volumes?batch_uuid=${props.batchUuid}`)
+          : Promise.resolve([]),
+      ])
+      activeOccupancies.value = occupanciesData
+      batchProductionVolumes.value = volumesData
+      assignFermenterDialog.value = true
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function handleFermenterAssigned () {
+    showNotice('Batch assigned to fermenter')
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
+    }
+  }
+
+  // ==================== Mark Empty Functions ====================
+
+  async function openMarkEmptyDialog () {
+    if (!batchSummary.value?.current_occupancy_uuid) return
+
+    try {
+      const occupancy = await getOccupancy(batchSummary.value.current_occupancy_uuid)
+      markEmptyOccupancy.value = occupancy
+      markEmptyDialog.value = true
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function handleVesselEmptied () {
+    showNotice('Vessel marked as empty')
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
     }
   }
 

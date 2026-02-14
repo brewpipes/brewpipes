@@ -6,6 +6,7 @@ import type {
   CreateAdditionRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
+  CreateOccupancyRequest,
   CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,
@@ -165,10 +166,20 @@ export function useProductionApi () {
     request<Occupancy[]>('/occupancies?active=true')
   const getOccupancy = (uuid: string) =>
     request<Occupancy>(`/occupancies/${uuid}`)
+  const createOccupancy = (data: CreateOccupancyRequest) =>
+    request<Occupancy>('/occupancies', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   const updateOccupancyStatus = (uuid: string, status: OccupancyStatus) =>
     request<Occupancy>(`/occupancies/${uuid}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    })
+  const closeOccupancy = (uuid: string, outAt?: string) =>
+    request<Occupancy>(`/occupancies/${uuid}/close`, {
+      method: 'PATCH',
+      body: JSON.stringify(outAt ? { out_at: outAt } : {}),
     })
 
   return {
@@ -225,6 +236,8 @@ export function useProductionApi () {
     // Occupancy
     getActiveOccupancies,
     getOccupancy,
+    createOccupancy,
     updateOccupancyStatus,
+    closeOccupancy,
   }
 }

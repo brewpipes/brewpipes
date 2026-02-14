@@ -1,4 +1,6 @@
 // Dialog components
+export { default as BatchAssignFermenterDialog } from './BatchAssignFermenterDialog.vue'
+export { default as BatchMarkEmptyDialog } from './BatchMarkEmptyDialog.vue'
 export { default as BatchAdditionDialog } from './BatchAdditionDialog.vue'
 // Form types from dialogs
 export type { AdditionForm } from './BatchAdditionDialog.vue'

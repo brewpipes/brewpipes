@@ -43,6 +43,16 @@ func (r UpdateOccupancyStatusRequest) Validate() error {
 	return nil
 }
 
+// CloseOccupancyRequest is the request body for closing an occupancy.
+// If OutAt is nil, the current time is used.
+type CloseOccupancyRequest struct {
+	OutAt *time.Time `json:"out_at"`
+}
+
+func (r CloseOccupancyRequest) Validate() error {
+	return nil
+}
+
 type OccupancyResponse struct {
 	UUID       string     `json:"uuid"`
 	VesselUUID string     `json:"vessel_uuid"`

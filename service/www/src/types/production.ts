@@ -472,6 +472,14 @@ export const OCCUPANCY_STATUS_VALUES: OccupancyStatus[] = [
   'packaging',
 ]
 
+/** Request payload for creating a new occupancy (assigning beer to a vessel) */
+export interface CreateOccupancyRequest {
+  vessel_uuid: string
+  volume_uuid: string
+  in_at?: string | null
+  status?: OccupancyStatus | null
+}
+
 /** A vessel occupancy record tracking what's in a vessel and when */
 export interface Occupancy {
   uuid: string

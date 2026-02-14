@@ -21,6 +21,7 @@ type OccupancyStore interface {
 	GetActiveOccupancyByVolumeUUID(context.Context, string) (storage.Occupancy, error)
 	ListActiveOccupancies(context.Context) ([]storage.Occupancy, error)
 	UpdateOccupancyStatusByUUID(context.Context, string, *string) (storage.Occupancy, error)
+	CloseOccupancyByUUID(context.Context, string, time.Time) (storage.Occupancy, error)
 	GetVesselByUUID(context.Context, string) (storage.Vessel, error)
 	GetVolumeByUUID(context.Context, string) (storage.Volume, error)
 }
@@ -192,6 +193,46 @@ func HandleOccupancyStatus(db OccupancyStore) http.HandlerFunc {
 		}
 
 		slog.Info("occupancy status updated", "occupancy_uuid", occupancyUUID, "status", req.Status)
+
+		service.JSON(w, dto.NewOccupancyResponse(occupancy))
+	}
+}
+
+// HandleCloseOccupancy handles [PATCH /occupancies/{uuid}/close].
+func HandleCloseOccupancy(db OccupancyStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		occupancyUUID := r.PathValue("uuid")
+		if occupancyUUID == "" {
+			http.Error(w, "invalid uuid", http.StatusBadRequest)
+			return
+		}
+
+		var req dto.CloseOccupancyRequest
+		if r.Body != nil && r.ContentLength != 0 {
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+		}
+
+		outAt := time.Now().UTC()
+		if req.OutAt != nil {
+			outAt = *req.OutAt
+		}
+
+		occupancy, err := db.CloseOccupancyByUUID(r.Context(), occupancyUUID, outAt)
+		if errors.Is(err, service.ErrNotFound) {
+			http.Error(w, "occupancy not found", http.StatusNotFound)
+			return
+		} else if errors.Is(err, storage.ErrOccupancyAlreadyClosed) {
+			http.Error(w, "occupancy is already closed", http.StatusConflict)
+			return
+		} else if err != nil {
+			service.InternalError(w, "error closing occupancy", "error", err, "occupancy_uuid", occupancyUUID)
+			return
+		}
+
+		slog.Info("occupancy closed", "occupancy_uuid", occupancyUUID, "out_at", outAt)
 
 		service.JSON(w, dto.NewOccupancyResponse(occupancy))
 	}

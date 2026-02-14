@@ -64,6 +64,7 @@ export type {
   CreateAdditionRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
+  CreateOccupancyRequest,
   CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,

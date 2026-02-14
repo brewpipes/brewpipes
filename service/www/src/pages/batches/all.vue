@@ -606,7 +606,6 @@
     URL.revokeObjectURL(url)
   }
 
-
 </script>
 
 <style scoped>

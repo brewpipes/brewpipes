@@ -3,6 +3,20 @@
     <v-row align="stretch">
       <v-col cols="12" lg="4" md="6">
         <v-card class="section-card">
+          <v-card-title>
+            <v-icon class="mr-2" color="success" icon="mdi-package-down" />
+            Receive Inventory
+          </v-card-title>
+          <v-card-text>
+            Record incoming inventory without a purchase order.
+          </v-card-text>
+          <v-card-actions>
+            <v-btn color="success" @click="receiveDialogOpen = true">Receive</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+      <v-col cols="12" lg="4" md="6">
+        <v-card class="section-card">
           <v-card-title>Activity</v-card-title>
           <v-card-text>
             Review inventory movement history and corrections.
@@ -57,8 +71,28 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Receive Without PO Dialog -->
+    <ReceiveWithoutPODialog
+      v-model="receiveDialogOpen"
+      @received="handleReceived"
+    />
   </v-container>
 </template>
+
+<script lang="ts" setup>
+  import { ref } from 'vue'
+  import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
+  import { useSnackbar } from '@/composables/useSnackbar'
+
+  const { showNotice } = useSnackbar()
+
+  const receiveDialogOpen = ref(false)
+
+  function handleReceived () {
+    showNotice('Inventory received successfully', 'success')
+  }
+</script>
 
 <style scoped>
 .inventory-page {

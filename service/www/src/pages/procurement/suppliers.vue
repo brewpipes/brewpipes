@@ -134,9 +134,9 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Supplier } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { formatDateTime } from '@/composables/useFormatters'
-  import type { Supplier } from '@/types'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeText } from '@/utils/normalize'

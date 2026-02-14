@@ -21,6 +21,7 @@ type IngredientLotStore interface {
 	ListIngredientLots(context.Context) ([]storage.IngredientLot, error)
 	ListIngredientLotsByIngredient(context.Context, string) ([]storage.IngredientLot, error)
 	ListIngredientLotsByReceipt(context.Context, string) ([]storage.IngredientLot, error)
+	ListIngredientLotsByPurchaseOrderLineUUID(context.Context, string) ([]storage.IngredientLot, error)
 }
 
 // HandleIngredientLots handles [GET /ingredient-lots] and [POST /ingredient-lots].
@@ -30,10 +31,24 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 		case http.MethodGet:
 			ingredientValue := r.URL.Query().Get("ingredient_uuid")
 			receiptValue := r.URL.Query().Get("receipt_uuid")
-			if ingredientValue != "" && receiptValue != "" {
-				http.Error(w, "ingredient_uuid and receipt_uuid cannot be combined", http.StatusBadRequest)
+			purchaseOrderLineValue := r.URL.Query().Get("purchase_order_line_uuid")
+
+			// Count how many filter params are set
+			filterCount := 0
+			if ingredientValue != "" {
+				filterCount++
+			}
+			if receiptValue != "" {
+				filterCount++
+			}
+			if purchaseOrderLineValue != "" {
+				filterCount++
+			}
+			if filterCount > 1 {
+				http.Error(w, "only one filter parameter allowed: ingredient_uuid, receipt_uuid, or purchase_order_line_uuid", http.StatusBadRequest)
 				return
 			}
+
 			if ingredientValue != "" {
 				lots, err := db.ListIngredientLotsByIngredient(r.Context(), ingredientValue)
 				if err != nil {
@@ -48,6 +63,16 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 				lots, err := db.ListIngredientLotsByReceipt(r.Context(), receiptValue)
 				if err != nil {
 					service.InternalError(w, "error listing ingredient lots by receipt", "error", err)
+					return
+				}
+
+				service.JSON(w, dto.NewIngredientLotsResponse(lots))
+				return
+			}
+			if purchaseOrderLineValue != "" {
+				lots, err := db.ListIngredientLotsByPurchaseOrderLineUUID(r.Context(), purchaseOrderLineValue)
+				if err != nil {
+					service.InternalError(w, "error listing ingredient lots by purchase order line", "error", err)
 					return
 				}
 
@@ -88,6 +113,16 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 				supplierUUID = &parsed
 			}
 
+			var purchaseOrderLineUUID *uuid.UUID
+			if req.PurchaseOrderLineUUID != nil {
+				parsed, err := uuid.FromString(*req.PurchaseOrderLineUUID)
+				if err != nil {
+					http.Error(w, "invalid purchase_order_line_uuid", http.StatusBadRequest)
+					return
+				}
+				purchaseOrderLineUUID = &parsed
+			}
+
 			// Resolve ingredient UUID to internal ID
 			ingredient, ok := service.ResolveFK(r.Context(), w, req.IngredientUUID, "ingredient", db.GetIngredientByUUID)
 			if !ok {
@@ -103,19 +138,20 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 			}
 
 			lot := storage.IngredientLot{
-				IngredientID:      ingredient.ID,
-				ReceiptID:         receiptID,
-				SupplierUUID:      supplierUUID,
-				BreweryLotCode:    req.BreweryLotCode,
-				OriginatorLotCode: req.OriginatorLotCode,
-				OriginatorName:    req.OriginatorName,
-				OriginatorType:    req.OriginatorType,
-				ReceivedAt:        receivedAt,
-				ReceivedAmount:    req.ReceivedAmount,
-				ReceivedUnit:      req.ReceivedUnit,
-				BestByAt:          req.BestByAt,
-				ExpiresAt:         req.ExpiresAt,
-				Notes:             req.Notes,
+				IngredientID:          ingredient.ID,
+				ReceiptID:             receiptID,
+				SupplierUUID:          supplierUUID,
+				PurchaseOrderLineUUID: purchaseOrderLineUUID,
+				BreweryLotCode:        req.BreweryLotCode,
+				OriginatorLotCode:     req.OriginatorLotCode,
+				OriginatorName:        req.OriginatorName,
+				OriginatorType:        req.OriginatorType,
+				ReceivedAt:            receivedAt,
+				ReceivedAmount:        req.ReceivedAmount,
+				ReceivedUnit:          req.ReceivedUnit,
+				BestByAt:              req.BestByAt,
+				ExpiresAt:             req.ExpiresAt,
+				Notes:                 req.Notes,
 			}
 
 			created, err := db.CreateIngredientLot(r.Context(), lot)

@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
-**Last Updated:** 2026-02-02  
-**Status:** User Journeys Finalized, Feature Backlog In Progress
+**Last Updated:** 2026-02-13  
+**Status:** Phase 3 Complete, Phase 4 Next
 
 ---
 
@@ -309,12 +309,12 @@ Complete the procurement → inventory flow.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| PROC-01 | Backend: Link receipts to PO line items | M | 1 | Not Started |
-| PROC-02 | Backend: Auto-update PO status on receipt | S | 1 | Not Started |
-| PROC-03 | Frontend: PO detail view with line items inline | M | 1 | Not Started |
-| PROC-04 | Frontend: Receiving workflow (receive against PO) | L | 1 | Not Started |
-| PROC-05 | Frontend: Current stock levels display | M | 1, 6 | Not Started |
-| PROC-06 | Frontend: Low stock alerts | S | 6 | Not Started |
+| PROC-01 | Backend: Link receipts to PO line items | M | 1 | **Complete** |
+| PROC-02 | Backend: Auto-update PO status on receipt | S | 1 | **Complete** |
+| PROC-03 | Frontend: PO detail view with line items inline | M | 1 | **Complete** |
+| PROC-04 | Frontend: Receiving workflow (receive against PO) | L | 1 | **Complete** |
+| PROC-05 | Frontend: Current stock levels display | M | 1, 6 | **Complete** |
+| PROC-06 | Frontend: Low stock alerts | S | 6 | **Complete** |
 
 ---
 
@@ -400,7 +400,7 @@ Track brewhouse removals for future TTB compliance.
 | **M0: Roadmap Complete** | User journeys and feature backlog finalized | **Complete** |
 | **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | **Complete** |
 | **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 2 nearly complete, RCP-06 remaining) |
-| **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | Not Started |
+| **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | **Complete** |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | Not Started |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | Not Started |
 | **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | Not Started |
@@ -431,6 +431,12 @@ Track brewhouse removals for future TTB compliance.
 | RCP-03 | Backend: Recipe ingredient bill CRUD endpoints | 2026-02-02 |
 | RCP-04 | Frontend: Recipe ingredient bill management UI | 2026-02-02 |
 | RCP-05 | Frontend: Recipe detail view with full specs | 2026-02-02 |
+| PROC-01 | Backend: Link receipts to PO line items | 2026-02-13 |
+| PROC-02 | Backend: Auto-update PO status on receipt | 2026-02-13 |
+| PROC-03 | Frontend: PO detail view with line items inline | 2026-02-13 |
+| PROC-04 | Frontend: Receiving workflow (receive against PO) | 2026-02-13 |
+| PROC-05 | Frontend: Current stock levels display | 2026-02-13 |
+| PROC-06 | Frontend: Low stock alerts | 2026-02-13 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -456,6 +462,13 @@ Track brewhouse removals for future TTB compliance.
 - **Target Specs (RCP-02):** Extended `recipe` table with batch_size, target_og/fg/ibu/srm (with optional min/max ranges), target_carbonation, ibu_method, and brewhouse_efficiency. ABV is calculated from OG/FG using `(OG - FG) × 131.25`.
 - **Backend CRUD (RCP-03):** Full CRUD endpoints for recipe ingredients at `/recipes/{id}/ingredients`. Validation for ingredient types, use stages, alpha acid (hops only), and positive amounts.
 - **Frontend UI (RCP-04, RCP-05):** Recipe detail page at `/recipes/{uuid}` with tabs for Overview, Fermentables, Hops, Yeast & Other, and Specs. Ingredient management via modal dialogs. Mobile-responsive with card layouts on small screens. SRM color preview swatch. Spec badges in recipe list.
+
+**Phase 3 Details:** Implemented complete procurement-to-inventory receiving workflow:
+- **PO Detail Page (PROC-03):** Consolidated PO view with header, line items, fees, and totals. Status management with valid transition enforcement. Mobile-responsive with card layouts.
+- **Receiving Workflow (PROC-04):** 3-step wizard for receiving against PO (select lines → enter details → confirm). Ad-hoc receiving dialog for inventory without PO. Creates receipts, lots, and movements atomically. Auto-updates PO status.
+- **Stock Levels (PROC-05):** New stock levels page with category tabs, per-location breakdown, and zero-stock indicators. Backend endpoint aggregates movements into current stock.
+- **Low Stock Alerts (PROC-06):** Dashboard card showing out-of-stock ingredients. Navigation badge on Inventory when low stock exists.
+- **Backend Enhancements (PROC-01, PROC-02):** PO linkage exposed on receipts and lots. PO status transition validation with state machine.
 
 ---
 

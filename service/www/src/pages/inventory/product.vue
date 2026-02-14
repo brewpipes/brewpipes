@@ -82,7 +82,6 @@
     </v-card>
   </v-container>
 
-
 </template>
 
 <script lang="ts" setup>

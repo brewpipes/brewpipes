@@ -4,6 +4,8 @@ import type {
   PurchaseOrderFee,
   PurchaseOrderLine,
   Supplier,
+  UpdatePurchaseOrderFeeRequest,
+  UpdatePurchaseOrderLineRequest,
   UpdatePurchaseOrderRequest,
   UpdateSupplierRequest,
 } from '@/types'
@@ -73,6 +75,15 @@ export function useProcurementApi () {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  const updatePurchaseOrderLine = (uuid: string, data: UpdatePurchaseOrderLineRequest) =>
+    request<PurchaseOrderLine>(`/purchase-order-lines/${uuid}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deletePurchaseOrderLine = (uuid: string) =>
+    request<void>(`/purchase-order-lines/${uuid}`, {
+      method: 'DELETE',
+    })
 
   // Purchase Order Fees API
   const getPurchaseOrderFees = (purchaseOrderUuid?: string) => {
@@ -87,6 +98,15 @@ export function useProcurementApi () {
     request<PurchaseOrderFee>('/purchase-order-fees', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  const updatePurchaseOrderFee = (uuid: string, data: UpdatePurchaseOrderFeeRequest) =>
+    request<PurchaseOrderFee>(`/purchase-order-fees/${uuid}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deletePurchaseOrderFee = (uuid: string) =>
+    request<void>(`/purchase-order-fees/${uuid}`, {
+      method: 'DELETE',
     })
 
   return {
@@ -110,8 +130,12 @@ export function useProcurementApi () {
     // Purchase Order Lines
     getPurchaseOrderLines,
     createPurchaseOrderLine,
+    updatePurchaseOrderLine,
+    deletePurchaseOrderLine,
     // Purchase Order Fees
     getPurchaseOrderFees,
     createPurchaseOrderFee,
+    updatePurchaseOrderFee,
+    deletePurchaseOrderFee,
   }
 }

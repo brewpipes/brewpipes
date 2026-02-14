@@ -1,0 +1,192 @@
+<template>
+  <v-dialog
+    :fullscreen="$vuetify.display.xs"
+    :max-width="$vuetify.display.xs ? '100%' : 600"
+    :model-value="modelValue"
+    persistent
+    @update:model-value="emit('update:modelValue', $event)"
+  >
+    <v-card>
+      <v-card-title class="text-h6">
+        {{ isEditing ? 'Edit line item' : 'Add line item' }}
+      </v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              v-model.number="form.line_number"
+              label="Line number"
+              :rules="[v => !!v || 'Required']"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-select
+              v-model="form.item_type"
+              :items="itemTypeOptions"
+              label="Item type"
+              :rules="[v => !!v || 'Required']"
+            />
+          </v-col>
+          <v-col cols="12">
+            <v-text-field
+              v-model="form.item_name"
+              label="Item name"
+              :rules="[v => !!v?.trim() || 'Required']"
+            />
+          </v-col>
+          <v-col cols="12">
+            <v-text-field
+              v-model="form.inventory_item_uuid"
+              hint="Optional - link to inventory item"
+              label="Inventory item UUID"
+              persistent-hint
+            />
+          </v-col>
+          <v-col cols="6" sm="4">
+            <v-text-field
+              v-model.number="form.quantity"
+              label="Quantity"
+              :rules="[v => v > 0 || 'Must be positive']"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="6" sm="4">
+            <v-combobox
+              v-model="form.quantity_unit"
+              :items="unitOptions"
+              label="Unit"
+              :rules="[v => !!v || 'Required']"
+            />
+          </v-col>
+          <v-col cols="6" sm="4">
+            <v-text-field
+              v-model.number="form.unit_cost_cents"
+              hint="In cents (e.g., 1500 = $15.00)"
+              label="Unit cost (cents)"
+              persistent-hint
+              :rules="[v => v >= 0 || 'Must be non-negative']"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="6" sm="4">
+            <v-combobox
+              v-model="form.currency"
+              :items="currencyOptions"
+              label="Currency"
+              :rules="[v => !!v || 'Required']"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="saving" variant="text" @click="handleCancel">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!isValid"
+          :loading="saving"
+          @click="handleSave"
+        >
+          {{ isEditing ? 'Save changes' : 'Add line' }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+</template>
+
+<script lang="ts" setup>
+  import type { PurchaseOrderLine } from '@/types'
+  import { computed, reactive, watch } from 'vue'
+
+  const props = defineProps<{
+    modelValue: boolean
+    line?: PurchaseOrderLine | null
+    saving?: boolean
+  }>()
+
+  const emit = defineEmits<{
+    'update:modelValue': [value: boolean]
+    'save': [form: LineForm]
+    'cancel': []
+  }>()
+
+  export interface LineForm {
+    line_number: number | null
+    item_type: string
+    item_name: string
+    inventory_item_uuid: string
+    quantity: number | null
+    quantity_unit: string
+    unit_cost_cents: number | null
+    currency: string
+  }
+
+  const itemTypeOptions = ['ingredient', 'packaging', 'service', 'equipment', 'other']
+  const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
+  const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
+
+  const form = reactive<LineForm>({
+    line_number: null,
+    item_type: '',
+    item_name: '',
+    inventory_item_uuid: '',
+    quantity: null,
+    quantity_unit: '',
+    unit_cost_cents: null,
+    currency: 'USD',
+  })
+
+  const isEditing = computed(() => !!props.line)
+
+  const isValid = computed(() => {
+    return (
+      form.line_number !== null
+      && form.line_number > 0
+      && form.item_type.trim().length > 0
+      && form.item_name.trim().length > 0
+      && form.quantity !== null
+      && form.quantity > 0
+      && form.quantity_unit.trim().length > 0
+      && form.unit_cost_cents !== null
+      && form.unit_cost_cents >= 0
+      && form.currency.trim().length > 0
+    )
+  })
+
+  watch(() => props.modelValue, open => {
+    if (open) {
+      if (props.line) {
+        form.line_number = props.line.line_number
+        form.item_type = props.line.item_type
+        form.item_name = props.line.item_name
+        form.inventory_item_uuid = props.line.inventory_item_uuid ?? ''
+        form.quantity = props.line.quantity
+        form.quantity_unit = props.line.quantity_unit
+        form.unit_cost_cents = props.line.unit_cost_cents
+        form.currency = props.line.currency
+      } else {
+        resetForm()
+      }
+    }
+  })
+
+  function resetForm () {
+    form.line_number = null
+    form.item_type = ''
+    form.item_name = ''
+    form.inventory_item_uuid = ''
+    form.quantity = null
+    form.quantity_unit = ''
+    form.unit_cost_cents = null
+    form.currency = 'USD'
+  }
+
+  function handleSave () {
+    emit('save', { ...form })
+  }
+
+  function handleCancel () {
+    emit('cancel')
+    emit('update:modelValue', false)
+  }
+</script>

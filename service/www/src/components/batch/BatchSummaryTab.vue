@@ -64,7 +64,7 @@
                   v-for="statusOption in occupancyStatusOptions"
                   :key="statusOption.value"
                   :active="statusOption.value === summary.current_occupancy_status"
-                    @click="emit('occupancy-status-change', summary.current_occupancy_uuid!, statusOption.value)"
+                  @click="emit('occupancy-status-change', summary.current_occupancy_uuid!, statusOption.value)"
                 >
                   <template #prepend>
                     <v-avatar
@@ -253,8 +253,8 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { useFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
-  import { type BatchSummary, type OccupancyStatus, OCCUPANCY_STATUS_VALUES } from '@/types'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { type BatchSummary, OCCUPANCY_STATUS_VALUES, type OccupancyStatus } from '@/types'
 
   defineProps<{
     summary: BatchSummary | null

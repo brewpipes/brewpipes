@@ -62,11 +62,7 @@
 
       batch.value = await getBatch(uuid)
     } catch (error_) {
-      if (error_ instanceof Error && error_.message.includes('404')) {
-        error.value = 'Batch not found'
-      } else {
-        error.value = 'Failed to load batch. Please try again.'
-      }
+      error.value = error_ instanceof Error && error_.message.includes('404') ? 'Batch not found' : 'Failed to load batch. Please try again.'
     } finally {
       loading.value = false
     }

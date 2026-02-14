@@ -73,8 +73,17 @@
 
       <v-list-group class="nav-group" value="inventory">
         <template #activator="{ props }">
-          <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory" />
+          <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory">
+            <template v-if="lowStockCount > 0" #append>
+              <v-badge
+                color="warning"
+                :content="lowStockCount"
+                inline
+              />
+            </template>
+          </v-list-item>
         </template>
+        <v-list-item title="Stock Levels" to="/inventory/stock-levels" />
         <v-list-item title="Activity" to="/inventory/activity" />
         <v-list-item title="Product" to="/inventory/product" />
         <v-list-item title="Ingredients" to="/inventory/ingredients" />
@@ -107,6 +116,7 @@
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useDisplay, useTheme } from 'vuetify'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUserSettings } from '@/composables/useUserSettings'
   import { useAuthStore } from '@/stores/auth'
@@ -120,11 +130,13 @@
   const theme = useTheme()
   const display = useDisplay()
   const { breweryName } = useUserSettings()
+  const { getStockLevels } = useInventoryApi()
   const isMobile = computed(() => display.smAndDown.value)
   const isDark = computed(() => theme.global.current.value.dark)
   const themeIcon = computed(() => (isDark.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
   const themeStorageKey = 'brewpipes:theme'
   const userLabel = computed(() => authStore.username ?? 'Account')
+  const lowStockCount = ref(0)
 
   const navItems = [
     { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
@@ -147,15 +159,27 @@
     await router.push('/login')
   }
 
+  async function loadLowStockCount () {
+    try {
+      const stockLevels = await getStockLevels()
+      lowStockCount.value = stockLevels.filter(item => item.total_on_hand <= 0).length
+    } catch {
+      // Silently fail - badge is non-critical
+      lowStockCount.value = 0
+    }
+  }
+
   onMounted(() => {
     const storedTheme = localStorage.getItem(themeStorageKey)
     if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
       theme.global.name.value = storedTheme
-      return
+    } else {
+      const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
     }
 
-    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
-    theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
+    // Load low stock count for navigation badge
+    loadLowStockCount()
   })
 
   watch(

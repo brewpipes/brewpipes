@@ -52,15 +52,25 @@
                   label="Filter by supplier"
                 />
                 <v-data-table
-                  class="data-table"
+                  class="data-table clickable-rows"
                   density="compact"
                   :headers="orderHeaders"
                   item-value="uuid"
                   :items="orders"
                   :loading="loading"
+                  @click:row="handleRowClick"
                 >
                   <template #item.supplier_uuid="{ item }">
                     {{ supplierName(item.supplier_uuid) }}
+                  </template>
+                  <template #item.status="{ item }">
+                    <v-chip
+                      :color="getStatusColor(item.status)"
+                      size="x-small"
+                      variant="flat"
+                    >
+                      {{ formatStatus(item.status) }}
+                    </v-chip>
                   </template>
                   <template #item.expected_at="{ item }">
                     {{ formatDateTime(item.expected_at) }}
@@ -72,20 +82,6 @@
                       variant="text"
                       @click.stop="openEditDialog(item)"
                     />
-                    <v-btn
-                      size="x-small"
-                      variant="text"
-                      @click.stop="openLines(item.uuid)"
-                    >
-                      Lines
-                    </v-btn>
-                    <v-btn
-                      size="x-small"
-                      variant="text"
-                      @click.stop="openFees(item.uuid)"
-                    >
-                      Fees
-                    </v-btn>
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No purchase orders yet.</div>
@@ -158,10 +154,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { PurchaseOrder, Supplier } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { formatDateTime } from '@/composables/useFormatters'
-  import type { PurchaseOrder, Supplier } from '@/types'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeDateTime, normalizeText, toLocalDateTimeInput } from '@/utils/normalize'
@@ -181,8 +177,37 @@
     { title: 'Supplier', key: 'supplier_uuid', sortable: true },
     { title: 'Status', key: 'status', sortable: true },
     { title: 'Expected', key: 'expected_at', sortable: true },
-    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '180px' },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '60px' },
   ]
+
+  // Status formatting
+  type PurchaseOrderStatus = 'draft' | 'submitted' | 'confirmed' | 'partially_received' | 'received' | 'cancelled'
+
+  const STATUS_COLORS: Record<PurchaseOrderStatus, string> = {
+    draft: 'grey',
+    submitted: 'blue',
+    confirmed: 'green',
+    partially_received: 'orange',
+    received: 'green',
+    cancelled: 'red',
+  }
+
+  const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
+    draft: 'Draft',
+    submitted: 'Submitted',
+    confirmed: 'Confirmed',
+    partially_received: 'Partially Received',
+    received: 'Received',
+    cancelled: 'Cancelled',
+  }
+
+  function getStatusColor (status: string): string {
+    return STATUS_COLORS[status as PurchaseOrderStatus] ?? 'grey'
+  }
+
+  function formatStatus (status: string): string {
+    return STATUS_LABELS[status as PurchaseOrderStatus] ?? status
+  }
 
   const suppliers = ref<Supplier[]>([])
   const orders = ref<PurchaseOrder[]>([])
@@ -332,23 +357,21 @@
     return supplier?.name ?? 'Unknown Supplier'
   }
 
-  function openLines (orderUuid: string) {
-    router.push({
-      path: '/procurement/purchase-order-lines',
-      query: { purchase_order_uuid: orderUuid },
-    })
-  }
-
-  function openFees (orderUuid: string) {
-    router.push({
-      path: '/procurement/purchase-order-fees',
-      query: { purchase_order_uuid: orderUuid },
-    })
+  function handleRowClick (_event: Event, row: { item: PurchaseOrder }) {
+    router.push(`/procurement/purchase-orders/${row.item.uuid}`)
   }
 </script>
 
 <style scoped>
 .procurement-page {
   position: relative;
+}
+
+.clickable-rows :deep(tbody tr) {
+  cursor: pointer;
+}
+
+.clickable-rows :deep(tbody tr:hover) {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
 }
 </style>

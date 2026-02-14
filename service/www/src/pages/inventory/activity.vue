@@ -143,7 +143,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref } from 'vue'
   import type {
     Batch,
     BeerLot,
@@ -157,6 +156,7 @@
     StockLocation,
     Supplier,
   } from '@/types'
+  import { computed, onMounted, reactive, ref } from 'vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useProductionApi } from '@/composables/useProductionApi'

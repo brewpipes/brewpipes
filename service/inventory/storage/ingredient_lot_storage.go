@@ -145,6 +145,20 @@ func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptUUID st
 	return c.scanIngredientLotRows(rows)
 }
 
+func (c *Client) ListIngredientLotsByPurchaseOrderLineUUID(ctx context.Context, purchaseOrderLineUUID string) ([]IngredientLot, error) {
+	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
+		WHERE il.purchase_order_line_uuid = $1 AND il.deleted_at IS NULL
+		ORDER BY il.received_at DESC`,
+		purchaseOrderLineUUID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing ingredient lots by purchase order line: %w", err)
+	}
+	defer rows.Close()
+
+	return c.scanIngredientLotRows(rows)
+}
+
 const ingredientLotSelectSQL = `
 	SELECT il.id, il.uuid, il.ingredient_id, i.uuid, il.receipt_id, r.uuid,
 	       il.supplier_uuid, il.purchase_order_line_uuid,

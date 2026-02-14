@@ -11,6 +11,7 @@ tools:
   glob: true
   grep: true
   apply_patch: true
+  mcp: playwright
 ---
 
 # BrewPipes QA Engineer Agent
@@ -79,6 +80,19 @@ Critical user journeys that must work flawlessly:
 - Test cross-service data flows (e.g., PO → inventory → batch)
 - Verify authentication and authorization
 - Test concurrent operations and race conditions
+
+### Browser-based testing
+
+You have access to browser automation via the Playwright MCP server. See `.opencode/agents/shared/browser-and-dev-servers.md` for full details on available tools, server lifecycle, and cleanup requirements.
+
+Use browser tools for:
+- **User journey validation** — Walk through complete flows (e.g., create batch → pick ingredients → assign fermenter) in the actual browser
+- **Mobile responsiveness testing** — Use `browser_resize` to test at key breakpoints (375px, 768px, 1024px) and verify layouts
+- **Visual regression checks** — Take screenshots to verify UI renders correctly after changes
+- **Console error detection** — Use `browser_console_messages` to catch JavaScript errors, warnings, or failed network requests
+- **Cross-service flow testing** — Verify that data flows correctly between services by interacting with the live UI
+
+**Important:** Always stop any dev servers you start. See the shared doc for cleanup commands.
 
 ### Cross-service integration validation
 

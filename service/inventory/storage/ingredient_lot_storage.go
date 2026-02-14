@@ -12,6 +12,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// CreateIngredientLot inserts a new ingredient lot and returns it.
+// Note: CurrentAmount is not computed here — it remains zero, which is correct
+// because a newly created lot has no movements yet. If this method ever becomes
+// part of a flow that atomically creates movements alongside the lot, the caller
+// must re-fetch the lot via GetIngredientLotByUUID to get an accurate CurrentAmount.
 func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (IngredientLot, error) {
 	receivedAt := lot.ReceivedAt
 	if receivedAt.IsZero() {
@@ -164,6 +169,11 @@ const ingredientLotSelectSQL = `
 	       il.supplier_uuid, il.purchase_order_line_uuid,
 	       il.brewery_lot_code, il.originator_lot_code, il.originator_name, il.originator_type,
 	       il.received_at, il.received_amount, il.received_unit,
+	       COALESCE((
+	           SELECT SUM(CASE direction WHEN 'in' THEN amount WHEN 'out' THEN -amount END)
+	           FROM inventory_movement
+	           WHERE ingredient_lot_id = il.id AND deleted_at IS NULL
+	       ), 0) AS current_amount,
 	       il.best_by_at, il.expires_at, il.notes,
 	       il.created_at, il.updated_at, il.deleted_at
 	FROM ingredient_lot il
@@ -191,6 +201,7 @@ func (c *Client) scanIngredientLotRow(row pgx.Row) (IngredientLot, error) {
 		&lot.ReceivedAt,
 		&lot.ReceivedAmount,
 		&lot.ReceivedUnit,
+		&lot.CurrentAmount,
 		&lot.BestByAt,
 		&lot.ExpiresAt,
 		&lot.Notes,
@@ -232,6 +243,7 @@ func (c *Client) scanIngredientLotRows(rows pgx.Rows) ([]IngredientLot, error) {
 			&lot.ReceivedAt,
 			&lot.ReceivedAmount,
 			&lot.ReceivedUnit,
+			&lot.CurrentAmount,
 			&lot.BestByAt,
 			&lot.ExpiresAt,
 			&lot.Notes,

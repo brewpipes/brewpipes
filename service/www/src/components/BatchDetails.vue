@@ -279,33 +279,31 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Recipe } from '@/types'
+  import type { BatchSummary,
+                BrewSession,
+                GravityUnit,
+                OccupancyStatus,
+                Addition as ProductionAddition,
+                AdditionType as ProductionAdditionType,
+                Measurement as ProductionMeasurement,
+                Volume as ProductionVolume,
+                Recipe,
+                TemperatureUnit,
+                UpdateBatchRequest,
+                Vessel,
+                VolumeUnit } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useApiClient } from '@/composables/useApiClient'
   import { formatDate, formatDateTime, useOccupancyStatusFormatters } from '@/composables/useFormatters'
-  import { useSnackbar } from '@/composables/useSnackbar'
-  import { normalizeDateTime, normalizeDateOnly, normalizeText, nowInputValue, toLocalDateTimeInput, toNumber } from '@/utils/normalize'
-  import type {
-    AdditionType as ProductionAdditionType,
-    Addition as ProductionAddition,
-    BatchSummary,
-    BrewSession,
-    GravityUnit,
-    Measurement as ProductionMeasurement,
-    OccupancyStatus,
-    TemperatureUnit,
-    UpdateBatchRequest,
-    Vessel,
-    Volume as ProductionVolume,
-    VolumeUnit,
-  } from '@/types'
   import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import {
     convertGravity,
     convertTemperature,
   } from '@/composables/useUnitConversion'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { normalizeDateOnly, normalizeDateTime, normalizeText, nowInputValue, toLocalDateTimeInput, toNumber } from '@/utils/normalize'
   import {
     type Addition,
     type AdditionType,

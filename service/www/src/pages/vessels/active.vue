@@ -61,19 +61,17 @@
     />
   </v-container>
 
-
 </template>
 
 <script lang="ts" setup>
-  import type { UpdateVesselRequest } from '@/types'
+  import type { Occupancy, OccupancyStatus, UpdateVesselRequest, Vessel } from '@/types'
   import { computed, onMounted, ref, watch } from 'vue'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import VesselDetails from '@/components/VesselDetails.vue'
   import VesselList from '@/components/VesselList.vue'
   import { useOccupancyStatusFormatters } from '@/composables/useFormatters'
-  import { useSnackbar } from '@/composables/useSnackbar'
-  import type { Occupancy, OccupancyStatus, Vessel } from '@/types'
   import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useVesselActions } from '@/composables/useVesselActions'
 
   const vessels = ref<Vessel[]>([])

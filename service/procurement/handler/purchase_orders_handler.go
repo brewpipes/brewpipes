@@ -136,6 +136,21 @@ func HandlePurchaseOrderByUUID(db PurchaseOrderStore) http.HandlerFunc {
 			if update.Status != nil {
 				value := strings.TrimSpace(*update.Status)
 				update.Status = &value
+
+				// Validate status transition if status is changing
+				currentOrder, err := db.GetPurchaseOrderByUUID(r.Context(), orderUUID)
+				if errors.Is(err, service.ErrNotFound) {
+					http.Error(w, "purchase order not found", http.StatusNotFound)
+					return
+				} else if err != nil {
+					service.InternalError(w, "error getting purchase order for status validation", "error", err)
+					return
+				}
+
+				if err := dto.ValidatePurchaseOrderStatusTransition(currentOrder.Status, *update.Status); err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
 			}
 
 			order, err := db.UpdatePurchaseOrderByUUID(r.Context(), orderUUID, update)

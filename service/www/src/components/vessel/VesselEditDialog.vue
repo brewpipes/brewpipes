@@ -119,8 +119,8 @@
   import type { UpdateVesselRequest, Vessel, VesselStatus, VesselType, VolumeUnit } from '@/types'
   import { computed, reactive, ref, watch } from 'vue'
   import { useVesselTypeFormatters } from '@/composables/useFormatters'
-  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { volumeOptions } from '@/composables/useUnitPreferences'
+  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
 
   const props = defineProps<{
     modelValue: boolean

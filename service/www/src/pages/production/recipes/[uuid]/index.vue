@@ -29,10 +29,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Recipe } from '@/types'
   import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import RecipeDetails from '@/components/recipe/RecipeDetails.vue'
-  import type { Recipe } from '@/types'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useRouteUuid } from '@/composables/useRouteUuid'
 

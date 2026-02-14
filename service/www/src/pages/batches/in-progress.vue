@@ -56,8 +56,8 @@
 <script lang="ts" setup>
   import type { Batch, Recipe } from '@/types'
   import { computed, onMounted, ref } from 'vue'
-  import BatchDetails from '@/components/BatchDetails.vue'
   import { BatchCreateDialog, type BatchCreateForm } from '@/components/batch'
+  import BatchDetails from '@/components/BatchDetails.vue'
   import BatchList from '@/components/BatchList.vue'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'

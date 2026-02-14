@@ -21,6 +21,9 @@ export type {
 // Inventory types
 export type {
   BeerLot,
+  CreateIngredientLotRequest,
+  CreateInventoryMovementRequest,
+  CreateInventoryReceiptRequest,
   Ingredient,
   IngredientLot,
   IngredientLotHopDetail,
@@ -31,6 +34,9 @@ export type {
   InventoryReceipt,
   InventoryTransfer,
   InventoryUsage,
+  LineReceivingDetails,
+  StockLevel,
+  StockLevelLocation,
   StockLocation,
 } from './inventory'
 
@@ -41,6 +47,8 @@ export type {
   PurchaseOrderFee,
   PurchaseOrderLine,
   Supplier,
+  UpdatePurchaseOrderFeeRequest,
+  UpdatePurchaseOrderLineRequest,
   UpdatePurchaseOrderRequest,
   UpdateSupplierRequest,
 } from './procurement'

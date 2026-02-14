@@ -146,7 +146,7 @@
             density="comfortable"
             hint="Select an existing style or type a new one"
             item-title="name"
-          item-value="uuid"
+            item-value="uuid"
             :items="styleItems"
             label="Style"
             :loading="stylesLoading"
@@ -218,10 +218,10 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Recipe, Style } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { formatDateTime } from '@/composables/useFormatters'
-  import type { Recipe, Style } from '@/types'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeText } from '@/utils/normalize'

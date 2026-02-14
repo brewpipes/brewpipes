@@ -30,11 +30,13 @@ declare module 'vue-router/auto-routes' {
     '/inventory/locations': RouteRecordInfo<'/inventory/locations', '/inventory/locations', Record<never, never>, Record<never, never>>,
     '/inventory/lot-details': RouteRecordInfo<'/inventory/lot-details', '/inventory/lot-details', Record<never, never>, Record<never, never>>,
     '/inventory/product': RouteRecordInfo<'/inventory/product', '/inventory/product', Record<never, never>, Record<never, never>>,
+    '/inventory/stock-levels': RouteRecordInfo<'/inventory/stock-levels', '/inventory/stock-levels', Record<never, never>, Record<never, never>>,
     '/login': RouteRecordInfo<'/login', '/login', Record<never, never>, Record<never, never>>,
     '/procurement/': RouteRecordInfo<'/procurement/', '/procurement', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-fees': RouteRecordInfo<'/procurement/purchase-order-fees', '/procurement/purchase-order-fees', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-order-lines': RouteRecordInfo<'/procurement/purchase-order-lines', '/procurement/purchase-order-lines', Record<never, never>, Record<never, never>>,
-    '/procurement/purchase-orders': RouteRecordInfo<'/procurement/purchase-orders', '/procurement/purchase-orders', Record<never, never>, Record<never, never>>,
+    '/procurement/purchase-orders/': RouteRecordInfo<'/procurement/purchase-orders/', '/procurement/purchase-orders', Record<never, never>, Record<never, never>>,
+    '/procurement/purchase-orders/[uuid]': RouteRecordInfo<'/procurement/purchase-orders/[uuid]', '/procurement/purchase-orders/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     '/procurement/suppliers': RouteRecordInfo<'/procurement/suppliers', '/procurement/suppliers', Record<never, never>, Record<never, never>>,
     '/production/': RouteRecordInfo<'/production/', '/production', Record<never, never>, Record<never, never>>,
     '/production/recipes/': RouteRecordInfo<'/production/recipes/', '/production/recipes', Record<never, never>, Record<never, never>>,
@@ -105,6 +107,10 @@ declare module 'vue-router/auto-routes' {
       routes: '/inventory/product'
       views: never
     }
+    'src/pages/inventory/stock-levels.vue': {
+      routes: '/inventory/stock-levels'
+      views: never
+    }
     'src/pages/login.vue': {
       routes: '/login'
       views: never
@@ -121,8 +127,12 @@ declare module 'vue-router/auto-routes' {
       routes: '/procurement/purchase-order-lines'
       views: never
     }
-    'src/pages/procurement/purchase-orders.vue': {
-      routes: '/procurement/purchase-orders'
+    'src/pages/procurement/purchase-orders/index.vue': {
+      routes: '/procurement/purchase-orders/'
+      views: never
+    }
+    'src/pages/procurement/purchase-orders/[uuid].vue': {
+      routes: '/procurement/purchase-orders/[uuid]'
       views: never
     }
     'src/pages/procurement/suppliers.vue': {

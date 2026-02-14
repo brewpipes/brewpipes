@@ -1,5 +1,8 @@
 import type {
   BeerLot,
+  CreateIngredientLotRequest,
+  CreateInventoryMovementRequest,
+  CreateInventoryReceiptRequest,
   Ingredient,
   IngredientLot,
   IngredientLotHopDetail,
@@ -10,6 +13,7 @@ import type {
   InventoryReceipt,
   InventoryTransfer,
   InventoryUsage,
+  StockLevel,
   StockLocation,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
@@ -37,9 +41,16 @@ export function useInventoryApi () {
     })
 
   // Ingredient Lots API
-  const getIngredientLots = () => request<IngredientLot[]>('/ingredient-lots')
+  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string }) => {
+    const query = new URLSearchParams()
+    if (filters?.purchase_order_line_uuid) {
+      query.set('purchase_order_line_uuid', filters.purchase_order_line_uuid)
+    }
+    const path = query.toString() ? `/ingredient-lots?${query.toString()}` : '/ingredient-lots'
+    return request<IngredientLot[]>(path)
+  }
   const getIngredientLot = (uuid: string) => request<IngredientLot>(`/ingredient-lots/${uuid}`)
-  const createIngredientLot = (data: Record<string, unknown>) =>
+  const createIngredientLot = (data: CreateIngredientLotRequest | Record<string, unknown>) =>
     request<IngredientLot>('/ingredient-lots', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -78,7 +89,7 @@ export function useInventoryApi () {
 
   // Inventory Receipts API
   const getInventoryReceipts = () => request<InventoryReceipt[]>('/inventory-receipts')
-  const createInventoryReceipt = (data: Record<string, unknown>) =>
+  const createInventoryReceipt = (data: CreateInventoryReceiptRequest | Record<string, unknown>) =>
     request<InventoryReceipt>('/inventory-receipts', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -120,6 +131,11 @@ export function useInventoryApi () {
     const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
     return request<InventoryMovement[]>(path)
   }
+  const createInventoryMovement = (data: CreateInventoryMovementRequest) =>
+    request<InventoryMovement>('/inventory-movements', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
 
   // Beer Lots API
   const getBeerLots = () => request<BeerLot[]>('/beer-lots')
@@ -128,6 +144,9 @@ export function useInventoryApi () {
       method: 'POST',
       body: JSON.stringify(data),
     })
+
+  // Stock Levels API
+  const getStockLevels = () => request<StockLevel[]>('/stock-levels')
 
   return {
     apiBase: inventoryApiBase,
@@ -168,8 +187,11 @@ export function useInventoryApi () {
     createInventoryTransfer,
     // Inventory Movements
     getInventoryMovements,
+    createInventoryMovement,
     // Beer Lots
     getBeerLots,
     createBeerLot,
+    // Stock Levels
+    getStockLevels,
   }
 }

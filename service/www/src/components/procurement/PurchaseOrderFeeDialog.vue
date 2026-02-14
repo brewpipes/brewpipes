@@ -1,0 +1,126 @@
+<template>
+  <v-dialog
+    :fullscreen="$vuetify.display.xs"
+    :max-width="$vuetify.display.xs ? '100%' : 480"
+    :model-value="modelValue"
+    persistent
+    @update:model-value="emit('update:modelValue', $event)"
+  >
+    <v-card>
+      <v-card-title class="text-h6">
+        {{ isEditing ? 'Edit fee' : 'Add fee' }}
+      </v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12">
+            <v-combobox
+              v-model="form.fee_type"
+              :items="feeTypeOptions"
+              label="Fee type"
+              :rules="[v => !!v?.trim() || 'Required']"
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              v-model.number="form.amount_cents"
+              hint="In cents (e.g., 1500 = $15.00)"
+              label="Amount (cents)"
+              persistent-hint
+              :rules="[v => v >= 0 || 'Must be non-negative']"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-combobox
+              v-model="form.currency"
+              :items="currencyOptions"
+              label="Currency"
+              :rules="[v => !!v || 'Required']"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="saving" variant="text" @click="handleCancel">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          :disabled="!isValid"
+          :loading="saving"
+          @click="handleSave"
+        >
+          {{ isEditing ? 'Save changes' : 'Add fee' }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+</template>
+
+<script lang="ts" setup>
+  import type { PurchaseOrderFee } from '@/types'
+  import { computed, reactive, watch } from 'vue'
+
+  const props = defineProps<{
+    modelValue: boolean
+    fee?: PurchaseOrderFee | null
+    saving?: boolean
+  }>()
+
+  const emit = defineEmits<{
+    'update:modelValue': [value: boolean]
+    'save': [form: FeeForm]
+    'cancel': []
+  }>()
+
+  export interface FeeForm {
+    fee_type: string
+    amount_cents: number | null
+    currency: string
+  }
+
+  const feeTypeOptions = ['shipping', 'handling', 'tax', 'insurance', 'customs', 'other']
+  const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
+
+  const form = reactive<FeeForm>({
+    fee_type: '',
+    amount_cents: null,
+    currency: 'USD',
+  })
+
+  const isEditing = computed(() => !!props.fee)
+
+  const isValid = computed(() => {
+    return (
+      form.fee_type.trim().length > 0
+      && form.amount_cents !== null
+      && form.amount_cents >= 0
+      && form.currency.trim().length > 0
+    )
+  })
+
+  watch(() => props.modelValue, open => {
+    if (open) {
+      if (props.fee) {
+        form.fee_type = props.fee.fee_type
+        form.amount_cents = props.fee.amount_cents
+        form.currency = props.fee.currency
+      } else {
+        resetForm()
+      }
+    }
+  })
+
+  function resetForm () {
+    form.fee_type = ''
+    form.amount_cents = null
+    form.currency = 'USD'
+  }
+
+  function handleSave () {
+    emit('save', { ...form })
+  }
+
+  function handleCancel () {
+    emit('cancel')
+    emit('update:modelValue', false)
+  }
+</script>

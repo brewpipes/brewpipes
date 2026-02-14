@@ -59,6 +59,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/beer-lots", Handler: auth(handler.HandleBeerLots(s.storage))},
 		{Method: http.MethodPost, Path: "/beer-lots", Handler: auth(handler.HandleBeerLots(s.storage))},
 		{Method: http.MethodGet, Path: "/beer-lots/{uuid}", Handler: auth(handler.HandleBeerLotByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/stock-levels", Handler: auth(handler.HandleStockLevels(s.storage))},
 	}
 }
 

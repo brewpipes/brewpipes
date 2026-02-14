@@ -1,8 +1,8 @@
-import type { UpdateVesselRequest, Vessel } from '@/types'
+import type { Ref } from 'vue'
 import type VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+import type { UpdateVesselRequest, Vessel } from '@/types'
 import { useProductionApi } from '@/composables/useProductionApi'
 import { useSnackbar } from '@/composables/useSnackbar'
-import { type Ref } from 'vue'
 
 /**
  * Shared vessel save handler with 409 conflict detection.

@@ -488,6 +488,20 @@ Track brewhouse removals for future TTB compliance.
 - **Brew Day Wizard (BREW-06):** Three-step guided wizard (pick ingredients → record session → assign fermenter) optimized for mobile. Fullscreen on small screens, non-linear step navigation, auto-fill FIFO lots, visual fermenter card picker, completion summary. Reviewed and refined by frontend tech lead.
 - **Seed Data Enhancement:** 20 new ingredients, 22 lots, 4 new batches, 5 new vessels, missing enum values, FIFO test lots, cross-service UUID fix migration.
 
+### Deferred QA Items
+
+Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
+
+#### Dashboard (Pass 1)
+- [ ] Low stock ingredient link auto-selects correct tab but doesn't highlight/scroll to the specific ingredient row
+- [ ] Footer overlaps content on mobile at 375px width
+
+#### Production — Batches (Pass 2)
+- [ ] OG/FG show "—" in batch summary even when gravity measurements exist — backend `populateMeasurements` may not be extracting OG/FG from measurements correctly
+- [ ] Inventory lot UUID fields in addition/measurement dialogs require raw UUID input — should be searchable comboboxes with lot codes and ingredient names
+- [ ] Measurement "Kind" field inconsistency — hot-side dialog uses curated dropdown, batch-level dialog uses free text input
+- [ ] Temperature unit inconsistency — sparkline converts to user preference (°F), measurement table shows raw values (°C)
+
 ---
 
 ## Appendix: Current System Capabilities

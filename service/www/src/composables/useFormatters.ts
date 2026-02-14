@@ -223,6 +223,28 @@ export function usePhaseFormatters () {
   }
 }
 
+// Addition type formatting
+const ADDITION_TYPE_LABELS: Record<string, string> = {
+  hop: 'Hop',
+  malt: 'Malt',
+  yeast: 'Yeast',
+  adjunct: 'Adjunct',
+  water_chem: 'Water Chemistry',
+  fining: 'Fining',
+  gas: 'Gas',
+  other: 'Other',
+}
+
+export function useAdditionTypeFormatters () {
+  function formatAdditionType (type: string): string {
+    return ADDITION_TYPE_LABELS[type] ?? type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+  }
+
+  return {
+    formatAdditionType,
+  }
+}
+
 // ============================================================================
 // Recipe/Brewing Formatters
 // ============================================================================

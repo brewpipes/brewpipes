@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  useAdditionTypeFormatters,
   useFormatters,
   useOccupancyStatusFormatters,
   useVesselStatusFormatters,
@@ -140,6 +141,31 @@ describe('useVesselStatusFormatters', () => {
 
     it('returns "secondary" for unknown status', () => {
       expect(getVesselStatusColor('unknown' as VesselStatus)).toBe('secondary')
+    })
+  })
+})
+
+describe('useAdditionTypeFormatters', () => {
+  const { formatAdditionType } = useAdditionTypeFormatters()
+
+  describe('formatAdditionType', () => {
+    it('formats known addition types correctly', () => {
+      expect(formatAdditionType('hop')).toBe('Hop')
+      expect(formatAdditionType('malt')).toBe('Malt')
+      expect(formatAdditionType('yeast')).toBe('Yeast')
+      expect(formatAdditionType('adjunct')).toBe('Adjunct')
+      expect(formatAdditionType('water_chem')).toBe('Water Chemistry')
+      expect(formatAdditionType('fining')).toBe('Fining')
+      expect(formatAdditionType('gas')).toBe('Gas')
+      expect(formatAdditionType('other')).toBe('Other')
+    })
+
+    it('capitalizes and formats unknown types with underscores', () => {
+      expect(formatAdditionType('dry_hop')).toBe('Dry hop')
+    })
+
+    it('capitalizes simple unknown types', () => {
+      expect(formatAdditionType('enzyme')).toBe('Enzyme')
     })
   })
 })

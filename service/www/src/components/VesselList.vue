@@ -16,7 +16,7 @@
     <v-card-text>
       <v-progress-linear v-if="loading" class="mb-3" color="primary" indeterminate />
 
-      <v-list active-color="primary" class="vessel-list" lines="two">
+      <v-list class="vessel-list" color="primary" lines="two">
         <v-list-item
           v-for="vessel in sortedVessels"
           :key="vessel.uuid"

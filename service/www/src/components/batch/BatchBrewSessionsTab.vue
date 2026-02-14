@@ -133,7 +133,7 @@
             <tbody>
               <tr v-for="addition in additionsSorted" :key="addition.uuid">
                 <td>
-                  <v-chip size="x-small" variant="tonal">{{ addition.addition_type }}</v-chip>
+                  <v-chip size="x-small" variant="tonal">{{ formatAdditionType(addition.addition_type) }}</v-chip>
                   <span v-if="addition.stage" class="text-medium-emphasis ml-1">{{ addition.stage }}</span>
                 </td>
                 <td>{{ formatAmount(addition.amount, addition.amount_unit) }}</td>
@@ -202,7 +202,7 @@
     Vessel,
   } from '@/types'
   import { computed } from 'vue'
-  import { useFormatters } from '@/composables/useFormatters'
+  import { useAdditionTypeFormatters, useFormatters } from '@/composables/useFormatters'
 
   const props = defineProps<{
     sessions: BrewSession[]
@@ -223,6 +223,7 @@
   }>()
 
   const { formatDateTime } = useFormatters()
+  const { formatAdditionType } = useAdditionTypeFormatters()
 
   const sessionsSorted = computed(() => {
     // eslint-disable-next-line unicorn/no-array-sort -- toSorted requires ES2023+

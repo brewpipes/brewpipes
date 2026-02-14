@@ -20,7 +20,10 @@ export type {
 
 // Inventory types
 export type {
+  BatchUsagePick,
+  BatchUsageResponse,
   BeerLot,
+  CreateBatchUsageRequest,
   CreateIngredientLotRequest,
   CreateInventoryMovementRequest,
   CreateInventoryReceiptRequest,

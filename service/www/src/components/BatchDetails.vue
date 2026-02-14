@@ -149,6 +149,7 @@
 
           <v-window-item value="brew-day">
             <BatchBrewDayTab
+              :batch-uuid="selectedBatch?.uuid ?? null"
               :recipe-name="selectedBatch?.recipe_name ?? null"
               :recipe-uuid="selectedBatch?.recipe_uuid ?? null"
             />

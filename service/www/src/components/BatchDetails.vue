@@ -137,6 +137,31 @@
 
         <v-window v-model="activeTab" class="mt-4">
           <v-window-item value="summary">
+            <!-- Brew Day Wizard button -->
+            <v-btn
+              v-if="showStartBrewDay"
+              block
+              class="mb-4 d-sm-none"
+              color="primary"
+              min-height="44"
+              prepend-icon="mdi-kettle-steam"
+              size="large"
+              @click="openBrewDayWizard"
+            >
+              {{ brewDayButtonLabel }}
+            </v-btn>
+            <v-btn
+              v-if="showStartBrewDay"
+              class="mb-4 d-none d-sm-inline-flex"
+              color="primary"
+              min-height="44"
+              prepend-icon="mdi-kettle-steam"
+              size="large"
+              @click="openBrewDayWizard"
+            >
+              {{ brewDayButtonLabel }}
+            </v-btn>
+
             <BatchSummaryTab
               :has-volumes="hasBatchVolumes"
               :loading="batchSummaryLoading"
@@ -304,6 +329,17 @@
     :vessel-name="batchSummary?.current_vessel ?? ''"
     @emptied="handleVesselEmptied"
   />
+
+  <BrewDayWizard
+    v-if="selectedBatch"
+    v-model="brewDayWizardDialog"
+    :batch="selectedBatch"
+    :brew-sessions="brewSessions"
+    :occupancies="activeOccupancies"
+    :vessels="vessels"
+    :volumes="batchProductionVolumes"
+    @completed="handleBrewDayWizardCompleted"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -359,6 +395,7 @@
     BatchTimelineTab,
     type BatchVolume,
     BatchVolumeDialog,
+    BrewDayWizard,
     type FlowLink,
     type FlowNode,
     type Measurement,
@@ -560,6 +597,9 @@
   const markEmptyDialog = ref(false)
   const markEmptyOccupancy = ref<Occupancy | null>(null)
 
+  // Brew Day Wizard state
+  const brewDayWizardDialog = ref(false)
+
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
   const latestLiquidPhase = computed(() => getLatest(batchVolumes.value, item => item.phase_at))
@@ -582,6 +622,21 @@
   })
 
   const hasBatchVolumes = computed(() => batchProductionVolumes.value.length > 0)
+
+  // Brew Day Wizard computed
+  const showStartBrewDay = computed(() => {
+    if (!selectedBatch.value) return false
+    // Show when batch has a recipe
+    if (!selectedBatch.value.recipe_uuid) return false
+    // Show when batch has no occupancy (fermenter not yet assigned)
+    if (batchSummary.value?.current_vessel) return false
+    return true
+  })
+
+  const brewDayButtonLabel = computed(() => {
+    if (brewSessions.value.length > 0) return 'Continue Brew Day'
+    return 'Start Brew Day'
+  })
 
   const isEditingBrewSession = computed(() => editingBrewSessionUuid.value !== null)
 
@@ -1436,6 +1491,31 @@
 
   async function handleFermenterAssigned () {
     showNotice('Batch assigned to fermenter')
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
+    }
+  }
+
+  // ==================== Brew Day Wizard Functions ====================
+
+  async function openBrewDayWizard () {
+    try {
+      // Ensure we have fresh occupancy data
+      const [occupanciesData, volumesData] = await Promise.all([
+        getActiveOccupancies(),
+        props.batchUuid
+          ? get<ProductionVolume[]>(`/volumes?batch_uuid=${props.batchUuid}`)
+          : Promise.resolve([]),
+      ])
+      activeOccupancies.value = occupanciesData
+      batchProductionVolumes.value = volumesData
+      brewDayWizardDialog.value = true
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function handleBrewDayWizardCompleted () {
     if (props.batchUuid) {
       await loadBatchData(props.batchUuid)
     }

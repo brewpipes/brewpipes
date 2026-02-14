@@ -36,5 +36,8 @@ export { default as BatchTimelineTab } from './BatchTimelineTab.vue'
 export type { TimelineReading } from './BatchTimelineTab.vue'
 export { default as BatchVolumeDialog } from './BatchVolumeDialog.vue'
 export type { VolumeForm } from './BatchVolumeDialog.vue'
+// Wizard
+export { default as BrewDayWizard } from './brew-day-wizard/BrewDayWizard.vue'
+
 // Types
 export * from './types'

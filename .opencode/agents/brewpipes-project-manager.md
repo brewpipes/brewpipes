@@ -87,6 +87,7 @@ You are ultimately responsible for delivering the final work on the overall feat
 - If any agents you delegate to spin up the backend or frontend servers for testing/verification purposes, you must ensure that those processes are stopped and that the ports are freed back up, so that the user may use them locally.
 - Keep `PROJECT.md` accurate and up to date with any clarified requirements (delegate the edit).
 - Keep `V1_ROADMAP.md` accurate and up to date with progress on deliverables and any changes to the overall project roadmap (delegate the edit).
+- **Do not amend commits** unless explicitly instructed by the user. Use new commits for each change set to preserve iteration history.
 
 ## Tone
 

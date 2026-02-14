@@ -180,7 +180,7 @@
     if (open) {
       if (ingredient) {
         // Editing existing ingredient
-        form.name = ingredient.name
+        form.name = ingredient.name ?? ''
         form.amount = ingredient.amount
         form.amount_unit = ingredient.amount_unit
         form.use_stage = ingredient.use_stage
@@ -395,7 +395,7 @@
 
   const isFormValid = computed(() => {
     return (
-      form.name.trim().length > 0
+      (form.name?.trim().length ?? 0) > 0
       && form.amount !== null
       && form.amount > 0
     )
@@ -416,7 +416,7 @@
 
     const data: CreateRecipeIngredientRequest | UpdateRecipeIngredientRequest = {
       ingredient_type: props.ingredientType,
-      name: form.name.trim(),
+      name: (form.name ?? '').trim(),
       amount: form.amount!,
       amount_unit: form.amount_unit,
       use_stage: form.use_stage,
@@ -424,7 +424,7 @@
       timing_duration_minutes: timingMinutes,
       timing_temperature_c: form.timing_temperature_c,
       alpha_acid_assumed: form.alpha_acid_assumed,
-      notes: form.notes.trim() || null,
+      notes: form.notes?.trim() || null,
     }
 
     emit('submit', data)

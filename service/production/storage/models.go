@@ -311,6 +311,7 @@ type BrewSession struct {
 type RecipeIngredient struct {
 	entity.Identifiers
 	RecipeID              int64
+	Name                  string     // Human-readable ingredient name
 	IngredientUUID        *uuid.UUID // Cross-service ref to inventory.ingredient
 	IngredientType        string     // fermentable, hop, yeast, adjunct, salt, chemical, gas, other
 	Amount                float64

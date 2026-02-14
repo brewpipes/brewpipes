@@ -98,9 +98,10 @@ export function useRecipeScaling (
     return amount + (fullyScaled - amount) * ingredientScalingFactor
   }
 
-  /** Reset scaling to inactive state. */
+  /** Reset scaling to inactive state, restoring the recipe's native unit. */
   function resetScaling () {
     targetBatchSize.value = null
+    targetBatchSizeUnit.value = recipeBatchSizeUnit.value ?? 'bbl'
   }
 
   /** Set the target batch size and optionally the unit. */

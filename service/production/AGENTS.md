@@ -94,7 +94,7 @@ Recipe
 
 Recipe Ingredient
 - Stores the ingredient bill for a recipe.
-- Each ingredient has: type, amount, unit, use stage, optional use type, timing, and notes.
+- Each ingredient has: name, type, amount, unit, use stage, optional use type, timing, and notes.
 - Ingredient types: fermentable, hop, yeast, adjunct, salt, chemical, gas, other.
 - Use stages: mash, boil, whirlpool, fermentation, packaging.
 - Use types vary by context: bittering/flavor/aroma/dry_hop (hops), base/specialty/adjunct/sugar (fermentables), primary/secondary/bottle (yeast).

@@ -92,7 +92,7 @@
           <div class="metric-card">
             <div class="metric-label">Batch Size</div>
             <div class="metric-value">
-              {{ formatBatchSize(recipe.batch_size, recipe.batch_size_unit) }}
+              {{ displayBatchSize }}
             </div>
             <v-btn
               v-if="recipe.batch_size"
@@ -276,6 +276,45 @@
     :saving="savingIngredient"
     @submit="saveIngredient"
   />
+
+  <!-- Delete Ingredient Confirmation Dialog -->
+  <v-dialog
+    v-model="deleteIngredientDialog"
+    :fullscreen="false"
+    max-width="400"
+    persistent
+  >
+    <v-card>
+      <v-card-title class="text-h6">Delete Ingredient</v-card-title>
+      <v-card-text>
+        <p>
+          Are you sure you want to delete
+          <strong>{{ ingredientToDelete?.name ?? 'this ingredient' }}</strong>?
+        </p>
+        <v-alert
+          class="mt-4"
+          density="compact"
+          type="warning"
+          variant="tonal"
+        >
+          This action cannot be undone.
+        </v-alert>
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn :disabled="deletingIngredient" variant="text" @click="cancelDeleteIngredient">
+          Cancel
+        </v-btn>
+        <v-btn
+          color="error"
+          :loading="deletingIngredient"
+          variant="flat"
+          @click="confirmDeleteIngredient"
+        >
+          Delete
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -373,16 +412,27 @@
   const ingredientDialog = ref(false)
   const ingredientDialogType = ref<RecipeIngredientType>('fermentable')
   const editingIngredient = ref<RecipeIngredient | null>(null)
+  const deleteIngredientDialog = ref(false)
+  const ingredientToDelete = ref<RecipeIngredient | null>(null)
 
   // Saving states
   const savingRecipe = ref(false)
   const deletingRecipe = ref(false)
   const savingIngredient = ref(false)
+  const deletingIngredient = ref(false)
   const savingSpecs = ref(false)
 
   // Error states for dialogs
   const editRecipeError = ref('')
   const deleteRecipeError = ref('')
+
+  // Display batch size: show scaled target when scaling is active, otherwise recipe value
+  const displayBatchSize = computed(() => {
+    if (isScaling.value && targetBatchSize.value !== null) {
+      return formatBatchSize(targetBatchSize.value, targetBatchSizeUnit.value)
+    }
+    return formatBatchSize(props.recipe.batch_size, props.recipe.batch_size_unit)
+  })
 
   // Computed ingredient lists
   const fermentables = computed(() =>
@@ -536,14 +586,30 @@
     }
   }
 
-  async function deleteIngredient (ingredient: RecipeIngredient) {
+  function deleteIngredient (ingredient: RecipeIngredient) {
+    ingredientToDelete.value = ingredient
+    deleteIngredientDialog.value = true
+  }
+
+  function cancelDeleteIngredient () {
+    deleteIngredientDialog.value = false
+    ingredientToDelete.value = null
+  }
+
+  async function confirmDeleteIngredient () {
+    if (!ingredientToDelete.value) return
+    deletingIngredient.value = true
     try {
-      await deleteRecipeIngredient(props.recipe.uuid, ingredient.uuid)
+      await deleteRecipeIngredient(props.recipe.uuid, ingredientToDelete.value.uuid)
       showNotice('Ingredient removed')
+      deleteIngredientDialog.value = false
+      ingredientToDelete.value = null
       await loadIngredients()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove ingredient'
       showNotice(message, 'error')
+    } finally {
+      deletingIngredient.value = false
     }
   }
 

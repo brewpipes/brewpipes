@@ -209,6 +209,30 @@ describe('useRecipeScaling', () => {
       expect(isScaling.value).toBe(false)
       expect(targetBatchSize.value).toBeNull()
     })
+
+    it('resets unit to recipe native unit', () => {
+      const recipeBatchSize = ref<number | null>(10)
+      const recipeBatchSizeUnit = ref<string | null>('l')
+      const { targetBatchSizeUnit, setTargetBatchSize, resetScaling } = useRecipeScaling(recipeBatchSize, recipeBatchSizeUnit)
+
+      setTargetBatchSize(100, 'gal')
+      expect(targetBatchSizeUnit.value).toBe('gal')
+
+      resetScaling()
+      expect(targetBatchSizeUnit.value).toBe('l')
+    })
+
+    it('defaults unit to bbl when recipe has no unit', () => {
+      const recipeBatchSize = ref<number | null>(10)
+      const recipeBatchSizeUnit = ref<string | null>(null)
+      const { targetBatchSizeUnit, setTargetBatchSize, resetScaling } = useRecipeScaling(recipeBatchSize, recipeBatchSizeUnit)
+
+      setTargetBatchSize(100, 'gal')
+      expect(targetBatchSizeUnit.value).toBe('gal')
+
+      resetScaling()
+      expect(targetBatchSizeUnit.value).toBe('bbl')
+    })
   })
 
   describe('reactivity', () => {

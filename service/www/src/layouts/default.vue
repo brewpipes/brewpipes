@@ -83,6 +83,7 @@
             </template>
           </v-list-item>
         </template>
+        <v-list-item title="Receive Inventory" @click="openReceiveDialog" />
         <v-list-item title="Stock Levels" to="/inventory/stock-levels" />
         <v-list-item title="Activity" to="/inventory/activity" />
         <v-list-item title="Product" to="/inventory/product" />
@@ -110,18 +111,24 @@
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
     {{ snackbar.text }}
   </v-snackbar>
+
+  <ReceiveWithoutPODialog
+    v-model="receiveDialogOpen"
+    @received="handleReceiveComplete"
+  />
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useDisplay, useTheme } from 'vuetify'
+  import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUserSettings } from '@/composables/useUserSettings'
   import { useAuthStore } from '@/stores/auth'
 
-  const { snackbar } = useSnackbar()
+  const { snackbar, showNotice } = useSnackbar()
 
   const authStore = useAuthStore()
   const router = useRouter()
@@ -137,6 +144,7 @@
   const themeStorageKey = 'brewpipes:theme'
   const userLabel = computed(() => authStore.username ?? 'Account')
   const lowStockCount = ref(0)
+  const receiveDialogOpen = ref(false)
 
   const navItems = [
     { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
@@ -167,6 +175,15 @@
       // Silently fail - badge is non-critical
       lowStockCount.value = 0
     }
+  }
+
+  function openReceiveDialog () {
+    receiveDialogOpen.value = true
+  }
+
+  function handleReceiveComplete () {
+    receiveDialogOpen.value = false
+    showNotice('Inventory received successfully', 'success')
   }
 
   onMounted(() => {

@@ -127,6 +127,7 @@
 
         <v-tabs v-model="activeTab" class="batch-tabs" color="primary" show-arrows>
           <v-tab value="summary">Summary</v-tab>
+          <v-tab value="brew-day">Brew Day</v-tab>
           <v-tab value="brew-sessions">Brew Sessions</v-tab>
           <v-tab value="timeline">Timeline</v-tab>
           <v-tab value="flow">Flow</v-tab>
@@ -143,6 +144,13 @@
               @assign-fermenter="openAssignFermenterDialog"
               @mark-empty="openMarkEmptyDialog"
               @occupancy-status-change="changeOccupancyStatus"
+            />
+          </v-window-item>
+
+          <v-window-item value="brew-day">
+            <BatchBrewDayTab
+              :recipe-name="selectedBatch?.recipe_name ?? null"
+              :recipe-uuid="selectedBatch?.recipe_uuid ?? null"
             />
           </v-window-item>
 
@@ -331,6 +339,7 @@
     BatchAdditionDialog,
     BatchAdditionsTab,
     BatchAssignFermenterDialog,
+    BatchBrewDayTab,
     BatchBrewSessionDialog,
     BatchBrewSessionsTab,
     BatchMarkEmptyDialog,

@@ -133,7 +133,10 @@
                     </div>
                     <div class="d-flex align-center ga-2">
                       <span class="text-body-2 text-medium-emphasis">
-                        Need: {{ formatAmount(item.amount, item.amount_unit) }}
+                        Need: {{ formatAmount(getDisplayAmount(item), item.amount_unit) }}
+                        <span v-if="isBatchScaling" class="text-caption">
+                          (Recipe: {{ formatAmount(item.amount, item.amount_unit) }})
+                        </span>
                       </span>
                       <v-icon
                         v-if="getPickStatus(item) === 'exact'"
@@ -277,7 +280,12 @@
                       {{ formatAlphaAcid(item.alpha_acid_assumed) }} AA
                     </div>
                   </td>
-                  <td>{{ formatAmount(item.amount, item.amount_unit) }}</td>
+                  <td>
+                    <div>{{ formatAmount(getDisplayAmount(item), item.amount_unit) }}</div>
+                    <div v-if="isBatchScaling" class="text-caption text-medium-emphasis">
+                      Recipe: {{ formatAmount(item.amount, item.amount_unit) }}
+                    </div>
+                  </td>
                   <td>
                     <v-chip
                       :color="getStageColor(item.use_stage)"
@@ -300,7 +308,7 @@
                     <!-- Stock level -->
                     <v-chip
                       v-else
-                      :color="getStockColor(item.ingredient_uuid, item.amount, item.amount_unit)"
+                      :color="getStockColor(item.ingredient_uuid, getDisplayAmount(item), item.amount_unit)"
                       size="x-small"
                       variant="tonal"
                     >
@@ -337,7 +345,12 @@
                     </span>
                   </div>
                   <div class="d-flex align-center justify-space-between text-body-2">
-                    <span>{{ formatAmount(item.amount, item.amount_unit) }}</span>
+                    <div>
+                      <span>{{ formatAmount(getDisplayAmount(item), item.amount_unit) }}</span>
+                      <div v-if="isBatchScaling" class="text-caption text-medium-emphasis">
+                        Recipe: {{ formatAmount(item.amount, item.amount_unit) }}
+                      </div>
+                    </div>
                     <span class="text-medium-emphasis">{{ formatTiming(item) }}</span>
                   </div>
                   <div class="d-flex align-center justify-end mt-2">
@@ -349,7 +362,7 @@
                     </v-chip>
                     <v-chip
                       v-else
-                      :color="getStockColor(item.ingredient_uuid, item.amount, item.amount_unit)"
+                      :color="getStockColor(item.ingredient_uuid, getDisplayAmount(item), item.amount_unit)"
                       size="x-small"
                       variant="tonal"
                     >
@@ -393,7 +406,12 @@
                       {{ formatAlphaAcid(item.alpha_acid_assumed) }} AA
                     </div>
                   </td>
-                  <td>{{ formatAmount(item.amount, item.amount_unit) }}</td>
+                  <td>
+                    <div>{{ formatAmount(getDisplayAmount(item), item.amount_unit) }}</div>
+                    <div v-if="isBatchScaling" class="text-caption text-medium-emphasis">
+                      Recipe: {{ formatAmount(item.amount, item.amount_unit) }}
+                    </div>
+                  </td>
                   <td>
                     <v-chip
                       :color="getStageColor(item.use_stage)"
@@ -413,7 +431,7 @@
                     </v-chip>
                     <v-chip
                       v-else
-                      :color="getStockColor(item.ingredient_uuid, item.amount, item.amount_unit)"
+                      :color="getStockColor(item.ingredient_uuid, getDisplayAmount(item), item.amount_unit)"
                       size="x-small"
                       variant="tonal"
                     >
@@ -450,7 +468,12 @@
                     </span>
                   </div>
                   <div class="d-flex align-center justify-space-between text-body-2">
-                    <span>{{ formatAmount(item.amount, item.amount_unit) }}</span>
+                    <div>
+                      <span>{{ formatAmount(getDisplayAmount(item), item.amount_unit) }}</span>
+                      <div v-if="isBatchScaling" class="text-caption text-medium-emphasis">
+                        Recipe: {{ formatAmount(item.amount, item.amount_unit) }}
+                      </div>
+                    </div>
                     <span class="text-medium-emphasis">{{ formatTiming(item) }}</span>
                   </div>
                   <div class="d-flex align-center justify-end mt-2">
@@ -462,7 +485,7 @@
                     </v-chip>
                     <v-chip
                       v-else
-                      :color="getStockColor(item.ingredient_uuid, item.amount, item.amount_unit)"
+                      :color="getStockColor(item.ingredient_uuid, getDisplayAmount(item), item.amount_unit)"
                       size="x-small"
                       variant="tonal"
                     >
@@ -530,11 +553,16 @@
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
-  const props = defineProps<{
+  const props = withDefaults(defineProps<{
     batchUuid: string | null
+    batchVolume?: number | null
+    batchVolumeUnit?: string | null
     recipeUuid: string | null
     recipeName: string | null
-  }>()
+  }>(), {
+    batchVolume: null,
+    batchVolumeUnit: null,
+  })
 
   const { getRecipeIngredients, getRecipe } = useProductionApi()
   const { getStockLevels, getIngredientLots, createBatchUsage } = useInventoryApi()
@@ -548,6 +576,8 @@
   const stockLevels = ref<StockLevel[]>([])
   const stockUnavailable = ref(false)
   const resolvedRecipeName = ref<string | null>(null)
+  const resolvedRecipeBatchSize = ref<number | null>(null)
+  const resolvedRecipeBatchSizeUnit = ref<string | null>(null)
 
   // Picking mode state
   const pickingMode = ref(false)
@@ -567,6 +597,40 @@
   const displayRecipeName = computed(() =>
     props.recipeName ?? resolvedRecipeName.value ?? 'Recipe',
   )
+
+  // Batch-to-recipe scaling: if the batch has a volume that differs from the recipe's batch_size,
+  // compute a scale factor and show scaled amounts in the pick list.
+  const batchScaleFactor = computed(() => {
+    const batchVol = props.batchVolume
+    const recipeBatchSize = resolvedRecipeBatchSize.value
+    if (!batchVol || !recipeBatchSize || recipeBatchSize === 0) return 1
+
+    // For V1, assume same units if both are set. Cross-unit conversion can be added later.
+    const batchUnit = props.batchVolumeUnit?.toLowerCase()
+    const recipeUnit = resolvedRecipeBatchSizeUnit.value?.toLowerCase()
+    if (batchUnit && recipeUnit && batchUnit !== recipeUnit) return 1
+
+    return batchVol / recipeBatchSize
+  })
+
+  const isBatchScaling = computed(() =>
+    batchScaleFactor.value !== 1,
+  )
+
+  /** Scale an ingredient amount for the batch. */
+  function scaleBatchAmount (amount: number, ingredientScalingFactor: number = 1.0): number {
+    if (ingredientScalingFactor === 0) return amount
+    const fullyScaled = amount * batchScaleFactor.value
+    return amount + (fullyScaled - amount) * ingredientScalingFactor
+  }
+
+  /** Get the display amount for an ingredient (scaled or original). */
+  function getDisplayAmount (ingredient: RecipeIngredient): number {
+    if (isBatchScaling.value) {
+      return scaleBatchAmount(ingredient.amount, ingredient.scaling_factor)
+    }
+    return ingredient.amount
+  }
 
   // Computed: stock lookup map (ingredient UUID → StockLevel)
   const stockMap = computed(() => {
@@ -667,6 +731,8 @@
 
       if (recipeResult.status === 'fulfilled' && recipeResult.value) {
         resolvedRecipeName.value = recipeResult.value.name
+        resolvedRecipeBatchSize.value = recipeResult.value.batch_size
+        resolvedRecipeBatchSizeUnit.value = recipeResult.value.batch_size_unit
       }
       // Recipe name fetch failure is non-critical — we fall back to "Recipe"
     } finally {
@@ -777,8 +843,8 @@
   function getPickStatus (item: RecipeIngredient): PickStatus {
     const total = getIngredientPickTotal(item)
     if (total === 0) return 'none'
-    // Use a small tolerance for floating point comparison
-    const needed = item.amount
+    // Use scaled amount for comparison
+    const needed = getDisplayAmount(item)
     if (Math.abs(total - needed) < 0.01) return 'exact'
     if (total > needed) return 'over'
     return 'partial'
@@ -817,7 +883,8 @@
       ? `${parts.join(' + ')} = ${total} ${unit}`
       : `${total} ${unit}`
 
-    return `${breakdown} / ${item.amount} ${unit} needed`
+    const needed = getDisplayAmount(item)
+    return `${breakdown} / ${needed.toFixed(2)} ${unit} needed`
   }
 
   // Resolve stock location for an ingredient pick

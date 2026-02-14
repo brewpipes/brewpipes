@@ -94,9 +94,79 @@
             <div class="metric-value">
               {{ formatBatchSize(recipe.batch_size, recipe.batch_size_unit) }}
             </div>
+            <v-btn
+              v-if="recipe.batch_size"
+              class="mt-1"
+              :color="isScaling ? 'primary' : undefined"
+              density="compact"
+              :prepend-icon="isScaling ? 'mdi-close' : 'mdi-resize'"
+              size="x-small"
+              :variant="isScaling ? 'tonal' : 'text'"
+              @click="toggleScaling"
+            >
+              {{ isScaling ? 'Reset' : 'Scale' }}
+            </v-btn>
+            <div v-if="!recipe.batch_size" class="text-caption text-medium-emphasis mt-1">
+              Set in Specs to scale
+            </div>
           </div>
         </v-col>
       </v-row>
+
+      <!-- Scaling Controls -->
+      <v-expand-transition>
+        <div v-if="showScalingControls" class="scaling-controls mb-4">
+          <v-row align="center" dense>
+            <v-col cols="12" sm="auto">
+              <span class="text-body-2 font-weight-medium">Scale to:</span>
+            </v-col>
+            <v-col cols="5" sm="3" md="2">
+              <v-text-field
+                v-model.number="targetBatchSize"
+                density="compact"
+                hide-details
+                inputmode="decimal"
+                label="Size"
+                min="0.01"
+                step="0.1"
+                type="number"
+                variant="outlined"
+              />
+            </v-col>
+            <v-col cols="4" sm="2" md="2">
+              <v-select
+                v-model="targetBatchSizeUnit"
+                density="compact"
+                hide-details
+                :items="scalingVolumeUnits"
+                label="Unit"
+                variant="outlined"
+              />
+            </v-col>
+            <v-col cols="3" sm="auto">
+              <v-chip
+                v-if="isScaling"
+                color="primary"
+                size="small"
+                variant="tonal"
+              >
+                {{ scaleFactorDisplay }}
+              </v-chip>
+            </v-col>
+            <v-col class="d-none d-sm-flex" cols="auto">
+              <v-btn
+                color="secondary"
+                density="compact"
+                size="small"
+                variant="text"
+                @click="resetScaling"
+              >
+                Reset to Recipe
+              </v-btn>
+            </v-col>
+          </v-row>
+        </div>
+      </v-expand-transition>
 
       <!-- Tabs -->
       <v-tabs v-model="activeTab" class="recipe-tabs" color="primary" show-arrows>
@@ -132,7 +202,9 @@
         <v-window-item value="fermentables">
           <RecipeFermentablesTab
             :ingredients="fermentables"
+            :is-scaling="isScaling"
             :loading="ingredientsLoading"
+            :scale-amount="scaleAmount"
             @create="openIngredientDialog('fermentable')"
             @delete="deleteIngredient"
             @edit="openEditIngredientDialog"
@@ -142,7 +214,9 @@
         <v-window-item value="hops">
           <RecipeHopsTab
             :ingredients="hops"
+            :is-scaling="isScaling"
             :loading="ingredientsLoading"
+            :scale-amount="scaleAmount"
             @create="openIngredientDialog('hop')"
             @delete="deleteIngredient"
             @edit="openEditIngredientDialog"
@@ -152,7 +226,9 @@
         <v-window-item value="yeast">
           <RecipeYeastTab
             :adjuncts="adjuncts"
+            :is-scaling="isScaling"
             :loading="ingredientsLoading"
+            :scale-amount="scaleAmount"
             :water-chemistry="waterChemistry"
             :yeasts="yeasts"
             @create="openIngredientDialog"
@@ -215,6 +291,7 @@
   import { computed, onMounted, ref, watch } from 'vue'
   import { srmToColor, useBrewingFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
+  import { useRecipeScaling } from '@/composables/useRecipeScaling'
   import { useSnackbar } from '@/composables/useSnackbar'
   import RecipeDeleteDialog from './RecipeDeleteDialog.vue'
   import RecipeEditDialog from './RecipeEditDialog.vue'
@@ -254,6 +331,33 @@
     formatWholeNumber: formatNumber,
     formatBatchSize,
   } = useBrewingFormatters()
+
+  // Scaling
+  const recipeBatchSize = computed(() => props.recipe.batch_size)
+  const recipeBatchSizeUnit = computed(() => props.recipe.batch_size_unit)
+  const {
+    targetBatchSize,
+    targetBatchSizeUnit,
+    isScaling,
+    scaleFactorDisplay,
+    scaleAmount,
+    resetScaling,
+  } = useRecipeScaling(recipeBatchSize, recipeBatchSizeUnit)
+
+  const showScalingControls = ref(false)
+  const scalingVolumeUnits = ['bbl', 'gal', 'L', 'hL']
+
+  function toggleScaling () {
+    if (isScaling.value) {
+      resetScaling()
+      showScalingControls.value = false
+    } else {
+      // Initialize target to recipe's batch size
+      targetBatchSize.value = props.recipe.batch_size
+      targetBatchSizeUnit.value = props.recipe.batch_size_unit ?? 'bbl'
+      showScalingControls.value = true
+    }
+  }
 
   // State
   const activeTab = ref('overview')
@@ -502,5 +606,12 @@
 
 .recipe-tabs {
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+}
+
+.scaling-controls {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-primary), 0.06);
+  border: 1px solid rgba(var(--v-theme-primary), 0.15);
 }
 </style>

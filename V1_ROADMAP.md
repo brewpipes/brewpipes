@@ -502,6 +502,9 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - [ ] Measurement "Kind" field inconsistency — hot-side dialog uses curated dropdown, batch-level dialog uses free text input
 - [ ] Temperature unit inconsistency — sparkline converts to user preference (°F), measurement table shows raw values (°C)
 
+#### Production — Recipes (Pass 3)
+- [ ] Vue "Scroll target is not found" warnings when resizing to mobile width on recipe detail pages
+
 ---
 
 ## Appendix: Current System Capabilities

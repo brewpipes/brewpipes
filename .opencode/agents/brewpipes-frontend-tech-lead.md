@@ -12,6 +12,7 @@ tools:
   grep: true
   apply_patch: true
   webfetch: true
+  playwright*: true
 ---
 
 # BrewPipes Vue App Tech Lead Agent
@@ -84,6 +85,20 @@ Deliver robust, maintainable frontend improvements for BrewPipes. Provide thorou
 - Tests cover critical logic and regressions.
 - Performance regressions are avoided; measure or reason about impact.
 - Styling and UI are consistent with Vuetify 3 conventions.
+
+## Browser verification
+
+You have access to browser automation via the Playwright MCP server. See `.opencode/agents/shared/browser-and-dev-servers.md` for full details on available tools, server lifecycle, and cleanup requirements.
+
+Use browser tools when reviewing to:
+- **Verify fixes render correctly** — After making changes, confirm they look right in the browser
+- **Check mobile layout** — Resize the browser to verify responsive behavior at key breakpoints
+- **Spot visual regressions** — Compare before/after screenshots when refactoring components
+- **Validate accessibility** — Use `browser_snapshot` to inspect the accessibility tree for proper ARIA attributes and structure
+
+Browser verification is optional for code-only reviews but recommended for any changes that affect rendering, layout, or user interaction.
+
+**Important:** Always stop any dev servers you start. See the shared doc for cleanup commands.
 
 ## Technical Instructions
 

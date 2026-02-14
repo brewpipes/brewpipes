@@ -400,3 +400,56 @@ The page fetches data from multiple sources:
 - Cross-service calls use `Promise.allSettled` for non-blocking, graceful failure
 - Graceful fallbacks when related data cannot be resolved
 - Filter dropdowns now show ingredient name alongside lot code for better identification
+
+## Planned: Phase 4 — Brew Day & Occupancy
+
+### Overview
+
+Phase 4 enables complete brew day recording with inventory integration. A brewer can pull ingredients from inventory using a recipe-driven pick list, record a brew session, assign beer to a fermenter, and manage occupancy lifecycle — all optimized for phone use on the brew floor.
+
+### Key Design Decisions
+
+- **New "Brew Day" tab in batch details** — The pick list and brew session recording live in a dedicated tab alongside Summary, Brew Sessions, Timeline, etc. This keeps brew-day workflows consolidated without cluttering the existing tabs.
+- **Features first, wizard later** — Individual features (pick list, lot selection, occupancy management) are delivered independently before being unified into a mobile-optimized brew day wizard (BREW-06).
+- **Recipe scaling (RCP-06) included** — Moved from Phase 2 to Phase 4 since scaling directly affects pick list amounts.
+- **Offline resilience deferred** — WiFi in breweries is often spotty, but offline support is deferred to a later polish phase.
+- **User-facing language avoids "occupancy"** — From the brewer's perspective, they assign beer to fermenters, transfer between vessels, and mark vessels as empty. The occupancy data model is an implementation detail. UI labels use brewer-centric language ("Currently in: FV-3", "Assign to Fermenter", "Mark Empty") while the backend continues to use occupancy entities internally.
+
+### Brew Day Workflow
+
+1. **Review & Pick** — Pick list generated from recipe ingredient bill, grouped by use stage ("Needed Today" vs. "Needed Later"). FIFO lot suggestion with manual override. Lot-specific attributes shown (alpha acid for hops, best-by dates).
+2. **Confirm Picks** — Inventory deducted atomically when brewer confirms the pick list. Stock validation prevents over-deduction.
+3. **Record Session** — Create brew session with mash/boil vessel assignment. Record key measurements (mash temp, OG, volume to fermenter).
+4. **Assign to Fermenter** — Transfer wort to fermenter at knockout. Beer status defaults to `fermenting`. Only active, available vessels shown. (Backend creates an occupancy behind the scenes.)
+5. **Mark Vessel as Empty** — Record that a vessel has been emptied (for corrections or dumps). The common case — transferring beer to another vessel or packaging — is handled in Phases 5-6 and automatically manages vessel availability.
+
+### Inventory Deduction Strategy
+
+- **Mash/boil ingredients:** Deducted when brewer confirms the pick list (batch-level `inventory_usage`)
+- **Post-brew additions (dry hops, finings):** Deducted when recorded against the occupancy (occupancy-level, handled in Phase 5+)
+- **Cross-service orchestration:** Frontend orchestrates Production (additions) and Inventory (usage/movements) calls. Backend validates stock atomically within transactions.
+
+### Mobile UX Principles
+
+- Phone-first, one-handed operation (brewer has one hand on equipment)
+- Large tap targets (44px minimum), numeric keypads for measurements
+- Under 15 seconds per data entry interaction
+- Step-based cards, not long scrolling forms
+- Non-linear — brewer can skip steps and return
+
+### New/Modified API Endpoints
+
+| Method | Path | Service | Description |
+|--------|------|---------|-------------|
+| `GET` | `/api/ingredient-lots?ingredient_uuid=...` | Inventory | Filter lots by ingredient (new filter) |
+| `POST` | `/api/inventory-usage/batch` | Inventory | Batch-level inventory deduction (new) |
+| `PATCH` | `/api/occupancies/{uuid}/close` | Production | End/close occupancy (new) |
+| `POST` | `/api/occupancies` | Production | Create occupancy (exists) |
+
+### Implementation Order
+
+1. BREW-04 (Assign to Fermenter) + BREW-05 (Mark Vessel as Empty) — simplest, no dependencies
+2. BREW-01 (Pick List) + BREW-03 (Inventory Deduction) — backend work in parallel
+3. BREW-02 (Lot Selection) — depends on BREW-01 + BREW-03
+4. RCP-06 (Recipe Scaling) — enhances pick list with scaled amounts
+5. BREW-06 (Mobile Wizard) — capstone that unifies the workflow

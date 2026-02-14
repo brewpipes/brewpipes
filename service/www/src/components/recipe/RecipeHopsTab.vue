@@ -43,7 +43,12 @@
             </tr>
             <tr v-for="ingredient in group" :key="ingredient.uuid">
               <td class="font-weight-medium">{{ ingredient.name }}</td>
-              <td>{{ formatAmount(ingredient.amount, ingredient.amount_unit) }}</td>
+              <td>
+                <div>{{ formatDisplayAmount(ingredient) }}</div>
+                <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                  Recipe: {{ formatAmount(ingredient.amount, ingredient.amount_unit) }}
+                </div>
+              </td>
               <td>{{ formatAlphaAcid(ingredient.alpha_acid_assumed) }}</td>
               <td>
                 <v-chip size="x-small" variant="tonal">
@@ -102,7 +107,12 @@
                 </v-chip>
               </div>
               <div class="d-flex flex-wrap ga-3 text-body-2 mb-1">
-                <span>{{ formatAmount(ingredient.amount, ingredient.amount_unit) }}</span>
+                <div>
+                  <span>{{ formatDisplayAmount(ingredient) }}</span>
+                  <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                    Recipe: {{ formatAmount(ingredient.amount, ingredient.amount_unit) }}
+                  </div>
+                </div>
                 <span v-if="ingredient.alpha_acid_assumed" class="text-medium-emphasis">
                   {{ formatAlphaAcid(ingredient.alpha_acid_assumed) }} AA
                 </span>
@@ -167,10 +177,15 @@
   import type { RecipeIngredient, RecipeUseStage } from '@/types'
   import { computed } from 'vue'
 
-  const props = defineProps<{
+  const props = withDefaults(defineProps<{
     ingredients: RecipeIngredient[]
+    isScaling?: boolean
     loading: boolean
-  }>()
+    scaleAmount?: (amount: number, scalingFactor: number) => number
+  }>(), {
+    isScaling: false,
+    scaleAmount: undefined,
+  })
 
   const emit = defineEmits<{
     create: []
@@ -220,8 +235,16 @@
     return groups
   })
 
+  /** Get the display amount for an ingredient (scaled or original). */
+  function getDisplayAmount (ingredient: RecipeIngredient): number {
+    if (props.isScaling && props.scaleAmount) {
+      return props.scaleAmount(ingredient.amount, ingredient.scaling_factor)
+    }
+    return ingredient.amount
+  }
+
   const totalWeight = computed(() => {
-    return props.ingredients.reduce((sum, i) => sum + i.amount, 0)
+    return props.ingredients.reduce((sum, i) => sum + getDisplayAmount(i), 0)
   })
 
   const formatTotalWeight = computed(() => {
@@ -232,6 +255,10 @@
 
   function formatAmount (amount: number, unit: string): string {
     return `${amount.toFixed(2)} ${unit}`
+  }
+
+  function formatDisplayAmount (ingredient: RecipeIngredient): string {
+    return formatAmount(getDisplayAmount(ingredient), ingredient.amount_unit)
   }
 
   function formatAlphaAcid (aa: number | null): string {

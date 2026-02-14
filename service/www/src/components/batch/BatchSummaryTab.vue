@@ -39,12 +39,37 @@
           </v-col>
           <v-col cols="12" md="4">
             <div class="text-overline text-medium-emphasis">Current Vessel</div>
-            <div class="text-body-1 font-weight-medium mt-1">
-              {{ summary.current_vessel ?? 'Not assigned' }}
+            <div v-if="summary.current_vessel" class="mt-1">
+              <div class="text-body-1 font-weight-medium">
+                {{ summary.current_vessel }}
+              </div>
+              <v-btn
+                v-if="summary.current_occupancy_uuid"
+                class="mt-2"
+                prepend-icon="mdi-flask-empty-outline"
+                size="small"
+                variant="text"
+                @click="emit('mark-empty')"
+              >
+                Mark Empty
+              </v-btn>
+            </div>
+            <div v-else class="mt-1">
+              <div class="text-body-2 text-medium-emphasis mb-2">Not assigned</div>
+              <v-btn
+                v-if="hasVolumes"
+                color="primary"
+                prepend-icon="mdi-flask-round-bottom"
+                size="small"
+                variant="tonal"
+                @click="emit('assign-fermenter')"
+              >
+                Assign to Fermenter
+              </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="4">
-            <div class="text-overline text-medium-emphasis">Occupancy Status</div>
+            <div class="text-overline text-medium-emphasis">Beer Status</div>
             <v-menu v-if="summary.current_occupancy_uuid" location="bottom">
               <template #activator="{ props }">
                 <v-chip
@@ -256,13 +281,16 @@
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { type BatchSummary, OCCUPANCY_STATUS_VALUES, type OccupancyStatus } from '@/types'
 
-  defineProps<{
+  const props = defineProps<{
     summary: BatchSummary | null
     loading: boolean
+    hasVolumes: boolean
   }>()
 
   const emit = defineEmits<{
     'occupancy-status-change': [occupancyUuid: string, status: OccupancyStatus]
+    'assign-fermenter': []
+    'mark-empty': []
   }>()
 
   const { formatDateTime } = useFormatters()

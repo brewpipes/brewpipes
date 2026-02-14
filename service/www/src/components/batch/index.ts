@@ -1,10 +1,13 @@
 // Dialog components
+export { default as BatchAssignFermenterDialog } from './BatchAssignFermenterDialog.vue'
+export { default as BatchMarkEmptyDialog } from './BatchMarkEmptyDialog.vue'
 export { default as BatchAdditionDialog } from './BatchAdditionDialog.vue'
 // Form types from dialogs
 export type { AdditionForm } from './BatchAdditionDialog.vue'
 export { default as BatchAdditionsTab } from './BatchAdditionsTab.vue'
 export { default as BatchBrewSessionDialog } from './BatchBrewSessionDialog.vue'
 export type { BrewSessionForm } from './BatchBrewSessionDialog.vue'
+export { default as BatchBrewDayTab } from './BatchBrewDayTab.vue'
 export { default as BatchBrewSessionsTab } from './BatchBrewSessionsTab.vue'
 export { default as BatchCreateDialog } from './BatchCreateDialog.vue'
 export type { BatchCreateForm } from './BatchCreateDialog.vue'
@@ -33,5 +36,8 @@ export { default as BatchTimelineTab } from './BatchTimelineTab.vue'
 export type { TimelineReading } from './BatchTimelineTab.vue'
 export { default as BatchVolumeDialog } from './BatchVolumeDialog.vue'
 export type { VolumeForm } from './BatchVolumeDialog.vue'
+// Wizard
+export { default as BrewDayWizard } from './brew-day-wizard/BrewDayWizard.vue'
+
 // Types
 export * from './types'

@@ -11,6 +11,7 @@ tools:
   glob: true
   grep: true
   webfetch: true
+  playwright*: true
 ---
 
 # BrewPipes UX Designer Agent
@@ -83,6 +84,21 @@ BrewPipes serves small craft breweries where 1-2 people wear multiple hats. The 
 - Consistent terminology (use domain language)
 - Predictable navigation and layout
 - Unified visual language (Vuetify 3 design system)
+
+## Browser-based design review
+
+You have access to browser automation via the Playwright MCP server. See `.opencode/agents/shared/browser-and-dev-servers.md` for full details on available tools, server lifecycle, and cleanup requirements.
+
+Use browser tools for:
+- **Live design review** — Navigate the running app to evaluate layouts, spacing, and visual hierarchy
+- **Mobile experience testing** — Use `browser_resize` to test at all breakpoints (375px, 600px, 768px, 1024px, 1440px) and verify responsive behavior
+- **Interaction review** — Click through user flows to evaluate the experience firsthand
+- **Visual consistency checks** — Take screenshots to compare patterns across different pages
+- **Accessibility audit** — Use `browser_snapshot` to verify the accessibility tree has proper structure and labels
+
+When conducting design reviews, prefer live browser interaction over reading code alone — you can evaluate the actual user experience rather than inferring it from markup.
+
+**Important:** Always stop any dev servers you start. See the shared doc for cleanup commands.
 
 ## Established UI patterns
 

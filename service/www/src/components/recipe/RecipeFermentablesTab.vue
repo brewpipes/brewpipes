@@ -34,7 +34,12 @@
         <tbody>
           <tr v-for="ingredient in sortedIngredients" :key="ingredient.uuid">
             <td class="font-weight-medium">{{ ingredient.name }}</td>
-            <td>{{ formatAmount(ingredient.amount, ingredient.amount_unit) }}</td>
+            <td>
+              <div>{{ formatDisplayAmount(ingredient) }}</div>
+              <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                Recipe: {{ formatAmount(ingredient.amount, ingredient.amount_unit) }}
+              </div>
+            </td>
             <td class="text-right">{{ formatPercent(ingredient, totalWeight) }}</td>
             <td>
               <v-chip size="x-small" variant="tonal">
@@ -87,7 +92,12 @@
               </v-chip>
             </div>
             <div class="d-flex align-center justify-space-between text-body-2">
-              <span>{{ formatAmount(ingredient.amount, ingredient.amount_unit) }}</span>
+              <div>
+                <span>{{ formatDisplayAmount(ingredient) }}</span>
+                <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                  Recipe: {{ formatAmount(ingredient.amount, ingredient.amount_unit) }}
+                </div>
+              </div>
               <span class="text-medium-emphasis">{{ formatPercent(ingredient, totalWeight) }}</span>
             </div>
             <div v-if="ingredient.notes" class="text-caption text-medium-emphasis mt-1">
@@ -148,10 +158,15 @@
   import type { RecipeIngredient } from '@/types'
   import { computed } from 'vue'
 
-  const props = defineProps<{
+  const props = withDefaults(defineProps<{
     ingredients: RecipeIngredient[]
+    isScaling?: boolean
     loading: boolean
-  }>()
+    scaleAmount?: (amount: number, scalingFactor: number) => number
+  }>(), {
+    isScaling: false,
+    scaleAmount: undefined,
+  })
 
   const emit = defineEmits<{
     create: []
@@ -163,10 +178,17 @@
     [...props.ingredients].toSorted((a, b) => a.sort_order - b.sort_order),
   )
 
+  /** Get the display amount for an ingredient (scaled or original). */
+  function getDisplayAmount (ingredient: RecipeIngredient): number {
+    if (props.isScaling && props.scaleAmount) {
+      return props.scaleAmount(ingredient.amount, ingredient.scaling_factor)
+    }
+    return ingredient.amount
+  }
+
   const totalWeight = computed(() => {
     return props.ingredients.reduce((sum, i) => {
-      // Convert to common unit (assume all in same unit for now)
-      return sum + i.amount
+      return sum + getDisplayAmount(i)
     }, 0)
   })
 
@@ -180,9 +202,14 @@
     return `${amount.toFixed(2)} ${unit}`
   }
 
+  function formatDisplayAmount (ingredient: RecipeIngredient): string {
+    return formatAmount(getDisplayAmount(ingredient), ingredient.amount_unit)
+  }
+
   function formatPercent (ingredient: RecipeIngredient, total: number): string {
     if (total === 0) return '—'
-    const percent = (ingredient.amount / total) * 100
+    const displayAmount = getDisplayAmount(ingredient)
+    const percent = (displayAmount / total) * 100
     return `${percent.toFixed(1)}%`
   }
 

@@ -1,5 +1,7 @@
 import type {
+  BatchUsageResponse,
   BeerLot,
+  CreateBatchUsageRequest,
   CreateIngredientLotRequest,
   CreateInventoryMovementRequest,
   CreateInventoryReceiptRequest,
@@ -41,10 +43,13 @@ export function useInventoryApi () {
     })
 
   // Ingredient Lots API
-  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string }) => {
+  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string; ingredient_uuid?: string }) => {
     const query = new URLSearchParams()
     if (filters?.purchase_order_line_uuid) {
       query.set('purchase_order_line_uuid', filters.purchase_order_line_uuid)
+    }
+    if (filters?.ingredient_uuid) {
+      query.set('ingredient_uuid', filters.ingredient_uuid)
     }
     const path = query.toString() ? `/ingredient-lots?${query.toString()}` : '/ingredient-lots'
     return request<IngredientLot[]>(path)
@@ -99,6 +104,13 @@ export function useInventoryApi () {
   const getInventoryUsages = () => request<InventoryUsage[]>('/inventory-usage')
   const createInventoryUsage = (data: Record<string, unknown>) =>
     request<InventoryUsage>('/inventory-usage', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Batch Usage API (atomic batch ingredient deduction)
+  const createBatchUsage = (data: CreateBatchUsageRequest) =>
+    request<BatchUsageResponse>('/inventory-usage/batch', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -179,6 +191,8 @@ export function useInventoryApi () {
     // Inventory Usages
     getInventoryUsages,
     createInventoryUsage,
+    // Batch Usage
+    createBatchUsage,
     // Inventory Adjustments
     getInventoryAdjustments,
     createInventoryAdjustment,

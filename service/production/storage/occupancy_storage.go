@@ -10,6 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// ErrOccupancyAlreadyClosed is returned when attempting to close an occupancy
+// that already has an out_at timestamp set.
+var ErrOccupancyAlreadyClosed = fmt.Errorf("occupancy is already closed")
+
 func (c *Client) CreateOccupancy(ctx context.Context, occupancy Occupancy) (Occupancy, error) {
 	inAt := occupancy.InAt
 	if inAt.IsZero() {
@@ -285,6 +289,28 @@ func (c *Client) CloseOccupancy(ctx context.Context, occupancyID int64, outAt ti
 	}
 
 	return nil
+}
+
+func (c *Client) CloseOccupancyByUUID(ctx context.Context, occupancyUUID string, outAt time.Time) (Occupancy, error) {
+	occ, err := c.GetOccupancyByUUID(ctx, occupancyUUID)
+	if err != nil {
+		return Occupancy{}, err
+	}
+
+	if occ.OutAt != nil {
+		return Occupancy{}, ErrOccupancyAlreadyClosed
+	}
+
+	if err := c.CloseOccupancy(ctx, occ.ID, outAt); err != nil {
+		return Occupancy{}, fmt.Errorf("closing occupancy by uuid: %w", err)
+	}
+
+	closed, err := c.GetOccupancyByUUID(ctx, occupancyUUID)
+	if err != nil {
+		return Occupancy{}, fmt.Errorf("re-fetching closed occupancy: %w", err)
+	}
+
+	return closed, nil
 }
 
 func (c *Client) HasActiveOccupancy(ctx context.Context, vesselID int64) (bool, error) {

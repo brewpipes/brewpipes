@@ -70,6 +70,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/occupancies", Handler: auth(handler.HandleOccupancies(s.storage))},
 		{Method: http.MethodPost, Path: "/occupancies", Handler: auth(handler.HandleCreateOccupancy(s.storage))},
 		{Method: http.MethodGet, Path: "/occupancies/{uuid}", Handler: auth(handler.HandleOccupancyByUUID(s.storage))},
+		{Method: http.MethodPatch, Path: "/occupancies/{uuid}/close", Handler: auth(handler.HandleCloseOccupancy(s.storage))},
 		{Method: http.MethodPatch, Path: "/occupancies/{uuid}/status", Handler: auth(handler.HandleOccupancyStatus(s.storage))},
 		{Method: http.MethodGet, Path: "/occupancies/active", Handler: auth(handler.HandleActiveOccupancy(s.storage))},
 		{Method: http.MethodGet, Path: "/transfers", Handler: auth(handler.HandleTransfers(s.storage))},

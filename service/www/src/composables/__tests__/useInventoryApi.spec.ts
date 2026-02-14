@@ -231,6 +231,134 @@ describe('useInventoryApi', () => {
     })
   })
 
+  describe('ingredient lots API', () => {
+    it('getIngredientLots fetches all lots without filters', async () => {
+      const mockLots = [{ uuid: 'lot-1', ingredient_uuid: 'ing-1' }]
+      mockRequest.mockResolvedValue(mockLots)
+
+      const { getIngredientLots } = useInventoryApi()
+      const result = await getIngredientLots()
+
+      expect(mockRequest).toHaveBeenCalledWith('/ingredient-lots')
+      expect(result).toEqual(mockLots)
+    })
+
+    it('getIngredientLots filters by purchase_order_line_uuid', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { getIngredientLots } = useInventoryApi()
+      await getIngredientLots({ purchase_order_line_uuid: 'po-line-1' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/ingredient-lots?purchase_order_line_uuid=po-line-1')
+    })
+
+    it('getIngredientLots filters by ingredient_uuid', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { getIngredientLots } = useInventoryApi()
+      await getIngredientLots({ ingredient_uuid: 'ing-uuid-1' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/ingredient-lots?ingredient_uuid=ing-uuid-1')
+    })
+
+    it('getIngredientLots supports both filters simultaneously', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { getIngredientLots } = useInventoryApi()
+      await getIngredientLots({ purchase_order_line_uuid: 'po-1', ingredient_uuid: 'ing-1' })
+
+      expect(mockRequest).toHaveBeenCalledWith(
+        '/ingredient-lots?purchase_order_line_uuid=po-1&ingredient_uuid=ing-1',
+      )
+    })
+  })
+
+  describe('batch usage API', () => {
+    it('createBatchUsage sends POST request with correct body', async () => {
+      const mockResponse = {
+        usage_uuid: 'usage-1',
+        movements: [{ uuid: 'mov-1', amount: 50, amount_unit: 'kg' }],
+      }
+      mockRequest.mockResolvedValue(mockResponse)
+
+      const { createBatchUsage } = useInventoryApi()
+      const requestData = {
+        production_ref_uuid: 'batch-uuid-1',
+        used_at: '2026-02-14T08:00:00Z',
+        picks: [
+          {
+            ingredient_lot_uuid: 'lot-1',
+            stock_location_uuid: 'loc-1',
+            amount: 50,
+            amount_unit: 'kg',
+          },
+        ],
+        notes: 'Brew day pick',
+      }
+
+      const result = await createBatchUsage(requestData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/inventory-usage/batch', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      })
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('createBatchUsage supports multiple picks', async () => {
+      const mockResponse = { usage_uuid: 'usage-2', movements: [] }
+      mockRequest.mockResolvedValue(mockResponse)
+
+      const { createBatchUsage } = useInventoryApi()
+      const requestData = {
+        production_ref_uuid: 'batch-uuid-1',
+        used_at: '2026-02-14T08:00:00Z',
+        picks: [
+          {
+            ingredient_lot_uuid: 'lot-1',
+            stock_location_uuid: 'loc-1',
+            amount: 30,
+            amount_unit: 'kg',
+          },
+          {
+            ingredient_lot_uuid: 'lot-2',
+            stock_location_uuid: 'loc-1',
+            amount: 20,
+            amount_unit: 'kg',
+          },
+        ],
+      }
+
+      await createBatchUsage(requestData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/inventory-usage/batch', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      })
+    })
+
+    it('createBatchUsage propagates errors', async () => {
+      const error = new Error('Insufficient stock for lot LOT-001 at Grain Room: requested 100 kg, available 50 kg')
+      mockRequest.mockRejectedValue(error)
+
+      const { createBatchUsage } = useInventoryApi()
+
+      await expect(
+        createBatchUsage({
+          used_at: '2026-02-14T08:00:00Z',
+          picks: [
+            {
+              ingredient_lot_uuid: 'lot-1',
+              stock_location_uuid: 'loc-1',
+              amount: 100,
+              amount_unit: 'kg',
+            },
+          ],
+        }),
+      ).rejects.toThrow('Insufficient stock')
+    })
+  })
+
   describe('edge cases', () => {
     it('normalizeText handles strings with only whitespace characters', () => {
       const { normalizeText } = useInventoryApi()

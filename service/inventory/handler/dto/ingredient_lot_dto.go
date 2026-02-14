@@ -63,6 +63,8 @@ type IngredientLotResponse struct {
 	ReceivedAt            time.Time  `json:"received_at"`
 	ReceivedAmount        int64      `json:"received_amount"`
 	ReceivedUnit          string     `json:"received_unit"`
+	CurrentAmount         int64      `json:"current_amount"`
+	CurrentUnit           string     `json:"current_unit"`
 	BestByAt              *time.Time `json:"best_by_at,omitempty"`
 	ExpiresAt             *time.Time `json:"expires_at,omitempty"`
 	Notes                 *string    `json:"notes,omitempty"`
@@ -85,6 +87,8 @@ func NewIngredientLotResponse(lot storage.IngredientLot) IngredientLotResponse {
 		ReceivedAt:            lot.ReceivedAt,
 		ReceivedAmount:        lot.ReceivedAmount,
 		ReceivedUnit:          lot.ReceivedUnit,
+		CurrentAmount:         lot.CurrentAmount,
+		CurrentUnit:           lot.ReceivedUnit,
 		BestByAt:              lot.BestByAt,
 		ExpiresAt:             lot.ExpiresAt,
 		Notes:                 lot.Notes,

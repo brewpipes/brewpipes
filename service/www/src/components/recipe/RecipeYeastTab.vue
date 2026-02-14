@@ -36,7 +36,12 @@
                 </v-chip>
               </div>
               <div class="d-flex flex-wrap ga-3 text-body-2">
-                <span>{{ formatAmount(yeast.amount, yeast.amount_unit) }}</span>
+                <div>
+                  <span>{{ formatDisplayAmount(yeast) }}</span>
+                  <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                    Recipe: {{ formatAmount(yeast.amount, yeast.amount_unit) }}
+                  </div>
+                </div>
                 <span class="text-medium-emphasis">{{ formatStage(yeast.use_stage) }}</span>
               </div>
               <div v-if="yeast.notes" class="text-caption text-medium-emphasis mt-1">
@@ -113,7 +118,10 @@
                 </v-chip>
               </div>
               <div class="text-body-2">
-                {{ formatAmount(adjunct.amount, adjunct.amount_unit) }}
+                <span>{{ formatDisplayAmount(adjunct) }}</span>
+                <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                  Recipe: {{ formatAmount(adjunct.amount, adjunct.amount_unit) }}
+                </div>
               </div>
               <div v-if="adjunct.notes" class="text-caption text-medium-emphasis mt-1">
                 {{ adjunct.notes }}
@@ -201,7 +209,12 @@
                 </v-chip>
               </div>
               <div class="d-flex flex-wrap ga-3 text-body-2">
-                <span>{{ formatAmount(item.amount, item.amount_unit) }}</span>
+                <div>
+                  <span>{{ formatDisplayAmount(item) }}</span>
+                  <div v-if="isScaling" class="text-caption text-medium-emphasis">
+                    Recipe: {{ formatAmount(item.amount, item.amount_unit) }}
+                  </div>
+                </div>
                 <span class="text-medium-emphasis">{{ formatStage(item.use_stage) }}</span>
               </div>
               <div v-if="item.notes" class="text-caption text-medium-emphasis mt-1">
@@ -254,12 +267,17 @@
 <script lang="ts" setup>
   import type { RecipeIngredient, RecipeIngredientType } from '@/types'
 
-  defineProps<{
-    yeasts: RecipeIngredient[]
+  const props = withDefaults(defineProps<{
     adjuncts: RecipeIngredient[]
-    waterChemistry: RecipeIngredient[]
+    isScaling?: boolean
     loading: boolean
-  }>()
+    scaleAmount?: (amount: number, scalingFactor: number) => number
+    waterChemistry: RecipeIngredient[]
+    yeasts: RecipeIngredient[]
+  }>(), {
+    isScaling: false,
+    scaleAmount: undefined,
+  })
 
   const emit = defineEmits<{
     create: [type: RecipeIngredientType]
@@ -267,8 +285,20 @@
     delete: [ingredient: RecipeIngredient]
   }>()
 
+  /** Get the display amount for an ingredient (scaled or original). */
+  function getDisplayAmount (ingredient: RecipeIngredient): number {
+    if (props.isScaling && props.scaleAmount) {
+      return props.scaleAmount(ingredient.amount, ingredient.scaling_factor)
+    }
+    return ingredient.amount
+  }
+
   function formatAmount (amount: number, unit: string): string {
     return `${amount.toFixed(2)} ${unit}`
+  }
+
+  function formatDisplayAmount (ingredient: RecipeIngredient): string {
+    return formatAmount(getDisplayAmount(ingredient), ingredient.amount_unit)
   }
 
   function formatStage (stage: string): string {

@@ -12,6 +12,7 @@ tools:
   grep: true
   apply_patch: true
   webfetch: true
+  playwright*: true
 ---
 
 # BrewPipes Frontend Developer Agent
@@ -144,6 +145,20 @@ Use this domain language consistently in component names, API calls, and user-fa
 - Provide `aria-label` for icon-only buttons.
 - Use sufficient color contrast (Vuetify defaults are generally compliant).
 - Test with keyboard navigation.
+
+## Browser verification
+
+You have access to browser automation via the Playwright MCP server. See `.opencode/agents/shared/browser-and-dev-servers.md` for full details on available tools, server lifecycle, and cleanup requirements.
+
+Use browser tools to:
+- **Verify your implementation** — Check that components render correctly in the actual browser
+- **Test mobile responsiveness** — Resize the browser to 375px and verify your changes work on mobile
+- **Debug rendering issues** — Use `browser_snapshot` to inspect the live DOM/accessibility tree
+- **Check console for errors** — Use `browser_console_messages` to catch runtime errors
+
+Browser verification is recommended for UI-affecting changes but not required for every task. Use your judgment — if you're confident the change is correct from code review and tests alone, skip the browser check.
+
+**Important:** Always stop any dev servers you start. See the shared doc for cleanup commands.
 
 ## Detailed execution prompt
 

@@ -363,6 +363,24 @@ describe('useProductionApi', () => {
       expect(result).toEqual({ uuid: 'occ-uuid-1', status: 'fermenting' })
     })
 
+    it('createOccupancy sends POST with correct body', async () => {
+      const occupancyData = {
+        vessel_uuid: 'vessel-uuid-1',
+        volume_uuid: 'vol-uuid-1',
+        status: 'fermenting' as const,
+      }
+      mockRequest.mockResolvedValue({ uuid: 'occ-uuid-new', ...occupancyData })
+
+      const { createOccupancy } = useProductionApi()
+      const result = await createOccupancy(occupancyData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/occupancies', {
+        method: 'POST',
+        body: JSON.stringify(occupancyData),
+      })
+      expect(result).toEqual({ uuid: 'occ-uuid-new', ...occupancyData })
+    })
+
     it('updateOccupancyStatus sends PATCH with correct body', async () => {
       mockRequest.mockResolvedValue({ uuid: 'occ-uuid-1', status: 'conditioning' })
 
@@ -374,6 +392,33 @@ describe('useProductionApi', () => {
         body: JSON.stringify({ status: 'conditioning' }),
       })
       expect(result).toEqual({ uuid: 'occ-uuid-1', status: 'conditioning' })
+    })
+
+    it('closeOccupancy sends PATCH with empty body when no outAt provided', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'occ-uuid-1', out_at: '2024-01-15T12:00:00Z' })
+
+      const { closeOccupancy } = useProductionApi()
+      const result = await closeOccupancy('occ-uuid-1')
+
+      expect(mockRequest).toHaveBeenCalledWith('/occupancies/occ-uuid-1/close', {
+        method: 'PATCH',
+        body: JSON.stringify({}),
+      })
+      expect(result).toEqual({ uuid: 'occ-uuid-1', out_at: '2024-01-15T12:00:00Z' })
+    })
+
+    it('closeOccupancy sends PATCH with out_at when provided', async () => {
+      const outAt = '2024-01-15T14:30:00Z'
+      mockRequest.mockResolvedValue({ uuid: 'occ-uuid-1', out_at: outAt })
+
+      const { closeOccupancy } = useProductionApi()
+      const result = await closeOccupancy('occ-uuid-1', outAt)
+
+      expect(mockRequest).toHaveBeenCalledWith('/occupancies/occ-uuid-1/close', {
+        method: 'PATCH',
+        body: JSON.stringify({ out_at: outAt }),
+      })
+      expect(result).toEqual({ uuid: 'occ-uuid-1', out_at: outAt })
     })
   })
 

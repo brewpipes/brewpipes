@@ -247,6 +247,32 @@ export interface StockLevel {
 }
 
 // ============================================================================
+// Batch Usage Types
+// ============================================================================
+
+/** A single ingredient pick for batch usage deduction */
+export interface BatchUsagePick {
+  ingredient_lot_uuid: string
+  stock_location_uuid: string
+  amount: number
+  amount_unit: string
+}
+
+/** Request payload for creating a batch usage deduction */
+export interface CreateBatchUsageRequest {
+  production_ref_uuid?: string
+  used_at: string
+  picks: BatchUsagePick[]
+  notes?: string
+}
+
+/** Response from a batch usage deduction */
+export interface BatchUsageResponse {
+  usage_uuid: string
+  movements: InventoryMovement[]
+}
+
+// ============================================================================
 // Receiving Workflow Types
 // ============================================================================
 

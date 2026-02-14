@@ -150,6 +150,7 @@ type IngredientLot struct {
 	ReceivedAt            time.Time
 	ReceivedAmount        int64
 	ReceivedUnit          string
+	CurrentAmount         int64 // Computed from inventory_movement ledger
 	BestByAt              *time.Time
 	ExpiresAt             *time.Time
 	Notes                 *string

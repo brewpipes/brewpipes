@@ -505,6 +505,10 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 #### Production — Recipes (Pass 3)
 - [ ] Vue "Scroll target is not found" warnings when resizing to mobile width on recipe detail pages
 
+#### Vessels (Pass 4)
+- [ ] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — should pre-select "Retired" status or use a dedicated confirmation dialog
+- [ ] Vessel detail page header clips Active status chip on mobile at 375px width
+
 ---
 
 ## Appendix: Current System Capabilities

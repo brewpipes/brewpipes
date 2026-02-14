@@ -119,8 +119,8 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 
 func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientUUID string) ([]IngredientLot, error) {
 	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
-		WHERE i.uuid = $1 AND il.deleted_at IS NULL
-		ORDER BY il.received_at DESC`,
+		WHERE i.uuid = $1 AND i.deleted_at IS NULL AND il.deleted_at IS NULL
+		ORDER BY il.received_at ASC`,
 		ingredientUUID,
 	)
 	if err != nil {

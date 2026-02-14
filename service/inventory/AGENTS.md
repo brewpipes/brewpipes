@@ -56,6 +56,7 @@ Receipt
 Usage
 - Usage records consumption of inventory for brewing or operations.
 - It references the lot and can link to production actions via opaque UUIDs.
+- Batch usage deduction (`POST /inventory-usage/batch`) atomically creates a usage record and one movement per ingredient pick in a single transaction, with stock validation per lot/location.
 
 Adjustment
 - Adjustments capture corrections, shrink, spoilage, or cycle count deltas.
@@ -102,6 +103,7 @@ In short:
 - Inventory balances can be derived from movements and reconciled by location and by lot.
 - Inventory records retain traceability to production and procurement via opaque UUIDs, without shared tables or foreign keys.
 - Beer lots can be created for finished product inventory and related back to production batch UUIDs.
+- A brewer can atomically deduct inventory for a batch's ingredient picks via `POST /inventory-usage/batch`, with per-pick stock validation and descriptive error messages on insufficient stock.
 
 ## API Convention: UUID-Only
 

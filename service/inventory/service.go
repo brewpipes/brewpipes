@@ -49,6 +49,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/inventory-movements/{uuid}", Handler: auth(handler.HandleInventoryMovementByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-usage", Handler: auth(handler.HandleInventoryUsage(s.storage))},
 		{Method: http.MethodPost, Path: "/inventory-usage", Handler: auth(handler.HandleInventoryUsage(s.storage))},
+		{Method: http.MethodPost, Path: "/inventory-usage/batch", Handler: auth(handler.HandleCreateBatchUsage(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-usage/{uuid}", Handler: auth(handler.HandleInventoryUsageByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-adjustments", Handler: auth(handler.HandleInventoryAdjustments(s.storage))},
 		{Method: http.MethodPost, Path: "/inventory-adjustments", Handler: auth(handler.HandleInventoryAdjustments(s.storage))},

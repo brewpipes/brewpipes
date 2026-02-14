@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
 **Last Updated:** 2026-02-13  
-**Status:** Phase 3 Complete, Phase 4 Next
+**Status:** Phase 3 Complete, Phase 4 In Progress
 
 ---
 
@@ -299,7 +299,7 @@ Enable full recipe management with ingredient bills.
 | RCP-03 | Backend: Recipe ingredient bill CRUD endpoints | M | 2 | **Complete** |
 | RCP-04 | Frontend: Recipe ingredient bill management UI | L | 2 | **Complete** |
 | RCP-05 | Frontend: Recipe detail view with full specs | M | 2, 5 | **Complete** |
-| RCP-06 | Recipe scaling calculator | M | 2 | Not Started |
+| RCP-06 | Recipe scaling calculator | M | 2 | Moved to Phase 4 |
 
 ---
 
@@ -324,12 +324,13 @@ Enable complete brew day recording with inventory integration.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| BREW-01 | Frontend: Ingredient pick list from recipe | M | 2 | Not Started |
-| BREW-02 | Frontend: Lot selection for ingredient picks | M | 2 | Not Started |
+| BREW-04 | Frontend: Assign batch to fermenter | M | 2, 3 | Not Started |
+| BREW-05 | Backend + Frontend: Mark vessel as empty | S | 3, 4 | Not Started |
+| BREW-01 | Backend + Frontend: Ingredient pick list from recipe | M | 2 | Not Started |
 | BREW-03 | Backend: Inventory deduction on ingredient use | M | 2 | Not Started |
-| BREW-04 | Frontend: Create occupancy from batch detail | M | 2, 3 | Not Started |
-| BREW-05 | Frontend: End occupancy workflow | S | 3, 4 | Not Started |
-| BREW-06 | Mobile-optimized brew day recording UI | L | 2 | Not Started |
+| BREW-02 | Frontend: Lot selection for ingredient picks | M | 2 | Not Started |
+| RCP-06 | Recipe scaling calculator (from Phase 2) | M | 2 | Not Started |
+| BREW-06 | Mobile-optimized brew day wizard | L | 2 | Not Started |
 
 ---
 
@@ -399,7 +400,7 @@ Track brewhouse removals for future TTB compliance.
 |-----------|-------------|--------|
 | **M0: Roadmap Complete** | User journeys and feature backlog finalized | **Complete** |
 | **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | **Complete** |
-| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 2 nearly complete, RCP-06 remaining) |
+| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 2 complete except RCP-06, moved to Phase 4) |
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | **Complete** |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | Not Started |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | Not Started |

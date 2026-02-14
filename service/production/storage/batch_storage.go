@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO batch (
 			short_name,
 			brew_date,
@@ -41,7 +41,7 @@ func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
 	if batch.RecipeID != nil {
 		var recipeUUID string
 		var recipeName string
-		err := c.db.QueryRow(ctx, `SELECT uuid, name FROM recipe WHERE id = $1`, *batch.RecipeID).Scan(&recipeUUID, &recipeName)
+		err := c.DB().QueryRow(ctx, `SELECT uuid, name FROM recipe WHERE id = $1`, *batch.RecipeID).Scan(&recipeUUID, &recipeName)
 		if err == nil {
 			batch.RecipeUUID = &recipeUUID
 			batch.RecipeName = &recipeName
@@ -53,7 +53,7 @@ func (c *Client) CreateBatch(ctx context.Context, batch Batch) (Batch, error) {
 
 func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
 	var batch Batch
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT b.id, b.uuid, b.short_name, b.brew_date, b.notes, b.recipe_id, r.uuid, r.name,
 		       latest_phase.process_phase,
 		       b.created_at, b.updated_at, b.deleted_at
@@ -94,7 +94,7 @@ func (c *Client) GetBatch(ctx context.Context, id int64) (Batch, error) {
 
 func (c *Client) GetBatchByUUID(ctx context.Context, batchUUID string) (Batch, error) {
 	var batch Batch
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT b.id, b.uuid, b.short_name, b.brew_date, b.notes, b.recipe_id, r.uuid, r.name,
 		       latest_phase.process_phase,
 		       b.created_at, b.updated_at, b.deleted_at
@@ -135,7 +135,7 @@ func (c *Client) GetBatchByUUID(ctx context.Context, batchUUID string) (Batch, e
 
 func (c *Client) CountBatchesByRecipe(ctx context.Context, recipeUUID string) (int, error) {
 	var count int
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT COUNT(*)
 		FROM batch b
 		JOIN recipe r ON b.recipe_id = r.id
@@ -150,7 +150,7 @@ func (c *Client) CountBatchesByRecipe(ctx context.Context, recipeUUID string) (i
 }
 
 func (c *Client) ListBatches(ctx context.Context) ([]Batch, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT b.id, b.uuid, b.short_name, b.brew_date, b.notes, b.recipe_id, r.uuid, r.name,
 		       latest_phase.process_phase,
 		       b.created_at, b.updated_at, b.deleted_at
@@ -199,51 +199,8 @@ func (c *Client) ListBatches(ctx context.Context) ([]Batch, error) {
 	return batches, nil
 }
 
-func (c *Client) UpdateBatch(ctx context.Context, id int64, batch Batch) (Batch, error) {
-	err := c.db.QueryRow(ctx, `
-		UPDATE batch
-		SET short_name = $1, brew_date = $2, notes = $3, recipe_id = $4, updated_at = timezone('utc', now())
-		WHERE id = $5 AND deleted_at IS NULL
-		RETURNING id, uuid, short_name, brew_date, notes, recipe_id, created_at, updated_at, deleted_at`,
-		batch.ShortName,
-		batch.BrewDate,
-		batch.Notes,
-		batch.RecipeID,
-		id,
-	).Scan(
-		&batch.ID,
-		&batch.UUID,
-		&batch.ShortName,
-		&batch.BrewDate,
-		&batch.Notes,
-		&batch.RecipeID,
-		&batch.CreatedAt,
-		&batch.UpdatedAt,
-		&batch.DeletedAt,
-	)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return Batch{}, service.ErrNotFound
-		}
-		return Batch{}, fmt.Errorf("updating batch: %w", err)
-	}
-
-	// Resolve recipe UUID and name if recipe_id is set
-	if batch.RecipeID != nil {
-		var recipeUUID string
-		var recipeName string
-		err := c.db.QueryRow(ctx, `SELECT uuid, name FROM recipe WHERE id = $1`, *batch.RecipeID).Scan(&recipeUUID, &recipeName)
-		if err == nil {
-			batch.RecipeUUID = &recipeUUID
-			batch.RecipeName = &recipeName
-		}
-	}
-
-	return batch, nil
-}
-
 func (c *Client) UpdateBatchByUUID(ctx context.Context, batchUUID string, batch Batch) (Batch, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE batch
 		SET short_name = $1, brew_date = $2, notes = $3, recipe_id = $4, updated_at = timezone('utc', now())
 		WHERE uuid = $5 AND deleted_at IS NULL
@@ -275,7 +232,7 @@ func (c *Client) UpdateBatchByUUID(ctx context.Context, batchUUID string, batch 
 	if batch.RecipeID != nil {
 		var recipeUUID string
 		var recipeName string
-		err := c.db.QueryRow(ctx, `SELECT uuid, name FROM recipe WHERE id = $1`, *batch.RecipeID).Scan(&recipeUUID, &recipeName)
+		err := c.DB().QueryRow(ctx, `SELECT uuid, name FROM recipe WHERE id = $1`, *batch.RecipeID).Scan(&recipeUUID, &recipeName)
 		if err == nil {
 			batch.RecipeUUID = &recipeUUID
 			batch.RecipeName = &recipeName
@@ -305,7 +262,7 @@ func (d BatchDependencies) HasDependencies() bool {
 
 func (c *Client) GetBatchDependencies(ctx context.Context, id int64) (BatchDependencies, error) {
 	var deps BatchDependencies
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT
 			(SELECT COUNT(*) FROM batch_volume WHERE batch_id = $1 AND deleted_at IS NULL),
 			(SELECT COUNT(*) FROM batch_process_phase WHERE batch_id = $1 AND deleted_at IS NULL),
@@ -329,7 +286,7 @@ func (c *Client) GetBatchDependencies(ctx context.Context, id int64) (BatchDepen
 
 // DeleteBatch soft-deletes a batch and cascades the soft-delete to all related records.
 func (c *Client) DeleteBatch(ctx context.Context, id int64) error {
-	tx, err := c.db.Begin(ctx)
+	tx, err := c.DB().Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("beginning transaction: %w", err)
 	}
@@ -425,7 +382,7 @@ func (c *Client) DeleteBatch(ctx context.Context, id int64) error {
 func (c *Client) DeleteBatchByUUID(ctx context.Context, batchUUID string) error {
 	// Resolve UUID to internal ID for cascade operations
 	var id int64
-	err := c.db.QueryRow(ctx, `SELECT id FROM batch WHERE uuid = $1 AND deleted_at IS NULL`, batchUUID).Scan(&id)
+	err := c.DB().QueryRow(ctx, `SELECT id FROM batch WHERE uuid = $1 AND deleted_at IS NULL`, batchUUID).Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return service.ErrNotFound
@@ -439,7 +396,7 @@ func (c *Client) DeleteBatchByUUID(ctx context.Context, batchUUID string) error 
 // GetBatchDependenciesByUUID returns dependency counts for a batch identified by UUID.
 func (c *Client) GetBatchDependenciesByUUID(ctx context.Context, batchUUID string) (BatchDependencies, error) {
 	var id int64
-	err := c.db.QueryRow(ctx, `SELECT id FROM batch WHERE uuid = $1 AND deleted_at IS NULL`, batchUUID).Scan(&id)
+	err := c.DB().QueryRow(ctx, `SELECT id FROM batch WHERE uuid = $1 AND deleted_at IS NULL`, batchUUID).Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return BatchDependencies{}, service.ErrNotFound

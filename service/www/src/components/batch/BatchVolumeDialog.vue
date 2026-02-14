@@ -62,7 +62,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { VolumeUnit } from '@/composables/useProductionApi'
+  import type { VolumeUnit } from '@/types'
   import { computed } from 'vue'
 
   export type VolumeForm = {

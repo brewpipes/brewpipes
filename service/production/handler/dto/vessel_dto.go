@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -18,13 +19,13 @@ type CreateVesselRequest struct {
 }
 
 func (r CreateVesselRequest) Validate() error {
-	if err := validateRequired(r.Type, "type"); err != nil {
+	if err := validate.Required(r.Type, "type"); err != nil {
 		return err
 	}
 	if err := validateVesselType(r.Type); err != nil {
 		return err
 	}
-	if err := validateRequired(r.Name, "name"); err != nil {
+	if err := validate.Required(r.Name, "name"); err != nil {
 		return err
 	}
 	if r.Capacity <= 0 {
@@ -53,13 +54,13 @@ type UpdateVesselRequest struct {
 }
 
 func (r UpdateVesselRequest) Validate() error {
-	if err := validateRequired(r.Type, "type"); err != nil {
+	if err := validate.Required(r.Type, "type"); err != nil {
 		return err
 	}
 	if err := validateVesselType(r.Type); err != nil {
 		return err
 	}
-	if err := validateRequired(r.Name, "name"); err != nil {
+	if err := validate.Required(r.Name, "name"); err != nil {
 		return err
 	}
 	if r.Capacity <= 0 {

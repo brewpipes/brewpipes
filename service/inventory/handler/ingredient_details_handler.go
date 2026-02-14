@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -35,8 +34,7 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 				http.Error(w, "ingredient malt detail not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting ingredient malt detail", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting ingredient malt detail", "error", err)
 				return
 			}
 
@@ -53,13 +51,8 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 			}
 
 			// Resolve ingredient UUID to internal ID
-			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "ingredient not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving ingredient uuid", "error", err)
-				service.InternalError(w, err.Error())
+			ingredient, ok := service.ResolveFK(r.Context(), w, req.IngredientUUID, "ingredient", db.GetIngredientByUUID)
+			if !ok {
 				return
 			}
 
@@ -74,14 +67,13 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 
 			created, err := db.CreateIngredientMaltDetail(r.Context(), detail)
 			if err != nil {
-				slog.Error("error creating ingredient malt detail", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating ingredient malt detail", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewIngredientMaltDetailResponse(created))
+			service.JSONCreated(w, dto.NewIngredientMaltDetailResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -89,11 +81,6 @@ func HandleIngredientMaltDetails(db IngredientMaltDetailStore) http.HandlerFunc 
 // HandleIngredientMaltDetailByUUID handles [GET /ingredient-malt-details/{uuid}].
 func HandleIngredientMaltDetailByUUID(db IngredientMaltDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		detailUUID := r.PathValue("uuid")
 		if detailUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -105,8 +92,7 @@ func HandleIngredientMaltDetailByUUID(db IngredientMaltDetailStore) http.Handler
 			http.Error(w, "ingredient malt detail not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting ingredient malt detail", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting ingredient malt detail", "error", err)
 			return
 		}
 
@@ -137,8 +123,7 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 				http.Error(w, "ingredient hop detail not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting ingredient hop detail", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting ingredient hop detail", "error", err)
 				return
 			}
 
@@ -155,13 +140,8 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 			}
 
 			// Resolve ingredient UUID to internal ID
-			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "ingredient not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving ingredient uuid", "error", err)
-				service.InternalError(w, err.Error())
+			ingredient, ok := service.ResolveFK(r.Context(), w, req.IngredientUUID, "ingredient", db.GetIngredientByUUID)
+			if !ok {
 				return
 			}
 
@@ -177,14 +157,13 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 
 			created, err := db.CreateIngredientHopDetail(r.Context(), detail)
 			if err != nil {
-				slog.Error("error creating ingredient hop detail", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating ingredient hop detail", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewIngredientHopDetailResponse(created))
+			service.JSONCreated(w, dto.NewIngredientHopDetailResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -192,11 +171,6 @@ func HandleIngredientHopDetails(db IngredientHopDetailStore) http.HandlerFunc {
 // HandleIngredientHopDetailByUUID handles [GET /ingredient-hop-details/{uuid}].
 func HandleIngredientHopDetailByUUID(db IngredientHopDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		detailUUID := r.PathValue("uuid")
 		if detailUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -208,8 +182,7 @@ func HandleIngredientHopDetailByUUID(db IngredientHopDetailStore) http.HandlerFu
 			http.Error(w, "ingredient hop detail not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting ingredient hop detail", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting ingredient hop detail", "error", err)
 			return
 		}
 
@@ -240,8 +213,7 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 				http.Error(w, "ingredient yeast detail not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting ingredient yeast detail", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting ingredient yeast detail", "error", err)
 				return
 			}
 
@@ -258,13 +230,8 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 			}
 
 			// Resolve ingredient UUID to internal ID
-			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "ingredient not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving ingredient uuid", "error", err)
-				service.InternalError(w, err.Error())
+			ingredient, ok := service.ResolveFK(r.Context(), w, req.IngredientUUID, "ingredient", db.GetIngredientByUUID)
+			if !ok {
 				return
 			}
 
@@ -277,14 +244,13 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 
 			created, err := db.CreateIngredientYeastDetail(r.Context(), detail)
 			if err != nil {
-				slog.Error("error creating ingredient yeast detail", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating ingredient yeast detail", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewIngredientYeastDetailResponse(created))
+			service.JSONCreated(w, dto.NewIngredientYeastDetailResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -292,11 +258,6 @@ func HandleIngredientYeastDetails(db IngredientYeastDetailStore) http.HandlerFun
 // HandleIngredientYeastDetailByUUID handles [GET /ingredient-yeast-details/{uuid}].
 func HandleIngredientYeastDetailByUUID(db IngredientYeastDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		detailUUID := r.PathValue("uuid")
 		if detailUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -308,8 +269,7 @@ func HandleIngredientYeastDetailByUUID(db IngredientYeastDetailStore) http.Handl
 			http.Error(w, "ingredient yeast detail not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting ingredient yeast detail", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting ingredient yeast detail", "error", err)
 			return
 		}
 

@@ -284,7 +284,7 @@ export const VESSEL_TYPE_VALUES: VesselType[] = [
 /** A brewing vessel (fermenter, brite tank, kettle, etc.) */
 export interface Vessel {
   uuid: string
-  type: string
+  type: VesselType
   name: string
   capacity: number
   capacity_unit: VolumeUnit
@@ -299,9 +299,9 @@ export interface Vessel {
 /** Request payload for updating an existing vessel */
 export interface UpdateVesselRequest {
   name: string
-  type: string
+  type: VesselType
   capacity: number
-  capacity_unit: string
+  capacity_unit: VolumeUnit
   make?: string | null
   model?: string | null
   status: VesselStatus

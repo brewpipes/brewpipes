@@ -16,7 +16,7 @@ func (c *Client) CreateBatchProcessPhase(ctx context.Context, phase BatchProcess
 		phaseAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO batch_process_phase (
 			batch_id,
 			process_phase,
@@ -41,14 +41,14 @@ func (c *Client) CreateBatchProcessPhase(ctx context.Context, phase BatchProcess
 	}
 
 	// Resolve batch UUID
-	c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, phase.BatchID).Scan(&phase.BatchUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, phase.BatchID).Scan(&phase.BatchUUID)
 
 	return phase, nil
 }
 
 func (c *Client) GetBatchProcessPhase(ctx context.Context, id int64) (BatchProcessPhase, error) {
 	var phase BatchProcessPhase
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT bpp.id, bpp.uuid, bpp.batch_id, b.uuid, bpp.process_phase, bpp.phase_at,
 		       bpp.created_at, bpp.updated_at, bpp.deleted_at
 		FROM batch_process_phase bpp
@@ -78,7 +78,7 @@ func (c *Client) GetBatchProcessPhase(ctx context.Context, id int64) (BatchProce
 
 func (c *Client) GetBatchProcessPhaseByUUID(ctx context.Context, phaseUUID string) (BatchProcessPhase, error) {
 	var phase BatchProcessPhase
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT bpp.id, bpp.uuid, bpp.batch_id, b.uuid, bpp.process_phase, bpp.phase_at,
 		       bpp.created_at, bpp.updated_at, bpp.deleted_at
 		FROM batch_process_phase bpp
@@ -107,7 +107,7 @@ func (c *Client) GetBatchProcessPhaseByUUID(ctx context.Context, phaseUUID strin
 }
 
 func (c *Client) ListBatchProcessPhases(ctx context.Context, batchID int64) ([]BatchProcessPhase, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT bpp.id, bpp.uuid, bpp.batch_id, b.uuid, bpp.process_phase, bpp.phase_at,
 		       bpp.created_at, bpp.updated_at, bpp.deleted_at
 		FROM batch_process_phase bpp

@@ -22,16 +22,11 @@ type Service struct {
 }
 
 // New creates and initializes a new procurement service instance.
-func New(ctx context.Context, cfg Config) (*Service, error) {
-	stg, err := storage.New(ctx, cfg.PostgresDSN)
-	if err != nil {
-		return nil, fmt.Errorf("creating storage client: %w", err)
-	}
-
+func New(cfg Config) *Service {
 	return &Service{
-		storage:   stg,
+		storage:   storage.New(cfg.PostgresDSN),
 		secretKey: cfg.SecretKey,
-	}, nil
+	}
 }
 
 func (s *Service) HTTPRoutes() []service.HTTPRoute {

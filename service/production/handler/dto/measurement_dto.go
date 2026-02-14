@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -32,7 +33,7 @@ func (r CreateMeasurementRequest) Validate() error {
 	if targetCount != 1 {
 		return fmt.Errorf("exactly one of batch_uuid, occupancy_uuid, or volume_uuid is required")
 	}
-	if err := validateRequired(r.Kind, "kind"); err != nil {
+	if err := validate.Required(r.Kind, "kind"); err != nil {
 		return err
 	}
 

@@ -144,93 +144,38 @@
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
+  import type {
+    Batch,
+    BeerLot,
+    Ingredient,
+    IngredientLot,
+    InventoryAdjustment,
+    InventoryMovement,
+    InventoryReceipt,
+    InventoryTransfer,
+    InventoryUsage,
+    StockLocation,
+    Supplier,
+  } from '@/types'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProcurementApi } from '@/composables/useProcurementApi'
-  import { type Batch, useProductionApi } from '@/composables/useProductionApi'
+  import { useProductionApi } from '@/composables/useProductionApi'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
-  // Types
-  type Ingredient = {
-    uuid: string
-    name: string
-    category: string
-    default_unit: string
-  }
-
-  type IngredientLot = {
-    uuid: string
-    ingredient_uuid: string
-    brewery_lot_code: string | null
-    received_amount: number
-    received_unit: string
-  }
-
-  type StockLocation = {
-    uuid: string
-    name: string
-  }
-
-  type BeerLot = {
-    uuid: string
-    lot_code: string | null
-  }
-
-  type InventoryMovement = {
-    uuid: string
-    ingredient_lot_uuid: string | null
-    beer_lot_uuid: string | null
-    stock_location_uuid: string
-    direction: string
-    reason: string
-    amount: number
-    amount_unit: string
-    occurred_at: string
-    receipt_uuid: string | null
-    usage_uuid: string | null
-    adjustment_uuid: string | null
-    transfer_uuid: string | null
-    notes: string | null
-  }
-
-  type InventoryReceipt = {
-    uuid: string
-    supplier_uuid: string | null
-    reference_code: string | null
-    received_at: string
-    notes: string | null
-  }
-
-  type InventoryUsage = {
-    uuid: string
-    production_ref_uuid: string | null
-    used_at: string
-    notes: string | null
-  }
-
-  type InventoryAdjustment = {
-    uuid: string
-    reason: string
-    adjusted_at: string
-    notes: string | null
-  }
-
-  type InventoryTransfer = {
-    uuid: string
-    source_location_uuid: string
-    dest_location_uuid: string
-    transferred_at: string
-    notes: string | null
-  }
-
-  type Supplier = {
-    uuid: string
-    name: string
-  }
-
   // Composables
-  const { request: inventoryRequest } = useInventoryApi()
-  const { request: productionRequest } = useProductionApi()
-  const { request: procurementRequest } = useProcurementApi()
+  const {
+    getIngredients: fetchIngredients,
+    getIngredientLots: fetchIngredientLots,
+    getStockLocations: fetchStockLocations,
+    getBeerLots: fetchBeerLots,
+    getInventoryMovements,
+    getInventoryReceipts: fetchReceipts,
+    getInventoryUsages: fetchUsages,
+    getInventoryAdjustments: fetchAdjustments,
+    getInventoryTransfers: fetchTransfers,
+  } = useInventoryApi()
+  const { getBatches: fetchBatches } = useProductionApi()
+  const { getSuppliers: fetchSuppliers } = useProcurementApi()
   const { formatAmountPreferred } = useUnitPreferences()
 
   // Core data
@@ -354,54 +299,53 @@
   }
 
   async function loadIngredients () {
-    ingredients.value = await inventoryRequest<Ingredient[]>('/ingredients') ?? []
+    ingredients.value = await fetchIngredients() ?? []
   }
 
   async function loadLots () {
-    lots.value = await inventoryRequest<IngredientLot[]>('/ingredient-lots') ?? []
+    lots.value = await fetchIngredientLots() ?? []
   }
 
   async function loadLocations () {
-    locations.value = await inventoryRequest<StockLocation[]>('/stock-locations') ?? []
+    locations.value = await fetchStockLocations() ?? []
   }
 
   async function loadBeerLots () {
-    beerLots.value = await inventoryRequest<BeerLot[]>('/beer-lots') ?? []
+    beerLots.value = await fetchBeerLots() ?? []
   }
 
   async function loadMovements () {
-    const query = new URLSearchParams()
+    const movementFilters: { ingredient_lot_uuid?: string, beer_lot_uuid?: string } = {}
     if (filters.ingredient_lot_uuid) {
-      query.set('ingredient_lot_uuid', filters.ingredient_lot_uuid)
+      movementFilters.ingredient_lot_uuid = filters.ingredient_lot_uuid
     }
     if (filters.beer_lot_uuid) {
-      query.set('beer_lot_uuid', filters.beer_lot_uuid)
+      movementFilters.beer_lot_uuid = filters.beer_lot_uuid
     }
-    const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
-    movements.value = await inventoryRequest<InventoryMovement[]>(path) ?? []
+    movements.value = await getInventoryMovements(movementFilters) ?? []
   }
 
   async function loadReceipts () {
-    receipts.value = await inventoryRequest<InventoryReceipt[]>('/inventory-receipts') ?? []
+    receipts.value = await fetchReceipts() ?? []
   }
 
   async function loadUsages () {
-    usages.value = await inventoryRequest<InventoryUsage[]>('/inventory-usage') ?? []
+    usages.value = await fetchUsages() ?? []
   }
 
   async function loadAdjustments () {
-    adjustments.value = await inventoryRequest<InventoryAdjustment[]>('/inventory-adjustments') ?? []
+    adjustments.value = await fetchAdjustments() ?? []
   }
 
   async function loadTransfers () {
-    transfers.value = await inventoryRequest<InventoryTransfer[]>('/inventory-transfers') ?? []
+    transfers.value = await fetchTransfers() ?? []
   }
 
   async function loadCrossServiceData () {
     // Load batches and suppliers in parallel, but don't fail if they're unavailable
     const results = await Promise.allSettled([
-      productionRequest<Batch[]>('/batches'),
-      procurementRequest<Supplier[]>('/suppliers'),
+      fetchBatches(),
+      fetchSuppliers(),
     ])
 
     if (results[0].status === 'fulfilled') {
@@ -540,23 +484,6 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 .reason-link {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -36,8 +35,7 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 					http.Error(w, "batch not found", http.StatusNotFound)
 					return
 				} else if err != nil {
-					slog.Error("error listing additions", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing additions by batch", "error", err)
 					return
 				}
 
@@ -51,8 +49,7 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 					http.Error(w, "occupancy not found", http.StatusNotFound)
 					return
 				} else if err != nil {
-					slog.Error("error listing additions", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing additions by occupancy", "error", err)
 					return
 				}
 
@@ -66,8 +63,7 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 					http.Error(w, "volume not found", http.StatusNotFound)
 					return
 				} else if err != nil {
-					slog.Error("error listing additions", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing additions by volume", "error", err)
 					return
 				}
 
@@ -113,53 +109,31 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 			}
 
 			// Resolve FK UUIDs to internal IDs
-			if req.BatchUUID != nil {
-				batch, err := db.GetBatchByUUID(r.Context(), *req.BatchUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "batch not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving batch uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if batch, ok := service.ResolveFKOptional(r.Context(), w, req.BatchUUID, "batch", db.GetBatchByUUID); !ok {
+				return
+			} else if req.BatchUUID != nil {
 				addition.BatchID = &batch.ID
 			}
-			if req.OccupancyUUID != nil {
-				occ, err := db.GetOccupancyByUUID(r.Context(), *req.OccupancyUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "occupancy not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving occupancy uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if occ, ok := service.ResolveFKOptional(r.Context(), w, req.OccupancyUUID, "occupancy", db.GetOccupancyByUUID); !ok {
+				return
+			} else if req.OccupancyUUID != nil {
 				addition.OccupancyID = &occ.ID
 			}
-			if req.VolumeUUID != nil {
-				vol, err := db.GetVolumeByUUID(r.Context(), *req.VolumeUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "volume not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving volume uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if vol, ok := service.ResolveFKOptional(r.Context(), w, req.VolumeUUID, "volume", db.GetVolumeByUUID); !ok {
+				return
+			} else if req.VolumeUUID != nil {
 				addition.VolumeID = &vol.ID
 			}
 
 			created, err := db.CreateAddition(r.Context(), addition)
 			if err != nil {
-				slog.Error("error creating addition", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating addition", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewAdditionResponse(created))
+			service.JSONCreated(w, dto.NewAdditionResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -167,11 +141,6 @@ func HandleAdditions(db AdditionStore) http.HandlerFunc {
 // HandleAdditionByUUID handles [GET /additions/{uuid}].
 func HandleAdditionByUUID(db AdditionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		additionUUID := r.PathValue("uuid")
 		if additionUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -183,8 +152,7 @@ func HandleAdditionByUUID(db AdditionStore) http.HandlerFunc {
 			http.Error(w, "addition not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting addition", "error", err, "addition_uuid", additionUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting addition", "error", err, "addition_uuid", additionUUID)
 			return
 		}
 

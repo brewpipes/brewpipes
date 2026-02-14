@@ -114,50 +114,29 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
+
 </template>
 
 <script lang="ts" setup>
+  import type { Ingredient, IngredientLot, IngredientLotHopDetail, IngredientLotMaltDetail, IngredientLotYeastDetail } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { toNumber } from '@/utils/normalize'
 
-  type Ingredient = {
-    uuid: string
-    name: string
-  }
-
-  type IngredientLot = {
-    uuid: string
-    ingredient_uuid: string
-    received_amount: number
-    received_unit: string
-  }
-
-  type IngredientLotMaltDetail = {
-    uuid: string
-    ingredient_lot_uuid: string
-    moisture_percent: number | null
-  }
-
-  type IngredientLotHopDetail = {
-    uuid: string
-    ingredient_lot_uuid: string
-    alpha_acid: number | null
-    beta_acid: number | null
-  }
-
-  type IngredientLotYeastDetail = {
-    uuid: string
-    ingredient_lot_uuid: string
-    viability_percent: number | null
-    generation: number | null
-  }
-
-  const { request, toNumber } = useInventoryApi()
+  const {
+    getIngredients,
+    getIngredientLots,
+    getIngredientLotMaltDetail,
+    createIngredientLotMaltDetail,
+    getIngredientLotHopDetail,
+    createIngredientLotHopDetail,
+    getIngredientLotYeastDetail,
+    createIngredientLotYeastDetail,
+  } = useInventoryApi()
+  const { showNotice } = useSnackbar()
   const { formatAmountPreferred } = useUnitPreferences()
   const route = useRoute()
 
@@ -184,12 +163,6 @@
     generation: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   const lotSelectItems = computed(() =>
     lots.value.map(lot => ({
       title: `${ingredientName(lot.ingredient_uuid)} (${formatAmountPreferred(lot.received_amount, lot.received_unit)})`,
@@ -212,18 +185,12 @@
     }
   })
 
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function loadLots () {
     loading.value = true
     try {
       const [ingredientData, lotData] = await Promise.all([
-        request<Ingredient[]>('/ingredients'),
-        request<IngredientLot[]>('/ingredient-lots'),
+        getIngredients(),
+        getIngredientLots(),
       ])
       ingredients.value = ingredientData
       lots.value = lotData
@@ -240,23 +207,17 @@
       return
     }
     try {
-      lotMaltDetail.value = await request<IngredientLotMaltDetail>(
-        `/ingredient-lot-malt-details?ingredient_lot_uuid=${detailLotUuid.value}`,
-      )
+      lotMaltDetail.value = await getIngredientLotMaltDetail(detailLotUuid.value)
     } catch {
       lotMaltDetail.value = null
     }
     try {
-      lotHopDetail.value = await request<IngredientLotHopDetail>(
-        `/ingredient-lot-hop-details?ingredient_lot_uuid=${detailLotUuid.value}`,
-      )
+      lotHopDetail.value = await getIngredientLotHopDetail(detailLotUuid.value)
     } catch {
       lotHopDetail.value = null
     }
     try {
-      lotYeastDetail.value = await request<IngredientLotYeastDetail>(
-        `/ingredient-lot-yeast-details?ingredient_lot_uuid=${detailLotUuid.value}`,
-      )
+      lotYeastDetail.value = await getIngredientLotYeastDetail(detailLotUuid.value)
     } catch {
       lotYeastDetail.value = null
     }
@@ -278,10 +239,7 @@
         ingredient_lot_uuid: detailLotUuid.value,
         moisture_percent: toNumber(lotMaltDetailForm.moisture_percent),
       }
-      await request<IngredientLotMaltDetail>('/ingredient-lot-malt-details', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createIngredientLotMaltDetail(payload)
       showNotice('Malt lot detail saved')
       await loadLotDetails()
     } catch (error) {
@@ -300,10 +258,7 @@
         alpha_acid: toNumber(lotHopDetailForm.alpha_acid),
         beta_acid: toNumber(lotHopDetailForm.beta_acid),
       }
-      await request<IngredientLotHopDetail>('/ingredient-lot-hop-details', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createIngredientLotHopDetail(payload)
       showNotice('Hop lot detail saved')
       await loadLotDetails()
     } catch (error) {
@@ -322,10 +277,7 @@
         viability_percent: toNumber(lotYeastDetailForm.viability_percent),
         generation: toNumber(lotYeastDetailForm.generation),
       }
-      await request<IngredientLotYeastDetail>('/ingredient-lot-yeast-details', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createIngredientLotYeastDetail(payload)
       showNotice('Yeast lot detail saved')
       await loadLotDetails()
     } catch (error) {
@@ -342,16 +294,5 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
 }
 </style>

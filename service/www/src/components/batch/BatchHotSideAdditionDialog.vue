@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { AdditionType as ProductionAdditionType, VolumeUnit } from '@/composables/useProductionApi'
+  import type { AdditionType as ProductionAdditionType, VolumeUnit } from '@/types'
 
   export type HotSideAdditionForm = {
     addition_type: ProductionAdditionType

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -25,8 +24,7 @@ func HandleIngredients(db IngredientStore) http.HandlerFunc {
 		case http.MethodGet:
 			ingredients, err := db.ListIngredients(r.Context())
 			if err != nil {
-				slog.Error("error listing ingredients", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing ingredients", "error", err)
 				return
 			}
 
@@ -51,14 +49,13 @@ func HandleIngredients(db IngredientStore) http.HandlerFunc {
 
 			created, err := db.CreateIngredient(r.Context(), ingredient)
 			if err != nil {
-				slog.Error("error creating ingredient", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating ingredient", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewIngredientResponse(created))
+			service.JSONCreated(w, dto.NewIngredientResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -66,11 +63,6 @@ func HandleIngredients(db IngredientStore) http.HandlerFunc {
 // HandleIngredientByUUID handles [GET /ingredients/{uuid}].
 func HandleIngredientByUUID(db IngredientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		ingredientUUID := r.PathValue("uuid")
 		if ingredientUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -82,8 +74,7 @@ func HandleIngredientByUUID(db IngredientStore) http.HandlerFunc {
 			http.Error(w, "ingredient not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting ingredient", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting ingredient", "error", err)
 			return
 		}
 

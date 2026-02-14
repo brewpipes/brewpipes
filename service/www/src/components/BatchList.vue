@@ -57,6 +57,7 @@
 
 <script lang="ts" setup>
   import type { Batch } from '@/types'
+  import { formatDate, formatDateTime } from '@/composables/useFormatters'
 
   withDefaults(
     defineProps<{
@@ -79,24 +80,7 @@
     'bulk-import': []
   }>()
 
-  function formatDate (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-    }).format(new Date(value))
-  }
 
-  function formatDateTime (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
 </script>
 
 <style scoped>

@@ -199,10 +199,6 @@
     </v-card-text>
   </v-card>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Dialogs -->
   <BatchAdditionDialog
     v-model="createAdditionDialog"
@@ -287,24 +283,27 @@
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useApiClient } from '@/composables/useApiClient'
-  import {
-    type BatchSummary,
-    type BrewSession,
-    type OccupancyStatus,
-    type Addition as ProductionAddition,
-    type AdditionType as ProductionAdditionType,
-    type Measurement as ProductionMeasurement,
-    type Volume as ProductionVolume,
-    type UpdateBatchRequest,
-    useProductionApi,
-    type Vessel,
-    type VolumeUnit,
-  } from '@/composables/useProductionApi'
+  import { formatDate, formatDateTime, useOccupancyStatusFormatters } from '@/composables/useFormatters'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeDateTime, normalizeDateOnly, normalizeText, nowInputValue, toLocalDateTimeInput, toNumber } from '@/utils/normalize'
+  import type {
+    AdditionType as ProductionAdditionType,
+    Addition as ProductionAddition,
+    BatchSummary,
+    BrewSession,
+    GravityUnit,
+    Measurement as ProductionMeasurement,
+    OccupancyStatus,
+    TemperatureUnit,
+    UpdateBatchRequest,
+    Vessel,
+    Volume as ProductionVolume,
+    VolumeUnit,
+  } from '@/types'
+  import { useProductionApi } from '@/composables/useProductionApi'
   import {
     convertGravity,
     convertTemperature,
-    type GravityUnit,
-    type TemperatureUnit,
   } from '@/composables/useUnitConversion'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import {
@@ -387,6 +386,8 @@
     formatGravityPreferred,
   } = useUnitPreferences()
 
+  const { formatOccupancyStatus } = useOccupancyStatusFormatters()
+
   // State
   const loading = ref(false)
   const selectedBatch = ref<Batch | null>(null)
@@ -403,11 +404,7 @@
   const createAdditionDialog = ref(false)
   const createMeasurementDialog = ref(false)
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
+  const { showNotice } = useSnackbar()
 
   const additionForm = reactive({
     target: 'batch' as 'batch' | 'occupancy',
@@ -754,12 +751,6 @@
     selectedBrewSessionUuid.value = null
     wortAdditions.value = []
     wortMeasurements.value = []
-  }
-
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
   }
 
   function get<T> (path: string) {
@@ -1376,13 +1367,6 @@
     }
   }
 
-  function toLocalDateTimeInput (isoString: string): string {
-    if (!isoString) return ''
-    const date = new Date(isoString)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-  }
-
   // ==================== Occupancy Status Functions ====================
 
   async function changeOccupancyStatus (occupancyUuid: string, status: OccupancyStatus) {
@@ -1392,17 +1376,7 @@
 
     try {
       await updateOccupancyStatus(occupancyUuid, status)
-      const statusLabels: Record<string, string> = {
-        fermenting: 'Fermenting',
-        conditioning: 'Conditioning',
-        cold_crashing: 'Cold Crashing',
-        dry_hopping: 'Dry Hopping',
-        carbonating: 'Carbonating',
-        holding: 'Holding',
-        packaging: 'Packaging',
-      }
-      const label = statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
-      showNotice(`Status updated to ${label}`)
+      showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
       // Reload batch summary to reflect the change
       await loadBatchSummary(props.batchUuid)
     } catch (error) {
@@ -1482,51 +1456,11 @@
     }
   }
 
-  function normalizeDateOnly (value: string) {
-    return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
-  }
-
   // ==================== Helper Functions ====================
 
   function handleError (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error'
     showNotice(message, 'error')
-  }
-
-  function normalizeText (value: string) {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  function normalizeDateTime (value: string) {
-    return value ? new Date(value).toISOString() : null
-  }
-
-  function toNumber (value: string | number | null) {
-    if (value === null || value === undefined || value === '') {
-      return null
-    }
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  function formatDate (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-    }).format(new Date(value))
-  }
-
-  function formatDateTime (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
   }
 
   function formatAmount (amount: number | null, unit: string | null | undefined) {
@@ -1558,17 +1492,6 @@
   function getLatest<T> (items: T[], selector: (item: T) => string | null | undefined) {
     const sorted = sortByTime(items, selector)
     return sorted.length > 0 ? sorted[0] : null
-  }
-
-  function nowInputValue () {
-    const now = new Date()
-    const pad = (value: number) => String(value).padStart(2, '0')
-    const year = now.getFullYear()
-    const month = pad(now.getMonth() + 1)
-    const day = pad(now.getDate())
-    const hours = pad(now.getHours())
-    const minutes = pad(now.getMinutes())
-    return `${year}-${month}-${day}T${hours}:${minutes}`
   }
 
   function parseNumericInput (value: string) {
@@ -1789,12 +1712,6 @@
 </script>
 
 <style scoped>
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
 .mini-card {
   height: 100%;
 }
@@ -1802,27 +1719,6 @@
 .batch-tabs :deep(.v-tab) {
   text-transform: none;
   font-weight: 600;
-}
-
-/* Ensure tables scroll horizontally on mobile */
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 /* Timeline time picker responsive width */

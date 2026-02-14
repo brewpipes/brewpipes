@@ -2,18 +2,9 @@ package dto
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
-
-func validateRequired(value, field string) error {
-	if strings.TrimSpace(value) == "" {
-		return fmt.Errorf("%s is required", field)
-	}
-
-	return nil
-}
 
 func errPositiveRequired(field string) error {
 	return fmt.Errorf("%s must be greater than zero", field)

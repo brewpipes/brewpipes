@@ -33,27 +33,27 @@
                   :items="orderSelectItems"
                   label="Filter by purchase order"
                 />
-                <v-table class="data-table" density="compact">
-                  <thead>
-                    <tr>
-                      <th>Order</th>
-                      <th>Fee type</th>
-                      <th>Amount</th>
-                      <th>Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="fee in fees" :key="fee.uuid">
-                      <td>{{ orderNumber(fee.purchase_order_uuid) }}</td>
-                      <td>{{ fee.fee_type }}</td>
-                      <td>{{ formatCurrency(fee.amount_cents, fee.currency) }}</td>
-                      <td>{{ formatDateTime(fee.updated_at) }}</td>
-                    </tr>
-                    <tr v-if="fees.length === 0">
-                      <td colspan="4">No fees yet.</td>
-                    </tr>
-                  </tbody>
-                </v-table>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="feeHeaders"
+                  item-value="uuid"
+                  :items="fees"
+                  :loading="loading"
+                >
+                  <template #item.purchase_order_uuid="{ item }">
+                    {{ orderNumber(item.purchase_order_uuid) }}
+                  </template>
+                  <template #item.amount_cents="{ item }">
+                    {{ formatCurrency(item.amount_cents, item.currency) }}
+                  </template>
+                  <template #item.updated_at="{ item }">
+                    {{ formatDateTime(item.updated_at) }}
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No fees yet.</div>
+                  </template>
+                </v-data-table>
               </v-card-text>
             </v-card>
           </v-col>
@@ -89,33 +89,33 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
+  import type { PurchaseOrder, PurchaseOrderFee } from '@/types'
   import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
 
-  type PurchaseOrder = {
-    uuid: string
-    order_number: string
-  }
-
-  type PurchaseOrderFee = {
-    uuid: string
-    purchase_order_uuid: string
-    fee_type: string
-    amount_cents: number
-    currency: string
-    created_at: string
-    updated_at: string
-  }
-
-  const { request, toNumber, formatDateTime, formatCurrency } = useProcurementApi()
+  const {
+    getPurchaseOrders,
+    getPurchaseOrderFees,
+    createPurchaseOrderFee,
+    toNumber,
+    formatDateTime,
+    formatCurrency,
+  } = useProcurementApi()
   const route = useRoute()
+  const { showNotice } = useSnackbar()
+
+  // Table configuration
+  const feeHeaders = [
+    { title: 'Order', key: 'purchase_order_uuid', sortable: true },
+    { title: 'Fee type', key: 'fee_type', sortable: true },
+    { title: 'Amount', key: 'amount_cents', sortable: true },
+    { title: 'Updated', key: 'updated_at', sortable: true },
+  ]
 
   const orders = ref<PurchaseOrder[]>([])
   const fees = ref<PurchaseOrderFee[]>([])
@@ -135,12 +135,6 @@
     currency: 'USD',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   const orderSelectItems = computed(() =>
     orders.value.map(order => ({
       title: order.order_number,
@@ -157,12 +151,6 @@
     }
   })
 
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function refreshAll () {
     loading.value = true
     errorMessage.value = ''
@@ -177,16 +165,11 @@
   }
 
   async function loadOrders () {
-    orders.value = await request<PurchaseOrder[]>('/purchase-orders')
+    orders.value = await getPurchaseOrders()
   }
 
   async function loadFees () {
-    const query = new URLSearchParams()
-    if (filters.purchase_order_uuid) {
-      query.set('purchase_order_uuid', filters.purchase_order_uuid)
-    }
-    const path = query.toString() ? `/purchase-order-fees?${query.toString()}` : '/purchase-order-fees'
-    fees.value = await request<PurchaseOrderFee[]>(path)
+    fees.value = await getPurchaseOrderFees(filters.purchase_order_uuid ?? undefined)
   }
 
   async function createFee () {
@@ -197,10 +180,7 @@
         amount_cents: toNumber(feeForm.amount_cents),
         currency: feeForm.currency,
       }
-      await request<PurchaseOrderFee>('/purchase-order-fees', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createPurchaseOrderFee(payload)
       feeForm.purchase_order_uuid = null
       feeForm.fee_type = ''
       feeForm.amount_cents = ''
@@ -223,27 +203,5 @@
 <style scoped>
 .procurement-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 </style>

@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateStockLocation(ctx context.Context, location StockLocation) (StockLocation, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO stock_location (
 			name,
 			location_type,
@@ -39,7 +39,7 @@ func (c *Client) CreateStockLocation(ctx context.Context, location StockLocation
 
 func (c *Client) GetStockLocation(ctx context.Context, id int64) (StockLocation, error) {
 	var location StockLocation
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, location_type, description, created_at, updated_at, deleted_at
 		FROM stock_location
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -66,7 +66,7 @@ func (c *Client) GetStockLocation(ctx context.Context, id int64) (StockLocation,
 
 func (c *Client) GetStockLocationByUUID(ctx context.Context, locationUUID string) (StockLocation, error) {
 	var location StockLocation
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, location_type, description, created_at, updated_at, deleted_at
 		FROM stock_location
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -92,7 +92,7 @@ func (c *Client) GetStockLocationByUUID(ctx context.Context, locationUUID string
 }
 
 func (c *Client) ListStockLocations(ctx context.Context) ([]StockLocation, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, name, location_type, description, created_at, updated_at, deleted_at
 		FROM stock_location
 		WHERE deleted_at IS NULL

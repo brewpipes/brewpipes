@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -35,8 +34,7 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 				http.Error(w, "volume not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error listing volume relations", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing volume relations", "error", err)
 				return
 			}
 
@@ -53,24 +51,14 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 			}
 
 			// Resolve parent volume UUID to internal ID
-			parentVol, err := db.GetVolumeByUUID(r.Context(), req.ParentVolumeUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "parent volume not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving parent volume uuid", "error", err)
-				service.InternalError(w, err.Error())
+			parentVol, ok := service.ResolveFK(r.Context(), w, req.ParentVolumeUUID, "parent volume", db.GetVolumeByUUID)
+			if !ok {
 				return
 			}
 
 			// Resolve child volume UUID to internal ID
-			childVol, err := db.GetVolumeByUUID(r.Context(), req.ChildVolumeUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "child volume not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving child volume uuid", "error", err)
-				service.InternalError(w, err.Error())
+			childVol, ok := service.ResolveFK(r.Context(), w, req.ChildVolumeUUID, "child volume", db.GetVolumeByUUID)
+			if !ok {
 				return
 			}
 
@@ -84,14 +72,13 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 
 			created, err := db.CreateVolumeRelation(r.Context(), relation)
 			if err != nil {
-				slog.Error("error creating volume relation", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating volume relation", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewVolumeRelationResponse(created))
+			service.JSONCreated(w, dto.NewVolumeRelationResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -99,11 +86,6 @@ func HandleVolumeRelations(db VolumeRelationStore) http.HandlerFunc {
 // HandleVolumeRelationByUUID handles [GET /volume-relations/{uuid}].
 func HandleVolumeRelationByUUID(db VolumeRelationStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		relationUUID := r.PathValue("uuid")
 		if relationUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -115,8 +97,7 @@ func HandleVolumeRelationByUUID(db VolumeRelationStore) http.HandlerFunc {
 			http.Error(w, "volume relation not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting volume relation", "error", err, "relation_uuid", relationUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting volume relation", "error", err, "relation_uuid", relationUUID)
 			return
 		}
 

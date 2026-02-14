@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/uuidutil"
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/procurement/storage"
 )
 
@@ -20,7 +22,7 @@ type CreatePurchaseOrderLineRequest struct {
 }
 
 func (r CreatePurchaseOrderLineRequest) Validate() error {
-	if err := validateRequired(r.PurchaseOrderUUID, "purchase_order_uuid"); err != nil {
+	if err := validate.Required(r.PurchaseOrderUUID, "purchase_order_uuid"); err != nil {
 		return err
 	}
 	if r.LineNumber <= 0 {
@@ -29,13 +31,13 @@ func (r CreatePurchaseOrderLineRequest) Validate() error {
 	if err := validateLineItemType(r.ItemType); err != nil {
 		return err
 	}
-	if err := validateRequired(r.ItemName, "item_name"); err != nil {
+	if err := validate.Required(r.ItemName, "item_name"); err != nil {
 		return err
 	}
 	if r.Quantity <= 0 {
 		return fmt.Errorf("quantity must be greater than zero")
 	}
-	if err := validateRequired(r.QuantityUnit, "quantity_unit"); err != nil {
+	if err := validate.Required(r.QuantityUnit, "quantity_unit"); err != nil {
 		return err
 	}
 	if r.UnitCostCents < 0 {
@@ -72,7 +74,7 @@ func (r UpdatePurchaseOrderLineRequest) Validate() error {
 		}
 	}
 	if r.ItemName != nil {
-		if err := validateRequired(*r.ItemName, "item_name"); err != nil {
+		if err := validate.Required(*r.ItemName, "item_name"); err != nil {
 			return err
 		}
 	}
@@ -80,7 +82,7 @@ func (r UpdatePurchaseOrderLineRequest) Validate() error {
 		return fmt.Errorf("quantity must be greater than zero")
 	}
 	if r.QuantityUnit != nil {
-		if err := validateRequired(*r.QuantityUnit, "quantity_unit"); err != nil {
+		if err := validate.Required(*r.QuantityUnit, "quantity_unit"); err != nil {
 			return err
 		}
 	}
@@ -123,7 +125,7 @@ func NewPurchaseOrderLineResponse(line storage.PurchaseOrderLine) PurchaseOrderL
 		LineNumber:        line.LineNumber,
 		ItemType:          line.ItemType,
 		ItemName:          line.ItemName,
-		InventoryItemUUID: uuidToStringPointer(line.InventoryItemUUID),
+		InventoryItemUUID: uuidutil.ToStringPointer(line.InventoryItemUUID),
 		Quantity:          line.Quantity,
 		QuantityUnit:      line.QuantityUnit,
 		UnitCostCents:     line.UnitCostCents,

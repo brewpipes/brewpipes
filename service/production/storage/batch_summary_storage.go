@@ -114,23 +114,12 @@ func (c *Client) GetBatchSummary(ctx context.Context, batchID int64) (BatchSumma
 	}
 	summary.Measurements = measurements
 
-	// Get batch volumes with amount info
-	batchVolumes, err := c.ListBatchVolumes(ctx, batchID)
+	// Get batch volumes with amount info in a single query (avoids N+1)
+	batchVolumesWithAmounts, err := c.listBatchVolumesWithAmounts(ctx, batchID)
 	if err != nil {
-		return BatchSummary{}, fmt.Errorf("listing batch volumes: %w", err)
+		return BatchSummary{}, fmt.Errorf("listing batch volumes with amounts: %w", err)
 	}
-	for _, bv := range batchVolumes {
-		vol, err := c.GetVolume(ctx, bv.VolumeID)
-		if err != nil && !errors.Is(err, service.ErrNotFound) {
-			return BatchSummary{}, fmt.Errorf("getting volume: %w", err)
-		}
-		if err == nil {
-			summary.Volumes = append(summary.Volumes, BatchVolumeWithAmount{
-				BatchVolume: bv,
-				Volume:      vol,
-			})
-		}
-	}
+	summary.Volumes = batchVolumesWithAmounts
 
 	// Get transfers for loss calculations
 	transfers, err := c.ListTransfersByBatch(ctx, batchID)
@@ -158,9 +147,51 @@ func (c *Client) GetBatchSummary(ctx context.Context, batchID int64) (BatchSumma
 	return summary, nil
 }
 
+// listBatchVolumesWithAmounts returns all batch volumes with their volume data in a single JOIN query.
+func (c *Client) listBatchVolumesWithAmounts(ctx context.Context, batchID int64) ([]BatchVolumeWithAmount, error) {
+	rows, err := c.DB().Query(ctx, `
+		SELECT
+			bv.id, bv.uuid, bv.batch_id, b.uuid, bv.volume_id, v.uuid,
+			bv.liquid_phase, bv.phase_at, bv.created_at, bv.updated_at, bv.deleted_at,
+			v.id, v.uuid, v.name, v.description, v.amount, v.amount_unit, v.created_at, v.updated_at, v.deleted_at
+		FROM batch_volume bv
+		JOIN volume v ON v.id = bv.volume_id
+		JOIN batch b ON b.id = bv.batch_id
+		WHERE bv.batch_id = $1 AND bv.deleted_at IS NULL AND v.deleted_at IS NULL
+		ORDER BY bv.phase_at ASC`,
+		batchID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing batch volumes with amounts: %w", err)
+	}
+	defer rows.Close()
+
+	var result []BatchVolumeWithAmount
+	for rows.Next() {
+		var bv BatchVolume
+		var vol Volume
+		if err := rows.Scan(
+			&bv.ID, &bv.UUID, &bv.BatchID, &bv.BatchUUID, &bv.VolumeID, &bv.VolumeUUID,
+			&bv.LiquidPhase, &bv.PhaseAt, &bv.CreatedAt, &bv.UpdatedAt, &bv.DeletedAt,
+			&vol.ID, &vol.UUID, &vol.Name, &vol.Description, &vol.Amount, &vol.AmountUnit, &vol.CreatedAt, &vol.UpdatedAt, &vol.DeletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning batch volume with amount: %w", err)
+		}
+		result = append(result, BatchVolumeWithAmount{
+			BatchVolume: bv,
+			Volume:      vol,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing batch volumes with amounts: %w", err)
+	}
+
+	return result, nil
+}
+
 // listOccupanciesByBatch returns all occupancies for volumes linked to a batch.
 func (c *Client) listOccupanciesByBatch(ctx context.Context, batchID int64) ([]OccupancyWithVessel, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT 
 			o.id, o.uuid, o.vessel_id, o.volume_id, o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at,
 			v.id, v.uuid, v.type, v.name, v.capacity, v.capacity_unit, v.make, v.model, v.status, v.created_at, v.updated_at, v.deleted_at

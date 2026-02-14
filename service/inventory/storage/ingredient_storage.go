@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateIngredient(ctx context.Context, ingredient Ingredient) (Ingredient, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient (
 			name,
 			category,
@@ -42,7 +42,7 @@ func (c *Client) CreateIngredient(ctx context.Context, ingredient Ingredient) (I
 
 func (c *Client) GetIngredient(ctx context.Context, id int64) (Ingredient, error) {
 	var ingredient Ingredient
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, category, default_unit, description, created_at, updated_at, deleted_at
 		FROM ingredient
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -70,7 +70,7 @@ func (c *Client) GetIngredient(ctx context.Context, id int64) (Ingredient, error
 
 func (c *Client) GetIngredientByUUID(ctx context.Context, ingredientUUID string) (Ingredient, error) {
 	var ingredient Ingredient
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, category, default_unit, description, created_at, updated_at, deleted_at
 		FROM ingredient
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -97,7 +97,7 @@ func (c *Client) GetIngredientByUUID(ctx context.Context, ingredientUUID string)
 }
 
 func (c *Client) ListIngredients(ctx context.Context) ([]Ingredient, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, name, category, default_unit, description, created_at, updated_at, deleted_at
 		FROM ingredient
 		WHERE deleted_at IS NULL

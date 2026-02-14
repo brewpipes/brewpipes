@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -31,8 +30,7 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 			if orderUUID != "" {
 				fees, err := db.ListPurchaseOrderFeesByOrderUUID(r.Context(), orderUUID)
 				if err != nil {
-					slog.Error("error listing purchase order fees by order", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing purchase order fees by order", "error", err)
 					return
 				}
 
@@ -42,8 +40,7 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 
 			fees, err := db.ListPurchaseOrderFees(r.Context())
 			if err != nil {
-				slog.Error("error listing purchase order fees", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing purchase order fees", "error", err)
 				return
 			}
 
@@ -60,13 +57,8 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 			}
 
 			// Resolve purchase order UUID to internal ID
-			order, err := db.GetPurchaseOrderByUUID(r.Context(), req.PurchaseOrderUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "purchase order not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving purchase order uuid", "error", err)
-				service.InternalError(w, err.Error())
+			order, ok := service.ResolveFK(r.Context(), w, req.PurchaseOrderUUID, "purchase order", db.GetPurchaseOrderByUUID)
+			if !ok {
 				return
 			}
 
@@ -79,14 +71,13 @@ func HandlePurchaseOrderFees(db PurchaseOrderFeeStore) http.HandlerFunc {
 
 			created, err := db.CreatePurchaseOrderFee(r.Context(), fee)
 			if err != nil {
-				slog.Error("error creating purchase order fee", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating purchase order fee", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewPurchaseOrderFeeResponse(created))
+			service.JSONCreated(w, dto.NewPurchaseOrderFeeResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -107,8 +98,7 @@ func HandlePurchaseOrderFeeByUUID(db PurchaseOrderFeeStore) http.HandlerFunc {
 				http.Error(w, "purchase order fee not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting purchase order fee", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting purchase order fee", "error", err)
 				return
 			}
 
@@ -135,8 +125,7 @@ func HandlePurchaseOrderFeeByUUID(db PurchaseOrderFeeStore) http.HandlerFunc {
 				http.Error(w, "purchase order fee not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating purchase order fee", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating purchase order fee", "error", err)
 				return
 			}
 
@@ -147,14 +136,13 @@ func HandlePurchaseOrderFeeByUUID(db PurchaseOrderFeeStore) http.HandlerFunc {
 				http.Error(w, "purchase order fee not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error deleting purchase order fee", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error deleting purchase order fee", "error", err)
 				return
 			}
 
 			service.JSON(w, dto.NewPurchaseOrderFeeResponse(fee))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

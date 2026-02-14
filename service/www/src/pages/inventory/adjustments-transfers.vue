@@ -103,10 +103,6 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Adjustment Modal -->
   <v-dialog v-model="adjustDialog" max-width="500" persistent>
     <v-card>
@@ -241,37 +237,12 @@
 </template>
 
 <script lang="ts" setup>
+  import type { BeerLot, Ingredient, IngredientLot, StockLocation } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
-
-  type StockLocation = {
-    uuid: string
-    name: string
-  }
-
-  type Ingredient = {
-    uuid: string
-    name: string
-  }
-
-  type IngredientLot = {
-    uuid: string
-    ingredient_uuid: string
-    stock_location_uuid: string
-    received_amount: number
-    received_unit: string
-    current_amount: number
-    current_unit: string
-  }
-
-  type BeerLot = {
-    uuid: string
-    lot_code: string
-    stock_location_uuid: string
-    volume: number
-    volume_unit: string
-  }
+  import { normalizeDateTime, normalizeText } from '@/utils/normalize'
 
   type InventoryItem = {
     key: string
@@ -284,7 +255,15 @@
     locationName: string
   }
 
-  const { request, normalizeText, normalizeDateTime } = useInventoryApi()
+  const {
+    getStockLocations,
+    getIngredients: fetchIngredients,
+    getIngredientLots: fetchIngredientLots,
+    getBeerLots: fetchBeerLots,
+    createInventoryAdjustment,
+    createInventoryTransfer,
+  } = useInventoryApi()
+  const { showNotice } = useSnackbar()
   const { formatAmountPreferred } = useUnitPreferences()
 
   // Data
@@ -319,12 +298,6 @@
     quantity: '',
     notes: '',
     transferred_at: '',
-  })
-
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
   })
 
   const rules = {
@@ -444,12 +417,6 @@
   })
 
   // Methods
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   function getDefaultDateTime () {
     const now = new Date()
     const offset = now.getTimezoneOffset()
@@ -476,19 +443,19 @@
   }
 
   async function loadLocations () {
-    locations.value = await request<StockLocation[]>('/stock-locations')
+    locations.value = await getStockLocations()
   }
 
   async function loadIngredients () {
-    ingredients.value = await request<Ingredient[]>('/ingredients')
+    ingredients.value = await fetchIngredients()
   }
 
   async function loadIngredientLots () {
-    ingredientLots.value = await request<IngredientLot[]>('/ingredient-lots')
+    ingredientLots.value = await fetchIngredientLots()
   }
 
   async function loadBeerLots () {
-    beerLots.value = await request<BeerLot[]>('/beer-lots')
+    beerLots.value = await fetchBeerLots()
   }
 
   // Adjust dialog
@@ -525,10 +492,7 @@
         notes: normalizeText(adjustForm.notes),
         adjusted_at: normalizeDateTime(adjustForm.adjusted_at),
       }
-      await request('/inventory-adjustments', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createInventoryAdjustment(payload)
       closeAdjustDialog()
       await refreshAll()
       showNotice('Adjustment saved')
@@ -575,10 +539,7 @@
         notes: normalizeText(transferForm.notes),
         transferred_at: normalizeDateTime(transferForm.transferred_at),
       }
-      await request('/inventory-transfers', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createInventoryTransfer(payload)
       closeTransferDialog()
       await refreshAll()
       showNotice('Transfer completed')
@@ -594,23 +555,6 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 .selected-item-summary {

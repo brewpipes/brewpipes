@@ -45,7 +45,8 @@ describe('AppFooter', () => {
 
     it('renders the API link', () => {
       const wrapper = mountAppFooter()
-      const apiLink = wrapper.find('a[href="http://localhost:8080"]')
+      // API link uses window.location.origin dynamically
+      const apiLink = wrapper.find('a[href$="/api"]')
       expect(apiLink.exists()).toBe(true)
       expect(wrapper.text()).toContain('API')
     })

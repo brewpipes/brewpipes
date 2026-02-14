@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -26,8 +25,7 @@ func HandleInventoryAdjustments(db InventoryAdjustmentStore) http.HandlerFunc {
 		case http.MethodGet:
 			adjustments, err := db.ListInventoryAdjustments(r.Context())
 			if err != nil {
-				slog.Error("error listing inventory adjustments", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing inventory adjustments", "error", err)
 				return
 			}
 
@@ -56,14 +54,13 @@ func HandleInventoryAdjustments(db InventoryAdjustmentStore) http.HandlerFunc {
 
 			created, err := db.CreateInventoryAdjustment(r.Context(), adjustment)
 			if err != nil {
-				slog.Error("error creating inventory adjustment", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating inventory adjustment", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewInventoryAdjustmentResponse(created))
+			service.JSONCreated(w, dto.NewInventoryAdjustmentResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -71,11 +68,6 @@ func HandleInventoryAdjustments(db InventoryAdjustmentStore) http.HandlerFunc {
 // HandleInventoryAdjustmentByUUID handles [GET /inventory-adjustments/{uuid}].
 func HandleInventoryAdjustmentByUUID(db InventoryAdjustmentStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		adjustmentUUID := r.PathValue("uuid")
 		if adjustmentUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -87,8 +79,7 @@ func HandleInventoryAdjustmentByUUID(db InventoryAdjustmentStore) http.HandlerFu
 			http.Error(w, "inventory adjustment not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting inventory adjustment", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting inventory adjustment", "error", err)
 			return
 		}
 

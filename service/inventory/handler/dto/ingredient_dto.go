@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -14,13 +15,13 @@ type CreateIngredientRequest struct {
 }
 
 func (r CreateIngredientRequest) Validate() error {
-	if err := validateRequired(r.Name, "name"); err != nil {
+	if err := validate.Required(r.Name, "name"); err != nil {
 		return err
 	}
 	if err := validateIngredientCategory(r.Category); err != nil {
 		return err
 	}
-	if err := validateRequired(r.DefaultUnit, "default_unit"); err != nil {
+	if err := validate.Required(r.DefaultUnit, "default_unit"); err != nil {
 		return err
 	}
 

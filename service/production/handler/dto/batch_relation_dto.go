@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -15,10 +16,10 @@ type CreateBatchRelationRequest struct {
 }
 
 func (r CreateBatchRelationRequest) Validate() error {
-	if err := validateRequired(r.ParentBatchUUID, "parent_batch_uuid"); err != nil {
+	if err := validate.Required(r.ParentBatchUUID, "parent_batch_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.ChildBatchUUID, "child_batch_uuid"); err != nil {
+	if err := validate.Required(r.ChildBatchUUID, "child_batch_uuid"); err != nil {
 		return err
 	}
 	if r.ParentBatchUUID == r.ChildBatchUUID {

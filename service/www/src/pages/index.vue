@@ -173,67 +173,19 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Batch, Occupancy, Vessel, Volume } from '@/types'
+  import type { BatchProcessPhase, ProcessPhase } from '@/components/batch/types'
   import { computed, onMounted, ref } from 'vue'
-  import { useApiClient } from '@/composables/useApiClient'
-  import { useUnitPreferences, type VolumeUnit } from '@/composables/useUnitPreferences'
+  import {
+    formatDate,
+    formatDateTime,
+    useOccupancyStatusFormatters,
+    usePhaseFormatters,
+    useVesselStatusFormatters,
+  } from '@/composables/useFormatters'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { useUserSettings } from '@/composables/useUserSettings'
-
-  type ProcessPhase
-    = | 'planning'
-      | 'mashing'
-      | 'heating'
-      | 'boiling'
-      | 'cooling'
-      | 'fermenting'
-      | 'conditioning'
-      | 'packaging'
-      | 'finished'
-
-  type Batch = {
-    uuid: string
-    short_name: string
-    brew_date: string | null
-    updated_at: string
-  }
-
-  type BatchProcessPhase = {
-    uuid: string
-    batch_uuid: string
-    process_phase: ProcessPhase
-    phase_at: string
-    created_at: string
-  }
-
-  type Vessel = {
-    uuid: string
-    type: string
-    name: string
-    capacity: number
-    capacity_unit: VolumeUnit
-    status: 'active' | 'inactive' | 'retired'
-    updated_at: string
-  }
-
-  type Volume = {
-    uuid: string
-    name: string | null
-    description: string | null
-    amount: number
-    amount_unit: VolumeUnit
-    updated_at: string
-  }
-
-  type Occupancy = {
-    uuid: string
-    vessel_uuid: string
-    volume_uuid: string
-    batch_uuid: string | null
-    status: string | null
-    in_at: string
-    out_at: string | null
-    created_at: string
-    updated_at: string
-  }
 
   type BatchPhaseItem = {
     batch: Batch
@@ -257,8 +209,6 @@
     sortOrder: number
   }
 
-  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-
   const batches = ref<Batch[]>([])
   const vessels = ref<Vessel[]>([])
   const volumes = ref<Volume[]>([])
@@ -267,9 +217,12 @@
   const errorMessage = ref('')
   const loading = ref(false)
 
-  const { request } = useApiClient(apiBase)
+  const { getBatches, getVessels, getVolumes, getActiveOccupancies, request } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { breweryName } = useUserSettings()
+  const { formatPhase, getPhaseColor } = usePhaseFormatters()
+  const { formatVesselStatus } = useVesselStatusFormatters()
+  const { formatOccupancyStatus: formatOccupancyStatusLabel, getOccupancyStatusColor } = useOccupancyStatusFormatters()
 
   const volumeNameMap = computed(
     () => new Map(volumes.value.map(volume => [volume.uuid, volume.name ?? `Volume ${volume.uuid.slice(0, 8)}`])),
@@ -296,8 +249,8 @@
         batch,
         phase,
         route: `/batches/${batch.uuid}`,
-        phaseLabel: phase ? formatPhaseLabel(phase.process_phase) : 'No phase',
-        phaseTone: phase ? phaseTone(phase.process_phase) : 'secondary',
+        phaseLabel: phase ? formatPhase(phase.process_phase) : 'No phase',
+        phaseTone: phase ? getPhaseColor(phase.process_phase) : 'secondary',
         phaseAt,
       }
     }),
@@ -393,9 +346,9 @@
     errorMessage.value = ''
     try {
       const [batchData, vesselData, volumeData] = await Promise.all([
-        request<Batch[]>('/batches'),
-        request<Vessel[]>('/vessels'),
-        request<Volume[]>('/volumes'),
+        getBatches(),
+        getVessels(),
+        getVolumes(),
       ])
       batches.value = batchData
       vessels.value = vesselData
@@ -436,7 +389,7 @@
       occupancies.value = []
       return
     }
-    occupancies.value = await request<Occupancy[]>('/occupancies?active=true')
+    occupancies.value = await getActiveOccupancies()
   }
 
   function isBatchInProgress (batch: Batch, phase: BatchProcessPhase | null) {
@@ -500,94 +453,11 @@
     return formatRelativeDate(item.batch.brew_date)
   }
 
-  function formatPhaseLabel (phase: ProcessPhase) {
-    return phase
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
-  }
-
-  function phaseTone (phase: ProcessPhase) {
-    const tones: Record<ProcessPhase, string> = {
-      planning: 'info',
-      mashing: 'warning',
-      heating: 'warning',
-      boiling: 'warning',
-      cooling: 'warning',
-      fermenting: 'secondary',
-      conditioning: 'secondary',
-      packaging: 'primary',
-      finished: 'success',
-    }
-    return tones[phase] ?? 'primary'
-  }
-
-  function formatVesselStatus (status: Vessel['status']) {
-    if (status === 'inactive') {
-      return 'Inactive'
-    }
-    if (status === 'retired') {
-      return 'Retired'
-    }
-    return 'Active'
-  }
-
-  function formatOccupancyStatusLabel (status: string | null | undefined): string {
-    if (!status) {
-      return ''
-    }
-    const statusLabels: Record<string, string> = {
-      fermenting: 'Fermenting',
-      conditioning: 'Conditioning',
-      cold_crashing: 'Cold Crashing',
-      dry_hopping: 'Dry Hopping',
-      carbonating: 'Carbonating',
-      holding: 'Holding',
-      packaging: 'Packaging',
-    }
-    return statusLabels[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
-  }
-
-  function getOccupancyStatusColor (status: string | null | undefined): string {
-    if (!status) {
-      return 'grey'
-    }
-    const statusColors: Record<string, string> = {
-      fermenting: 'orange',
-      conditioning: 'blue',
-      cold_crashing: 'cyan',
-      dry_hopping: 'green',
-      carbonating: 'purple',
-      holding: 'grey',
-      packaging: 'teal',
-    }
-    return statusColors[status] ?? 'secondary'
-  }
-
-  function formatDate (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-    }).format(new Date(value))
-  }
-
   function formatBrewDate (value: string | null | undefined) {
     if (!value) {
       return 'Not set'
     }
     return formatDate(value)
-  }
-
-  function formatDateTime (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
   }
 
   function normalizeTimestamp (value: string | null | undefined, fallback: string) {
@@ -660,12 +530,6 @@
 <style scoped>
 .dashboard-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
 .hero-card {

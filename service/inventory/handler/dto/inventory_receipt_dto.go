@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/uuidutil"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -31,7 +32,7 @@ type InventoryReceiptResponse struct {
 func NewInventoryReceiptResponse(receipt storage.InventoryReceipt) InventoryReceiptResponse {
 	return InventoryReceiptResponse{
 		UUID:          receipt.UUID.String(),
-		SupplierUUID:  uuidToStringPointer(receipt.SupplierUUID),
+		SupplierUUID:  uuidutil.ToStringPointer(receipt.SupplierUUID),
 		ReferenceCode: receipt.ReferenceCode,
 		ReceivedAt:    receipt.ReceivedAt,
 		Notes:         receipt.Notes,

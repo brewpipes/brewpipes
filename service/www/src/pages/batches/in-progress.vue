@@ -43,111 +43,43 @@
     </v-row>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
-  <v-dialog v-model="createBatchDialog" :max-width="$vuetify.display.xs ? '100%' : 520">
-    <v-card>
-      <v-card-title class="text-h6">Create batch</v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="newBatch.short_name"
-          density="comfortable"
-          label="Short name"
-          placeholder="IPA 24-07"
-        />
-        <v-text-field
-          v-model="newBatch.brew_date"
-          density="comfortable"
-          label="Brew date"
-          type="date"
-        />
-        <v-autocomplete
-          v-model="newBatch.recipe_uuid"
-          clearable
-          density="comfortable"
-          hint="Optional - link this batch to a recipe"
-          item-title="title"
-          item-value="value"
-          :items="recipeSelectItems"
-          label="Recipe"
-          :loading="recipesLoading"
-          persistent-hint
-        >
-          <template #item="{ props, item }">
-            <v-list-item v-bind="props">
-              <template #subtitle>
-                <span v-if="item.raw.style">{{ item.raw.style }}</span>
-              </template>
-            </v-list-item>
-          </template>
-        </v-autocomplete>
-        <v-textarea
-          v-model="newBatch.notes"
-          auto-grow
-          density="comfortable"
-          label="Notes"
-          rows="2"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="createBatchDialog = false">Cancel</v-btn>
-        <v-btn color="primary" :disabled="!newBatch.short_name.trim()" @click="createBatch">
-          Create batch
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <BatchCreateDialog
+    v-model="createBatchDialog"
+    :recipes="recipes"
+    :recipes-loading="recipesLoading"
+    :saving="saving"
+    @submit="handleCreateBatch"
+  />
 
 </template>
 
 <script lang="ts" setup>
-  import type { Batch } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import type { Batch, Recipe } from '@/types'
+  import { computed, onMounted, ref } from 'vue'
   import BatchDetails from '@/components/BatchDetails.vue'
+  import { BatchCreateDialog, type BatchCreateForm } from '@/components/batch'
   import BatchList from '@/components/BatchList.vue'
-  import { useApiClient } from '@/composables/useApiClient'
-  import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeDateOnly, normalizeText } from '@/utils/normalize'
 
-  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-  const { request } = useApiClient(apiBase)
-  const { getRecipes } = useProductionApi()
+  const { getBatches, createBatch: createBatchApi, getRecipes } = useProductionApi()
 
   const loading = ref(false)
+  const saving = ref(false)
   const batches = ref<Batch[]>([])
   const recipes = ref<Recipe[]>([])
   const recipesLoading = ref(false)
 
   const selectedBatchUuid = ref<string | null>(null)
   const createBatchDialog = ref(false)
-
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
-  const newBatch = reactive({
-    short_name: '',
-    brew_date: '',
-    recipe_uuid: null as string | null,
-    notes: '',
-  })
+  const { showNotice } = useSnackbar()
 
   // Filter batches to only show in-progress ones
   // In-progress = not finished (phase !== 'finished')
   const inProgressBatches = computed(() => {
     return batches.value.filter(batch => batch.current_phase !== 'finished')
   })
-
-  const recipeSelectItems = computed(() =>
-    recipes.value.map(recipe => ({
-      title: recipe.name,
-      value: recipe.uuid,
-      style: recipe.style_name,
-    })),
-  )
 
   onMounted(async () => {
     await refreshAll()
@@ -159,20 +91,6 @@
 
   function clearSelection () {
     selectedBatchUuid.value = null
-  }
-
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
-  function get<T> (path: string) {
-    return request<T>(path)
-  }
-
-  function post<T> (path: string, payload: unknown) {
-    return request<T>(path, { method: 'POST', body: JSON.stringify(payload) })
   }
 
   async function refreshAll () {
@@ -192,7 +110,7 @@
   }
 
   async function loadBatches () {
-    batches.value = await get<Batch[]>('/batches')
+    batches.value = await getBatches()
   }
 
   async function loadRecipesData () {
@@ -207,40 +125,30 @@
     }
   }
 
-  async function createBatch () {
+  async function handleCreateBatch (form: BatchCreateForm) {
+    saving.value = true
     try {
       const payload = {
-        short_name: newBatch.short_name.trim(),
-        brew_date: normalizeDateOnly(newBatch.brew_date),
-        recipe_uuid: newBatch.recipe_uuid,
-        notes: normalizeText(newBatch.notes),
+        short_name: form.short_name.trim(),
+        brew_date: normalizeDateOnly(form.brew_date),
+        recipe_uuid: form.recipe_uuid,
+        notes: normalizeText(form.notes),
       }
-      const created = await post<Batch>('/batches', payload)
+      const created = await createBatchApi(payload)
       showNotice('Batch created')
-      newBatch.short_name = ''
-      newBatch.brew_date = ''
-      newBatch.recipe_uuid = null
-      newBatch.notes = ''
       await loadBatches()
       selectedBatchUuid.value = created.uuid
       createBatchDialog.value = false
     } catch (error) {
       handleError(error)
+    } finally {
+      saving.value = false
     }
   }
 
   function handleError (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error'
     showNotice(message, 'error')
-  }
-
-  function normalizeText (value: string) {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  function normalizeDateOnly (value: string) {
-    return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
   }
 </script>
 

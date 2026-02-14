@@ -37,34 +37,30 @@
         >
           {{ errorMessage }}
         </v-alert>
-        <v-table class="data-table" density="compact">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="location in locations" :key="location.uuid">
-              <td>{{ location.name }}</td>
-              <td>{{ location.location_type || 'n/a' }}</td>
-              <td>{{ location.description || 'n/a' }}</td>
-              <td>{{ formatDateTime(location.updated_at) }}</td>
-            </tr>
-            <tr v-if="locations.length === 0">
-              <td colspan="4">No stock locations yet.</td>
-            </tr>
-          </tbody>
-        </v-table>
+        <v-data-table
+          class="data-table"
+          density="compact"
+          :headers="locationHeaders"
+          item-value="uuid"
+          :items="locations"
+          :loading="loading"
+        >
+          <template #item.location_type="{ item }">
+            {{ item.location_type || 'n/a' }}
+          </template>
+          <template #item.description="{ item }">
+            {{ item.description || 'n/a' }}
+          </template>
+          <template #item.updated_at="{ item }">
+            {{ formatDateTime(item.updated_at) }}
+          </template>
+          <template #no-data>
+            <div class="text-center py-4 text-medium-emphasis">No stock locations yet.</div>
+          </template>
+        </v-data-table>
       </v-card-text>
     </v-card>
   </v-container>
-
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
 
   <!-- Create Location Dialog -->
   <v-dialog v-model="createDialog" :max-width="$vuetify.display.xs ? '100%' : 480" persistent>
@@ -109,19 +105,23 @@
 </template>
 
 <script lang="ts" setup>
+  import type { StockLocation } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
+  import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeText } from '@/utils/normalize'
 
-  type StockLocation = {
-    uuid: string
-    name: string
-    location_type: string
-    description: string
-    created_at: string
-    updated_at: string
-  }
+  const { getStockLocations, createStockLocation } = useInventoryApi()
+  const { showNotice } = useSnackbar()
 
-  const { request, normalizeText, formatDateTime } = useInventoryApi()
+  // Table configuration
+  const locationHeaders = [
+    { title: 'Name', key: 'name', sortable: true },
+    { title: 'Type', key: 'location_type', sortable: true },
+    { title: 'Description', key: 'description', sortable: false },
+    { title: 'Updated', key: 'updated_at', sortable: true },
+  ]
 
   const locations = ref<StockLocation[]>([])
   const errorMessage = ref('')
@@ -135,12 +135,6 @@
     description: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   const rules = {
     required: (v: string) => !!v?.trim() || 'Required',
   }
@@ -152,12 +146,6 @@
   onMounted(async () => {
     await loadLocations()
   })
-
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
 
   function openCreateDialog () {
     locationForm.name = ''
@@ -174,7 +162,7 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      locations.value = await request<StockLocation[]>('/stock-locations')
+      locations.value = await getStockLocations()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load locations'
       errorMessage.value = message
@@ -197,10 +185,7 @@
         location_type: normalizeText(locationForm.location_type),
         description: normalizeText(locationForm.description),
       }
-      await request<StockLocation>('/stock-locations', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createStockLocation(payload)
       closeCreateDialog()
       await loadLocations()
       showNotice('Stock location created')
@@ -216,46 +201,5 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.card-title-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.card-title-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 </style>

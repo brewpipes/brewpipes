@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-  import { onMounted } from 'vue'
+  import { onBeforeMount } from 'vue'
   import { useRouter } from 'vue-router'
 
   const router = useRouter()
 
-  onMounted(() => {
+  // Use onBeforeMount instead of onMounted to redirect before render
+  onBeforeMount(() => {
     router.replace('/vessels/active')
   })
 </script>

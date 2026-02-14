@@ -7,16 +7,6 @@ import type {
   VolumeUnit,
 } from '@/types'
 
-// Re-export unit types for backward compatibility
-export type {
-  ColorUnit,
-  GravityUnit,
-  MassUnit,
-  PressureUnit,
-  TemperatureUnit,
-  VolumeUnit,
-} from '@/types'
-
 // Unit labels for display
 export const temperatureLabels: Record<TemperatureUnit, string> = {
   c: '°C',
@@ -409,43 +399,7 @@ export function formatColor (
   return `${converted.toFixed(precision)} ${colorLabels[toUnit]}`
 }
 
-/**
- * Composable providing unit conversion utilities.
- */
-export function useUnitConversion () {
-  return {
-    // Labels
-    temperatureLabels,
-    gravityLabels,
-    volumeLabels,
-    massLabels,
-    pressureLabels,
-    colorLabels,
-
-    // Precision
-    temperaturePrecision,
-    gravityPrecision,
-    volumePrecision,
-    massPrecision,
-    pressurePrecision,
-    colorPrecision,
-    getPrecision,
-    getUnitLabel,
-
-    // Conversion functions
-    convertTemperature,
-    convertGravity,
-    convertVolume,
-    convertMass,
-    convertPressure,
-    convertColor,
-
-    // Formatting functions
-    formatTemperature,
-    formatGravity,
-    formatVolume,
-    formatMass,
-    formatPressure,
-    formatColor,
-  }
-}
+// Convention: All conversion and formatting functions are exported as standalone
+// functions (not wrapped in a composable) because they are pure functions that
+// don't require reactive context. Import them directly:
+//   import { convertTemperature, formatVolume } from '@/composables/useUnitConversion'

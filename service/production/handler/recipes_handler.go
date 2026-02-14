@@ -32,8 +32,7 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 		case http.MethodGet:
 			recipes, err := db.ListRecipes(r.Context())
 			if err != nil {
-				slog.Error("error listing recipes", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing recipes", "error", err)
 				return
 			}
 
@@ -73,37 +72,29 @@ func HandleRecipes(db RecipeStore) http.HandlerFunc {
 			}
 
 			// Resolve style UUID to internal ID if provided
-			if req.StyleUUID != nil {
-				style, err := db.GetStyleByUUID(r.Context(), *req.StyleUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "style not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving style uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if style, ok := service.ResolveFKOptional(r.Context(), w, req.StyleUUID, "style", db.GetStyleByUUID); !ok {
+				return
+			} else if req.StyleUUID != nil {
 				recipe.StyleID = &style.ID
 			}
 
 			created, err := db.CreateRecipe(r.Context(), recipe)
 			if err != nil {
-				slog.Error("error creating recipe", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating recipe", "error", err)
 				return
 			}
 
 			slog.Info("recipe created", "recipe_id", created.ID, "name", created.Name)
 
-			service.JSON(w, dto.NewRecipeResponse(created))
+			service.JSONCreated(w, dto.NewRecipeResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
 
-// HandleRecipe handles [GET /recipes/{uuid}], [PUT /recipes/{uuid}], [PATCH /recipes/{uuid}], and [DELETE /recipes/{uuid}].
-func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
+// HandleRecipeByUUID handles [GET /recipes/{uuid}], [PUT /recipes/{uuid}], [PATCH /recipes/{uuid}], and [DELETE /recipes/{uuid}].
+func HandleRecipeByUUID(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		recipeUUID := r.PathValue("uuid")
 		if recipeUUID == "" {
@@ -118,8 +109,7 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting recipe", "error", err, "recipe_uuid", recipeUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting recipe", "error", err, "recipe_uuid", recipeUUID)
 				return
 			}
 
@@ -159,16 +149,9 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 			}
 
 			// Resolve style UUID to internal ID if provided
-			if req.StyleUUID != nil {
-				style, err := db.GetStyleByUUID(r.Context(), *req.StyleUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "style not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving style uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if style, ok := service.ResolveFKOptional(r.Context(), w, req.StyleUUID, "style", db.GetStyleByUUID); !ok {
+				return
+			} else if req.StyleUUID != nil {
 				recipe.StyleID = &style.ID
 			}
 
@@ -177,8 +160,7 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating recipe", "error", err, "recipe_uuid", recipeUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating recipe", "error", err, "recipe_uuid", recipeUUID)
 				return
 			}
 
@@ -201,8 +183,7 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 				http.Error(w, "recipe not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error deleting recipe", "error", err, "recipe_uuid", recipeUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error deleting recipe", "error", err, "recipe_uuid", recipeUUID)
 				return
 			}
 
@@ -210,7 +191,7 @@ func HandleRecipe(db RecipeStore, batches RecipeBatchCounter) http.HandlerFunc {
 
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

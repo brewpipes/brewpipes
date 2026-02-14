@@ -253,11 +253,7 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { useFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
-  import {
-    type BatchSummary,
-    OCCUPANCY_STATUS_VALUES,
-    type OccupancyStatus,
-  } from '@/composables/useProductionApi'
+  import { type BatchSummary, type OccupancyStatus, OCCUPANCY_STATUS_VALUES } from '@/types'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   defineProps<{

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -36,8 +35,7 @@ func HandleBatchRelations(db BatchRelationStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error listing batch relations", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing batch relations", "error", err)
 				return
 			}
 
@@ -54,24 +52,14 @@ func HandleBatchRelations(db BatchRelationStore) http.HandlerFunc {
 			}
 
 			// Resolve parent batch UUID to internal ID
-			parentBatch, err := db.GetBatchByUUID(r.Context(), req.ParentBatchUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "parent batch not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving parent batch uuid", "error", err)
-				service.InternalError(w, err.Error())
+			parentBatch, ok := service.ResolveFK(r.Context(), w, req.ParentBatchUUID, "parent batch", db.GetBatchByUUID)
+			if !ok {
 				return
 			}
 
 			// Resolve child batch UUID to internal ID
-			childBatch, err := db.GetBatchByUUID(r.Context(), req.ChildBatchUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "child batch not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving child batch uuid", "error", err)
-				service.InternalError(w, err.Error())
+			childBatch, ok := service.ResolveFK(r.Context(), w, req.ChildBatchUUID, "child batch", db.GetBatchByUUID)
+			if !ok {
 				return
 			}
 
@@ -82,29 +70,21 @@ func HandleBatchRelations(db BatchRelationStore) http.HandlerFunc {
 			}
 
 			// Resolve optional volume UUID to internal ID
-			if req.VolumeUUID != nil {
-				vol, err := db.GetVolumeByUUID(r.Context(), *req.VolumeUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "volume not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving volume uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if vol, ok := service.ResolveFKOptional(r.Context(), w, req.VolumeUUID, "volume", db.GetVolumeByUUID); !ok {
+				return
+			} else if req.VolumeUUID != nil {
 				relation.VolumeID = &vol.ID
 			}
 
 			created, err := db.CreateBatchRelation(r.Context(), relation)
 			if err != nil {
-				slog.Error("error creating batch relation", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating batch relation", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewBatchRelationResponse(created))
+			service.JSONCreated(w, dto.NewBatchRelationResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -112,11 +92,6 @@ func HandleBatchRelations(db BatchRelationStore) http.HandlerFunc {
 // HandleBatchRelationByUUID handles [GET /batch-relations/{uuid}].
 func HandleBatchRelationByUUID(db BatchRelationStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		relationUUID := r.PathValue("uuid")
 		if relationUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -128,8 +103,7 @@ func HandleBatchRelationByUUID(db BatchRelationStore) http.HandlerFunc {
 			http.Error(w, "batch relation not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting batch relation", "error", err, "relation_uuid", relationUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting batch relation", "error", err, "relation_uuid", relationUUID)
 			return
 		}
 

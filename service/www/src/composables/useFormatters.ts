@@ -1,71 +1,71 @@
 import type { OccupancyStatus, VesselStatus, VesselType } from '@/types'
 
-// Re-export VesselStatus for backward compatibility
-export type { VesselStatus, VesselType } from '@/types'
+/**
+ * Format a date/time string to a localized medium date and short time.
+ * Standalone export for use outside Vue component setup context.
+ */
+export function formatDateTime (value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown'
+  }
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+/**
+ * Format a date string to a localized medium date.
+ * Standalone export for use outside Vue component setup context.
+ */
+export function formatDate (value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown'
+  }
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+  }).format(new Date(value))
+}
+
+/**
+ * Format a date/time string to a relative time (e.g., "5m ago", "2d ago").
+ * Standalone export for use outside Vue component setup context.
+ */
+export function formatRelativeTime (value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown'
+  }
+
+  const date = new Date(value)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffSecs < 60) {
+    return 'just now'
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h ago`
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d ago`
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+  }).format(date)
+}
 
 /**
  * Shared formatting utilities for dates, times, and domain-specific values.
  */
 export function useFormatters () {
-  /**
-   * Format a date/time string to a localized medium date and short time.
-   */
-  function formatDateTime (value: string | null | undefined): string {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
-
-  /**
-   * Format a date string to a localized medium date.
-   */
-  function formatDate (value: string | null | undefined): string {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-    }).format(new Date(value))
-  }
-
-  /**
-   * Format a date/time string to a relative time (e.g., "5m ago", "2d ago").
-   */
-  function formatRelativeTime (value: string | null | undefined): string {
-    if (!value) {
-      return 'Unknown'
-    }
-
-    const date = new Date(value)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffSecs = Math.floor(diffMs / 1000)
-    const diffMins = Math.floor(diffSecs / 60)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffSecs < 60) {
-      return 'just now'
-    }
-    if (diffMins < 60) {
-      return `${diffMins}m ago`
-    }
-    if (diffHours < 24) {
-      return `${diffHours}h ago`
-    }
-    if (diffDays < 7) {
-      return `${diffDays}d ago`
-    }
-
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-    }).format(date)
-  }
-
   return {
     formatDateTime,
     formatDate,
@@ -180,6 +180,46 @@ export function useOccupancyStatusFormatters () {
     formatOccupancyStatus,
     getOccupancyStatusColor,
     getOccupancyStatusIcon,
+  }
+}
+
+// Batch phase formatting
+const PHASE_LABELS: Record<string, string> = {
+  planning: 'Planning',
+  mashing: 'Mashing',
+  heating: 'Heating',
+  boiling: 'Boiling',
+  cooling: 'Cooling',
+  fermenting: 'Fermenting',
+  conditioning: 'Conditioning',
+  packaging: 'Packaging',
+  finished: 'Finished',
+}
+
+const PHASE_COLORS: Record<string, string> = {
+  planning: 'grey',
+  mashing: 'orange',
+  heating: 'deep-orange',
+  boiling: 'red',
+  cooling: 'cyan',
+  fermenting: 'primary',
+  conditioning: 'teal',
+  packaging: 'blue',
+  finished: 'success',
+}
+
+export function usePhaseFormatters () {
+  function formatPhase (phase: string): string {
+    return PHASE_LABELS[phase] ?? phase.charAt(0).toUpperCase() + phase.slice(1)
+  }
+
+  function getPhaseColor (phase: string): string {
+    return PHASE_COLORS[phase] ?? 'secondary'
+  }
+
+  return {
+    formatPhase,
+    getPhaseColor,
   }
 }
 

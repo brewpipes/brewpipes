@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -38,8 +37,7 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 			if ingredientValue != "" {
 				lots, err := db.ListIngredientLotsByIngredient(r.Context(), ingredientValue)
 				if err != nil {
-					slog.Error("error listing ingredient lots", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing ingredient lots by ingredient", "error", err)
 					return
 				}
 
@@ -49,8 +47,7 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 			if receiptValue != "" {
 				lots, err := db.ListIngredientLotsByReceipt(r.Context(), receiptValue)
 				if err != nil {
-					slog.Error("error listing ingredient lots", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing ingredient lots by receipt", "error", err)
 					return
 				}
 
@@ -60,8 +57,7 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 
 			lots, err := db.ListIngredientLots(r.Context())
 			if err != nil {
-				slog.Error("error listing ingredient lots", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing ingredient lots", "error", err)
 				return
 			}
 
@@ -93,28 +89,16 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 			}
 
 			// Resolve ingredient UUID to internal ID
-			ingredient, err := db.GetIngredientByUUID(r.Context(), req.IngredientUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "ingredient not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving ingredient uuid", "error", err)
-				service.InternalError(w, err.Error())
+			ingredient, ok := service.ResolveFK(r.Context(), w, req.IngredientUUID, "ingredient", db.GetIngredientByUUID)
+			if !ok {
 				return
 			}
 
 			// Resolve receipt UUID to internal ID if provided
 			var receiptID *int64
-			if req.ReceiptUUID != nil {
-				receipt, err := db.GetInventoryReceiptByUUID(r.Context(), *req.ReceiptUUID)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "receipt not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving receipt uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if receipt, ok := service.ResolveFKOptional(r.Context(), w, req.ReceiptUUID, "receipt", db.GetInventoryReceiptByUUID); !ok {
+				return
+			} else if req.ReceiptUUID != nil {
 				receiptID = &receipt.ID
 			}
 
@@ -136,14 +120,13 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 
 			created, err := db.CreateIngredientLot(r.Context(), lot)
 			if err != nil {
-				slog.Error("error creating ingredient lot", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating ingredient lot", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewIngredientLotResponse(created))
+			service.JSONCreated(w, dto.NewIngredientLotResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -151,11 +134,6 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 // HandleIngredientLotByUUID handles [GET /ingredient-lots/{uuid}].
 func HandleIngredientLotByUUID(db IngredientLotStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		lotUUID := r.PathValue("uuid")
 		if lotUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -167,8 +145,7 @@ func HandleIngredientLotByUUID(db IngredientLotStore) http.HandlerFunc {
 			http.Error(w, "ingredient lot not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting ingredient lot", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting ingredient lot", "error", err)
 			return
 		}
 

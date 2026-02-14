@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -13,7 +14,7 @@ type CreateIngredientLotMaltDetailRequest struct {
 }
 
 func (r CreateIngredientLotMaltDetailRequest) Validate() error {
-	if err := validateRequired(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
+	if err := validate.Required(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
 		return err
 	}
 	if r.MoisturePercent != nil && (*r.MoisturePercent < 0 || *r.MoisturePercent > 100) {
@@ -50,7 +51,7 @@ type CreateIngredientLotHopDetailRequest struct {
 }
 
 func (r CreateIngredientLotHopDetailRequest) Validate() error {
-	if err := validateRequired(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
+	if err := validate.Required(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
 		return err
 	}
 	if r.AlphaAcid != nil && (*r.AlphaAcid < 0 || *r.AlphaAcid > 100) {
@@ -92,7 +93,7 @@ type CreateIngredientLotYeastDetailRequest struct {
 }
 
 func (r CreateIngredientLotYeastDetailRequest) Validate() error {
-	if err := validateRequired(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
+	if err := validate.Required(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
 		return err
 	}
 	if r.Viability != nil && (*r.Viability < 0 || *r.Viability > 100) {

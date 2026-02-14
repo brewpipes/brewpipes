@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -13,7 +14,7 @@ type CreateBatchProcessPhaseRequest struct {
 }
 
 func (r CreateBatchProcessPhaseRequest) Validate() error {
-	if err := validateRequired(r.BatchUUID, "batch_uuid"); err != nil {
+	if err := validate.Required(r.BatchUUID, "batch_uuid"); err != nil {
 		return err
 	}
 	if err := validateProcessPhase(r.ProcessPhase); err != nil {

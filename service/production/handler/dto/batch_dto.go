@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -14,7 +15,7 @@ type CreateBatchRequest struct {
 }
 
 func (r CreateBatchRequest) Validate() error {
-	return validateRequired(r.ShortName, "short_name")
+	return validate.Required(r.ShortName, "short_name")
 }
 
 type UpdateBatchRequest struct {
@@ -25,7 +26,7 @@ type UpdateBatchRequest struct {
 }
 
 func (r UpdateBatchRequest) Validate() error {
-	return validateRequired(r.ShortName, "short_name")
+	return validate.Required(r.ShortName, "short_name")
 }
 
 type BatchResponse struct {

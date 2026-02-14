@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"github.com/gofrs/uuid/v5"
 )
 
@@ -17,8 +15,4 @@ func parseUUIDPointer(value *string) (*uuid.UUID, error) {
 	}
 
 	return &parsed, nil
-}
-
-func methodNotAllowed(w http.ResponseWriter) {
-	http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 }

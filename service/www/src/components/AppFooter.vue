@@ -18,7 +18,7 @@
         </v-btn>
         <v-btn
           class="text-caption"
-          href="http://localhost:8080"
+          :href="apiUrl"
           rel="noopener noreferrer"
           size="small"
           target="_blank"
@@ -32,7 +32,9 @@
 </template>
 
 <script setup lang="ts">
-  //
+  import { computed } from 'vue'
+
+  const apiUrl = computed(() => `${window.location.origin}/api`)
 </script>
 
 <style scoped>

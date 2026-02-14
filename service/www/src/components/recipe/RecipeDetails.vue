@@ -172,10 +172,6 @@
     </v-card-text>
   </v-card>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Edit Recipe Dialog -->
   <RecipeEditDialog
     v-model="editDialog"
@@ -207,18 +203,19 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
   import { srmToColor, useBrewingFormatters } from '@/composables/useFormatters'
-  import {
-    type CreateRecipeIngredientRequest,
-    type Recipe,
-    type RecipeIngredient,
-    type RecipeIngredientType,
-    type Style,
-    type UpdateRecipeIngredientRequest,
-    type UpdateRecipeRequest,
-    useProductionApi,
-  } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import type {
+    CreateRecipeIngredientRequest,
+    Recipe,
+    RecipeIngredient,
+    RecipeIngredientType,
+    Style,
+    UpdateRecipeIngredientRequest,
+    UpdateRecipeRequest,
+  } from '@/types'
+  import { useProductionApi } from '@/composables/useProductionApi'
   import RecipeDeleteDialog from './RecipeDeleteDialog.vue'
   import RecipeEditDialog from './RecipeEditDialog.vue'
   import RecipeFermentablesTab from './RecipeFermentablesTab.vue'
@@ -248,6 +245,8 @@
     updateRecipeIngredient,
     deleteRecipeIngredient,
   } = useProductionApi()
+
+  const { showNotice } = useSnackbar()
 
   const {
     formatGravity,
@@ -280,12 +279,6 @@
   // Error states for dialogs
   const editRecipeError = ref('')
   const deleteRecipeError = ref('')
-
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
 
   // Computed ingredient lists
   const fermentables = computed(() =>
@@ -320,12 +313,6 @@
   })
 
   // Methods
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function refresh () {
     refreshing.value = true
     try {

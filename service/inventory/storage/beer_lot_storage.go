@@ -17,7 +17,7 @@ func (c *Client) CreateBeerLot(ctx context.Context, lot BeerLot) (BeerLot, error
 		packagedAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO beer_lot (
 			production_batch_uuid,
 			lot_code,
@@ -49,7 +49,7 @@ func (c *Client) CreateBeerLot(ctx context.Context, lot BeerLot) (BeerLot, error
 
 func (c *Client) GetBeerLot(ctx context.Context, id int64) (BeerLot, error) {
 	var lot BeerLot
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, production_batch_uuid, lot_code, packaged_at, notes, created_at, updated_at, deleted_at
 		FROM beer_lot
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -77,7 +77,7 @@ func (c *Client) GetBeerLot(ctx context.Context, id int64) (BeerLot, error) {
 
 func (c *Client) GetBeerLotByUUID(ctx context.Context, lotUUID string) (BeerLot, error) {
 	var lot BeerLot
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, production_batch_uuid, lot_code, packaged_at, notes, created_at, updated_at, deleted_at
 		FROM beer_lot
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -104,7 +104,7 @@ func (c *Client) GetBeerLotByUUID(ctx context.Context, lotUUID string) (BeerLot,
 }
 
 func (c *Client) ListBeerLots(ctx context.Context) ([]BeerLot, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, production_batch_uuid, lot_code, packaged_at, notes, created_at, updated_at, deleted_at
 		FROM beer_lot
 		WHERE deleted_at IS NULL
@@ -141,7 +141,7 @@ func (c *Client) ListBeerLots(ctx context.Context) ([]BeerLot, error) {
 }
 
 func (c *Client) ListBeerLotsByBatchUUID(ctx context.Context, batchUUID uuid.UUID) ([]BeerLot, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, production_batch_uuid, lot_code, packaged_at, notes, created_at, updated_at, deleted_at
 		FROM beer_lot
 		WHERE production_batch_uuid = $1 AND deleted_at IS NULL

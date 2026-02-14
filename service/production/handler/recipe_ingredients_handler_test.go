@@ -18,9 +18,9 @@ import (
 // mockRecipeIngredientStore implements RecipeIngredientStore for testing.
 type mockRecipeIngredientStore struct {
 	ListRecipeIngredientsFunc  func(ctx context.Context, recipeUUID string) ([]storage.RecipeIngredient, error)
-	GetRecipeIngredientFunc    func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error)
-	CreateRecipeIngredientFunc func(ctx context.Context, ri *storage.RecipeIngredient) error
-	UpdateRecipeIngredientFunc func(ctx context.Context, ingredientUUID string, ri *storage.RecipeIngredient) error
+	GetRecipeIngredientFunc    func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error)
+	CreateRecipeIngredientFunc func(ctx context.Context, ri storage.RecipeIngredient) (storage.RecipeIngredient, error)
+	UpdateRecipeIngredientFunc func(ctx context.Context, ingredientUUID string, ri storage.RecipeIngredient) (storage.RecipeIngredient, error)
 	DeleteRecipeIngredientFunc func(ctx context.Context, ingredientUUID string) error
 }
 
@@ -31,27 +31,27 @@ func (m *mockRecipeIngredientStore) ListRecipeIngredients(ctx context.Context, r
 	return nil, nil
 }
 
-func (m *mockRecipeIngredientStore) GetRecipeIngredient(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
+func (m *mockRecipeIngredientStore) GetRecipeIngredient(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
 	if m.GetRecipeIngredientFunc != nil {
 		return m.GetRecipeIngredientFunc(ctx, ingredientUUID)
 	}
-	return nil, service.ErrNotFound
+	return storage.RecipeIngredient{}, service.ErrNotFound
 }
 
-func (m *mockRecipeIngredientStore) CreateRecipeIngredient(ctx context.Context, ri *storage.RecipeIngredient) error {
+func (m *mockRecipeIngredientStore) CreateRecipeIngredient(ctx context.Context, ri storage.RecipeIngredient) (storage.RecipeIngredient, error) {
 	if m.CreateRecipeIngredientFunc != nil {
 		return m.CreateRecipeIngredientFunc(ctx, ri)
 	}
 	ri.ID = 1
 	ri.UUID = uuid.Must(uuid.NewV4())
-	return nil
+	return ri, nil
 }
 
-func (m *mockRecipeIngredientStore) UpdateRecipeIngredient(ctx context.Context, ingredientUUID string, ri *storage.RecipeIngredient) error {
+func (m *mockRecipeIngredientStore) UpdateRecipeIngredient(ctx context.Context, ingredientUUID string, ri storage.RecipeIngredient) (storage.RecipeIngredient, error) {
 	if m.UpdateRecipeIngredientFunc != nil {
 		return m.UpdateRecipeIngredientFunc(ctx, ingredientUUID, ri)
 	}
-	return nil
+	return ri, nil
 }
 
 func (m *mockRecipeIngredientStore) DeleteRecipeIngredient(ctx context.Context, ingredientUUID string) error {
@@ -180,7 +180,7 @@ func TestHandleRecipeIngredients_Create(t *testing.T) {
 				AmountUnit:     "kg",
 				UseStage:       "mash",
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusCreated,
 		},
 		{
 			name:       "success - all fields",
@@ -197,7 +197,7 @@ func TestHandleRecipeIngredients_Create(t *testing.T) {
 				SortOrder:             intPtr(10),
 				Notes:                 strPtr("Columbus for bittering"),
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusCreated,
 		},
 		{
 			name:       "validation error - invalid ingredient_type",
@@ -308,8 +308,8 @@ func TestHandleRecipeIngredient_Get(t *testing.T) {
 			recipeUUID:     recipeUUID,
 			ingredientUUID: ingredientUUID,
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return &storage.RecipeIngredient{
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{
 						RecipeID:       1,
 						IngredientType: "fermentable",
 						Amount:         10.0,
@@ -326,8 +326,8 @@ func TestHandleRecipeIngredient_Get(t *testing.T) {
 			recipeUUID:     recipeUUID,
 			ingredientUUID: "660e8400-e29b-41d4-a716-446655440999",
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return nil, service.ErrNotFound
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{}, service.ErrNotFound
 				}
 			},
 			expectedStatus: http.StatusNotFound,
@@ -337,8 +337,8 @@ func TestHandleRecipeIngredient_Get(t *testing.T) {
 			recipeUUID:     recipeUUID,
 			ingredientUUID: ingredientUUID,
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return &storage.RecipeIngredient{
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{
 						RecipeID:       2, // Different recipe (mock returns ID=1)
 						IngredientType: "fermentable",
 						Amount:         10.0,
@@ -415,8 +415,8 @@ func TestHandleRecipeIngredient_Update(t *testing.T) {
 				UseStage:       "mash",
 			},
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return &storage.RecipeIngredient{
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{
 						RecipeID:       1,
 						IngredientType: "fermentable",
 						Amount:         10.0,
@@ -439,8 +439,8 @@ func TestHandleRecipeIngredient_Update(t *testing.T) {
 				UseStage:       "mash",
 			},
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return nil, service.ErrNotFound
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{}, service.ErrNotFound
 				}
 			},
 			expectedStatus: http.StatusNotFound,
@@ -456,8 +456,8 @@ func TestHandleRecipeIngredient_Update(t *testing.T) {
 				UseStage:       "mash",
 			},
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return &storage.RecipeIngredient{
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{
 						RecipeID:       1,
 						IngredientType: "fermentable",
 						Amount:         10.0,
@@ -517,8 +517,8 @@ func TestHandleRecipeIngredient_Delete(t *testing.T) {
 			recipeUUID:     recipeUUID,
 			ingredientUUID: ingredientUUID,
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return &storage.RecipeIngredient{
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{
 						RecipeID:       1,
 						IngredientType: "fermentable",
 						Amount:         10.0,
@@ -535,8 +535,8 @@ func TestHandleRecipeIngredient_Delete(t *testing.T) {
 			recipeUUID:     recipeUUID,
 			ingredientUUID: "660e8400-e29b-41d4-a716-446655440999",
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return nil, service.ErrNotFound
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{}, service.ErrNotFound
 				}
 			},
 			expectedStatus: http.StatusNotFound,
@@ -546,8 +546,8 @@ func TestHandleRecipeIngredient_Delete(t *testing.T) {
 			recipeUUID:     recipeUUID,
 			ingredientUUID: ingredientUUID,
 			setupStore: func(m *mockRecipeIngredientStore) {
-				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error) {
-					return &storage.RecipeIngredient{
+				m.GetRecipeIngredientFunc = func(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error) {
+					return storage.RecipeIngredient{
 						RecipeID:       2, // Different recipe (mock returns ID=1)
 						IngredientType: "fermentable",
 						Amount:         10.0,

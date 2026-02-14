@@ -1,58 +1,22 @@
 package storage
 
 import (
-	"context"
 	"embed"
-	"fmt"
-	"log/slog"
 
 	"github.com/brewpipes/brewpipes/internal/database"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
 
+// Client is the inventory service storage client.
 type Client struct {
-	dsn string
-	db  *pgxpool.Pool
+	*database.BaseClient
 }
 
-func New(ctx context.Context, dsn string) (*Client, error) {
-	pool, err := pgxpool.New(ctx, dsn)
-	if err != nil {
-		return nil, fmt.Errorf("creating DB connection pool: %w", err)
-	}
-
+// New creates a new inventory storage Client.
+func New(dsn string) *Client {
 	return &Client{
-		dsn: dsn,
-		db:  pool,
-	}, nil
-}
-
-func (c *Client) Start(ctx context.Context) error {
-	if err := c.db.Ping(ctx); err != nil {
-		return fmt.Errorf("pinging Postgres: %w", err)
+		BaseClient: database.NewBaseClient(dsn, migrations, "inventory_schema_migrations", "inventory"),
 	}
-
-	if err := database.Migrate(
-		migrations,
-		"migrations",
-		database.MigrationDSN(c.dsn, "inventory_schema_migrations"),
-	); err != nil {
-		return fmt.Errorf("migrating DB: %w", err)
-	}
-
-	go func() {
-		<-ctx.Done()
-		slog.Info("closing inventory service DB pool")
-		c.db.Close()
-	}()
-
-	return nil
-}
-
-func (c *Client) Close() error {
-	c.db.Close()
-	return nil
 }

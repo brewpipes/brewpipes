@@ -16,7 +16,7 @@ func (c *Client) CreateInventoryTransfer(ctx context.Context, transfer Inventory
 		transferredAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO inventory_transfer (
 			source_location_id,
 			dest_location_id,
@@ -50,7 +50,7 @@ func (c *Client) CreateInventoryTransfer(ctx context.Context, transfer Inventory
 
 func (c *Client) GetInventoryTransfer(ctx context.Context, id int64) (InventoryTransfer, error) {
 	var transfer InventoryTransfer
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT t.id, t.uuid, t.source_location_id, sl.uuid, t.dest_location_id, dl.uuid,
 		       t.transferred_at, t.notes, t.created_at, t.updated_at, t.deleted_at
 		FROM inventory_transfer t
@@ -83,7 +83,7 @@ func (c *Client) GetInventoryTransfer(ctx context.Context, id int64) (InventoryT
 
 func (c *Client) GetInventoryTransferByUUID(ctx context.Context, transferUUID string) (InventoryTransfer, error) {
 	var transfer InventoryTransfer
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT t.id, t.uuid, t.source_location_id, sl.uuid, t.dest_location_id, dl.uuid,
 		       t.transferred_at, t.notes, t.created_at, t.updated_at, t.deleted_at
 		FROM inventory_transfer t
@@ -115,7 +115,7 @@ func (c *Client) GetInventoryTransferByUUID(ctx context.Context, transferUUID st
 }
 
 func (c *Client) ListInventoryTransfers(ctx context.Context) ([]InventoryTransfer, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT t.id, t.uuid, t.source_location_id, sl.uuid, t.dest_location_id, dl.uuid,
 		       t.transferred_at, t.notes, t.created_at, t.updated_at, t.deleted_at
 		FROM inventory_transfer t
@@ -159,11 +159,11 @@ func (c *Client) ListInventoryTransfers(ctx context.Context) ([]InventoryTransfe
 // resolveTransferLocationUUIDs resolves source and dest location UUIDs after INSERT.
 func (c *Client) resolveTransferLocationUUIDs(ctx context.Context, transfer *InventoryTransfer) {
 	var srcUUID, dstUUID string
-	err := c.db.QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.SourceLocationID).Scan(&srcUUID)
+	err := c.DB().QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.SourceLocationID).Scan(&srcUUID)
 	if err == nil {
 		transfer.SourceLocationUUID = srcUUID
 	}
-	err = c.db.QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.DestLocationID).Scan(&dstUUID)
+	err = c.DB().QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.DestLocationID).Scan(&dstUUID)
 	if err == nil {
 		transfer.DestLocationUUID = dstUUID
 	}

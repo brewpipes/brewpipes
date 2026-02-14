@@ -7,14 +7,6 @@ import (
 	"github.com/brewpipes/brewpipes/service/procurement/storage"
 )
 
-func validateRequired(value, field string) error {
-	if strings.TrimSpace(value) == "" {
-		return fmt.Errorf("%s is required", field)
-	}
-
-	return nil
-}
-
 func validatePurchaseOrderStatus(status string) error {
 	switch status {
 	case storage.PurchaseOrderStatusDraft,

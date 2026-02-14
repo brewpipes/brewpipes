@@ -1,36 +1,25 @@
+import type {
+  BeerLot,
+  Ingredient,
+  IngredientLot,
+  IngredientLotHopDetail,
+  IngredientLotMaltDetail,
+  IngredientLotYeastDetail,
+  InventoryAdjustment,
+  InventoryMovement,
+  InventoryReceipt,
+  InventoryTransfer,
+  InventoryUsage,
+  StockLocation,
+} from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
+import { formatDateTime } from '@/composables/useFormatters'
+import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
 const inventoryApiBase = import.meta.env.VITE_INVENTORY_API_URL ?? '/api'
 
 export function useInventoryApi () {
   const { request } = useApiClient(inventoryApiBase)
-
-  const normalizeText = (value: string) => {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  const normalizeDateTime = (value: string) => {
-    return value ? new Date(value).toISOString() : null
-  }
-
-  const toNumber = (value: string | number | null) => {
-    if (value === null || value === undefined || value === '') {
-      return null
-    }
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  const formatDateTime = (value: string | null | undefined) => {
-    if (!value) {
-      return 'n/a'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
 
   const formatAmount = (amount: number | null | undefined, unit: string | null | undefined) => {
     if (amount === null || amount === undefined) {
@@ -38,6 +27,107 @@ export function useInventoryApi () {
     }
     return `${amount} ${unit ?? ''}`.trim()
   }
+
+  // Ingredients API
+  const getIngredients = () => request<Ingredient[]>('/ingredients')
+  const createIngredient = (data: Record<string, unknown>) =>
+    request<Ingredient>('/ingredients', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Ingredient Lots API
+  const getIngredientLots = () => request<IngredientLot[]>('/ingredient-lots')
+  const getIngredientLot = (uuid: string) => request<IngredientLot>(`/ingredient-lots/${uuid}`)
+  const createIngredientLot = (data: Record<string, unknown>) =>
+    request<IngredientLot>('/ingredient-lots', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Ingredient Lot Details API
+  const getIngredientLotMaltDetail = (ingredientLotUuid: string) =>
+    request<IngredientLotMaltDetail>(`/ingredient-lot-malt-details?ingredient_lot_uuid=${ingredientLotUuid}`)
+  const createIngredientLotMaltDetail = (data: Record<string, unknown>) =>
+    request<IngredientLotMaltDetail>('/ingredient-lot-malt-details', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const getIngredientLotHopDetail = (ingredientLotUuid: string) =>
+    request<IngredientLotHopDetail>(`/ingredient-lot-hop-details?ingredient_lot_uuid=${ingredientLotUuid}`)
+  const createIngredientLotHopDetail = (data: Record<string, unknown>) =>
+    request<IngredientLotHopDetail>('/ingredient-lot-hop-details', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const getIngredientLotYeastDetail = (ingredientLotUuid: string) =>
+    request<IngredientLotYeastDetail>(`/ingredient-lot-yeast-details?ingredient_lot_uuid=${ingredientLotUuid}`)
+  const createIngredientLotYeastDetail = (data: Record<string, unknown>) =>
+    request<IngredientLotYeastDetail>('/ingredient-lot-yeast-details', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Stock Locations API
+  const getStockLocations = () => request<StockLocation[]>('/stock-locations')
+  const createStockLocation = (data: Record<string, unknown>) =>
+    request<StockLocation>('/stock-locations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Inventory Receipts API
+  const getInventoryReceipts = () => request<InventoryReceipt[]>('/inventory-receipts')
+  const createInventoryReceipt = (data: Record<string, unknown>) =>
+    request<InventoryReceipt>('/inventory-receipts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Inventory Usages API
+  const getInventoryUsages = () => request<InventoryUsage[]>('/inventory-usage')
+  const createInventoryUsage = (data: Record<string, unknown>) =>
+    request<InventoryUsage>('/inventory-usage', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Inventory Adjustments API
+  const getInventoryAdjustments = () => request<InventoryAdjustment[]>('/inventory-adjustments')
+  const createInventoryAdjustment = (data: Record<string, unknown>) =>
+    request<InventoryAdjustment>('/inventory-adjustments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Inventory Transfers API
+  const getInventoryTransfers = () => request<InventoryTransfer[]>('/inventory-transfers')
+  const createInventoryTransfer = (data: Record<string, unknown>) =>
+    request<InventoryTransfer>('/inventory-transfers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Inventory Movements API
+  const getInventoryMovements = (filters?: { ingredient_lot_uuid?: string, beer_lot_uuid?: string }) => {
+    const query = new URLSearchParams()
+    if (filters?.ingredient_lot_uuid) {
+      query.set('ingredient_lot_uuid', filters.ingredient_lot_uuid)
+    }
+    if (filters?.beer_lot_uuid) {
+      query.set('beer_lot_uuid', filters.beer_lot_uuid)
+    }
+    const path = query.toString() ? `/inventory-movements?${query.toString()}` : '/inventory-movements'
+    return request<InventoryMovement[]>(path)
+  }
+
+  // Beer Lots API
+  const getBeerLots = () => request<BeerLot[]>('/beer-lots')
+  const createBeerLot = (data: Record<string, unknown>) =>
+    request<BeerLot>('/beer-lots', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
 
   return {
     apiBase: inventoryApiBase,
@@ -47,5 +137,39 @@ export function useInventoryApi () {
     toNumber,
     formatDateTime,
     formatAmount,
+    // Ingredients
+    getIngredients,
+    createIngredient,
+    // Ingredient Lots
+    getIngredientLots,
+    getIngredientLot,
+    createIngredientLot,
+    // Ingredient Lot Details
+    getIngredientLotMaltDetail,
+    createIngredientLotMaltDetail,
+    getIngredientLotHopDetail,
+    createIngredientLotHopDetail,
+    getIngredientLotYeastDetail,
+    createIngredientLotYeastDetail,
+    // Stock Locations
+    getStockLocations,
+    createStockLocation,
+    // Inventory Receipts
+    getInventoryReceipts,
+    createInventoryReceipt,
+    // Inventory Usages
+    getInventoryUsages,
+    createInventoryUsage,
+    // Inventory Adjustments
+    getInventoryAdjustments,
+    createInventoryAdjustment,
+    // Inventory Transfers
+    getInventoryTransfers,
+    createInventoryTransfer,
+    // Inventory Movements
+    getInventoryMovements,
+    // Beer Lots
+    getBeerLots,
+    createBeerLot,
   }
 }

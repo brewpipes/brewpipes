@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,7 +20,7 @@ func (c *Client) CreateInventoryReceipt(ctx context.Context, receipt InventoryRe
 
 	var supplierUUID pgtype.UUID
 	var purchaseOrderUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO inventory_receipt (
 			supplier_uuid,
 			purchase_order_uuid,
@@ -28,8 +29,8 @@ func (c *Client) CreateInventoryReceipt(ctx context.Context, receipt InventoryRe
 			notes
 		) VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at`,
-		uuidParam(receipt.SupplierUUID),
-		uuidParam(receipt.PurchaseOrderUUID),
+		database.UUIDParam(receipt.SupplierUUID),
+		database.UUIDParam(receipt.PurchaseOrderUUID),
 		receipt.ReferenceCode,
 		receivedAt,
 		receipt.Notes,
@@ -49,8 +50,8 @@ func (c *Client) CreateInventoryReceipt(ctx context.Context, receipt InventoryRe
 		return InventoryReceipt{}, fmt.Errorf("creating inventory receipt: %w", err)
 	}
 
-	assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
-	assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
+	database.AssignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+	database.AssignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 	return receipt, nil
 }
 
@@ -58,7 +59,7 @@ func (c *Client) GetInventoryReceipt(ctx context.Context, id int64) (InventoryRe
 	var receipt InventoryReceipt
 	var supplierUUID pgtype.UUID
 	var purchaseOrderUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_receipt
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -82,8 +83,8 @@ func (c *Client) GetInventoryReceipt(ctx context.Context, id int64) (InventoryRe
 		return InventoryReceipt{}, fmt.Errorf("getting inventory receipt: %w", err)
 	}
 
-	assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
-	assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
+	database.AssignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+	database.AssignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 	return receipt, nil
 }
 
@@ -91,7 +92,7 @@ func (c *Client) GetInventoryReceiptByUUID(ctx context.Context, receiptUUID stri
 	var receipt InventoryReceipt
 	var supplierUUID pgtype.UUID
 	var purchaseOrderUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_receipt
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -115,13 +116,13 @@ func (c *Client) GetInventoryReceiptByUUID(ctx context.Context, receiptUUID stri
 		return InventoryReceipt{}, fmt.Errorf("getting inventory receipt by uuid: %w", err)
 	}
 
-	assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
-	assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
+	database.AssignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+	database.AssignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 	return receipt, nil
 }
 
 func (c *Client) ListInventoryReceipts(ctx context.Context) ([]InventoryReceipt, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_receipt
 		WHERE deleted_at IS NULL
@@ -151,8 +152,8 @@ func (c *Client) ListInventoryReceipts(ctx context.Context) ([]InventoryReceipt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning inventory receipt: %w", err)
 		}
-		assignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
-		assignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
+		database.AssignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+		database.AssignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
 		receipts = append(receipts, receipt)
 	}
 	if err := rows.Err(); err != nil {

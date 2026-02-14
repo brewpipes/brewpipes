@@ -29,11 +29,6 @@ var batchImportAllowedHeaders = map[string]struct{}{
 // HandleBatchImport handles [POST /batches/import].
 func HandleBatchImport(db BatchStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			methodNotAllowed(w)
-			return
-		}
-
 		r.Body = http.MaxBytesReader(w, r.Body, batchImportMaxUploadSize)
 		if err := r.ParseMultipartForm(batchImportMaxUploadSize); err != nil {
 			var maxErr *http.MaxBytesError

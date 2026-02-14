@@ -252,7 +252,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { RecipeIngredient, RecipeIngredientType } from '@/composables/useProductionApi'
+  import type { RecipeIngredient, RecipeIngredientType } from '@/types'
 
   defineProps<{
     yeasts: RecipeIngredient[]

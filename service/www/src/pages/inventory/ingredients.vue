@@ -413,10 +413,6 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Create Lot Dialog -->
   <v-dialog v-model="lotDialog" :max-width="$vuetify.display.xs ? '100%' : 600" persistent>
     <v-card>
@@ -643,58 +639,26 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Ingredient, IngredientLot, InventoryReceipt, InventoryUsage } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
-  type Ingredient = {
-    uuid: string
-    name: string
-    category: string
-    default_unit: string
-    description: string
-    created_at: string
-    updated_at: string
-  }
-
-  type InventoryReceipt = {
-    uuid: string
-    supplier_uuid: string
-    reference_code: string
-    received_at: string
-    notes: string
-    created_at: string
-    updated_at: string
-  }
-
-  type IngredientLot = {
-    uuid: string
-    ingredient_uuid: string
-    receipt_uuid: string | null
-    received_amount: number
-    received_unit: string
-    best_by_at: string
-    expires_at: string
-    supplier_uuid: string
-    brewery_lot_code: string
-    originator_lot_code: string
-    originator_name: string
-    originator_type: string
-    received_at: string
-    notes: string
-  }
-
-  type InventoryUsage = {
-    uuid: string
-    production_ref_uuid: string
-    used_at: string
-    notes: string
-    created_at: string
-    updated_at: string
-  }
-
-  const { request, normalizeText, normalizeDateTime, toNumber, formatDateTime } = useInventoryApi()
+  const {
+    getIngredients,
+    createIngredient: createIngredientApi,
+    getIngredientLots,
+    createIngredientLot,
+    getInventoryReceipts,
+    createInventoryReceipt,
+    getInventoryUsages,
+    createInventoryUsage,
+  } = useInventoryApi()
+  const { showNotice } = useSnackbar()
   const { formatAmountPreferred } = useUnitPreferences()
   const router = useRouter()
 
@@ -783,12 +747,6 @@
     notes: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   const rules = {
     required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
   }
@@ -828,25 +786,31 @@
     { title: 'Notes', key: 'notes', sortable: false },
   ]
 
+  // Pre-build a lookup map to avoid O(n²) find() calls in lot filters
+  const ingredientMap = computed(() => {
+    const map = new Map<string, Ingredient>()
+    for (const ing of ingredients.value) {
+      map.set(ing.uuid, ing)
+    }
+    return map
+  })
+
   // Computed: Filter lots by category
   const maltLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
-      return ingredient?.category === 'fermentable'
+      return ingredientMap.value.get(lot.ingredient_uuid)?.category === 'fermentable'
     })
   })
 
   const hopLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
-      return ingredient?.category === 'hop'
+      return ingredientMap.value.get(lot.ingredient_uuid)?.category === 'hop'
     })
   })
 
   const yeastLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
-      return ingredient?.category === 'yeast'
+      return ingredientMap.value.get(lot.ingredient_uuid)?.category === 'yeast'
     })
   })
 
@@ -854,7 +818,7 @@
 
   const otherLots = computed(() => {
     return lots.value.filter(lot => {
-      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
+      const ingredient = ingredientMap.value.get(lot.ingredient_uuid)
       return ingredient && otherCategories.includes(ingredient.category)
     })
   })
@@ -894,12 +858,6 @@
     await refreshAll()
   })
 
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function refreshAll () {
     await Promise.allSettled([loadIngredients(), loadReceipts(), loadLots(), loadUsage()])
   }
@@ -908,7 +866,7 @@
     ingredientLoading.value = true
     ingredientErrorMessage.value = ''
     try {
-      ingredients.value = await request<Ingredient[]>('/ingredients')
+      ingredients.value = await getIngredients()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load ingredients'
       ingredientErrorMessage.value = message
@@ -921,7 +879,7 @@
     receiptLoading.value = true
     receiptErrorMessage.value = ''
     try {
-      receipts.value = await request<InventoryReceipt[]>('/inventory-receipts')
+      receipts.value = await getInventoryReceipts()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load receipts'
       receiptErrorMessage.value = message
@@ -934,7 +892,7 @@
     lotLoading.value = true
     lotErrorMessage.value = ''
     try {
-      lots.value = await request<IngredientLot[]>('/ingredient-lots')
+      lots.value = await getIngredientLots()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load lots'
       lotErrorMessage.value = message
@@ -947,7 +905,7 @@
     usageLoading.value = true
     usageErrorMessage.value = ''
     try {
-      usages.value = await request<InventoryUsage[]>('/inventory-usage')
+      usages.value = await getInventoryUsages()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load usage'
       usageErrorMessage.value = message
@@ -1030,10 +988,7 @@
         default_unit: ingredientForm.default_unit,
         description: normalizeText(ingredientForm.description),
       }
-      await request<Ingredient>('/ingredients', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createIngredientApi(payload)
       closeIngredientDialog()
       await loadIngredients()
       showNotice('Ingredient created')
@@ -1057,10 +1012,7 @@
         received_at: normalizeDateTime(receiptForm.received_at),
         notes: normalizeText(receiptForm.notes),
       }
-      await request<InventoryReceipt>('/inventory-receipts', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createInventoryReceipt(payload)
       closeReceiptDialog()
       await loadReceipts()
       showNotice('Receipt created')
@@ -1097,10 +1049,7 @@
         expires_at: normalizeDateTime(lotForm.expires_at),
         notes: normalizeText(lotForm.notes),
       }
-      await request<IngredientLot>('/ingredient-lots', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createIngredientLot(payload)
       closeLotDialog()
       await loadLots()
       showNotice('Lot created')
@@ -1123,10 +1072,7 @@
         used_at: normalizeDateTime(usageForm.used_at),
         notes: normalizeText(usageForm.notes),
       }
-      await request<InventoryUsage>('/inventory-usage', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createInventoryUsage(payload)
       closeUsageDialog()
       await loadUsage()
       showNotice('Usage logged')
@@ -1140,11 +1086,11 @@
   }
 
   function ingredientName (ingredientUuid: string) {
-    return ingredients.value.find(ingredient => ingredient.uuid === ingredientUuid)?.name ?? 'Unknown Ingredient'
+    return ingredientMap.value.get(ingredientUuid)?.name ?? 'Unknown Ingredient'
   }
 
   function ingredientCategory (ingredientUuid: string) {
-    const category = ingredients.value.find(ingredient => ingredient.uuid === ingredientUuid)?.category
+    const category = ingredientMap.value.get(ingredientUuid)?.category
     // Return a display-friendly label
     const labels: Record<string, string> = {
       adjunct: 'Adjunct',
@@ -1167,40 +1113,6 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.card-title-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 .lot-table :deep(tr) {

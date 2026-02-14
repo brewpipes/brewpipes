@@ -23,17 +23,6 @@ import {
   volumeLabels,
 } from './useUnitConversion'
 
-// Re-export unit types for backward compatibility
-export type {
-  ColorUnit,
-  GravityUnit,
-  MassUnit,
-  PressureUnit,
-  TemperatureUnit,
-  UnitPreferences,
-  VolumeUnit,
-} from '@/types'
-
 // ==================== Unit Type Detection ====================
 // Sets for detecting unit categories from string values (e.g., from backend data)
 
@@ -131,7 +120,8 @@ export const colorOptions: Array<{ value: ColorUnit, label: string }> = [
   { value: 'ebc', label: 'EBC' },
 ]
 
-// Module-level singleton state
+// Module-level singleton state — shared across all consumers.
+// This works for SPA; for SSR, migrate to a Pinia store.
 const preferences = ref<UnitPreferences>(loadPreferences())
 
 /**

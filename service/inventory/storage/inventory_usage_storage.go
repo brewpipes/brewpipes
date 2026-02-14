@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -18,14 +19,14 @@ func (c *Client) CreateInventoryUsage(ctx context.Context, usage InventoryUsage)
 	}
 
 	var productionUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO inventory_usage (
 			production_ref_uuid,
 			used_at,
 			notes
 		) VALUES ($1, $2, $3)
 		RETURNING id, uuid, production_ref_uuid, used_at, notes, created_at, updated_at, deleted_at`,
-		uuidParam(usage.ProductionRefUUID),
+		database.UUIDParam(usage.ProductionRefUUID),
 		usedAt,
 		usage.Notes,
 	).Scan(
@@ -42,14 +43,14 @@ func (c *Client) CreateInventoryUsage(ctx context.Context, usage InventoryUsage)
 		return InventoryUsage{}, fmt.Errorf("creating inventory usage: %w", err)
 	}
 
-	assignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
+	database.AssignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
 	return usage, nil
 }
 
 func (c *Client) GetInventoryUsage(ctx context.Context, id int64) (InventoryUsage, error) {
 	var usage InventoryUsage
 	var productionUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, production_ref_uuid, used_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_usage
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -71,14 +72,14 @@ func (c *Client) GetInventoryUsage(ctx context.Context, id int64) (InventoryUsag
 		return InventoryUsage{}, fmt.Errorf("getting inventory usage: %w", err)
 	}
 
-	assignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
+	database.AssignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
 	return usage, nil
 }
 
 func (c *Client) GetInventoryUsageByUUID(ctx context.Context, usageUUID string) (InventoryUsage, error) {
 	var usage InventoryUsage
 	var productionUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, production_ref_uuid, used_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_usage
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -100,12 +101,12 @@ func (c *Client) GetInventoryUsageByUUID(ctx context.Context, usageUUID string) 
 		return InventoryUsage{}, fmt.Errorf("getting inventory usage by uuid: %w", err)
 	}
 
-	assignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
+	database.AssignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
 	return usage, nil
 }
 
 func (c *Client) ListInventoryUsage(ctx context.Context) ([]InventoryUsage, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, production_ref_uuid, used_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_usage
 		WHERE deleted_at IS NULL
@@ -132,7 +133,7 @@ func (c *Client) ListInventoryUsage(ctx context.Context) ([]InventoryUsage, erro
 		); err != nil {
 			return nil, fmt.Errorf("scanning inventory usage: %w", err)
 		}
-		assignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
+		database.AssignUUIDPointer(&usage.ProductionRefUUID, productionUUID)
 		usageRecords = append(usageRecords, usage)
 	}
 	if err := rows.Err(); err != nil {

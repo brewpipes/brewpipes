@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -17,7 +18,7 @@ type CreateIngredientMaltDetailRequest struct {
 }
 
 func (r CreateIngredientMaltDetailRequest) Validate() error {
-	if err := validateRequired(r.IngredientUUID, "ingredient_uuid"); err != nil {
+	if err := validate.Required(r.IngredientUUID, "ingredient_uuid"); err != nil {
 		return err
 	}
 	if r.Lovibond != nil && *r.Lovibond < 0 {
@@ -72,7 +73,7 @@ type CreateIngredientHopDetailRequest struct {
 }
 
 func (r CreateIngredientHopDetailRequest) Validate() error {
-	if err := validateRequired(r.IngredientUUID, "ingredient_uuid"); err != nil {
+	if err := validate.Required(r.IngredientUUID, "ingredient_uuid"); err != nil {
 		return err
 	}
 	if r.CropYear != nil && *r.CropYear < 1900 {
@@ -131,7 +132,7 @@ type CreateIngredientYeastDetailRequest struct {
 }
 
 func (r CreateIngredientYeastDetailRequest) Validate() error {
-	if err := validateRequired(r.IngredientUUID, "ingredient_uuid"); err != nil {
+	if err := validate.Required(r.IngredientUUID, "ingredient_uuid"); err != nil {
 		return err
 	}
 	if r.Form != nil {

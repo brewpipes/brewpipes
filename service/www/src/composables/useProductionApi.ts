@@ -25,83 +25,13 @@ import type {
   Volume,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
-
-// Re-export types for backward compatibility
-export type {
-  Addition,
-  AdditionType,
-  Batch,
-  BatchSummary,
-  BatchSummaryBrewSession,
-  BrewSession,
-  CreateAdditionRequest,
-  CreateBrewSessionRequest,
-  CreateMeasurementRequest,
-  CreateRecipeIngredientRequest,
-  CreateRecipeRequest,
-  CreateStyleRequest,
-  CreateVolumeRequest,
-  Measurement,
-  Occupancy,
-  OccupancyStatus,
-  Recipe,
-  RecipeIngredient,
-  RecipeIngredientType,
-  RecipeUseStage,
-  RecipeUseType,
-  Style,
-  UpdateBatchRequest,
-  UpdateBrewSessionRequest,
-  UpdateRecipeIngredientRequest,
-  UpdateRecipeRequest,
-  UpdateVesselRequest,
-  Vessel,
-  VesselStatus,
-  VesselType,
-  Volume,
-  VolumeUnit,
-} from '@/types'
-
-export {
-  OCCUPANCY_STATUS_VALUES,
-  RECIPE_INGREDIENT_TYPE_VALUES,
-  RECIPE_USE_STAGE_VALUES,
-  RECIPE_USE_TYPE_VALUES,
-  VESSEL_STATUS_VALUES,
-  VESSEL_TYPE_VALUES,
-} from '@/types'
+import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
+import { formatDateTime } from '@/composables/useFormatters'
 
 const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
 export function useProductionApi () {
   const { request } = useApiClient(productionApiBase)
-
-  const normalizeText = (value: string) => {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  const normalizeDateTime = (value: string) => {
-    return value ? new Date(value).toISOString() : null
-  }
-
-  const toNumber = (value: string | number | null) => {
-    if (value === null || value === undefined || value === '') {
-      return null
-    }
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  const formatDateTime = (value: string | null | undefined) => {
-    if (!value) {
-      return 'n/a'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
 
   // Styles API
   const getStyles = () => request<Style[]>('/styles')
@@ -153,6 +83,11 @@ export function useProductionApi () {
   // Vessels API
   const getVessels = () => request<Vessel[]>('/vessels')
   const getVessel = (uuid: string) => request<Vessel>(`/vessels/${uuid}`)
+  const createVessel = (data: Record<string, unknown>) =>
+    request<Vessel>('/vessels', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   const updateVessel = (uuid: string, data: UpdateVesselRequest) =>
     request<Vessel>(`/vessels/${uuid}`, {
       method: 'PATCH',
@@ -203,8 +138,14 @@ export function useProductionApi () {
     })
 
   // Batches API
+  const getBatches = () => request<Batch[]>('/batches')
   const getBatch = (uuid: string) =>
     request<Batch>(`/batches/${uuid}`)
+  const createBatch = (data: Record<string, unknown>) =>
+    request<Batch>('/batches', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   const updateBatch = (uuid: string, data: UpdateBatchRequest) =>
     request<Batch>(`/batches/${uuid}`, {
       method: 'PATCH',
@@ -256,6 +197,7 @@ export function useProductionApi () {
     // Vessels
     getVessels,
     getVessel,
+    createVessel,
     updateVessel,
     // Volumes
     getVolumes,
@@ -273,7 +215,9 @@ export function useProductionApi () {
     getMeasurementsByVolume,
     createMeasurement,
     // Batches
+    getBatches,
     getBatch,
+    createBatch,
     updateBatch,
     deleteBatch,
     // Batch Summary

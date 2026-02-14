@@ -77,7 +77,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Recipe, Style, UpdateRecipeRequest } from '@/composables/useProductionApi'
+  import type { Recipe, Style, UpdateRecipeRequest } from '@/types'
   import { computed, reactive, ref, watch } from 'vue'
 
   const props = defineProps<{

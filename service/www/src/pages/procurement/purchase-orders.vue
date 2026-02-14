@@ -51,50 +51,46 @@
                   :items="supplierSelectItems"
                   label="Filter by supplier"
                 />
-                <v-table class="data-table" density="compact">
-                  <thead>
-                    <tr>
-                      <th>Order</th>
-                      <th>Supplier</th>
-                      <th>Status</th>
-                      <th>Expected</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="order in orders" :key="order.uuid">
-                      <td>{{ order.order_number }}</td>
-                      <td>{{ supplierName(order.supplier_uuid) }}</td>
-                      <td>{{ order.status }}</td>
-                      <td>{{ formatDateTime(order.expected_at) }}</td>
-                      <td class="text-right">
-                        <v-btn
-                          icon="mdi-pencil"
-                          size="x-small"
-                          variant="text"
-                          @click.stop="openEditDialog(order)"
-                        />
-                        <v-btn
-                          size="x-small"
-                          variant="text"
-                          @click="openLines(order.uuid)"
-                        >
-                          Lines
-                        </v-btn>
-                        <v-btn
-                          size="x-small"
-                          variant="text"
-                          @click="openFees(order.uuid)"
-                        >
-                          Fees
-                        </v-btn>
-                      </td>
-                    </tr>
-                    <tr v-if="orders.length === 0">
-                      <td colspan="5">No purchase orders yet.</td>
-                    </tr>
-                  </tbody>
-                </v-table>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="orderHeaders"
+                  item-value="uuid"
+                  :items="orders"
+                  :loading="loading"
+                >
+                  <template #item.supplier_uuid="{ item }">
+                    {{ supplierName(item.supplier_uuid) }}
+                  </template>
+                  <template #item.expected_at="{ item }">
+                    {{ formatDateTime(item.expected_at) }}
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn
+                      icon="mdi-pencil"
+                      size="x-small"
+                      variant="text"
+                      @click.stop="openEditDialog(item)"
+                    />
+                    <v-btn
+                      size="x-small"
+                      variant="text"
+                      @click.stop="openLines(item.uuid)"
+                    >
+                      Lines
+                    </v-btn>
+                    <v-btn
+                      size="x-small"
+                      variant="text"
+                      @click.stop="openFees(item.uuid)"
+                    >
+                      Fees
+                    </v-btn>
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No purchase orders yet.</div>
+                  </template>
+                </v-data-table>
               </v-card-text>
             </v-card>
           </v-col>
@@ -102,10 +98,6 @@
       </v-card-text>
     </v-card>
   </v-container>
-
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
 
   <v-dialog v-model="orderDialog" :max-width="$vuetify.display.xs ? '100%' : 640">
     <v-card>
@@ -168,22 +160,29 @@
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import {
-    type PurchaseOrder,
-    type Supplier,
-    useProcurementApi,
-  } from '@/composables/useProcurementApi'
+  import { formatDateTime } from '@/composables/useFormatters'
+  import type { PurchaseOrder, Supplier } from '@/types'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeDateTime, normalizeText, toLocalDateTimeInput } from '@/utils/normalize'
 
   const {
     getSuppliers,
     getPurchaseOrders,
     createPurchaseOrder,
     updatePurchaseOrder,
-    normalizeText,
-    normalizeDateTime,
-    formatDateTime,
   } = useProcurementApi()
+  const { showNotice } = useSnackbar()
   const router = useRouter()
+
+  // Table configuration
+  const orderHeaders = [
+    { title: 'Order', key: 'order_number', sortable: true },
+    { title: 'Supplier', key: 'supplier_uuid', sortable: true },
+    { title: 'Status', key: 'status', sortable: true },
+    { title: 'Expected', key: 'expected_at', sortable: true },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '180px' },
+  ]
 
   const suppliers = ref<Supplier[]>([])
   const orders = ref<PurchaseOrder[]>([])
@@ -220,12 +219,6 @@
     notes: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   const supplierSelectItems = computed(() =>
     suppliers.value.map(supplier => ({
       title: supplier.name,
@@ -240,12 +233,6 @@
   onMounted(async () => {
     await refreshAll()
   })
-
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
 
   async function refreshAll () {
     loading.value = true
@@ -290,8 +277,8 @@
     orderForm.supplier_uuid = order.supplier_uuid
     orderForm.order_number = order.order_number
     orderForm.status = order.status || ''
-    orderForm.ordered_at = order.ordered_at ? toDateTimeLocal(order.ordered_at) : ''
-    orderForm.expected_at = order.expected_at ? toDateTimeLocal(order.expected_at) : ''
+    orderForm.ordered_at = order.ordered_at ? toLocalDateTimeInput(order.ordered_at) : ''
+    orderForm.expected_at = order.expected_at ? toLocalDateTimeInput(order.expected_at) : ''
     orderForm.notes = order.notes || ''
     orderDialog.value = true
   }
@@ -301,13 +288,6 @@
     editingOrder.value = null
     dialogError.value = ''
     resetForm()
-  }
-
-  function toDateTimeLocal (isoString: string): string {
-    const date = new Date(isoString)
-    const offset = date.getTimezoneOffset()
-    const local = new Date(date.getTime() - offset * 60 * 1000)
-    return local.toISOString().slice(0, 16)
   }
 
   async function saveOrder () {
@@ -370,51 +350,5 @@
 <style scoped>
 .procurement-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.card-title-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.card-title-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
-}
-
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 </style>

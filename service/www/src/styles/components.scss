@@ -1,0 +1,85 @@
+/**
+ * Shared component styles used across pages and components.
+ *
+ * These classes were previously duplicated in 20+ scoped style blocks.
+ * Import this file globally in main.ts to make them available everywhere.
+ */
+
+.section-card {
+  background: rgba(var(--v-theme-surface), 0.92);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
+}
+
+.card-title-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-field {
+  width: 200px;
+  min-width: 120px;
+  flex-shrink: 1;
+}
+
+@media (max-width: 599px) {
+  .card-title-responsive {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-title-actions {
+    justify-content: flex-end;
+  }
+
+  .search-field {
+    width: 100%;
+    max-width: none;
+    order: 10;
+    margin-top: 8px;
+  }
+}
+
+.data-table {
+  overflow-x: auto;
+}
+
+.data-table .v-table__wrapper {
+  overflow-x: auto;
+}
+
+.data-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  white-space: nowrap;
+}
+
+.data-table td {
+  font-size: 0.85rem;
+}
+
+.sub-card {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  background: rgba(var(--v-theme-surface), 0.7);
+}
+
+.batch-link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+}
+
+.batch-link:hover {
+  text-decoration: underline;
+}

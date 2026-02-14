@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/uuidutil"
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -31,7 +33,7 @@ func (r RecipeIngredientRequest) Validate() error {
 	if r.Amount <= 0 {
 		return fmt.Errorf("amount must be greater than zero")
 	}
-	if err := validateRequired(r.AmountUnit, "amount_unit"); err != nil {
+	if err := validate.Required(r.AmountUnit, "amount_unit"); err != nil {
 		return err
 	}
 	if err := validateUseStage(r.UseStage); err != nil {
@@ -77,7 +79,7 @@ func NewRecipeIngredientResponse(ri storage.RecipeIngredient, recipeUUID string)
 	return RecipeIngredientResponse{
 		UUID:                  ri.UUID.String(),
 		RecipeUUID:            recipeUUID,
-		IngredientUUID:        uuidToStringPointer(ri.IngredientUUID),
+		IngredientUUID:        uuidutil.ToStringPointer(ri.IngredientUUID),
 		IngredientType:        ri.IngredientType,
 		Amount:                ri.Amount,
 		AmountUnit:            ri.AmountUnit,

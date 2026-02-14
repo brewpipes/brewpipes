@@ -56,7 +56,7 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 		occurredAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO inventory_movement (
 			ingredient_lot_id,
 			beer_lot_id,
@@ -116,17 +116,17 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 }
 
 func (c *Client) GetInventoryMovement(ctx context.Context, id int64) (InventoryMovement, error) {
-	return c.scanMovementRow(c.db.QueryRow(ctx, movementSelectSQL+`
+	return c.scanMovementRow(c.DB().QueryRow(ctx, movementSelectSQL+`
 		WHERE m.id = $1 AND m.deleted_at IS NULL`, id))
 }
 
 func (c *Client) GetInventoryMovementByUUID(ctx context.Context, movementUUID string) (InventoryMovement, error) {
-	return c.scanMovementRow(c.db.QueryRow(ctx, movementSelectSQL+`
+	return c.scanMovementRow(c.DB().QueryRow(ctx, movementSelectSQL+`
 		WHERE m.uuid = $1 AND m.deleted_at IS NULL`, movementUUID))
 }
 
 func (c *Client) ListInventoryMovements(ctx context.Context) ([]InventoryMovement, error) {
-	rows, err := c.db.Query(ctx, movementSelectSQL+`
+	rows, err := c.DB().Query(ctx, movementSelectSQL+`
 		WHERE m.deleted_at IS NULL
 		ORDER BY m.occurred_at DESC`)
 	if err != nil {
@@ -138,7 +138,7 @@ func (c *Client) ListInventoryMovements(ctx context.Context) ([]InventoryMovemen
 }
 
 func (c *Client) ListInventoryMovementsByIngredientLot(ctx context.Context, lotUUID string) ([]InventoryMovement, error) {
-	rows, err := c.db.Query(ctx, movementSelectSQL+`
+	rows, err := c.DB().Query(ctx, movementSelectSQL+`
 		WHERE il.uuid = $1 AND m.deleted_at IS NULL
 		ORDER BY m.occurred_at ASC`,
 		lotUUID,
@@ -152,7 +152,7 @@ func (c *Client) ListInventoryMovementsByIngredientLot(ctx context.Context, lotU
 }
 
 func (c *Client) ListInventoryMovementsByBeerLot(ctx context.Context, lotUUID string) ([]InventoryMovement, error) {
-	rows, err := c.db.Query(ctx, movementSelectSQL+`
+	rows, err := c.DB().Query(ctx, movementSelectSQL+`
 		WHERE bl.uuid = $1 AND m.deleted_at IS NULL
 		ORDER BY m.occurred_at ASC`,
 		lotUUID,
@@ -271,14 +271,14 @@ func (c *Client) scanMovementRows(rows pgx.Rows) ([]InventoryMovement, error) {
 func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement) {
 	// Stock location UUID (required)
 	var slUUID string
-	if err := c.db.QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, m.StockLocationID).Scan(&slUUID); err == nil {
+	if err := c.DB().QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, m.StockLocationID).Scan(&slUUID); err == nil {
 		m.StockLocationUUID = slUUID
 	}
 
 	// Ingredient lot UUID (optional)
 	if m.IngredientLotID != nil {
 		var ilUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, *m.IngredientLotID).Scan(&ilUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, *m.IngredientLotID).Scan(&ilUUID); err == nil {
 			m.IngredientLotUUID = &ilUUID
 		}
 	}
@@ -286,7 +286,7 @@ func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement)
 	// Beer lot UUID (optional)
 	if m.BeerLotID != nil {
 		var blUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM beer_lot WHERE id = $1`, *m.BeerLotID).Scan(&blUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM beer_lot WHERE id = $1`, *m.BeerLotID).Scan(&blUUID); err == nil {
 			m.BeerLotUUID = &blUUID
 		}
 	}
@@ -294,7 +294,7 @@ func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement)
 	// Receipt UUID (optional)
 	if m.ReceiptID != nil {
 		var rcUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM inventory_receipt WHERE id = $1`, *m.ReceiptID).Scan(&rcUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_receipt WHERE id = $1`, *m.ReceiptID).Scan(&rcUUID); err == nil {
 			m.ReceiptUUID = &rcUUID
 		}
 	}
@@ -302,7 +302,7 @@ func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement)
 	// Usage UUID (optional)
 	if m.UsageID != nil {
 		var usUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM inventory_usage WHERE id = $1`, *m.UsageID).Scan(&usUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_usage WHERE id = $1`, *m.UsageID).Scan(&usUUID); err == nil {
 			m.UsageUUID = &usUUID
 		}
 	}
@@ -310,7 +310,7 @@ func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement)
 	// Adjustment UUID (optional)
 	if m.AdjustmentID != nil {
 		var ajUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM inventory_adjustment WHERE id = $1`, *m.AdjustmentID).Scan(&ajUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_adjustment WHERE id = $1`, *m.AdjustmentID).Scan(&ajUUID); err == nil {
 			m.AdjustmentUUID = &ajUUID
 		}
 	}
@@ -318,7 +318,7 @@ func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement)
 	// Transfer UUID (optional)
 	if m.TransferID != nil {
 		var trUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM inventory_transfer WHERE id = $1`, *m.TransferID).Scan(&trUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_transfer WHERE id = $1`, *m.TransferID).Scan(&trUUID); err == nil {
 			m.TransferUUID = &trUUID
 		}
 	}

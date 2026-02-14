@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -14,10 +15,10 @@ type CreateOccupancyRequest struct {
 }
 
 func (r CreateOccupancyRequest) Validate() error {
-	if err := validateRequired(r.VesselUUID, "vessel_uuid"); err != nil {
+	if err := validate.Required(r.VesselUUID, "vessel_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.VolumeUUID, "volume_uuid"); err != nil {
+	if err := validate.Required(r.VolumeUUID, "volume_uuid"); err != nil {
 		return err
 	}
 	if r.Status != nil {

@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -13,7 +14,7 @@ type CreateStockLocationRequest struct {
 }
 
 func (r CreateStockLocationRequest) Validate() error {
-	if err := validateRequired(r.Name, "name"); err != nil {
+	if err := validate.Required(r.Name, "name"); err != nil {
 		return err
 	}
 	if r.LocationType != nil {

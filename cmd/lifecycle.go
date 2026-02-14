@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/brewpipes/brewpipes/service"
 )
@@ -30,7 +31,7 @@ func RunServices(ctx context.Context, staticHandler http.Handler, services ...Se
 	// Health check endpoint for load balancers and orchestrators.
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 
 	for _, svc := range services {
@@ -73,9 +74,12 @@ func RunServices(ctx context.Context, staticHandler http.Handler, services ...Se
 	<-interrupted()
 	slog.Info("application received interrupt signal")
 
-	// first, gracefully shut down HTTP server so that in-flight requests can complete
+	// Gracefully shut down HTTP server so that in-flight requests can complete.
+	// Use a separate timeout context since the main context is about to be cancelled.
 	slog.Info("stopping HTTP server")
-	if err := httpServer.Shutdown(ctx); err != nil {
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		slog.Error("error while shutting down HTTP server", "error", err)
 	}
 

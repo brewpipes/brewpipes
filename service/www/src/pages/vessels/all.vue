@@ -138,10 +138,6 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Edit Vessel Dialog -->
   <VesselEditDialog
     ref="editDialogRef"
@@ -203,42 +199,27 @@
 </template>
 
 <script lang="ts" setup>
-  import type { UpdateVesselRequest } from '@/types'
+  import type { Batch, Occupancy, UpdateVesselRequest, Vessel, VesselStatus, VolumeUnit } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
-  import { useApiClient } from '@/composables/useApiClient'
   import {
     useFormatters,
     useVesselStatusFormatters,
-    type VesselStatus,
   } from '@/composables/useFormatters'
-  import {
-    type Occupancy,
-    useProductionApi,
-    type Vessel,
-  } from '@/composables/useProductionApi'
-  import { useUnitPreferences, volumeOptions, type VolumeUnit } from '@/composables/useUnitPreferences'
-
-  type Batch = {
-    uuid: string
-    short_name: string
-    brew_date: string | null
-    recipe_uuid: string | null
-    notes: string | null
-    created_at: string
-    updated_at: string
-  }
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { useUnitPreferences, volumeOptions } from '@/composables/useUnitPreferences'
+  import { useVesselActions } from '@/composables/useVesselActions'
+  import { normalizeText, toNumber } from '@/utils/normalize'
 
   type BatchInfo = {
     uuid: string
     short_name: string
   }
 
-  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const router = useRouter()
-  const { request } = useApiClient(apiBase)
-  const { getActiveOccupancies, updateVessel } = useProductionApi()
+  const { getVessels, getBatches, createVessel: createVesselApi, getActiveOccupancies } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatRelativeTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
@@ -272,11 +253,8 @@
     model: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
+  const { showNotice } = useSnackbar()
+  const { saveVessel } = useVesselActions()
 
   // Table configuration
   const headers = [
@@ -344,20 +322,14 @@
   })
 
   // Methods
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function refreshData () {
     loading.value = true
     errorMessage.value = ''
     try {
       const [vesselData, occupancyData, batchData] = await Promise.all([
-        request<Vessel[]>('/vessels'),
+        getVessels(),
         getActiveOccupancies(),
-        request<Batch[]>('/batches'),
+        getBatches(),
       ])
       vessels.value = vesselData
       occupancies.value = occupancyData
@@ -416,10 +388,7 @@
         model: normalizeText(newVessel.model),
       }
 
-      await request<Vessel>('/vessels', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createVesselApi(payload)
 
       showNotice('Vessel registered')
       closeCreateDialog()
@@ -451,114 +420,21 @@
   async function handleSaveVessel (data: UpdateVesselRequest) {
     if (!editingVessel.value) return
 
-    editDialogRef.value?.setSaving(true)
-    editDialogRef.value?.clearError()
-
-    try {
-      const updated = await updateVessel(editingVessel.value.uuid, data)
-      // Update the vessel in the list
+    const updated = await saveVessel(editingVessel.value.uuid, data, editDialogRef)
+    if (updated) {
       const index = vessels.value.findIndex(v => v.uuid === updated.uuid)
       if (index !== -1) {
         vessels.value[index] = updated
       }
       editDialogOpen.value = false
       editingVessel.value = null
-      showNotice('Vessel updated successfully')
-    } catch (error_) {
-      console.error('Failed to update vessel:', error_)
-
-      // Check for 409 Conflict (vessel has active occupancy)
-      if (error_ instanceof Error && error_.message.includes('409')) {
-        editDialogRef.value?.setError('Cannot change status: vessel has an active occupancy')
-      } else {
-        const message = error_ instanceof Error ? error_.message : 'Failed to update vessel'
-        editDialogRef.value?.setError(message)
-      }
-    } finally {
-      editDialogRef.value?.setSaving(false)
     }
   }
-
-  // Formatting functions
-  function normalizeText (value: string) {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  function toNumber (value: string | number | null) {
-    if (value === null || value === undefined || value === '') {
-      return null
-    }
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
 </script>
 
 <style scoped>
 .vessels-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.card-title-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.card-title-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.search-field {
-  width: 200px;
-  min-width: 120px;
-  flex-shrink: 1;
-}
-
-@media (max-width: 599px) {
-  .card-title-responsive {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .card-title-actions {
-    justify-content: flex-end;
-  }
-
-  .search-field {
-    width: 100%;
-    max-width: none;
-    order: 10;
-    margin-top: 8px;
-  }
-}
-
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 .vessels-table :deep(.v-table__wrapper) {
@@ -571,14 +447,5 @@
 
 .vessels-table :deep(tr:hover td) {
   background: rgba(var(--v-theme-primary), 0.04);
-}
-
-.batch-link {
-  color: rgb(var(--v-theme-primary));
-  text-decoration: none;
-}
-
-.batch-link:hover {
-  text-decoration: underline;
 }
 </style>

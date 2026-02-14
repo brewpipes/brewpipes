@@ -30,43 +30,23 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Batch } from '@/types'
   import { computed, onMounted, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { useRouter } from 'vue-router'
   import BatchDetails from '@/components/BatchDetails.vue'
-  import { useApiClient } from '@/composables/useApiClient'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useRouteUuid } from '@/composables/useRouteUuid'
 
-  type Batch = {
-    uuid: string
-    short_name: string
-    brew_date: string | null
-    recipe_uuid: string | null
-    notes: string | null
-    created_at: string
-    updated_at: string
-  }
-
-  const route = useRoute()
   const router = useRouter()
 
-  const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-  const { request } = useApiClient(productionApiBase)
+  const { getBatch } = useProductionApi()
+  const { uuid: routeUuid } = useRouteUuid()
 
   const loading = ref(true)
   const error = ref<string | null>(null)
   const batch = ref<Batch | null>(null)
 
   const batchUuid = computed(() => batch.value?.uuid ?? null)
-
-  const routeUuid = computed(() => {
-    const params = route.params
-    if ('uuid' in params) {
-      const param = params.uuid
-      if (typeof param === 'string' && param.trim()) {
-        return param
-      }
-    }
-    return null
-  })
 
   async function loadBatch () {
     const uuid = routeUuid.value
@@ -80,18 +60,13 @@
       loading.value = true
       error.value = null
 
-      // Fetch all batches and find the one matching the UUID
-      const batches = await request<Batch[]>('/batches')
-      const found = batches.find(b => b.uuid === uuid)
-
-      if (found) {
-        batch.value = found
-      } else {
-        error.value = 'Batch not found'
-      }
+      batch.value = await getBatch(uuid)
     } catch (error_) {
-      console.error('Failed to load batch:', error_)
-      error.value = 'Failed to load batch. Please try again.'
+      if (error_ instanceof Error && error_.message.includes('404')) {
+        error.value = 'Batch not found'
+      } else {
+        error.value = 'Failed to load batch. Please try again.'
+      }
     } finally {
       loading.value = false
     }

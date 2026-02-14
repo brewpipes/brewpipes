@@ -137,71 +137,14 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Create Batch Dialog -->
-  <v-dialog v-model="createBatchDialog" :max-width="$vuetify.display.xs ? '100%' : 520" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Create batch</v-card-title>
-      <v-card-text>
-        <v-form ref="formRef" @submit.prevent="createBatch">
-          <v-text-field
-            v-model="batchForm.short_name"
-            density="comfortable"
-            label="Short name"
-            placeholder="IPA 24-07"
-            :rules="[rules.required]"
-          />
-          <v-text-field
-            v-model="batchForm.brew_date"
-            density="comfortable"
-            label="Brew date"
-            type="date"
-          />
-          <v-autocomplete
-            v-model="batchForm.recipe_uuid"
-            clearable
-            density="comfortable"
-            hint="Optional - link this batch to a recipe"
-            item-title="title"
-            item-value="value"
-            :items="recipeSelectItems"
-            label="Recipe"
-            :loading="recipesLoading"
-            persistent-hint
-          >
-            <template #item="{ props, item }">
-              <v-list-item v-bind="props">
-                <template #subtitle>
-                  <span v-if="item.raw.style">{{ item.raw.style }}</span>
-                </template>
-              </v-list-item>
-            </template>
-          </v-autocomplete>
-          <v-textarea
-            v-model="batchForm.notes"
-            auto-grow
-            density="comfortable"
-            label="Notes"
-            rows="2"
-          />
-        </v-form>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeCreateDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isFormValid"
-          :loading="saving"
-          @click="createBatch"
-        >
-          Create batch
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <BatchCreateDialog
+    v-model="createBatchDialog"
+    :recipes="recipes"
+    :recipes-loading="recipesLoading"
+    :saving="saving"
+    @submit="handleCreateBatch"
+  />
 
   <!-- Bulk Import Dialog -->
   <v-dialog v-model="bulkImportDialog" :max-width="$vuetify.display.xs ? '100%' : 720">
@@ -294,12 +237,14 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Batch } from '@/types'
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import type { Batch, Recipe, UpdateBatchRequest } from '@/types'
+  import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
-  import { BatchDeleteDialog, BatchEditDialog, type BatchEditForm } from '@/components/batch'
-  import { useApiClient } from '@/composables/useApiClient'
-  import { type Recipe, type UpdateBatchRequest, useProductionApi } from '@/composables/useProductionApi'
+  import { BatchCreateDialog, type BatchCreateForm, BatchDeleteDialog, BatchEditDialog, type BatchEditForm } from '@/components/batch'
+  import { formatDate, formatDateTime, usePhaseFormatters } from '@/composables/useFormatters'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeDateOnly, normalizeText } from '@/utils/normalize'
 
   type ImportRowError = {
     row: number | null
@@ -327,10 +272,10 @@
     type: 'success' | 'warning' | 'error'
   }
 
-  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
   const router = useRouter()
-  const { request } = useApiClient(apiBase)
-  const { getRecipes, updateBatch, deleteBatch, normalizeText } = useProductionApi()
+  const { getBatches, createBatch: createBatchApi, getRecipes, updateBatch, deleteBatch, request } = useProductionApi()
+  const { showNotice } = useSnackbar()
+  const { formatPhase, getPhaseColor } = usePhaseFormatters()
 
   // State
   const batches = ref<Batch[]>([])
@@ -356,30 +301,11 @@
   const deletingBatch = ref(false)
   const deleteBatchError = ref('')
 
-  // Form
-  const formRef = ref()
-  const batchForm = reactive({
-    short_name: '',
-    brew_date: '',
-    recipe_uuid: null as string | null,
-    notes: '',
-  })
-
   // Import state
   const importFile = ref<File | File[] | null>(null)
   const importUploading = ref(false)
   const importResult = ref<BatchImportResponse | null>(null)
   const importErrors = ref<ImportRowError[]>([])
-
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
-  const rules = {
-    required: (v: string) => !!v?.trim() || 'Required',
-  }
 
   // Table configuration
   const headers = [
@@ -392,18 +318,6 @@
   ]
 
   // Computed
-  const isFormValid = computed(() => {
-    return batchForm.short_name.trim().length > 0
-  })
-
-  const recipeSelectItems = computed(() =>
-    recipes.value.map(recipe => ({
-      title: recipe.name,
-      value: recipe.uuid,
-      style: recipe.style_name,
-    })),
-  )
-
   const canImport = computed(() => Boolean(getSelectedImportFile()) && !importUploading.value)
 
   const importSummary = computed<ImportSummary | null>(() => {
@@ -494,17 +408,11 @@
   })
 
   // Methods
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function loadBatches () {
     loading.value = true
     errorMessage.value = ''
     try {
-      batches.value = await request<Batch[]>('/batches')
+      batches.value = await getBatches()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load batches'
       errorMessage.value = message
@@ -527,40 +435,25 @@
   }
 
   function openCreateDialog () {
-    batchForm.short_name = ''
-    batchForm.brew_date = ''
-    batchForm.recipe_uuid = null
-    batchForm.notes = ''
     createBatchDialog.value = true
   }
 
-  function closeCreateDialog () {
-    createBatchDialog.value = false
-  }
-
-  async function createBatch () {
-    if (!isFormValid.value) {
-      return
-    }
-
+  async function handleCreateBatch (form: BatchCreateForm) {
     saving.value = true
     errorMessage.value = ''
 
     try {
       const payload = {
-        short_name: batchForm.short_name.trim(),
-        brew_date: normalizeDateOnly(batchForm.brew_date),
-        recipe_uuid: batchForm.recipe_uuid,
-        notes: normalizeText(batchForm.notes),
+        short_name: form.short_name.trim(),
+        brew_date: normalizeDateOnly(form.brew_date),
+        recipe_uuid: form.recipe_uuid,
+        notes: normalizeText(form.notes),
       }
 
-      await request<Batch>('/batches', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createBatchApi(payload)
 
       showNotice('Batch created')
-      closeCreateDialog()
+      createBatchDialog.value = false
       await loadBatches()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create batch'
@@ -713,125 +606,12 @@
     URL.revokeObjectURL(url)
   }
 
-  // Formatting functions
-  function normalizeDateOnly (value: string) {
-    return value ? new Date(`${value}T00:00:00Z`).toISOString() : null
-  }
 
-  function formatDate (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-    }).format(new Date(value))
-  }
-
-  function formatDateTime (value: string | null | undefined) {
-    if (!value) {
-      return 'Unknown'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
-
-  function formatPhase (phase: string) {
-    const phaseLabels: Record<string, string> = {
-      planning: 'Planning',
-      mashing: 'Mashing',
-      heating: 'Heating',
-      boiling: 'Boiling',
-      cooling: 'Cooling',
-      fermenting: 'Fermenting',
-      conditioning: 'Conditioning',
-      packaging: 'Packaging',
-      finished: 'Finished',
-    }
-    return phaseLabels[phase] ?? phase.charAt(0).toUpperCase() + phase.slice(1)
-  }
-
-  function getPhaseColor (phase: string) {
-    const phaseColors: Record<string, string> = {
-      planning: 'grey',
-      mashing: 'orange',
-      heating: 'deep-orange',
-      boiling: 'red',
-      cooling: 'cyan',
-      fermenting: 'primary',
-      conditioning: 'teal',
-      packaging: 'blue',
-      finished: 'success',
-    }
-    return phaseColors[phase] ?? 'secondary'
-  }
 </script>
 
 <style scoped>
 .batches-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.card-title-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.card-title-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.search-field {
-  width: 200px;
-  min-width: 120px;
-  flex-shrink: 1;
-}
-
-@media (max-width: 599px) {
-  .card-title-responsive {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .card-title-actions {
-    justify-content: flex-end;
-  }
-
-  .search-field {
-    width: 100%;
-    max-width: none;
-    order: 10;
-    margin-top: 8px;
-  }
-}
-
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 .batches-table :deep(tr) {
@@ -842,7 +622,6 @@
   background: rgba(var(--v-theme-primary), 0.04);
 }
 
-/* Ensure table scrolls horizontally on mobile */
 .batches-table :deep(.v-table__wrapper) {
   overflow-x: auto;
 }

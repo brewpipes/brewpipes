@@ -16,7 +16,7 @@ func (c *Client) CreateOccupancy(ctx context.Context, occupancy Occupancy) (Occu
 		inAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO occupancy (
 			vessel_id,
 			volume_id,
@@ -47,15 +47,15 @@ func (c *Client) CreateOccupancy(ctx context.Context, occupancy Occupancy) (Occu
 	}
 
 	// Resolve vessel and volume UUIDs
-	c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, occupancy.VesselID).Scan(&occupancy.VesselUUID)
-	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, occupancy.VolumeID).Scan(&occupancy.VolumeUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, occupancy.VesselID).Scan(&occupancy.VesselUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, occupancy.VolumeID).Scan(&occupancy.VolumeUUID)
 
 	return occupancy, nil
 }
 
 func (c *Client) GetOccupancy(ctx context.Context, id int64) (Occupancy, error) {
 	var occupancy Occupancy
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
 		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
 		FROM occupancy o
@@ -89,7 +89,7 @@ func (c *Client) GetOccupancy(ctx context.Context, id int64) (Occupancy, error) 
 
 func (c *Client) GetOccupancyByUUID(ctx context.Context, occupancyUUID string) (Occupancy, error) {
 	var occupancy Occupancy
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
 		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
 		FROM occupancy o
@@ -123,7 +123,7 @@ func (c *Client) GetOccupancyByUUID(ctx context.Context, occupancyUUID string) (
 
 func (c *Client) GetActiveOccupancyByVessel(ctx context.Context, vesselID int64) (Occupancy, error) {
 	var occupancy Occupancy
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
 		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
 		FROM occupancy o
@@ -166,7 +166,7 @@ func (c *Client) GetActiveOccupancyByVesselUUID(ctx context.Context, vesselUUID 
 
 func (c *Client) GetActiveOccupancyByVolume(ctx context.Context, volumeID int64) (Occupancy, error) {
 	var occupancy Occupancy
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
 		       o.in_at, o.out_at, o.status, o.created_at, o.updated_at, o.deleted_at
 		FROM occupancy o
@@ -211,7 +211,7 @@ func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error)
 	// Use a subquery to get the most recent batch_id for each volume.
 	// A volume can have multiple batch_volume records (e.g., wort -> beer phase transitions),
 	// so we select the one with the latest phase_at to avoid duplicate occupancy rows.
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT o.id, o.uuid, o.vessel_id, ve.uuid, o.volume_id, vo.uuid,
 		       o.in_at, o.out_at, o.status,
 		       o.created_at, o.updated_at, o.deleted_at,
@@ -269,7 +269,7 @@ func (c *Client) ListActiveOccupancies(ctx context.Context) ([]Occupancy, error)
 
 func (c *Client) CloseOccupancy(ctx context.Context, occupancyID int64, outAt time.Time) error {
 	var id int64
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE occupancy
 		SET out_at = $1, updated_at = timezone('utc', now())
 		WHERE id = $2 AND deleted_at IS NULL
@@ -289,7 +289,7 @@ func (c *Client) CloseOccupancy(ctx context.Context, occupancyID int64, outAt ti
 
 func (c *Client) HasActiveOccupancy(ctx context.Context, vesselID int64) (bool, error) {
 	var exists bool
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT EXISTS(
 			SELECT 1 FROM occupancy
 			WHERE vessel_id = $1 AND out_at IS NULL AND deleted_at IS NULL
@@ -314,7 +314,7 @@ func (c *Client) HasActiveOccupancyByVesselUUID(ctx context.Context, vesselUUID 
 
 func (c *Client) UpdateOccupancyStatus(ctx context.Context, occupancyID int64, status *string) (Occupancy, error) {
 	var occupancy Occupancy
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE occupancy
 		SET status = $1, updated_at = timezone('utc', now())
 		WHERE id = $2 AND deleted_at IS NULL
@@ -341,8 +341,8 @@ func (c *Client) UpdateOccupancyStatus(ctx context.Context, occupancyID int64, s
 	}
 
 	// Resolve vessel and volume UUIDs
-	c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, occupancy.VesselID).Scan(&occupancy.VesselUUID)
-	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, occupancy.VolumeID).Scan(&occupancy.VolumeUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, occupancy.VesselID).Scan(&occupancy.VesselUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, occupancy.VolumeID).Scan(&occupancy.VolumeUUID)
 
 	return occupancy, nil
 }

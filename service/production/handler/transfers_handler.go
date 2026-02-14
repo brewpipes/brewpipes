@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -38,8 +37,7 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error listing transfers", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing transfers", "error", err)
 				return
 			}
 
@@ -56,35 +54,20 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 			}
 
 			// Resolve source occupancy UUID to internal ID
-			sourceOcc, err := db.GetOccupancyByUUID(r.Context(), req.SourceOccupancyUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "source occupancy not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving source occupancy uuid", "error", err)
-				service.InternalError(w, err.Error())
+			sourceOcc, ok := service.ResolveFK(r.Context(), w, req.SourceOccupancyUUID, "source occupancy", db.GetOccupancyByUUID)
+			if !ok {
 				return
 			}
 
 			// Resolve dest vessel UUID to internal ID
-			destVessel, err := db.GetVesselByUUID(r.Context(), req.DestVesselUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "destination vessel not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving dest vessel uuid", "error", err)
-				service.InternalError(w, err.Error())
+			destVessel, ok := service.ResolveFK(r.Context(), w, req.DestVesselUUID, "destination vessel", db.GetVesselByUUID)
+			if !ok {
 				return
 			}
 
 			// Resolve volume UUID to internal ID
-			volume, err := db.GetVolumeByUUID(r.Context(), req.VolumeUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "volume not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving volume uuid", "error", err)
-				service.InternalError(w, err.Error())
+			volume, ok := service.ResolveFK(r.Context(), w, req.VolumeUUID, "volume", db.GetVolumeByUUID)
+			if !ok {
 				return
 			}
 
@@ -107,14 +90,13 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 
 			transfer, occupancy, err := db.RecordTransfer(r.Context(), record)
 			if err != nil {
-				slog.Error("error recording transfer", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error recording transfer", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewTransferRecordResponse(transfer, occupancy))
+			service.JSONCreated(w, dto.NewTransferRecordResponse(transfer, occupancy))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -122,11 +104,6 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 // HandleTransferByUUID handles [GET /transfers/{uuid}].
 func HandleTransferByUUID(db TransferStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		transferUUID := r.PathValue("uuid")
 		if transferUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -138,8 +115,7 @@ func HandleTransferByUUID(db TransferStore) http.HandlerFunc {
 			http.Error(w, "transfer not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting transfer", "error", err, "transfer_uuid", transferUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting transfer", "error", err, "transfer_uuid", transferUUID)
 			return
 		}
 

@@ -15,7 +15,7 @@ func (c *Client) CreateVessel(ctx context.Context, vessel Vessel) (Vessel, error
 		status = VesselStatusActive
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO vessel (
 			type,
 			name,
@@ -56,7 +56,7 @@ func (c *Client) CreateVessel(ctx context.Context, vessel Vessel) (Vessel, error
 
 func (c *Client) GetVessel(ctx context.Context, id int64) (Vessel, error) {
 	var vessel Vessel
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, type, name, capacity, capacity_unit, make, model, status, created_at, updated_at, deleted_at
 		FROM vessel
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -86,7 +86,7 @@ func (c *Client) GetVessel(ctx context.Context, id int64) (Vessel, error) {
 }
 
 func (c *Client) ListVessels(ctx context.Context) ([]Vessel, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, type, name, capacity, capacity_unit, make, model, status, created_at, updated_at, deleted_at
 		FROM vessel
 		WHERE deleted_at IS NULL
@@ -127,7 +127,7 @@ func (c *Client) ListVessels(ctx context.Context) ([]Vessel, error) {
 
 func (c *Client) GetVesselByUUID(ctx context.Context, uuid string) (Vessel, error) {
 	var vessel Vessel
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, type, name, capacity, capacity_unit, make, model, status, created_at, updated_at, deleted_at
 		FROM vessel
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -157,7 +157,7 @@ func (c *Client) GetVesselByUUID(ctx context.Context, uuid string) (Vessel, erro
 }
 
 func (c *Client) UpdateVessel(ctx context.Context, id int64, vessel Vessel) (Vessel, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE vessel
 		SET type = $1, name = $2, capacity = $3, capacity_unit = $4, make = $5, model = $6, status = $7, updated_at = timezone('utc', now())
 		WHERE id = $8 AND deleted_at IS NULL
@@ -195,7 +195,7 @@ func (c *Client) UpdateVessel(ctx context.Context, id int64, vessel Vessel) (Ves
 }
 
 func (c *Client) UpdateVesselByUUID(ctx context.Context, vesselUUID string, vessel Vessel) (Vessel, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE vessel
 		SET type = $1, name = $2, capacity = $3, capacity_unit = $4, make = $5, model = $6, status = $7, updated_at = timezone('utc', now())
 		WHERE uuid = $8 AND deleted_at IS NULL

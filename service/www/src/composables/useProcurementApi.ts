@@ -1,94 +1,20 @@
+import type {
+  CreatePurchaseOrderRequest,
+  PurchaseOrder,
+  PurchaseOrderFee,
+  PurchaseOrderLine,
+  Supplier,
+  UpdatePurchaseOrderRequest,
+  UpdateSupplierRequest,
+} from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
+import { formatDateTime } from '@/composables/useFormatters'
+import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
 const procurementApiBase = import.meta.env.VITE_PROCUREMENT_API_URL ?? '/api'
 
-export interface Supplier {
-  uuid: string
-  name: string
-  contact_name: string | null
-  email: string | null
-  phone: string | null
-  address_line1: string | null
-  address_line2: string | null
-  city: string | null
-  region: string | null
-  postal_code: string | null
-  country: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface UpdateSupplierRequest {
-  name?: string
-  contact_name?: string | null
-  email?: string | null
-  phone?: string | null
-  address_line1?: string | null
-  address_line2?: string | null
-  city?: string | null
-  region?: string | null
-  postal_code?: string | null
-  country?: string | null
-}
-
-export interface PurchaseOrder {
-  uuid: string
-  supplier_uuid: string
-  order_number: string
-  status: string
-  ordered_at: string | null
-  expected_at: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface CreatePurchaseOrderRequest {
-  supplier_uuid: string
-  order_number: string
-  status?: string | null
-  ordered_at?: string | null
-  expected_at?: string | null
-  notes?: string | null
-}
-
-export interface UpdatePurchaseOrderRequest {
-  order_number?: string
-  status?: string
-  ordered_at?: string | null
-  expected_at?: string | null
-  notes?: string | null
-}
-
 export function useProcurementApi () {
   const { request } = useApiClient(procurementApiBase)
-
-  const normalizeText = (value: string) => {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  const normalizeDateTime = (value: string) => {
-    return value ? new Date(value).toISOString() : null
-  }
-
-  const toNumber = (value: string | number | null) => {
-    if (value === null || value === undefined || value === '') {
-      return null
-    }
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  const formatDateTime = (value: string | null | undefined) => {
-    if (!value) {
-      return 'n/a'
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  }
 
   const formatCurrency = (cents: number | null | undefined, currency: string | null | undefined) => {
     if (cents === null || cents === undefined) {
@@ -133,6 +59,36 @@ export function useProcurementApi () {
       body: JSON.stringify(data),
     })
 
+  // Purchase Order Lines API
+  const getPurchaseOrderLines = (purchaseOrderUuid?: string) => {
+    const query = new URLSearchParams()
+    if (purchaseOrderUuid) {
+      query.set('purchase_order_uuid', purchaseOrderUuid)
+    }
+    const path = query.toString() ? `/purchase-order-lines?${query.toString()}` : '/purchase-order-lines'
+    return request<PurchaseOrderLine[]>(path)
+  }
+  const createPurchaseOrderLine = (data: Record<string, unknown>) =>
+    request<PurchaseOrderLine>('/purchase-order-lines', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Purchase Order Fees API
+  const getPurchaseOrderFees = (purchaseOrderUuid?: string) => {
+    const query = new URLSearchParams()
+    if (purchaseOrderUuid) {
+      query.set('purchase_order_uuid', purchaseOrderUuid)
+    }
+    const path = query.toString() ? `/purchase-order-fees?${query.toString()}` : '/purchase-order-fees'
+    return request<PurchaseOrderFee[]>(path)
+  }
+  const createPurchaseOrderFee = (data: Record<string, unknown>) =>
+    request<PurchaseOrderFee>('/purchase-order-fees', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
   return {
     apiBase: procurementApiBase,
     request,
@@ -151,5 +107,11 @@ export function useProcurementApi () {
     getPurchaseOrder,
     createPurchaseOrder,
     updatePurchaseOrder,
+    // Purchase Order Lines
+    getPurchaseOrderLines,
+    createPurchaseOrderLine,
+    // Purchase Order Fees
+    getPurchaseOrderFees,
+    createPurchaseOrderFee,
   }
 }

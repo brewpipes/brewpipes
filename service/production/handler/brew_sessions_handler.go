@@ -28,52 +28,24 @@ func resolveBrewSessionFKs(ctx context.Context, db BrewSessionStore, w http.Resp
 	batchUUID, wortVolumeUUID, mashVesselUUID, boilVesselUUID *string,
 	session *storage.BrewSession) bool {
 
-	if batchUUID != nil {
-		batch, err := db.GetBatchByUUID(ctx, *batchUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "batch not found", http.StatusBadRequest)
-			return false
-		} else if err != nil {
-			slog.Error("error resolving batch uuid", "error", err)
-			service.InternalError(w, err.Error())
-			return false
-		}
+	if batch, ok := service.ResolveFKOptional(ctx, w, batchUUID, "batch", db.GetBatchByUUID); !ok {
+		return false
+	} else if batchUUID != nil {
 		session.BatchID = &batch.ID
 	}
-	if wortVolumeUUID != nil {
-		vol, err := db.GetVolumeByUUID(ctx, *wortVolumeUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "wort volume not found", http.StatusBadRequest)
-			return false
-		} else if err != nil {
-			slog.Error("error resolving wort volume uuid", "error", err)
-			service.InternalError(w, err.Error())
-			return false
-		}
+	if vol, ok := service.ResolveFKOptional(ctx, w, wortVolumeUUID, "wort volume", db.GetVolumeByUUID); !ok {
+		return false
+	} else if wortVolumeUUID != nil {
 		session.WortVolumeID = &vol.ID
 	}
-	if mashVesselUUID != nil {
-		vessel, err := db.GetVesselByUUID(ctx, *mashVesselUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "mash vessel not found", http.StatusBadRequest)
-			return false
-		} else if err != nil {
-			slog.Error("error resolving mash vessel uuid", "error", err)
-			service.InternalError(w, err.Error())
-			return false
-		}
+	if vessel, ok := service.ResolveFKOptional(ctx, w, mashVesselUUID, "mash vessel", db.GetVesselByUUID); !ok {
+		return false
+	} else if mashVesselUUID != nil {
 		session.MashVesselID = &vessel.ID
 	}
-	if boilVesselUUID != nil {
-		vessel, err := db.GetVesselByUUID(ctx, *boilVesselUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "boil vessel not found", http.StatusBadRequest)
-			return false
-		} else if err != nil {
-			slog.Error("error resolving boil vessel uuid", "error", err)
-			service.InternalError(w, err.Error())
-			return false
-		}
+	if vessel, ok := service.ResolveFKOptional(ctx, w, boilVesselUUID, "boil vessel", db.GetVesselByUUID); !ok {
+		return false
+	} else if boilVesselUUID != nil {
 		session.BoilVesselID = &vessel.ID
 	}
 	return true
@@ -95,8 +67,7 @@ func HandleBrewSessions(db BrewSessionStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error listing brew sessions", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing brew sessions", "error", err)
 				return
 			}
 
@@ -128,16 +99,15 @@ func HandleBrewSessions(db BrewSessionStore) http.HandlerFunc {
 
 			created, err := db.CreateBrewSession(r.Context(), session)
 			if err != nil {
-				slog.Error("error creating brew session", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating brew session", "error", err)
 				return
 			}
 
 			slog.Info("brew session created", "brew_session_uuid", created.UUID, "batch_uuid", req.BatchUUID)
 
-			service.JSON(w, dto.NewBrewSessionResponse(created))
+			service.JSONCreated(w, dto.NewBrewSessionResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -158,8 +128,7 @@ func HandleBrewSessionByUUID(db BrewSessionStore) http.HandlerFunc {
 				http.Error(w, "brew session not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting brew session", "error", err, "session_uuid", sessionUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting brew session", "error", err, "session_uuid", sessionUUID)
 				return
 			}
 
@@ -181,8 +150,7 @@ func HandleBrewSessionByUUID(db BrewSessionStore) http.HandlerFunc {
 				http.Error(w, "brew session not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting brew session for update", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting brew session for update", "error", err)
 				return
 			}
 
@@ -205,8 +173,7 @@ func HandleBrewSessionByUUID(db BrewSessionStore) http.HandlerFunc {
 				http.Error(w, "brew session not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating brew session", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating brew session", "error", err)
 				return
 			}
 
@@ -214,7 +181,7 @@ func HandleBrewSessionByUUID(db BrewSessionStore) http.HandlerFunc {
 
 			service.JSON(w, dto.NewBrewSessionResponse(updated))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

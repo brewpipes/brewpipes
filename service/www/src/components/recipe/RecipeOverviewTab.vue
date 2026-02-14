@@ -57,7 +57,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Recipe } from '@/composables/useProductionApi'
+  import type { Recipe } from '@/types'
   import { useBrewingFormatters, useFormatters } from '@/composables/useFormatters'
 
   defineProps<{

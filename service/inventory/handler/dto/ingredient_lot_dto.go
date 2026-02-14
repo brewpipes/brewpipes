@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/uuidutil"
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -24,13 +26,13 @@ type CreateIngredientLotRequest struct {
 }
 
 func (r CreateIngredientLotRequest) Validate() error {
-	if err := validateRequired(r.IngredientUUID, "ingredient_uuid"); err != nil {
+	if err := validate.Required(r.IngredientUUID, "ingredient_uuid"); err != nil {
 		return err
 	}
 	if r.ReceivedAmount <= 0 {
 		return fmt.Errorf("received_amount must be greater than zero")
 	}
-	if err := validateRequired(r.ReceivedUnit, "received_unit"); err != nil {
+	if err := validate.Required(r.ReceivedUnit, "received_unit"); err != nil {
 		return err
 	}
 	if r.OriginatorType != nil {
@@ -72,7 +74,7 @@ func NewIngredientLotResponse(lot storage.IngredientLot) IngredientLotResponse {
 		UUID:              lot.UUID.String(),
 		IngredientUUID:    lot.IngredientUUID,
 		ReceiptUUID:       lot.ReceiptUUID,
-		SupplierUUID:      uuidToStringPointer(lot.SupplierUUID),
+		SupplierUUID:      uuidutil.ToStringPointer(lot.SupplierUUID),
 		BreweryLotCode:    lot.BreweryLotCode,
 		OriginatorLotCode: lot.OriginatorLotCode,
 		OriginatorName:    lot.OriginatorName,

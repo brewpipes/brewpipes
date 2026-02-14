@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
-**Last Updated:** 2026-02-13  
-**Status:** Phase 3 Complete, Phase 4 In Progress
+**Last Updated:** 2026-02-14  
+**Status:** Phase 4 Complete
 
 ---
 
@@ -324,13 +324,13 @@ Enable complete brew day recording with inventory integration.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| BREW-04 | Frontend: Assign batch to fermenter | M | 2, 3 | Not Started |
-| BREW-05 | Backend + Frontend: Mark vessel as empty | S | 3, 4 | Not Started |
-| BREW-01 | Backend + Frontend: Ingredient pick list from recipe | M | 2 | Not Started |
-| BREW-03 | Backend: Inventory deduction on ingredient use | M | 2 | Not Started |
-| BREW-02 | Frontend: Lot selection for ingredient picks | M | 2 | Not Started |
-| RCP-06 | Recipe scaling calculator (from Phase 2) | M | 2 | Not Started |
-| BREW-06 | Mobile-optimized brew day wizard | L | 2 | Not Started |
+| BREW-04 | Frontend: Assign batch to fermenter | M | 2, 3 | **Complete** |
+| BREW-05 | Backend + Frontend: Mark vessel as empty | S | 3, 4 | **Complete** |
+| BREW-01 | Backend + Frontend: Ingredient pick list from recipe | M | 2 | **Complete** |
+| BREW-03 | Backend: Inventory deduction on ingredient use | M | 2 | **Complete** |
+| BREW-02 | Frontend: Lot selection for ingredient picks | M | 2 | **Complete** |
+| RCP-06 | Recipe scaling calculator (from Phase 2) | M | 2 | **Complete** |
+| BREW-06 | Mobile-optimized brew day wizard | L | 2 | **Complete** |
 
 ---
 
@@ -400,9 +400,9 @@ Track brewhouse removals for future TTB compliance.
 |-----------|-------------|--------|
 | **M0: Roadmap Complete** | User journeys and feature backlog finalized | **Complete** |
 | **M1: Tech Debt Clear** | Phase 0 complete, codebase ready for features | **Complete** |
-| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **In Progress** (Phase 2 complete except RCP-06, moved to Phase 4) |
+| **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **Complete** (RCP-06 delivered in Phase 4) |
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | **Complete** |
-| **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | Not Started |
+| **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | **Complete** |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | Not Started |
 | **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | Not Started |
 | **M7: Costing Complete** | Phase 7 complete (batch costing) | Not Started |
@@ -438,6 +438,13 @@ Track brewhouse removals for future TTB compliance.
 | PROC-04 | Frontend: Receiving workflow (receive against PO) | 2026-02-13 |
 | PROC-05 | Frontend: Current stock levels display | 2026-02-13 |
 | PROC-06 | Frontend: Low stock alerts | 2026-02-13 |
+| BREW-04 | Frontend: Assign batch to fermenter | 2026-02-14 |
+| BREW-05 | Backend + Frontend: Mark vessel as empty | 2026-02-14 |
+| BREW-01 | Backend + Frontend: Ingredient pick list from recipe | 2026-02-14 |
+| BREW-03 | Backend: Inventory deduction on ingredient use | 2026-02-14 |
+| BREW-02 | Frontend: Lot selection for ingredient picks | 2026-02-14 |
+| RCP-06 | Recipe scaling calculator | 2026-02-14 |
+| BREW-06 | Mobile-optimized brew day wizard | 2026-02-14 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -471,6 +478,16 @@ Track brewhouse removals for future TTB compliance.
 - **Low Stock Alerts (PROC-06):** Dashboard card showing out-of-stock ingredients. Navigation badge on Inventory when low stock exists.
 - **Backend Enhancements (PROC-01, PROC-02):** PO linkage exposed on receipts and lots. PO status transition validation with state machine.
 
+**Phase 4 Details:** Implemented complete brew day recording with inventory integration:
+- **Assign to Fermenter (BREW-04):** Frontend dialog for creating occupancies from batch detail. Visual vessel selection with capacity display. "Beer Status" label replaces "Occupancy Status" for brewer-friendly language.
+- **Mark Vessel Empty (BREW-05):** Backend PATCH endpoint for closing occupancies. Frontend dialog accessible from batch summary. Validates occupancy isn't already closed.
+- **Ingredient Pick List (BREW-01):** Brew Day tab in batch details showing recipe ingredients grouped by "Needed Today"/"Needed Later" based on use stage. Cross-service stock level resolution. FIFO lot ordering with soft-delete filtering.
+- **Inventory Deduction (BREW-03):** Atomic batch-level inventory deduction endpoint (POST /inventory-usage/batch). Transactional stock validation prevents over-deduction. 22 backend tests.
+- **Lot Selection (BREW-02):** Per-ingredient lot selection with FIFO ordering, multi-lot splitting, confirmation dialog. Backend enhanced with `current_amount` computed from movement ledger. 7 frontend tests.
+- **Recipe Scaling (RCP-06):** `useRecipeScaling` composable with cross-unit volume conversion (bbl/gal/L/hL). Scaling controls in recipe details and brew day tab. 23 tests.
+- **Brew Day Wizard (BREW-06):** Three-step guided wizard (pick ingredients → record session → assign fermenter) optimized for mobile. Fullscreen on small screens, non-linear step navigation, auto-fill FIFO lots, visual fermenter card picker, completion summary. Reviewed and refined by frontend tech lead.
+- **Seed Data Enhancement:** 20 new ingredients, 22 lots, 4 new batches, 5 new vessels, missing enum values, FIFO test lots, cross-service UUID fix migration.
+
 ---
 
 ## Appendix: Current System Capabilities
@@ -498,15 +515,21 @@ Track brewhouse removals for future TTB compliance.
 - Polished UI with consistent design patterns
 - User display preferences (units)
 
-### Key Gaps (to be addressed in Phases 1-8)
+### Key Gaps (to be addressed in Phases 5-8)
 - Limited edit/delete operations
-- No occupancy creation from UI
 - No stock level visibility
 - No PO → receipt workflow
 - Recipe lacks ingredient details
 - No cost tracking
 - No packaging workflow
 - No removal tracking
+
+### Recently Addressed (Phase 4)
+- ✅ Brew day workflow - complete ingredient picking, session recording, fermenter assignment
+- ✅ Inventory integration - atomic deduction with FIFO lot selection and stock validation
+- ✅ Recipe scaling - cross-unit volume conversion with scaling controls
+- ✅ Mobile brew day wizard - guided 3-step flow optimized for brew floor use
+- ✅ Frontend tests - 366 tests covering composables, components, and scaling
 
 ### Recently Addressed (Phase 0)
 - ✅ Mobile responsiveness - now works well on all devices

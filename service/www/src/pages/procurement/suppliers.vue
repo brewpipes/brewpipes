@@ -41,36 +41,35 @@
                 >
                   {{ errorMessage }}
                 </v-alert>
-                <v-table class="data-table" density="compact">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Contact</th>
-                      <th>Email</th>
-                      <th>Updated</th>
-                      <th class="text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="supplier in suppliers" :key="supplier.uuid">
-                      <td>{{ supplier.name }}</td>
-                      <td>{{ supplier.contact_name || 'n/a' }}</td>
-                      <td>{{ supplier.email || 'n/a' }}</td>
-                      <td>{{ formatDateTime(supplier.updated_at) }}</td>
-                      <td class="text-right">
-                        <v-btn
-                          icon="mdi-pencil"
-                          size="x-small"
-                          variant="text"
-                          @click="openEditDialog(supplier)"
-                        />
-                      </td>
-                    </tr>
-                    <tr v-if="suppliers.length === 0">
-                      <td colspan="5">No suppliers yet.</td>
-                    </tr>
-                  </tbody>
-                </v-table>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="headers"
+                  item-value="uuid"
+                  :items="suppliers"
+                  :loading="loading"
+                >
+                  <template #item.contact_name="{ item }">
+                    {{ item.contact_name || 'n/a' }}
+                  </template>
+                  <template #item.email="{ item }">
+                    {{ item.email || 'n/a' }}
+                  </template>
+                  <template #item.updated_at="{ item }">
+                    {{ formatDateTime(item.updated_at) }}
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn
+                      icon="mdi-pencil"
+                      size="x-small"
+                      variant="text"
+                      @click.stop="openEditDialog(item)"
+                    />
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No suppliers yet.</div>
+                  </template>
+                </v-data-table>
               </v-card-text>
             </v-card>
           </v-col>
@@ -78,10 +77,6 @@
       </v-card-text>
     </v-card>
   </v-container>
-
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
 
   <!-- Create/Edit Supplier Dialog -->
   <v-dialog v-model="supplierDialog" :max-width="$vuetify.display.xs ? '100%' : 720" persistent>
@@ -140,15 +135,27 @@
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
-  import { type Supplier, useProcurementApi } from '@/composables/useProcurementApi'
+  import { formatDateTime } from '@/composables/useFormatters'
+  import type { Supplier } from '@/types'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeText } from '@/utils/normalize'
 
   const {
     getSuppliers,
     createSupplier,
     updateSupplier,
-    normalizeText,
-    formatDateTime,
   } = useProcurementApi()
+  const { showNotice } = useSnackbar()
+
+  // Table configuration
+  const headers = [
+    { title: 'Name', key: 'name', sortable: true },
+    { title: 'Contact', key: 'contact_name', sortable: true },
+    { title: 'Email', key: 'email', sortable: true },
+    { title: 'Updated', key: 'updated_at', sortable: true },
+    { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '80px' },
+  ]
 
   // State
   const suppliers = ref<Supplier[]>([])
@@ -173,12 +180,6 @@
     country: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   // Computed
   const isEditing = computed(() => editingSupplierUuid.value !== null)
 
@@ -188,12 +189,6 @@
   })
 
   // Methods
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   function resetForm () {
     supplierForm.name = ''
     supplierForm.contact_name = ''
@@ -291,51 +286,5 @@
 <style scoped>
 .procurement-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.card-title-responsive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.card-title-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
-}
-
-.data-table {
-  overflow-x: auto;
-}
-
-.data-table :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  white-space: nowrap;
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 </style>

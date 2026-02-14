@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -37,8 +36,7 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error listing batch volumes", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing batch volumes", "error", err)
 				return
 			}
 
@@ -55,24 +53,14 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 			}
 
 			// Resolve batch UUID to internal ID
-			batch, err := db.GetBatchByUUID(r.Context(), req.BatchUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "batch not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving batch uuid", "error", err)
-				service.InternalError(w, err.Error())
+			batch, ok := service.ResolveFK(r.Context(), w, req.BatchUUID, "batch", db.GetBatchByUUID)
+			if !ok {
 				return
 			}
 
 			// Resolve volume UUID to internal ID
-			volume, err := db.GetVolumeByUUID(r.Context(), req.VolumeUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "volume not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving volume uuid", "error", err)
-				service.InternalError(w, err.Error())
+			volume, ok := service.ResolveFK(r.Context(), w, req.VolumeUUID, "volume", db.GetVolumeByUUID)
+			if !ok {
 				return
 			}
 
@@ -90,14 +78,13 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 
 			created, err := db.CreateBatchVolume(r.Context(), batchVolume)
 			if err != nil {
-				slog.Error("error creating batch volume", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating batch volume", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewBatchVolumeResponse(created))
+			service.JSONCreated(w, dto.NewBatchVolumeResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -105,11 +92,6 @@ func HandleBatchVolumes(db BatchVolumeStore) http.HandlerFunc {
 // HandleBatchVolumeByUUID handles [GET /batch-volumes/{uuid}].
 func HandleBatchVolumeByUUID(db BatchVolumeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		bvUUID := r.PathValue("uuid")
 		if bvUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -121,8 +103,7 @@ func HandleBatchVolumeByUUID(db BatchVolumeStore) http.HandlerFunc {
 			http.Error(w, "batch volume not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting batch volume", "error", err, "batch_volume_uuid", bvUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting batch volume", "error", err, "batch_volume_uuid", bvUUID)
 			return
 		}
 

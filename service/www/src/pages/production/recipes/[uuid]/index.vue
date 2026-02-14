@@ -29,29 +29,20 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import RecipeDetails from '@/components/recipe/RecipeDetails.vue'
-  import { type Recipe, useProductionApi } from '@/composables/useProductionApi'
+  import type { Recipe } from '@/types'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useRouteUuid } from '@/composables/useRouteUuid'
 
-  const route = useRoute()
   const router = useRouter()
   const { getRecipe } = useProductionApi()
+  const { uuid: routeUuid } = useRouteUuid()
 
   const loading = ref(true)
   const error = ref<string | null>(null)
   const recipe = ref<Recipe | null>(null)
-
-  const routeUuid = computed(() => {
-    const params = route.params
-    if ('uuid' in params) {
-      const param = params.uuid
-      if (typeof param === 'string' && param.trim()) {
-        return param
-      }
-    }
-    return null
-  })
 
   async function loadRecipe () {
     const uuid = routeUuid.value

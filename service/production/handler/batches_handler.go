@@ -29,8 +29,7 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 		case http.MethodGet:
 			batches, err := db.ListBatches(r.Context())
 			if err != nil {
-				slog.Error("error listing batches", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing batches", "error", err)
 				return
 			}
 
@@ -56,31 +55,25 @@ func HandleBatches(db BatchStore) http.HandlerFunc {
 			}
 
 			// Resolve recipe UUID to internal ID if provided
-			if req.RecipeUUID != nil {
-				recipe, err := db.GetRecipe(r.Context(), *req.RecipeUUID, nil)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "recipe not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving recipe uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if recipe, ok := service.ResolveFKOptional(r.Context(), w, req.RecipeUUID, "recipe", func(ctx context.Context, uuid string) (storage.Recipe, error) {
+				return db.GetRecipe(ctx, uuid, nil)
+			}); !ok {
+				return
+			} else if req.RecipeUUID != nil {
 				batch.RecipeID = &recipe.ID
 			}
 
 			created, err := db.CreateBatch(r.Context(), batch)
 			if err != nil {
-				slog.Error("error creating batch", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating batch", "error", err)
 				return
 			}
 
 			slog.Info("batch created", "batch_uuid", created.UUID, "short_name", created.ShortName)
 
-			service.JSON(w, dto.NewBatchResponse(created))
+			service.JSONCreated(w, dto.NewBatchResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -101,8 +94,7 @@ func HandleBatchByUUID(db BatchStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting batch", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting batch", "error", err)
 				return
 			}
 
@@ -125,16 +117,11 @@ func HandleBatchByUUID(db BatchStore) http.HandlerFunc {
 			}
 
 			// Resolve recipe UUID to internal ID if provided
-			if req.RecipeUUID != nil {
-				recipe, err := db.GetRecipe(r.Context(), *req.RecipeUUID, nil)
-				if errors.Is(err, service.ErrNotFound) {
-					http.Error(w, "recipe not found", http.StatusBadRequest)
-					return
-				} else if err != nil {
-					slog.Error("error resolving recipe uuid", "error", err)
-					service.InternalError(w, err.Error())
-					return
-				}
+			if recipe, ok := service.ResolveFKOptional(r.Context(), w, req.RecipeUUID, "recipe", func(ctx context.Context, uuid string) (storage.Recipe, error) {
+				return db.GetRecipe(ctx, uuid, nil)
+			}); !ok {
+				return
+			} else if req.RecipeUUID != nil {
 				batch.RecipeID = &recipe.ID
 			}
 
@@ -143,8 +130,7 @@ func HandleBatchByUUID(db BatchStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating batch", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating batch", "error", err)
 				return
 			}
 
@@ -174,8 +160,7 @@ func HandleBatchByUUID(db BatchStore) http.HandlerFunc {
 				http.Error(w, "batch not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error deleting batch", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error deleting batch", "error", err)
 				return
 			}
 
@@ -183,7 +168,7 @@ func HandleBatchByUUID(db BatchStore) http.HandlerFunc {
 
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

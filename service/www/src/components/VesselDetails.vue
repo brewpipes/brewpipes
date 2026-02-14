@@ -139,12 +139,7 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import { useFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
-  import {
-    type Occupancy,
-    OCCUPANCY_STATUS_VALUES,
-    type OccupancyStatus,
-    type Vessel,
-  } from '@/composables/useProductionApi'
+  import { type Occupancy, type OccupancyStatus, OCCUPANCY_STATUS_VALUES, type Vessel } from '@/types'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   withDefaults(

@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -11,7 +12,7 @@ type CreateStyleRequest struct {
 }
 
 func (r CreateStyleRequest) Validate() error {
-	return validateRequired(r.Name, "name")
+	return validate.Required(r.Name, "name")
 }
 
 type StyleResponse struct {

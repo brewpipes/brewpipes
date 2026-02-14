@@ -1,8 +1,29 @@
 /**
  * Shared types for batch-related components.
+ *
+ * Entity types (Batch, Volume, Addition, Measurement, etc.) are imported from
+ * '@/types'. This file contains only component-specific types used by batch
+ * UI components.
  */
 
-export type Unit = 'ml' | 'usfloz' | 'ukfloz' | 'bbl'
+import type { Measurement } from '@/types'
+
+// Re-export entity types from canonical source for barrel-file consumers
+export type {
+  Addition,
+  AdditionType,
+  Batch,
+  Measurement,
+  Volume,
+} from '@/types'
+
+// Aliases for VolumeUnit used in batch component forms
+export type Unit = import('@/types').VolumeUnit
+
+// ============================================================================
+// Component-specific types (not duplicated in @/types)
+// ============================================================================
+
 export type LiquidPhase = 'water' | 'wort' | 'beer'
 export type ProcessPhase
   = | 'planning'
@@ -15,36 +36,6 @@ export type ProcessPhase
     | 'packaging'
     | 'finished'
 export type RelationType = 'split' | 'blend'
-export type AdditionType
-  = | 'malt'
-    | 'hop'
-    | 'yeast'
-    | 'adjunct'
-    | 'water_chem'
-    | 'gas'
-    | 'other'
-
-export type Batch = {
-  uuid: string
-  short_name: string
-  brew_date: string | null
-  recipe_uuid: string | null
-  recipe_name: string | null
-  current_phase: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type Volume = {
-  uuid: string
-  name: string | null
-  description: string | null
-  amount: number
-  amount_unit: Unit
-  created_at: string
-  updated_at: string
-}
 
 export type VolumeRelation = {
   uuid: string
@@ -72,34 +63,6 @@ export type BatchProcessPhase = {
   batch_uuid: string
   process_phase: ProcessPhase
   phase_at: string
-  created_at: string
-  updated_at: string
-}
-
-export type Addition = {
-  uuid: string
-  batch_uuid: string | null
-  occupancy_uuid: string | null
-  addition_type: AdditionType
-  stage: string | null
-  inventory_lot_uuid: string | null
-  amount: number
-  amount_unit: Unit
-  added_at: string
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type Measurement = {
-  uuid: string
-  batch_uuid: string | null
-  occupancy_uuid: string | null
-  kind: string
-  value: number
-  unit: string | null
-  observed_at: string
-  notes: string | null
   created_at: string
   updated_at: string
 }

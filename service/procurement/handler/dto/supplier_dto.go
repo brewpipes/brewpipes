@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/procurement/storage"
 )
 
@@ -22,7 +23,7 @@ type CreateSupplierRequest struct {
 }
 
 func (r CreateSupplierRequest) Validate() error {
-	return validateRequired(r.Name, "name")
+	return validate.Required(r.Name, "name")
 }
 
 type UpdateSupplierRequest struct {

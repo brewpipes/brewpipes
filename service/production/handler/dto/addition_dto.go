@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/uuidutil"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -75,7 +76,7 @@ func NewAdditionResponse(addition storage.Addition) AdditionResponse {
 		VolumeUUID:       addition.VolumeUUID,
 		AdditionType:     addition.AdditionType,
 		Stage:            addition.Stage,
-		InventoryLotUUID: uuidToStringPointer(addition.InventoryLotUUID),
+		InventoryLotUUID: uuidutil.ToStringPointer(addition.InventoryLotUUID),
 		Amount:           addition.Amount,
 		AmountUnit:       addition.AmountUnit,
 		AddedAt:          addition.AddedAt,

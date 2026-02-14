@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/procurement/storage"
 )
 
@@ -15,10 +16,10 @@ type CreatePurchaseOrderFeeRequest struct {
 }
 
 func (r CreatePurchaseOrderFeeRequest) Validate() error {
-	if err := validateRequired(r.PurchaseOrderUUID, "purchase_order_uuid"); err != nil {
+	if err := validate.Required(r.PurchaseOrderUUID, "purchase_order_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.FeeType, "fee_type"); err != nil {
+	if err := validate.Required(r.FeeType, "fee_type"); err != nil {
 		return err
 	}
 	if r.AmountCents < 0 {
@@ -42,7 +43,7 @@ func (r UpdatePurchaseOrderFeeRequest) Validate() error {
 		return fmt.Errorf("at least one field must be provided")
 	}
 	if r.FeeType != nil {
-		if err := validateRequired(*r.FeeType, "fee_type"); err != nil {
+		if err := validate.Required(*r.FeeType, "fee_type"); err != nil {
 			return err
 		}
 	}

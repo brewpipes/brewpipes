@@ -28,7 +28,7 @@ func (c *Client) CreateTransfer(ctx context.Context, transfer Transfer) (Transfe
 		startedAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO transfer (
 			source_occupancy_id,
 			dest_occupancy_id,
@@ -72,7 +72,7 @@ func (c *Client) CreateTransfer(ctx context.Context, transfer Transfer) (Transfe
 
 func (c *Client) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
 	var transfer Transfer
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT t.id, t.uuid, t.source_occupancy_id, so.uuid, t.dest_occupancy_id, desto.uuid,
 		       t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at,
 		       t.created_at, t.updated_at, t.deleted_at
@@ -110,7 +110,7 @@ func (c *Client) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
 
 func (c *Client) GetTransferByUUID(ctx context.Context, transferUUID string) (Transfer, error) {
 	var transfer Transfer
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT t.id, t.uuid, t.source_occupancy_id, so.uuid, t.dest_occupancy_id, desto.uuid,
 		       t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at,
 		       t.created_at, t.updated_at, t.deleted_at
@@ -157,7 +157,7 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 		outAt = *record.EndedAt
 	}
 
-	tx, err := c.db.Begin(ctx)
+	tx, err := c.DB().Begin(ctx)
 	if err != nil {
 		return Transfer{}, Occupancy{}, fmt.Errorf("starting transfer transaction: %w", err)
 	}
@@ -250,16 +250,16 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 	}
 
 	// Resolve UUIDs for the transfer and occupancy
-	c.db.QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, transfer.SourceOccupancyID).Scan(&transfer.SourceOccupancyUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, transfer.SourceOccupancyID).Scan(&transfer.SourceOccupancyUUID)
 	transfer.DestOccupancyUUID = dest.UUID.String()
-	c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, dest.VesselID).Scan(&dest.VesselUUID)
-	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, dest.VolumeID).Scan(&dest.VolumeUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, dest.VesselID).Scan(&dest.VesselUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, dest.VolumeID).Scan(&dest.VolumeUUID)
 
 	return transfer, dest, nil
 }
 
 func (c *Client) ListTransfersByBatch(ctx context.Context, batchID int64) ([]Transfer, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT t.id, t.uuid, t.source_occupancy_id, so.uuid, t.dest_occupancy_id, desto.uuid,
 		       t.amount, t.amount_unit, t.loss_amount, t.loss_unit, t.started_at, t.ended_at,
 		       t.created_at, t.updated_at, t.deleted_at

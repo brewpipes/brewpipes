@@ -16,7 +16,7 @@ func (c *Client) CreateBrewSession(ctx context.Context, session BrewSession) (Br
 		brewedAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO brew_session (
 			batch_id,
 			wort_volume_id,
@@ -52,25 +52,25 @@ func (c *Client) CreateBrewSession(ctx context.Context, session BrewSession) (Br
 	// Resolve FK UUIDs
 	if session.BatchID != nil {
 		var batchUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *session.BatchID).Scan(&batchUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *session.BatchID).Scan(&batchUUID); err == nil {
 			session.BatchUUID = &batchUUID
 		}
 	}
 	if session.WortVolumeID != nil {
 		var volUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *session.WortVolumeID).Scan(&volUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *session.WortVolumeID).Scan(&volUUID); err == nil {
 			session.WortVolumeUUID = &volUUID
 		}
 	}
 	if session.MashVesselID != nil {
 		var vesselUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.MashVesselID).Scan(&vesselUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.MashVesselID).Scan(&vesselUUID); err == nil {
 			session.MashVesselUUID = &vesselUUID
 		}
 	}
 	if session.BoilVesselID != nil {
 		var vesselUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.BoilVesselID).Scan(&vesselUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.BoilVesselID).Scan(&vesselUUID); err == nil {
 			session.BoilVesselUUID = &vesselUUID
 		}
 	}
@@ -114,7 +114,7 @@ func scanBrewSession(row pgx.Row) (BrewSession, error) {
 }
 
 func (c *Client) GetBrewSession(ctx context.Context, id int64) (BrewSession, error) {
-	session, err := scanBrewSession(c.db.QueryRow(ctx,
+	session, err := scanBrewSession(c.DB().QueryRow(ctx,
 		brewSessionSelectWithJoins+` WHERE bs.id = $1 AND bs.deleted_at IS NULL`, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -126,7 +126,7 @@ func (c *Client) GetBrewSession(ctx context.Context, id int64) (BrewSession, err
 }
 
 func (c *Client) GetBrewSessionByUUID(ctx context.Context, sessionUUID string) (BrewSession, error) {
-	session, err := scanBrewSession(c.db.QueryRow(ctx,
+	session, err := scanBrewSession(c.DB().QueryRow(ctx,
 		brewSessionSelectWithJoins+` WHERE bs.uuid = $1 AND bs.deleted_at IS NULL`, sessionUUID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -138,7 +138,7 @@ func (c *Client) GetBrewSessionByUUID(ctx context.Context, sessionUUID string) (
 }
 
 func (c *Client) ListBrewSessionsByBatch(ctx context.Context, batchID int64) ([]BrewSession, error) {
-	rows, err := c.db.Query(ctx, brewSessionSelectWithJoins+`
+	rows, err := c.DB().Query(ctx, brewSessionSelectWithJoins+`
 		WHERE bs.batch_id = $1 AND bs.deleted_at IS NULL
 		ORDER BY bs.brewed_at ASC`, batchID)
 	if err != nil {
@@ -186,7 +186,7 @@ func (c *Client) ListBrewSessionsByBatchUUID(ctx context.Context, batchUUID stri
 }
 
 func (c *Client) UpdateBrewSession(ctx context.Context, id int64, session BrewSession) (BrewSession, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE brew_session
 		SET batch_id = $1, wort_volume_id = $2, mash_vessel_id = $3, boil_vessel_id = $4, brewed_at = $5, notes = $6, updated_at = timezone('utc', now())
 		WHERE id = $7 AND deleted_at IS NULL
@@ -221,25 +221,25 @@ func (c *Client) UpdateBrewSession(ctx context.Context, id int64, session BrewSe
 	// Resolve FK UUIDs
 	if session.BatchID != nil {
 		var batchUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *session.BatchID).Scan(&batchUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *session.BatchID).Scan(&batchUUID); err == nil {
 			session.BatchUUID = &batchUUID
 		}
 	}
 	if session.WortVolumeID != nil {
 		var volUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *session.WortVolumeID).Scan(&volUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *session.WortVolumeID).Scan(&volUUID); err == nil {
 			session.WortVolumeUUID = &volUUID
 		}
 	}
 	if session.MashVesselID != nil {
 		var vesselUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.MashVesselID).Scan(&vesselUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.MashVesselID).Scan(&vesselUUID); err == nil {
 			session.MashVesselUUID = &vesselUUID
 		}
 	}
 	if session.BoilVesselID != nil {
 		var vesselUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.BoilVesselID).Scan(&vesselUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM vessel WHERE id = $1`, *session.BoilVesselID).Scan(&vesselUUID); err == nil {
 			session.BoilVesselUUID = &vesselUUID
 		}
 	}

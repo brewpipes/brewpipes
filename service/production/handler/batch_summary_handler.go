@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -15,14 +14,9 @@ type BatchSummaryGetter interface {
 	GetBatchSummaryByUUID(context.Context, string) (storage.BatchSummary, error)
 }
 
-// HandleBatchSummary handles [GET /batches/{uuid}/summary].
-func HandleBatchSummary(db BatchSummaryGetter) http.HandlerFunc {
+// HandleBatchSummaryByUUID handles [GET /batches/{uuid}/summary].
+func HandleBatchSummaryByUUID(db BatchSummaryGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		batchUUID := r.PathValue("uuid")
 		if batchUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -34,8 +28,7 @@ func HandleBatchSummary(db BatchSummaryGetter) http.HandlerFunc {
 			http.Error(w, "batch not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting batch summary", "error", err, "batch_uuid", batchUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting batch summary", "error", err, "batch_uuid", batchUUID)
 			return
 		}
 

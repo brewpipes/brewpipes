@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -15,10 +16,10 @@ type CreateInventoryTransferRequest struct {
 }
 
 func (r CreateInventoryTransferRequest) Validate() error {
-	if err := validateRequired(r.SourceLocationUUID, "source_location_uuid"); err != nil {
+	if err := validate.Required(r.SourceLocationUUID, "source_location_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.DestLocationUUID, "dest_location_uuid"); err != nil {
+	if err := validate.Required(r.DestLocationUUID, "dest_location_uuid"); err != nil {
 		return err
 	}
 	if r.SourceLocationUUID == r.DestLocationUUID {

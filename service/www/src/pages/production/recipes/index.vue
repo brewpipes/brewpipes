@@ -125,10 +125,6 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
-
   <!-- Create/Edit Recipe Dialog -->
   <v-dialog v-model="recipeDialog" max-width="600" persistent>
     <v-card>
@@ -224,7 +220,11 @@
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { type Recipe, type Style, useProductionApi } from '@/composables/useProductionApi'
+  import { formatDateTime } from '@/composables/useFormatters'
+  import type { Recipe, Style } from '@/types'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeText } from '@/utils/normalize'
 
   const router = useRouter()
 
@@ -234,9 +234,8 @@
     createRecipe,
     updateRecipe,
     deleteRecipe,
-    normalizeText,
-    formatDateTime,
   } = useProductionApi()
+  const { showNotice } = useSnackbar()
 
   // State
   const recipes = ref<Recipe[]>([])
@@ -261,12 +260,6 @@
     name: '',
     style: null as Style | string | null,
     notes: '',
-  })
-
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
   })
 
   const rules = {
@@ -310,12 +303,6 @@
   })
 
   // Methods
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function loadRecipes () {
     loading.value = true
     errorMessage.value = ''
@@ -374,26 +361,6 @@
     return String(Math.round(value))
   }
 
-  // Kept for potential future inline editing from list view
-  function _openEditDialog (recipe: Recipe) {
-    editingRecipeUuid.value = recipe.uuid
-    recipeForm.name = recipe.name
-    recipeForm.notes = recipe.notes ?? ''
-
-    // Set the style - find matching style object or use the name as string
-    if (recipe.style_uuid) {
-      const matchingStyle = styles.value.find(s => s.uuid === recipe.style_uuid)
-      recipeForm.style = matchingStyle ?? recipe.style_name
-    } else if (recipe.style_name) {
-      recipeForm.style = recipe.style_name
-    } else {
-      recipeForm.style = null
-    }
-
-    styleSearchQuery.value = ''
-    recipeDialog.value = true
-  }
-
   function closeRecipeDialog () {
     recipeDialog.value = false
     editingRecipeUuid.value = null
@@ -449,12 +416,6 @@
     }
   }
 
-  // Kept for potential future inline deletion from list view
-  function _openDeleteDialog (recipe: Recipe) {
-    recipeToDelete.value = recipe
-    deleteDialog.value = true
-  }
-
   function closeDeleteDialog () {
     deleteDialog.value = false
     recipeToDelete.value = null
@@ -486,27 +447,6 @@
 <style scoped>
 .production-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.search-field {
-  max-width: 260px;
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 
 .notes-cell {

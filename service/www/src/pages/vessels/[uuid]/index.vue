@@ -198,42 +198,34 @@
       @save="handleSaveVessel"
     />
 
-    <!-- Snackbar for notifications -->
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-      {{ snackbar.text }}
-    </v-snackbar>
   </v-container>
 </template>
 
 <script lang="ts" setup>
   import type { UpdateVesselRequest } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
-  import { useApiClient } from '@/composables/useApiClient'
+  import type { Batch, Occupancy, Vessel } from '@/types'
   import {
     useFormatters,
     useOccupancyStatusFormatters,
     useVesselStatusFormatters,
   } from '@/composables/useFormatters'
-  import {
-    type Batch,
-    type Occupancy,
-    useProductionApi,
-    type Vessel,
-  } from '@/composables/useProductionApi'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useRouteUuid } from '@/composables/useRouteUuid'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { useVesselActions } from '@/composables/useVesselActions'
 
-  const route = useRoute()
   const router = useRouter()
 
-  const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-  const { request } = useApiClient(productionApiBase)
-  const { getActiveOccupancies, getVessel, updateVessel } = useProductionApi()
+  const { getActiveOccupancies, getBatches, getVessel } = useProductionApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { formatDateTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
   const { formatOccupancyStatus, getOccupancyStatusColor } = useOccupancyStatusFormatters()
+  const { uuid: routeUuid } = useRouteUuid()
 
   const loading = ref(true)
   const error = ref<string | null>(null)
@@ -245,23 +237,8 @@
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
 
-  // Snackbar state
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
-  const routeUuid = computed(() => {
-    const params = route.params
-    if ('uuid' in params) {
-      const param = params.uuid
-      if (typeof param === 'string' && param.trim()) {
-        return param
-      }
-    }
-    return null
-  })
+  const { showNotice } = useSnackbar()
+  const { saveVessel } = useVesselActions()
 
   const currentOccupancy = computed(() => {
     if (!vessel.value) return null
@@ -272,12 +249,6 @@
     if (!currentOccupancy.value || !currentOccupancy.value.batch_uuid) return null
     return batches.value.find(b => b.uuid === currentOccupancy.value!.batch_uuid) ?? null
   })
-
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
 
   async function loadData () {
     const uuid = routeUuid.value
@@ -298,7 +269,7 @@
       // Fetch occupancies and batches in parallel
       const [occupancyData, batchData] = await Promise.all([
         getActiveOccupancies(),
-        request<Batch[]>('/batches'),
+        getBatches(),
       ])
 
       occupancies.value = occupancyData
@@ -330,26 +301,10 @@
   async function handleSaveVessel (data: UpdateVesselRequest) {
     if (!vessel.value) return
 
-    editDialogRef.value?.setSaving(true)
-    editDialogRef.value?.clearError()
-
-    try {
-      const updated = await updateVessel(vessel.value.uuid, data)
+    const updated = await saveVessel(vessel.value.uuid, data, editDialogRef)
+    if (updated) {
       vessel.value = updated
       editDialogOpen.value = false
-      showNotice('Vessel updated successfully')
-    } catch (error_) {
-      console.error('Failed to update vessel:', error_)
-
-      // Check for 409 Conflict (vessel has active occupancy)
-      if (error_ instanceof Error && error_.message.includes('409')) {
-        editDialogRef.value?.setError('Cannot change status: vessel has an active occupancy')
-      } else {
-        const message = error_ instanceof Error ? error_.message : 'Failed to update vessel'
-        editDialogRef.value?.setError(message)
-      }
-    } finally {
-      editDialogRef.value?.setSaving(false)
     }
   }
 
@@ -359,21 +314,6 @@
 </script>
 
 <style scoped>
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.batch-link {
-  color: rgb(var(--v-theme-primary));
-  text-decoration: none;
-}
-
-.batch-link:hover {
-  text-decoration: underline;
-}
-
 .text-mono {
   font-family: monospace;
   font-size: 0.85em;

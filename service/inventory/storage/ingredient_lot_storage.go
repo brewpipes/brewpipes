@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,7 +20,7 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 
 	var supplierUUID pgtype.UUID
 	var purchaseOrderLineUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient_lot (
 			ingredient_id,
 			receipt_id,
@@ -39,8 +40,8 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 		RETURNING id, uuid, ingredient_id, receipt_id, supplier_uuid, purchase_order_line_uuid, brewery_lot_code, originator_lot_code, originator_name, originator_type, received_at, received_amount, received_unit, best_by_at, expires_at, notes, created_at, updated_at, deleted_at`,
 		lot.IngredientID,
 		lot.ReceiptID,
-		uuidParam(lot.SupplierUUID),
-		uuidParam(lot.PurchaseOrderLineUUID),
+		database.UUIDParam(lot.SupplierUUID),
+		database.UUIDParam(lot.PurchaseOrderLineUUID),
 		lot.BreweryLotCode,
 		lot.OriginatorLotCode,
 		lot.OriginatorName,
@@ -76,16 +77,16 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 		return IngredientLot{}, fmt.Errorf("creating ingredient lot: %w", err)
 	}
 
-	assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
-	assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
+	database.AssignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+	database.AssignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 
 	// Resolve ingredient UUID
-	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, lot.IngredientID).Scan(&lot.IngredientUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, lot.IngredientID).Scan(&lot.IngredientUUID)
 
 	// Resolve receipt UUID if set
 	if lot.ReceiptID != nil {
 		var receiptUUID string
-		err := c.db.QueryRow(ctx, `SELECT uuid FROM inventory_receipt WHERE id = $1`, *lot.ReceiptID).Scan(&receiptUUID)
+		err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_receipt WHERE id = $1`, *lot.ReceiptID).Scan(&receiptUUID)
 		if err == nil {
 			lot.ReceiptUUID = &receiptUUID
 		}
@@ -95,17 +96,17 @@ func (c *Client) CreateIngredientLot(ctx context.Context, lot IngredientLot) (In
 }
 
 func (c *Client) GetIngredientLot(ctx context.Context, id int64) (IngredientLot, error) {
-	return c.scanIngredientLotRow(c.db.QueryRow(ctx, ingredientLotSelectSQL+`
+	return c.scanIngredientLotRow(c.DB().QueryRow(ctx, ingredientLotSelectSQL+`
 		WHERE il.id = $1 AND il.deleted_at IS NULL`, id))
 }
 
 func (c *Client) GetIngredientLotByUUID(ctx context.Context, lotUUID string) (IngredientLot, error) {
-	return c.scanIngredientLotRow(c.db.QueryRow(ctx, ingredientLotSelectSQL+`
+	return c.scanIngredientLotRow(c.DB().QueryRow(ctx, ingredientLotSelectSQL+`
 		WHERE il.uuid = $1 AND il.deleted_at IS NULL`, lotUUID))
 }
 
 func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error) {
-	rows, err := c.db.Query(ctx, ingredientLotSelectSQL+`
+	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
 		WHERE il.deleted_at IS NULL
 		ORDER BY il.received_at DESC`)
 	if err != nil {
@@ -117,7 +118,7 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 }
 
 func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientUUID string) ([]IngredientLot, error) {
-	rows, err := c.db.Query(ctx, ingredientLotSelectSQL+`
+	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
 		WHERE i.uuid = $1 AND il.deleted_at IS NULL
 		ORDER BY il.received_at DESC`,
 		ingredientUUID,
@@ -131,7 +132,7 @@ func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientU
 }
 
 func (c *Client) ListIngredientLotsByReceipt(ctx context.Context, receiptUUID string) ([]IngredientLot, error) {
-	rows, err := c.db.Query(ctx, ingredientLotSelectSQL+`
+	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
 		WHERE r.uuid = $1 AND il.deleted_at IS NULL
 		ORDER BY il.received_at DESC`,
 		receiptUUID,
@@ -190,8 +191,8 @@ func (c *Client) scanIngredientLotRow(row pgx.Row) (IngredientLot, error) {
 		return IngredientLot{}, fmt.Errorf("scanning ingredient lot: %w", err)
 	}
 
-	assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
-	assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
+	database.AssignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+	database.AssignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 	return lot, nil
 }
 
@@ -226,8 +227,8 @@ func (c *Client) scanIngredientLotRows(rows pgx.Rows) ([]IngredientLot, error) {
 		); err != nil {
 			return nil, fmt.Errorf("scanning ingredient lot: %w", err)
 		}
-		assignUUIDPointer(&lot.SupplierUUID, supplierUUID)
-		assignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
+		database.AssignUUIDPointer(&lot.SupplierUUID, supplierUUID)
+		database.AssignUUIDPointer(&lot.PurchaseOrderLineUUID, purchaseOrderLineUUID)
 		lots = append(lots, lot)
 	}
 	if err := rows.Err(); err != nil {

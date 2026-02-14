@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -20,13 +21,13 @@ type CreateTransferRequest struct {
 }
 
 func (r CreateTransferRequest) Validate() error {
-	if err := validateRequired(r.SourceOccupancyUUID, "source_occupancy_uuid"); err != nil {
+	if err := validate.Required(r.SourceOccupancyUUID, "source_occupancy_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.DestVesselUUID, "dest_vessel_uuid"); err != nil {
+	if err := validate.Required(r.DestVesselUUID, "dest_vessel_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.VolumeUUID, "volume_uuid"); err != nil {
+	if err := validate.Required(r.VolumeUUID, "volume_uuid"); err != nil {
 		return err
 	}
 	if r.Amount <= 0 {

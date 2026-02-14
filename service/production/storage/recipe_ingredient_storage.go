@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -12,7 +13,7 @@ import (
 
 // ListRecipeIngredients returns all ingredients for a recipe, ordered by sort_order.
 func (c *Client) ListRecipeIngredients(ctx context.Context, recipeUUID string) ([]RecipeIngredient, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT ri.id, ri.uuid, ri.recipe_id, ri.ingredient_uuid, ri.ingredient_type, ri.amount, ri.amount_unit,
 		       ri.use_stage, ri.use_type, ri.timing_duration_minutes, ri.timing_temperature_c,
 		       ri.alpha_acid_assumed, ri.scaling_factor, ri.sort_order, ri.notes,
@@ -44,8 +45,8 @@ func (c *Client) ListRecipeIngredients(ctx context.Context, recipeUUID string) (
 }
 
 // GetRecipeIngredient returns a recipe ingredient by UUID.
-func (c *Client) GetRecipeIngredient(ctx context.Context, ingredientUUID string) (*RecipeIngredient, error) {
-	row := c.db.QueryRow(ctx, `
+func (c *Client) GetRecipeIngredient(ctx context.Context, ingredientUUID string) (RecipeIngredient, error) {
+	row := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, recipe_id, ingredient_uuid, ingredient_type, amount, amount_unit,
 		       use_stage, use_type, timing_duration_minutes, timing_temperature_c,
 		       alpha_acid_assumed, scaling_factor, sort_order, notes,
@@ -58,23 +59,23 @@ func (c *Client) GetRecipeIngredient(ctx context.Context, ingredientUUID string)
 	ri, err := scanRecipeIngredientRow(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, service.ErrNotFound
+			return RecipeIngredient{}, service.ErrNotFound
 		}
-		return nil, fmt.Errorf("getting recipe ingredient: %w", err)
+		return RecipeIngredient{}, fmt.Errorf("getting recipe ingredient: %w", err)
 	}
 
-	return &ri, nil
+	return ri, nil
 }
 
 // CreateRecipeIngredient creates a new recipe ingredient.
-func (c *Client) CreateRecipeIngredient(ctx context.Context, ri *RecipeIngredient) error {
+func (c *Client) CreateRecipeIngredient(ctx context.Context, ri RecipeIngredient) (RecipeIngredient, error) {
 	var ingredientUUID any
 	if ri.IngredientUUID != nil {
 		ingredientUUID = *ri.IngredientUUID
 	}
 
 	var ingredientUUIDResult pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO recipe_ingredient (
 			recipe_id, ingredient_uuid, ingredient_type, amount, amount_unit,
 			use_stage, use_type, timing_duration_minutes, timing_temperature_c,
@@ -118,22 +119,22 @@ func (c *Client) CreateRecipeIngredient(ctx context.Context, ri *RecipeIngredien
 		&ri.DeletedAt,
 	)
 	if err != nil {
-		return fmt.Errorf("creating recipe ingredient: %w", err)
+		return RecipeIngredient{}, fmt.Errorf("creating recipe ingredient: %w", err)
 	}
 
-	assignUUIDPointer(&ri.IngredientUUID, ingredientUUIDResult)
-	return nil
+	database.AssignUUIDPointer(&ri.IngredientUUID, ingredientUUIDResult)
+	return ri, nil
 }
 
 // UpdateRecipeIngredient updates an existing recipe ingredient by UUID.
-func (c *Client) UpdateRecipeIngredient(ctx context.Context, ingredientUUID string, ri *RecipeIngredient) error {
+func (c *Client) UpdateRecipeIngredient(ctx context.Context, ingredientUUID string, ri RecipeIngredient) (RecipeIngredient, error) {
 	var invIngredientUUID any
 	if ri.IngredientUUID != nil {
 		invIngredientUUID = *ri.IngredientUUID
 	}
 
 	var invIngredientUUIDResult pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE recipe_ingredient
 		SET ingredient_uuid = $1,
 		    ingredient_type = $2,
@@ -188,18 +189,18 @@ func (c *Client) UpdateRecipeIngredient(ctx context.Context, ingredientUUID stri
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return service.ErrNotFound
+			return RecipeIngredient{}, service.ErrNotFound
 		}
-		return fmt.Errorf("updating recipe ingredient: %w", err)
+		return RecipeIngredient{}, fmt.Errorf("updating recipe ingredient: %w", err)
 	}
 
-	assignUUIDPointer(&ri.IngredientUUID, invIngredientUUIDResult)
-	return nil
+	database.AssignUUIDPointer(&ri.IngredientUUID, invIngredientUUIDResult)
+	return ri, nil
 }
 
 // DeleteRecipeIngredient soft-deletes a recipe ingredient by UUID.
 func (c *Client) DeleteRecipeIngredient(ctx context.Context, ingredientUUID string) error {
-	result, err := c.db.Exec(ctx, `
+	result, err := c.DB().Exec(ctx, `
 		UPDATE recipe_ingredient
 		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -245,7 +246,7 @@ func scanRecipeIngredient(rows pgx.Rows) (RecipeIngredient, error) {
 		return RecipeIngredient{}, err
 	}
 
-	assignUUIDPointer(&ri.IngredientUUID, ingredientUUID)
+	database.AssignUUIDPointer(&ri.IngredientUUID, ingredientUUID)
 	return ri, nil
 }
 
@@ -278,6 +279,6 @@ func scanRecipeIngredientRow(row pgx.Row) (RecipeIngredient, error) {
 		return RecipeIngredient{}, err
 	}
 
-	assignUUIDPointer(&ri.IngredientUUID, ingredientUUID)
+	database.AssignUUIDPointer(&ri.IngredientUUID, ingredientUUID)
 	return ri, nil
 }

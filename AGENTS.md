@@ -6,8 +6,8 @@ It captures commands and conventions observed in the current codebase.
 ## Project quick facts
 - Module path: `github.com/brewpipes/brewpipes`
 - Language/runtime: Go `1.25.5` (see `go.mod`).
-- Primary services: `service/identity`, `service/production`.
-- Entrypoints: `cmd/monolith`, `cmd/identity`, `cmd/production`.
+- Primary services: `service/identity`, `service/production`, `service/inventory`, `service/procurement`.
+- Entrypoints: `cmd/monolith`, `cmd/identity`, `cmd/production`, `cmd/inventory`, `cmd/procurement`.
 - HTTP server: aggregated by `cmd.RunServices` on `:8080`.
 - Database: Postgres via `pgx/v5`, migrations per service.
 
@@ -19,7 +19,9 @@ It captures commands and conventions observed in the current codebase.
 - `docker-compose.yml` starts Postgres + monolith container.
 
 ## Environment variables
-- `POSTGRES_DSN` is required by all services.
+- `DATABASE_URL` is the preferred env var for the Postgres connection string.
+  All service entrypoints check `DATABASE_URL` first and fall back to `POSTGRES_DSN`.
+- `POSTGRES_DSN` is the legacy/fallback env var (still supported).
 - Local DSN used in Makefile:
   `postgres://brewpipes:brewpipes@localhost:5432/brewpipes?sslmode=disable`
 - `BREWPIPES_SECRET_KEY` is required for identity/JWT issuance and for access token verification in production, inventory, and procurement services.
@@ -31,15 +33,21 @@ It captures commands and conventions observed in the current codebase.
 - Run monolith: `make run`
 - Run monolith in background: `make run-bg`
 - Run identity service:
-  `POSTGRES_DSN=... BREWPIPES_SECRET_KEY=... go run ./cmd/identity`
+  `DATABASE_URL=... BREWPIPES_SECRET_KEY=... go run ./cmd/identity`
 - Run production service:
-  `POSTGRES_DSN=... go run ./cmd/production`
+  `DATABASE_URL=... BREWPIPES_SECRET_KEY=... go run ./cmd/production`
+- Run inventory service:
+  `DATABASE_URL=... BREWPIPES_SECRET_KEY=... go run ./cmd/inventory`
+- Run procurement service:
+  `DATABASE_URL=... BREWPIPES_SECRET_KEY=... go run ./cmd/procurement`
 - Compose stack (monolith + postgres): `docker compose up`
 
 ## Build commands
 - Build monolith: `go build ./cmd/monolith`
 - Build identity: `go build ./cmd/identity`
 - Build production: `go build ./cmd/production`
+- Build inventory: `go build ./cmd/inventory`
+- Build procurement: `go build ./cmd/procurement`
 - Build all packages: `go build ./...`
 
 ## Test commands

@@ -16,7 +16,7 @@ func (c *Client) CreateBatchVolume(ctx context.Context, batchVolume BatchVolume)
 		phaseAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO batch_volume (
 			batch_id,
 			volume_id,
@@ -44,15 +44,15 @@ func (c *Client) CreateBatchVolume(ctx context.Context, batchVolume BatchVolume)
 	}
 
 	// Resolve batch and volume UUIDs
-	c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, batchVolume.BatchID).Scan(&batchVolume.BatchUUID)
-	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, batchVolume.VolumeID).Scan(&batchVolume.VolumeUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, batchVolume.BatchID).Scan(&batchVolume.BatchUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, batchVolume.VolumeID).Scan(&batchVolume.VolumeUUID)
 
 	return batchVolume, nil
 }
 
 func (c *Client) GetBatchVolume(ctx context.Context, id int64) (BatchVolume, error) {
 	var batchVolume BatchVolume
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT bv.id, bv.uuid, bv.batch_id, b.uuid, bv.volume_id, v.uuid,
 		       bv.liquid_phase, bv.phase_at, bv.created_at, bv.updated_at, bv.deleted_at
 		FROM batch_volume bv
@@ -85,7 +85,7 @@ func (c *Client) GetBatchVolume(ctx context.Context, id int64) (BatchVolume, err
 
 func (c *Client) GetBatchVolumeByUUID(ctx context.Context, bvUUID string) (BatchVolume, error) {
 	var batchVolume BatchVolume
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT bv.id, bv.uuid, bv.batch_id, b.uuid, bv.volume_id, v.uuid,
 		       bv.liquid_phase, bv.phase_at, bv.created_at, bv.updated_at, bv.deleted_at
 		FROM batch_volume bv
@@ -117,7 +117,7 @@ func (c *Client) GetBatchVolumeByUUID(ctx context.Context, bvUUID string) (Batch
 }
 
 func (c *Client) ListBatchVolumes(ctx context.Context, batchID int64) ([]BatchVolume, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT bv.id, bv.uuid, bv.batch_id, b.uuid, bv.volume_id, v.uuid,
 		       bv.liquid_phase, bv.phase_at, bv.created_at, bv.updated_at, bv.deleted_at
 		FROM batch_volume bv

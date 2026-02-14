@@ -30,7 +30,7 @@ func (c *Client) CreateMeasurement(ctx context.Context, measurement Measurement)
 		observedAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO measurement (
 			batch_id,
 			occupancy_id,
@@ -72,19 +72,19 @@ func (c *Client) CreateMeasurement(ctx context.Context, measurement Measurement)
 	// Resolve FK UUIDs
 	if measurement.BatchID != nil {
 		var batchUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *measurement.BatchID).Scan(&batchUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *measurement.BatchID).Scan(&batchUUID); err == nil {
 			measurement.BatchUUID = &batchUUID
 		}
 	}
 	if measurement.OccupancyID != nil {
 		var occUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, *measurement.OccupancyID).Scan(&occUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, *measurement.OccupancyID).Scan(&occUUID); err == nil {
 			measurement.OccupancyUUID = &occUUID
 		}
 	}
 	if measurement.VolumeID != nil {
 		var volUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *measurement.VolumeID).Scan(&volUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *measurement.VolumeID).Scan(&volUUID); err == nil {
 			measurement.VolumeUUID = &volUUID
 		}
 	}
@@ -128,7 +128,7 @@ func scanMeasurement(row pgx.Row) (Measurement, error) {
 }
 
 func (c *Client) GetMeasurement(ctx context.Context, id int64) (Measurement, error) {
-	measurement, err := scanMeasurement(c.db.QueryRow(ctx,
+	measurement, err := scanMeasurement(c.DB().QueryRow(ctx,
 		measurementSelectWithJoins+` WHERE m.id = $1 AND m.deleted_at IS NULL`, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -140,7 +140,7 @@ func (c *Client) GetMeasurement(ctx context.Context, id int64) (Measurement, err
 }
 
 func (c *Client) GetMeasurementByUUID(ctx context.Context, measurementUUID string) (Measurement, error) {
-	measurement, err := scanMeasurement(c.db.QueryRow(ctx,
+	measurement, err := scanMeasurement(c.DB().QueryRow(ctx,
 		measurementSelectWithJoins+` WHERE m.uuid = $1 AND m.deleted_at IS NULL`, measurementUUID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -152,7 +152,7 @@ func (c *Client) GetMeasurementByUUID(ctx context.Context, measurementUUID strin
 }
 
 func (c *Client) listMeasurements(ctx context.Context, query string, args ...any) ([]Measurement, error) {
-	rows, err := c.db.Query(ctx, query, args...)
+	rows, err := c.DB().Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

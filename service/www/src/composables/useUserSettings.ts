@@ -1,16 +1,14 @@
 import type { UserSettings } from '@/types'
 import { computed, ref, watch } from 'vue'
 
-// Re-export UserSettings for backward compatibility
-export type { UserSettings } from '@/types'
-
 const STORAGE_KEY = 'brewpipes:userSettings'
 
 const DEFAULT_SETTINGS: UserSettings = {
   breweryName: 'Acme Brewing',
 }
 
-// Module-level singleton state
+// Module-level singleton state — shared across all consumers.
+// This works for SPA; for SSR, migrate to a Pinia store.
 const settings = ref<UserSettings>(loadSettings())
 
 /**

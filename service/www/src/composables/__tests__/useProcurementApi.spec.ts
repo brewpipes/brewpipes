@@ -56,9 +56,9 @@ describe('useProcurementApi', () => {
       const result = formatDateTime('2024-01-15T10:30:00Z')
       expect(result).toContain('2024')
 
-      expect(formatDateTime(null)).toBe('n/a')
-      expect(formatDateTime(undefined)).toBe('n/a')
-      expect(formatDateTime('')).toBe('n/a')
+      expect(formatDateTime(null)).toBe('Unknown')
+      expect(formatDateTime(undefined)).toBe('Unknown')
+      expect(formatDateTime('')).toBe('Unknown')
     })
 
     it('formatCurrency formats cents to currency string', () => {

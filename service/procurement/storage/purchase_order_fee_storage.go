@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreatePurchaseOrderFee(ctx context.Context, fee PurchaseOrderFee) (PurchaseOrderFee, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO purchase_order_fee (
 			purchase_order_id,
 			fee_type,
@@ -39,7 +39,7 @@ func (c *Client) CreatePurchaseOrderFee(ctx context.Context, fee PurchaseOrderFe
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		fee.PurchaseOrderUUID = &poUUID
 	}
@@ -49,7 +49,7 @@ func (c *Client) CreatePurchaseOrderFee(ctx context.Context, fee PurchaseOrderFe
 
 func (c *Client) UpdatePurchaseOrderFee(ctx context.Context, id int64, update PurchaseOrderFeeUpdate) (PurchaseOrderFee, error) {
 	var fee PurchaseOrderFee
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_fee
 		SET
 			fee_type = COALESCE($1, fee_type),
@@ -82,7 +82,7 @@ func (c *Client) UpdatePurchaseOrderFee(ctx context.Context, id int64, update Pu
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		fee.PurchaseOrderUUID = &poUUID
 	}
@@ -92,7 +92,7 @@ func (c *Client) UpdatePurchaseOrderFee(ctx context.Context, id int64, update Pu
 
 func (c *Client) UpdatePurchaseOrderFeeByUUID(ctx context.Context, feeUUID string, update PurchaseOrderFeeUpdate) (PurchaseOrderFee, error) {
 	var fee PurchaseOrderFee
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_fee
 		SET
 			fee_type = COALESCE($1, fee_type),
@@ -125,7 +125,7 @@ func (c *Client) UpdatePurchaseOrderFeeByUUID(ctx context.Context, feeUUID strin
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		fee.PurchaseOrderUUID = &poUUID
 	}
@@ -135,7 +135,7 @@ func (c *Client) UpdatePurchaseOrderFeeByUUID(ctx context.Context, feeUUID strin
 
 func (c *Client) DeletePurchaseOrderFee(ctx context.Context, id int64) (PurchaseOrderFee, error) {
 	var fee PurchaseOrderFee
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_fee
 		SET deleted_at = timezone('utc', now()),
 			updated_at = timezone('utc', now())
@@ -162,7 +162,7 @@ func (c *Client) DeletePurchaseOrderFee(ctx context.Context, id int64) (Purchase
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		fee.PurchaseOrderUUID = &poUUID
 	}
@@ -172,7 +172,7 @@ func (c *Client) DeletePurchaseOrderFee(ctx context.Context, id int64) (Purchase
 
 func (c *Client) DeletePurchaseOrderFeeByUUID(ctx context.Context, feeUUID string) (PurchaseOrderFee, error) {
 	var fee PurchaseOrderFee
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_fee
 		SET deleted_at = timezone('utc', now()),
 			updated_at = timezone('utc', now())
@@ -199,7 +199,7 @@ func (c *Client) DeletePurchaseOrderFeeByUUID(ctx context.Context, feeUUID strin
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, fee.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		fee.PurchaseOrderUUID = &poUUID
 	}
@@ -209,7 +209,7 @@ func (c *Client) DeletePurchaseOrderFeeByUUID(ctx context.Context, feeUUID strin
 
 func (c *Client) GetPurchaseOrderFee(ctx context.Context, id int64) (PurchaseOrderFee, error) {
 	var fee PurchaseOrderFee
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT pof.id, pof.uuid, pof.purchase_order_id, po.uuid, pof.fee_type, pof.amount_cents, pof.currency, pof.created_at, pof.updated_at, pof.deleted_at
 		FROM purchase_order_fee pof
 		JOIN purchase_order po ON po.id = pof.purchase_order_id
@@ -239,7 +239,7 @@ func (c *Client) GetPurchaseOrderFee(ctx context.Context, id int64) (PurchaseOrd
 
 func (c *Client) GetPurchaseOrderFeeByUUID(ctx context.Context, feeUUID string) (PurchaseOrderFee, error) {
 	var fee PurchaseOrderFee
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT pof.id, pof.uuid, pof.purchase_order_id, po.uuid, pof.fee_type, pof.amount_cents, pof.currency, pof.created_at, pof.updated_at, pof.deleted_at
 		FROM purchase_order_fee pof
 		JOIN purchase_order po ON po.id = pof.purchase_order_id
@@ -268,7 +268,7 @@ func (c *Client) GetPurchaseOrderFeeByUUID(ctx context.Context, feeUUID string) 
 }
 
 func (c *Client) ListPurchaseOrderFees(ctx context.Context) ([]PurchaseOrderFee, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT pof.id, pof.uuid, pof.purchase_order_id, po.uuid, pof.fee_type, pof.amount_cents, pof.currency, pof.created_at, pof.updated_at, pof.deleted_at
 		FROM purchase_order_fee pof
 		JOIN purchase_order po ON po.id = pof.purchase_order_id
@@ -307,7 +307,7 @@ func (c *Client) ListPurchaseOrderFees(ctx context.Context) ([]PurchaseOrderFee,
 }
 
 func (c *Client) ListPurchaseOrderFeesByOrderUUID(ctx context.Context, orderUUID string) ([]PurchaseOrderFee, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT pof.id, pof.uuid, pof.purchase_order_id, po.uuid, pof.fee_type, pof.amount_cents, pof.currency, pof.created_at, pof.updated_at, pof.deleted_at
 		FROM purchase_order_fee pof
 		JOIN purchase_order po ON po.id = pof.purchase_order_id

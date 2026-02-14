@@ -2,6 +2,8 @@
 export { default as BatchAdditionDialog } from './BatchAdditionDialog.vue'
 // Form types from dialogs
 export type { AdditionForm } from './BatchAdditionDialog.vue'
+export { default as BatchCreateDialog } from './BatchCreateDialog.vue'
+export type { BatchCreateForm } from './BatchCreateDialog.vue'
 export { default as BatchAdditionsTab } from './BatchAdditionsTab.vue'
 export { default as BatchBrewSessionDialog } from './BatchBrewSessionDialog.vue'
 export type { BrewSessionForm } from './BatchBrewSessionDialog.vue'

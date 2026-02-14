@@ -164,7 +164,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { RecipeIngredient, RecipeUseStage } from '@/composables/useProductionApi'
+  import type { RecipeIngredient, RecipeUseStage } from '@/types'
   import { computed } from 'vue'
 
   const props = defineProps<{

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -12,7 +13,7 @@ import (
 
 func (c *Client) CreatePurchaseOrderLine(ctx context.Context, line PurchaseOrderLine) (PurchaseOrderLine, error) {
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO purchase_order_line (
 			purchase_order_id,
 			line_number,
@@ -29,7 +30,7 @@ func (c *Client) CreatePurchaseOrderLine(ctx context.Context, line PurchaseOrder
 		line.LineNumber,
 		line.ItemType,
 		line.ItemName,
-		uuidParam(line.InventoryItemUUID),
+		database.UUIDParam(line.InventoryItemUUID),
 		line.Quantity,
 		line.QuantityUnit,
 		line.UnitCostCents,
@@ -54,11 +55,11 @@ func (c *Client) CreatePurchaseOrderLine(ctx context.Context, line PurchaseOrder
 		return PurchaseOrderLine{}, fmt.Errorf("creating purchase order line: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		line.PurchaseOrderUUID = &poUUID
 	}
@@ -69,7 +70,7 @@ func (c *Client) CreatePurchaseOrderLine(ctx context.Context, line PurchaseOrder
 func (c *Client) UpdatePurchaseOrderLine(ctx context.Context, id int64, update PurchaseOrderLineUpdate) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_line
 		SET
 			line_number = COALESCE($1, line_number),
@@ -86,7 +87,7 @@ func (c *Client) UpdatePurchaseOrderLine(ctx context.Context, id int64, update P
 		update.LineNumber,
 		update.ItemType,
 		update.ItemName,
-		uuidParam(update.InventoryItemUUID),
+		database.UUIDParam(update.InventoryItemUUID),
 		update.Quantity,
 		update.QuantityUnit,
 		update.UnitCostCents,
@@ -115,11 +116,11 @@ func (c *Client) UpdatePurchaseOrderLine(ctx context.Context, id int64, update P
 		return PurchaseOrderLine{}, fmt.Errorf("updating purchase order line: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		line.PurchaseOrderUUID = &poUUID
 	}
@@ -130,7 +131,7 @@ func (c *Client) UpdatePurchaseOrderLine(ctx context.Context, id int64, update P
 func (c *Client) UpdatePurchaseOrderLineByUUID(ctx context.Context, lineUUID string, update PurchaseOrderLineUpdate) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_line
 		SET
 			line_number = COALESCE($1, line_number),
@@ -147,7 +148,7 @@ func (c *Client) UpdatePurchaseOrderLineByUUID(ctx context.Context, lineUUID str
 		update.LineNumber,
 		update.ItemType,
 		update.ItemName,
-		uuidParam(update.InventoryItemUUID),
+		database.UUIDParam(update.InventoryItemUUID),
 		update.Quantity,
 		update.QuantityUnit,
 		update.UnitCostCents,
@@ -176,11 +177,11 @@ func (c *Client) UpdatePurchaseOrderLineByUUID(ctx context.Context, lineUUID str
 		return PurchaseOrderLine{}, fmt.Errorf("updating purchase order line by uuid: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		line.PurchaseOrderUUID = &poUUID
 	}
@@ -191,7 +192,7 @@ func (c *Client) UpdatePurchaseOrderLineByUUID(ctx context.Context, lineUUID str
 func (c *Client) DeletePurchaseOrderLine(ctx context.Context, id int64) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_line
 		SET deleted_at = timezone('utc', now()),
 			updated_at = timezone('utc', now())
@@ -221,11 +222,11 @@ func (c *Client) DeletePurchaseOrderLine(ctx context.Context, id int64) (Purchas
 		return PurchaseOrderLine{}, fmt.Errorf("deleting purchase order line: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		line.PurchaseOrderUUID = &poUUID
 	}
@@ -236,7 +237,7 @@ func (c *Client) DeletePurchaseOrderLine(ctx context.Context, id int64) (Purchas
 func (c *Client) DeletePurchaseOrderLineByUUID(ctx context.Context, lineUUID string) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE purchase_order_line
 		SET deleted_at = timezone('utc', now()),
 			updated_at = timezone('utc', now())
@@ -266,11 +267,11 @@ func (c *Client) DeletePurchaseOrderLineByUUID(ctx context.Context, lineUUID str
 		return PurchaseOrderLine{}, fmt.Errorf("deleting purchase order line by uuid: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 
 	// Resolve purchase order UUID
 	var poUUID string
-	sErr := c.db.QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
+	sErr := c.DB().QueryRow(ctx, `SELECT uuid FROM purchase_order WHERE id = $1`, line.PurchaseOrderID).Scan(&poUUID)
 	if sErr == nil {
 		line.PurchaseOrderUUID = &poUUID
 	}
@@ -281,7 +282,7 @@ func (c *Client) DeletePurchaseOrderLineByUUID(ctx context.Context, lineUUID str
 func (c *Client) GetPurchaseOrderLine(ctx context.Context, id int64) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT pol.id, pol.uuid, pol.purchase_order_id, po.uuid, pol.line_number, pol.item_type, pol.item_name, pol.inventory_item_uuid, pol.quantity, pol.quantity_unit, pol.unit_cost_cents, pol.currency, pol.created_at, pol.updated_at, pol.deleted_at
 		FROM purchase_order_line pol
 		JOIN purchase_order po ON po.id = pol.purchase_order_id
@@ -311,14 +312,14 @@ func (c *Client) GetPurchaseOrderLine(ctx context.Context, id int64) (PurchaseOr
 		return PurchaseOrderLine{}, fmt.Errorf("getting purchase order line: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 	return line, nil
 }
 
 func (c *Client) GetPurchaseOrderLineByUUID(ctx context.Context, lineUUID string) (PurchaseOrderLine, error) {
 	var line PurchaseOrderLine
 	var inventoryItemUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT pol.id, pol.uuid, pol.purchase_order_id, po.uuid, pol.line_number, pol.item_type, pol.item_name, pol.inventory_item_uuid, pol.quantity, pol.quantity_unit, pol.unit_cost_cents, pol.currency, pol.created_at, pol.updated_at, pol.deleted_at
 		FROM purchase_order_line pol
 		JOIN purchase_order po ON po.id = pol.purchase_order_id
@@ -348,12 +349,12 @@ func (c *Client) GetPurchaseOrderLineByUUID(ctx context.Context, lineUUID string
 		return PurchaseOrderLine{}, fmt.Errorf("getting purchase order line by uuid: %w", err)
 	}
 
-	assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+	database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 	return line, nil
 }
 
 func (c *Client) ListPurchaseOrderLines(ctx context.Context) ([]PurchaseOrderLine, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT pol.id, pol.uuid, pol.purchase_order_id, po.uuid, pol.line_number, pol.item_type, pol.item_name, pol.inventory_item_uuid, pol.quantity, pol.quantity_unit, pol.unit_cost_cents, pol.currency, pol.created_at, pol.updated_at, pol.deleted_at
 		FROM purchase_order_line pol
 		JOIN purchase_order po ON po.id = pol.purchase_order_id
@@ -388,7 +389,7 @@ func (c *Client) ListPurchaseOrderLines(ctx context.Context) ([]PurchaseOrderLin
 		); err != nil {
 			return nil, fmt.Errorf("scanning purchase order line: %w", err)
 		}
-		assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+		database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 		lines = append(lines, line)
 	}
 	if err := rows.Err(); err != nil {
@@ -399,7 +400,7 @@ func (c *Client) ListPurchaseOrderLines(ctx context.Context) ([]PurchaseOrderLin
 }
 
 func (c *Client) ListPurchaseOrderLinesByOrderUUID(ctx context.Context, orderUUID string) ([]PurchaseOrderLine, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT pol.id, pol.uuid, pol.purchase_order_id, po.uuid, pol.line_number, pol.item_type, pol.item_name, pol.inventory_item_uuid, pol.quantity, pol.quantity_unit, pol.unit_cost_cents, pol.currency, pol.created_at, pol.updated_at, pol.deleted_at
 		FROM purchase_order_line pol
 		JOIN purchase_order po ON po.id = pol.purchase_order_id
@@ -435,7 +436,7 @@ func (c *Client) ListPurchaseOrderLinesByOrderUUID(ctx context.Context, orderUUI
 		); err != nil {
 			return nil, fmt.Errorf("scanning purchase order line: %w", err)
 		}
-		assignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
+		database.AssignUUIDPointer(&line.InventoryItemUUID, inventoryItemUUID)
 		lines = append(lines, line)
 	}
 	if err := rows.Err(); err != nil {

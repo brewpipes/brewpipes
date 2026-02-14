@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -25,8 +24,7 @@ func HandleStockLocations(db StockLocationStore) http.HandlerFunc {
 		case http.MethodGet:
 			locations, err := db.ListStockLocations(r.Context())
 			if err != nil {
-				slog.Error("error listing stock locations", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing stock locations", "error", err)
 				return
 			}
 
@@ -50,14 +48,13 @@ func HandleStockLocations(db StockLocationStore) http.HandlerFunc {
 
 			created, err := db.CreateStockLocation(r.Context(), location)
 			if err != nil {
-				slog.Error("error creating stock location", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating stock location", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewStockLocationResponse(created))
+			service.JSONCreated(w, dto.NewStockLocationResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -65,11 +62,6 @@ func HandleStockLocations(db StockLocationStore) http.HandlerFunc {
 // HandleStockLocationByUUID handles [GET /stock-locations/{uuid}].
 func HandleStockLocationByUUID(db StockLocationStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		locationUUID := r.PathValue("uuid")
 		if locationUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -81,8 +73,7 @@ func HandleStockLocationByUUID(db StockLocationStore) http.HandlerFunc {
 			http.Error(w, "stock location not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting stock location", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting stock location", "error", err)
 			return
 		}
 

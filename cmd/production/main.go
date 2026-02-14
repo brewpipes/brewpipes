@@ -15,13 +15,15 @@ func main() {
 func run(ctx context.Context) error {
 	// Entry point for the independent production service application.
 
-	svc, err := production.New(ctx, production.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = os.Getenv("POSTGRES_DSN")
+	}
+
+	svc := production.New(production.Config{
+		PostgresDSN: dsn,
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
-	if err != nil {
-		return err
-	}
 
 	return cmd.RunServices(ctx, nil, svc)
 }

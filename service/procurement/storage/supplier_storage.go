@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateSupplier(ctx context.Context, supplier Supplier) (Supplier, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO supplier (
 			name,
 			contact_name,
@@ -60,7 +60,7 @@ func (c *Client) CreateSupplier(ctx context.Context, supplier Supplier) (Supplie
 
 func (c *Client) GetSupplier(ctx context.Context, id int64) (Supplier, error) {
 	var supplier Supplier
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, contact_name, email, phone, address_line1, address_line2, city, region, postal_code, country, created_at, updated_at, deleted_at
 		FROM supplier
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -94,7 +94,7 @@ func (c *Client) GetSupplier(ctx context.Context, id int64) (Supplier, error) {
 
 func (c *Client) GetSupplierByUUID(ctx context.Context, supplierUUID string) (Supplier, error) {
 	var supplier Supplier
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, contact_name, email, phone, address_line1, address_line2, city, region, postal_code, country, created_at, updated_at, deleted_at
 		FROM supplier
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -128,7 +128,7 @@ func (c *Client) GetSupplierByUUID(ctx context.Context, supplierUUID string) (Su
 
 func (c *Client) UpdateSupplier(ctx context.Context, id int64, update SupplierUpdate) (Supplier, error) {
 	var supplier Supplier
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE supplier
 		SET
 			name = COALESCE($1, name),
@@ -184,7 +184,7 @@ func (c *Client) UpdateSupplier(ctx context.Context, id int64, update SupplierUp
 
 func (c *Client) UpdateSupplierByUUID(ctx context.Context, supplierUUID string, update SupplierUpdate) (Supplier, error) {
 	var supplier Supplier
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE supplier
 		SET
 			name = COALESCE($1, name),
@@ -239,7 +239,7 @@ func (c *Client) UpdateSupplierByUUID(ctx context.Context, supplierUUID string, 
 }
 
 func (c *Client) ListSuppliers(ctx context.Context) ([]Supplier, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, name, contact_name, email, phone, address_line1, address_line2, city, region, postal_code, country, created_at, updated_at, deleted_at
 		FROM supplier
 		WHERE deleted_at IS NULL

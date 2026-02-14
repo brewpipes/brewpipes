@@ -116,10 +116,10 @@
 </template>
 
 <script lang="ts" setup>
-  import type { UpdateVesselRequest, Vessel, VesselStatus, VolumeUnit } from '@/types'
+  import type { UpdateVesselRequest, Vessel, VesselStatus, VesselType, VolumeUnit } from '@/types'
   import { computed, reactive, ref, watch } from 'vue'
   import { useVesselTypeFormatters } from '@/composables/useFormatters'
-  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/composables/useProductionApi'
+  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { volumeOptions } from '@/composables/useUnitPreferences'
 
   const props = defineProps<{
@@ -137,7 +137,7 @@
   // Form state
   const form = reactive({
     name: '',
-    type: '',
+    type: 'other' as VesselType,
     capacity: '',
     capacity_unit: 'ml' as VolumeUnit,
     status: 'active' as VesselStatus,
@@ -177,7 +177,7 @@
   // Computed
   const isFormValid = computed(() => {
     return form.name.trim().length > 0
-      && form.type.trim().length > 0
+      && form.type.length > 0
       && form.capacity !== ''
       && Number(form.capacity) > 0
   })
@@ -213,7 +213,7 @@
 
     const data: UpdateVesselRequest = {
       name: form.name.trim(),
-      type: form.type.trim(),
+      type: form.type,
       capacity: Number(form.capacity),
       capacity_unit: form.capacity_unit,
       status: form.status,

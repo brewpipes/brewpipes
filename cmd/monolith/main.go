@@ -18,38 +18,35 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	// Support both DATABASE_URL and POSTGRES_DSN for flexibility.
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = os.Getenv("POSTGRES_DSN")
+	}
+
 	// Initialize services.
 	identitySvc, err := identity.NewService(ctx, &identity.Config{
-		PostgresDSN: os.Getenv("DATABASE_URL"),
+		PostgresDSN: dsn,
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
 	if err != nil {
 		return fmt.Errorf("initializing identity service: %w", err)
 	}
 
-	productionSvc, err := production.New(ctx, production.Config{
-		PostgresDSN: os.Getenv("DATABASE_URL"),
+	productionSvc := production.New(production.Config{
+		PostgresDSN: dsn,
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
-	if err != nil {
-		return fmt.Errorf("initializing production service: %w", err)
-	}
 
-	inventorySvc, err := inventory.New(ctx, inventory.Config{
-		PostgresDSN: os.Getenv("DATABASE_URL"),
+	inventorySvc := inventory.New(inventory.Config{
+		PostgresDSN: dsn,
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
-	if err != nil {
-		return fmt.Errorf("initializing inventory service: %w", err)
-	}
 
-	procurementSvc, err := procurement.New(ctx, procurement.Config{
-		PostgresDSN: os.Getenv("DATABASE_URL"),
+	procurementSvc := procurement.New(procurement.Config{
+		PostgresDSN: dsn,
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
-	if err != nil {
-		return fmt.Errorf("initializing procurement service: %w", err)
-	}
 
 	return cmd.RunServices(ctx, www.Handler(), identitySvc, productionSvc, inventorySvc, procurementSvc)
 }

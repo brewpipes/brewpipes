@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -16,10 +17,10 @@ type CreateVolumeRelationRequest struct {
 }
 
 func (r CreateVolumeRelationRequest) Validate() error {
-	if err := validateRequired(r.ParentVolumeUUID, "parent_volume_uuid"); err != nil {
+	if err := validate.Required(r.ParentVolumeUUID, "parent_volume_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.ChildVolumeUUID, "child_volume_uuid"); err != nil {
+	if err := validate.Required(r.ChildVolumeUUID, "child_volume_uuid"); err != nil {
 		return err
 	}
 	if r.ParentVolumeUUID == r.ChildVolumeUUID {

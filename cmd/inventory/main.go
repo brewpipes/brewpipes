@@ -15,13 +15,15 @@ func main() {
 func run(ctx context.Context) error {
 	// Entry point for the independent inventory service application.
 
-	svc, err := inventory.New(ctx, inventory.Config{
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = os.Getenv("POSTGRES_DSN")
+	}
+
+	svc := inventory.New(inventory.Config{
+		PostgresDSN: dsn,
 		SecretKey:   os.Getenv("BREWPIPES_SECRET_KEY"),
 	})
-	if err != nil {
-		return err
-	}
 
 	return cmd.RunServices(ctx, nil, svc)
 }

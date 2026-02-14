@@ -269,7 +269,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Recipe, UpdateRecipeRequest } from '@/composables/useProductionApi'
+  import type { Recipe, UpdateRecipeRequest } from '@/types'
   import { computed, reactive, ref, watch } from 'vue'
   import { srmToColor } from '@/composables/useFormatters'
 

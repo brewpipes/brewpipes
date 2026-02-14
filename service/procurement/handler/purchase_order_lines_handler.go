@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -32,8 +31,7 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 			if orderUUID != "" {
 				lines, err := db.ListPurchaseOrderLinesByOrderUUID(r.Context(), orderUUID)
 				if err != nil {
-					slog.Error("error listing purchase order lines by order", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing purchase order lines by order", "error", err)
 					return
 				}
 
@@ -43,8 +41,7 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 
 			lines, err := db.ListPurchaseOrderLines(r.Context())
 			if err != nil {
-				slog.Error("error listing purchase order lines", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing purchase order lines", "error", err)
 				return
 			}
 
@@ -61,13 +58,8 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 			}
 
 			// Resolve purchase order UUID to internal ID
-			order, err := db.GetPurchaseOrderByUUID(r.Context(), req.PurchaseOrderUUID)
-			if errors.Is(err, service.ErrNotFound) {
-				http.Error(w, "purchase order not found", http.StatusBadRequest)
-				return
-			} else if err != nil {
-				slog.Error("error resolving purchase order uuid", "error", err)
-				service.InternalError(w, err.Error())
+			order, ok := service.ResolveFK(r.Context(), w, req.PurchaseOrderUUID, "purchase order", db.GetPurchaseOrderByUUID)
+			if !ok {
 				return
 			}
 
@@ -91,14 +83,13 @@ func HandlePurchaseOrderLines(db PurchaseOrderLineStore) http.HandlerFunc {
 
 			created, err := db.CreatePurchaseOrderLine(r.Context(), line)
 			if err != nil {
-				slog.Error("error creating purchase order line", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating purchase order line", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewPurchaseOrderLineResponse(created))
+			service.JSONCreated(w, dto.NewPurchaseOrderLineResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -119,8 +110,7 @@ func HandlePurchaseOrderLineByUUID(db PurchaseOrderLineStore) http.HandlerFunc {
 				http.Error(w, "purchase order line not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting purchase order line", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting purchase order line", "error", err)
 				return
 			}
 
@@ -162,8 +152,7 @@ func HandlePurchaseOrderLineByUUID(db PurchaseOrderLineStore) http.HandlerFunc {
 				http.Error(w, "purchase order line not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating purchase order line", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating purchase order line", "error", err)
 				return
 			}
 
@@ -174,14 +163,13 @@ func HandlePurchaseOrderLineByUUID(db PurchaseOrderLineStore) http.HandlerFunc {
 				http.Error(w, "purchase order line not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error deleting purchase order line", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error deleting purchase order line", "error", err)
 				return
 			}
 
 			service.JSON(w, dto.NewPurchaseOrderLineResponse(line))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

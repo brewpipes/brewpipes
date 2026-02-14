@@ -16,7 +16,7 @@ func (c *Client) CreateInventoryAdjustment(ctx context.Context, adjustment Inven
 		adjustedAt = time.Now().UTC()
 	}
 
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO inventory_adjustment (
 			reason,
 			adjusted_at,
@@ -45,7 +45,7 @@ func (c *Client) CreateInventoryAdjustment(ctx context.Context, adjustment Inven
 
 func (c *Client) GetInventoryAdjustment(ctx context.Context, id int64) (InventoryAdjustment, error) {
 	var adjustment InventoryAdjustment
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, reason, adjusted_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_adjustment
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -72,7 +72,7 @@ func (c *Client) GetInventoryAdjustment(ctx context.Context, id int64) (Inventor
 
 func (c *Client) GetInventoryAdjustmentByUUID(ctx context.Context, adjustmentUUID string) (InventoryAdjustment, error) {
 	var adjustment InventoryAdjustment
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, reason, adjusted_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_adjustment
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -98,7 +98,7 @@ func (c *Client) GetInventoryAdjustmentByUUID(ctx context.Context, adjustmentUUI
 }
 
 func (c *Client) ListInventoryAdjustments(ctx context.Context) ([]InventoryAdjustment, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, reason, adjusted_at, notes, created_at, updated_at, deleted_at
 		FROM inventory_adjustment
 		WHERE deleted_at IS NULL

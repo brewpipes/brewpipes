@@ -18,6 +18,33 @@ export type {
   SoftDeletable,
 } from './common'
 
+// Inventory types
+export type {
+  BeerLot,
+  Ingredient,
+  IngredientLot,
+  IngredientLotHopDetail,
+  IngredientLotMaltDetail,
+  IngredientLotYeastDetail,
+  InventoryAdjustment,
+  InventoryMovement,
+  InventoryReceipt,
+  InventoryTransfer,
+  InventoryUsage,
+  StockLocation,
+} from './inventory'
+
+// Procurement types
+export type {
+  CreatePurchaseOrderRequest,
+  PurchaseOrder,
+  PurchaseOrderFee,
+  PurchaseOrderLine,
+  Supplier,
+  UpdatePurchaseOrderRequest,
+  UpdateSupplierRequest,
+} from './procurement'
+
 // Production types
 export type {
   Addition,

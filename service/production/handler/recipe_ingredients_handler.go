@@ -16,9 +16,9 @@ import (
 // RecipeIngredientStore defines the storage interface for recipe ingredients.
 type RecipeIngredientStore interface {
 	ListRecipeIngredients(ctx context.Context, recipeUUID string) ([]storage.RecipeIngredient, error)
-	GetRecipeIngredient(ctx context.Context, ingredientUUID string) (*storage.RecipeIngredient, error)
-	CreateRecipeIngredient(ctx context.Context, ri *storage.RecipeIngredient) error
-	UpdateRecipeIngredient(ctx context.Context, ingredientUUID string, ri *storage.RecipeIngredient) error
+	GetRecipeIngredient(ctx context.Context, ingredientUUID string) (storage.RecipeIngredient, error)
+	CreateRecipeIngredient(ctx context.Context, ri storage.RecipeIngredient) (storage.RecipeIngredient, error)
+	UpdateRecipeIngredient(ctx context.Context, ingredientUUID string, ri storage.RecipeIngredient) (storage.RecipeIngredient, error)
 	DeleteRecipeIngredient(ctx context.Context, ingredientUUID string) error
 }
 
@@ -42,8 +42,7 @@ func HandleRecipeIngredients(db RecipeIngredientStore, recipes RecipeExistenceCh
 			http.Error(w, "recipe not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error checking recipe existence", "error", err, "recipe_uuid", recipeUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error checking recipe existence", "error", err, "recipe_uuid", recipeUUID)
 			return
 		}
 
@@ -51,8 +50,7 @@ func HandleRecipeIngredients(db RecipeIngredientStore, recipes RecipeExistenceCh
 		case http.MethodGet:
 			ingredients, err := db.ListRecipeIngredients(r.Context(), recipeUUID)
 			if err != nil {
-				slog.Error("error listing recipe ingredients", "error", err, "recipe_uuid", recipeUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing recipe ingredients", "error", err, "recipe_uuid", recipeUUID)
 				return
 			}
 
@@ -88,7 +86,7 @@ func HandleRecipeIngredients(db RecipeIngredientStore, recipes RecipeExistenceCh
 				sortOrder = *req.SortOrder
 			}
 
-			ri := &storage.RecipeIngredient{
+			ri := storage.RecipeIngredient{
 				RecipeID:              recipe.ID, // Use internal ID for FK
 				IngredientUUID:        ingredientUUID,
 				IngredientType:        req.IngredientType,
@@ -104,20 +102,20 @@ func HandleRecipeIngredients(db RecipeIngredientStore, recipes RecipeExistenceCh
 				Notes:                 req.Notes,
 			}
 
-			if err := db.CreateRecipeIngredient(r.Context(), ri); err != nil {
-				slog.Error("error creating recipe ingredient", "error", err, "recipe_uuid", recipeUUID)
-				service.InternalError(w, err.Error())
+			created, err := db.CreateRecipeIngredient(r.Context(), ri)
+			if err != nil {
+				service.InternalError(w, "error creating recipe ingredient", "error", err, "recipe_uuid", recipeUUID)
 				return
 			}
 
 			slog.Info("recipe ingredient created",
-				"recipe_ingredient_uuid", ri.UUID.String(),
+				"recipe_ingredient_uuid", created.UUID.String(),
 				"recipe_uuid", recipeUUID,
-				"ingredient_type", ri.IngredientType)
+				"ingredient_type", created.IngredientType)
 
-			service.JSON(w, dto.NewRecipeIngredientResponse(*ri, recipeUUID))
+			service.JSONCreated(w, dto.NewRecipeIngredientResponse(created, recipeUUID))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -144,8 +142,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 			http.Error(w, "recipe not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error checking recipe existence", "error", err, "recipe_uuid", recipeUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error checking recipe existence", "error", err, "recipe_uuid", recipeUUID)
 			return
 		}
 
@@ -156,8 +153,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 				http.Error(w, "recipe ingredient not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
 				return
 			}
 
@@ -167,7 +163,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 				return
 			}
 
-			service.JSON(w, dto.NewRecipeIngredientResponse(*ri, recipeUUID))
+			service.JSON(w, dto.NewRecipeIngredientResponse(ri, recipeUUID))
 		case http.MethodPatch:
 			// Get existing ingredient
 			existing, err := db.GetRecipeIngredient(r.Context(), ingredientUUID)
@@ -175,8 +171,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 				http.Error(w, "recipe ingredient not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
 				return
 			}
 
@@ -229,9 +224,9 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 			existing.SortOrder = sortOrder
 			existing.Notes = req.Notes
 
-			if err := db.UpdateRecipeIngredient(r.Context(), ingredientUUID, existing); err != nil {
-				slog.Error("error updating recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
-				service.InternalError(w, err.Error())
+			updated, err := db.UpdateRecipeIngredient(r.Context(), ingredientUUID, existing)
+			if err != nil {
+				service.InternalError(w, "error updating recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
 				return
 			}
 
@@ -239,7 +234,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 				"recipe_ingredient_uuid", ingredientUUID,
 				"recipe_uuid", recipeUUID)
 
-			service.JSON(w, dto.NewRecipeIngredientResponse(*existing, recipeUUID))
+			service.JSON(w, dto.NewRecipeIngredientResponse(updated, recipeUUID))
 		case http.MethodDelete:
 			// Verify ingredient exists and belongs to recipe before deleting
 			existing, err := db.GetRecipeIngredient(r.Context(), ingredientUUID)
@@ -247,8 +242,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 				http.Error(w, "recipe ingredient not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting recipe ingredient for delete", "error", err, "ingredient_uuid", ingredientUUID)
 				return
 			}
 
@@ -262,8 +256,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 					http.Error(w, "recipe ingredient not found", http.StatusNotFound)
 					return
 				}
-				slog.Error("error deleting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error deleting recipe ingredient", "error", err, "ingredient_uuid", ingredientUUID)
 				return
 			}
 
@@ -273,7 +266,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

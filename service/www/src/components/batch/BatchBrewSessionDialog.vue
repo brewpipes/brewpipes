@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Volume as ProductionVolume, Vessel } from '@/composables/useProductionApi'
+  import type { Vessel, Volume as ProductionVolume } from '@/types'
   import { computed } from 'vue'
 
   export type BrewSessionForm = {

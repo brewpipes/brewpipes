@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -14,7 +15,7 @@ type CreateBeerLotRequest struct {
 }
 
 func (r CreateBeerLotRequest) Validate() error {
-	return validateRequired(r.ProductionBatchUUID, "production_batch_uuid")
+	return validate.Required(r.ProductionBatchUUID, "production_batch_uuid")
 }
 
 type BeerLotResponse struct {

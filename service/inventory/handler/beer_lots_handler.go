@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -36,8 +35,7 @@ func HandleBeerLots(db BeerLotStore) http.HandlerFunc {
 
 				lots, err := db.ListBeerLotsByBatchUUID(r.Context(), batchUUID)
 				if err != nil {
-					slog.Error("error listing beer lots", "error", err)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error listing beer lots by batch", "error", err)
 					return
 				}
 
@@ -47,8 +45,7 @@ func HandleBeerLots(db BeerLotStore) http.HandlerFunc {
 
 			lots, err := db.ListBeerLots(r.Context())
 			if err != nil {
-				slog.Error("error listing beer lots", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing beer lots", "error", err)
 				return
 			}
 
@@ -84,14 +81,13 @@ func HandleBeerLots(db BeerLotStore) http.HandlerFunc {
 
 			created, err := db.CreateBeerLot(r.Context(), lot)
 			if err != nil {
-				slog.Error("error creating beer lot", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating beer lot", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewBeerLotResponse(created))
+			service.JSONCreated(w, dto.NewBeerLotResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -99,11 +95,6 @@ func HandleBeerLots(db BeerLotStore) http.HandlerFunc {
 // HandleBeerLotByUUID handles [GET /beer-lots/{uuid}].
 func HandleBeerLotByUUID(db BeerLotStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		lotUUID := r.PathValue("uuid")
 		if lotUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -115,8 +106,7 @@ func HandleBeerLotByUUID(db BeerLotStore) http.HandlerFunc {
 			http.Error(w, "beer lot not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting beer lot", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting beer lot", "error", err)
 			return
 		}
 

@@ -97,14 +97,21 @@
   </v-main>
 
   <AppFooter />
+
+  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+    {{ snackbar.text }}
+  </v-snackbar>
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useDisplay, useTheme } from 'vuetify'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useUserSettings } from '@/composables/useUserSettings'
   import { useAuthStore } from '@/stores/auth'
+
+  const { snackbar } = useSnackbar()
 
   const authStore = useAuthStore()
   const router = useRouter()

@@ -133,6 +133,7 @@
   import type { TimelineEvent } from './types'
   import { computed, ref, watch } from 'vue'
   import { useFormatters } from '@/composables/useFormatters'
+  import { nowInputValue } from '@/utils/normalize'
 
   export type TimelineReading = {
     observed_at: string
@@ -182,16 +183,7 @@
     observedAtMenu.value = false
   }
 
-  function nowInputValue () {
-    const now = new Date()
-    const pad = (value: number) => String(value).padStart(2, '0')
-    const year = now.getFullYear()
-    const month = pad(now.getMonth() + 1)
-    const day = pad(now.getDate())
-    const hours = pad(now.getHours())
-    const minutes = pad(now.getMinutes())
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  }
+  // Imported from @/utils/normalize
 </script>
 
 <style scoped>

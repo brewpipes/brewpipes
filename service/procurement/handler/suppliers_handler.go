@@ -26,8 +26,7 @@ func HandleSuppliers(db SupplierStore) http.HandlerFunc {
 		case http.MethodGet:
 			suppliers, err := db.ListSuppliers(r.Context())
 			if err != nil {
-				slog.Error("error listing suppliers", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing suppliers", "error", err)
 				return
 			}
 
@@ -58,14 +57,13 @@ func HandleSuppliers(db SupplierStore) http.HandlerFunc {
 
 			created, err := db.CreateSupplier(r.Context(), supplier)
 			if err != nil {
-				slog.Error("error creating supplier", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating supplier", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewSupplierResponse(created))
+			service.JSONCreated(w, dto.NewSupplierResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -86,8 +84,7 @@ func HandleSupplierByUUID(db SupplierStore) http.HandlerFunc {
 				http.Error(w, "supplier not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting supplier", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting supplier", "error", err)
 				return
 			}
 
@@ -121,15 +118,14 @@ func HandleSupplierByUUID(db SupplierStore) http.HandlerFunc {
 				http.Error(w, "supplier not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating supplier", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating supplier", "error", err)
 				return
 			}
 
 			slog.Info("supplier updated", "supplier_uuid", supplierUUID, "name", supplier.Name)
 			service.JSON(w, dto.NewSupplierResponse(supplier))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

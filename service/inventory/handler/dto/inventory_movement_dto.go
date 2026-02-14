@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -28,16 +29,16 @@ func (r CreateInventoryMovementRequest) Validate() error {
 		return fmt.Errorf("exactly one of ingredient_lot_uuid or beer_lot_uuid is required")
 	}
 	if r.IngredientLotUUID != nil {
-		if err := validateRequired(*r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
+		if err := validate.Required(*r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
 			return err
 		}
 	}
 	if r.BeerLotUUID != nil {
-		if err := validateRequired(*r.BeerLotUUID, "beer_lot_uuid"); err != nil {
+		if err := validate.Required(*r.BeerLotUUID, "beer_lot_uuid"); err != nil {
 			return err
 		}
 	}
-	if err := validateRequired(r.StockLocationUUID, "stock_location_uuid"); err != nil {
+	if err := validate.Required(r.StockLocationUUID, "stock_location_uuid"); err != nil {
 		return err
 	}
 	if err := validateMovementDirection(r.Direction); err != nil {
@@ -49,31 +50,31 @@ func (r CreateInventoryMovementRequest) Validate() error {
 	if r.Amount <= 0 {
 		return fmt.Errorf("amount must be greater than zero")
 	}
-	if err := validateRequired(r.AmountUnit, "amount_unit"); err != nil {
+	if err := validate.Required(r.AmountUnit, "amount_unit"); err != nil {
 		return err
 	}
 
 	referenceCount := 0
 	if r.ReceiptUUID != nil {
-		if err := validateRequired(*r.ReceiptUUID, "receipt_uuid"); err != nil {
+		if err := validate.Required(*r.ReceiptUUID, "receipt_uuid"); err != nil {
 			return err
 		}
 		referenceCount++
 	}
 	if r.UsageUUID != nil {
-		if err := validateRequired(*r.UsageUUID, "usage_uuid"); err != nil {
+		if err := validate.Required(*r.UsageUUID, "usage_uuid"); err != nil {
 			return err
 		}
 		referenceCount++
 	}
 	if r.AdjustmentUUID != nil {
-		if err := validateRequired(*r.AdjustmentUUID, "adjustment_uuid"); err != nil {
+		if err := validate.Required(*r.AdjustmentUUID, "adjustment_uuid"); err != nil {
 			return err
 		}
 		referenceCount++
 	}
 	if r.TransferUUID != nil {
-		if err := validateRequired(*r.TransferUUID, "transfer_uuid"); err != nil {
+		if err := validate.Required(*r.TransferUUID, "transfer_uuid"); err != nil {
 			return err
 		}
 		referenceCount++

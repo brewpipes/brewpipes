@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/procurement/storage"
 )
 
@@ -44,7 +45,7 @@ func (r UpdatePurchaseOrderRequest) Validate() error {
 		return fmt.Errorf("at least one field must be provided")
 	}
 	if r.OrderNumber != nil {
-		if err := validateRequired(*r.OrderNumber, "order_number"); err != nil {
+		if err := validate.Required(*r.OrderNumber, "order_number"); err != nil {
 			return err
 		}
 	}

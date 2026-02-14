@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/uuidutil"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -29,7 +30,7 @@ type InventoryUsageResponse struct {
 func NewInventoryUsageResponse(usage storage.InventoryUsage) InventoryUsageResponse {
 	return InventoryUsageResponse{
 		UUID:              usage.UUID.String(),
-		ProductionRefUUID: uuidToStringPointer(usage.ProductionRefUUID),
+		ProductionRefUUID: uuidutil.ToStringPointer(usage.ProductionRefUUID),
 		UsedAt:            usage.UsedAt,
 		Notes:             usage.Notes,
 		CreatedAt:         usage.CreatedAt,

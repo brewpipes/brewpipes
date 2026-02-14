@@ -33,29 +33,27 @@
                   :items="orderSelectItems"
                   label="Filter by purchase order"
                 />
-                <v-table class="data-table" density="compact">
-                  <thead>
-                    <tr>
-                      <th>Order</th>
-                      <th>Line</th>
-                      <th>Item</th>
-                      <th>Qty</th>
-                      <th>Unit cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="line in lines" :key="line.uuid">
-                      <td>{{ orderNumber(line.purchase_order_uuid) }}</td>
-                      <td>{{ line.line_number }}</td>
-                      <td>{{ line.item_name }}</td>
-                      <td>{{ `${line.quantity} ${line.quantity_unit}` }}</td>
-                      <td>{{ formatCurrency(line.unit_cost_cents, line.currency) }}</td>
-                    </tr>
-                    <tr v-if="lines.length === 0">
-                      <td colspan="5">No order lines yet.</td>
-                    </tr>
-                  </tbody>
-                </v-table>
+                <v-data-table
+                  class="data-table"
+                  density="compact"
+                  :headers="lineHeaders"
+                  item-value="uuid"
+                  :items="lines"
+                  :loading="loading"
+                >
+                  <template #item.purchase_order_uuid="{ item }">
+                    {{ orderNumber(item.purchase_order_uuid) }}
+                  </template>
+                  <template #item.quantity="{ item }">
+                    {{ `${item.quantity} ${item.quantity_unit}` }}
+                  </template>
+                  <template #item.unit_cost_cents="{ item }">
+                    {{ formatCurrency(item.unit_cost_cents, item.currency) }}
+                  </template>
+                  <template #no-data>
+                    <div class="text-center py-4 text-medium-emphasis">No order lines yet.</div>
+                  </template>
+                </v-data-table>
               </v-card-text>
             </v-card>
           </v-col>
@@ -113,38 +111,34 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
+  import type { PurchaseOrder, PurchaseOrderLine } from '@/types'
   import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
 
-  type PurchaseOrder = {
-    uuid: string
-    order_number: string
-  }
-
-  type PurchaseOrderLine = {
-    uuid: string
-    purchase_order_uuid: string
-    line_number: number
-    item_type: string
-    item_name: string
-    inventory_item_uuid: string | null
-    quantity: number
-    quantity_unit: string
-    unit_cost_cents: number
-    currency: string
-    created_at: string
-    updated_at: string
-  }
-
-  const { request, normalizeText, toNumber, formatCurrency } = useProcurementApi()
+  const {
+    getPurchaseOrders,
+    getPurchaseOrderLines,
+    createPurchaseOrderLine,
+    normalizeText,
+    toNumber,
+    formatCurrency,
+  } = useProcurementApi()
   const route = useRoute()
+  const { showNotice } = useSnackbar()
+
+  // Table configuration
+  const lineHeaders = [
+    { title: 'Order', key: 'purchase_order_uuid', sortable: true },
+    { title: 'Line', key: 'line_number', sortable: true },
+    { title: 'Item', key: 'item_name', sortable: true },
+    { title: 'Qty', key: 'quantity', sortable: true },
+    { title: 'Unit cost', key: 'unit_cost_cents', sortable: true },
+  ]
 
   const orders = ref<PurchaseOrder[]>([])
   const lines = ref<PurchaseOrderLine[]>([])
@@ -171,12 +165,6 @@
     currency: 'USD',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   const orderSelectItems = computed(() =>
     orders.value.map(order => ({
       title: order.order_number,
@@ -193,12 +181,6 @@
     }
   })
 
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function refreshAll () {
     loading.value = true
     errorMessage.value = ''
@@ -213,16 +195,11 @@
   }
 
   async function loadOrders () {
-    orders.value = await request<PurchaseOrder[]>('/purchase-orders')
+    orders.value = await getPurchaseOrders()
   }
 
   async function loadLines () {
-    const query = new URLSearchParams()
-    if (filters.purchase_order_uuid) {
-      query.set('purchase_order_uuid', filters.purchase_order_uuid)
-    }
-    const path = query.toString() ? `/purchase-order-lines?${query.toString()}` : '/purchase-order-lines'
-    lines.value = await request<PurchaseOrderLine[]>(path)
+    lines.value = await getPurchaseOrderLines(filters.purchase_order_uuid ?? undefined)
   }
 
   async function createLine () {
@@ -238,10 +215,7 @@
         unit_cost_cents: toNumber(lineForm.unit_cost_cents),
         currency: lineForm.currency,
       }
-      await request<PurchaseOrderLine>('/purchase-order-lines', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createPurchaseOrderLine(payload)
       lineForm.purchase_order_uuid = null
       lineForm.line_number = ''
       lineForm.item_type = ''
@@ -269,27 +243,5 @@
 <style scoped>
 .procurement-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 </style>

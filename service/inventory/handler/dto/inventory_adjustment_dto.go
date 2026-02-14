@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -13,7 +14,7 @@ type CreateInventoryAdjustmentRequest struct {
 }
 
 func (r CreateInventoryAdjustmentRequest) Validate() error {
-	if err := validateRequired(r.Reason, "reason"); err != nil {
+	if err := validate.Required(r.Reason, "reason"); err != nil {
 		return err
 	}
 	if err := validateAdjustmentReason(r.Reason); err != nil {

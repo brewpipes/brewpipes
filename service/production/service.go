@@ -22,16 +22,11 @@ type Service struct {
 }
 
 // New creates and initializes a new production service instance.
-func New(ctx context.Context, cfg Config) (*Service, error) {
-	stg, err := storage.New(ctx, cfg.PostgresDSN)
-	if err != nil {
-		return nil, fmt.Errorf("creating storage client: %w", err)
-	}
-
+func New(cfg Config) *Service {
 	return &Service{
-		storage:   stg,
+		storage:   storage.New(cfg.PostgresDSN),
 		secretKey: cfg.SecretKey,
-	}, nil
+	}
 }
 
 func (s *Service) HTTPRoutes() []service.HTTPRoute {
@@ -42,10 +37,10 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/styles/{uuid}", Handler: auth(handler.HandleStyleByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/recipes", Handler: auth(handler.HandleRecipes(s.storage))},
 		{Method: http.MethodPost, Path: "/recipes", Handler: auth(handler.HandleRecipes(s.storage))},
-		{Method: http.MethodGet, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipe(s.storage, s.storage))},
-		{Method: http.MethodPut, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipe(s.storage, s.storage))},
-		{Method: http.MethodPatch, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipe(s.storage, s.storage))},
-		{Method: http.MethodDelete, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipe(s.storage, s.storage))},
+		{Method: http.MethodGet, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipeByUUID(s.storage, s.storage))},
+		{Method: http.MethodPut, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipeByUUID(s.storage, s.storage))},
+		{Method: http.MethodPatch, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipeByUUID(s.storage, s.storage))},
+		{Method: http.MethodDelete, Path: "/recipes/{uuid}", Handler: auth(handler.HandleRecipeByUUID(s.storage, s.storage))},
 		{Method: http.MethodGet, Path: "/recipes/{uuid}/ingredients", Handler: auth(handler.HandleRecipeIngredients(s.storage, s.storage))},
 		{Method: http.MethodPost, Path: "/recipes/{uuid}/ingredients", Handler: auth(handler.HandleRecipeIngredients(s.storage, s.storage))},
 		{Method: http.MethodGet, Path: "/recipes/{uuid}/ingredients/{ingredient_uuid}", Handler: auth(handler.HandleRecipeIngredient(s.storage, s.storage))},
@@ -57,7 +52,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/batches/{uuid}", Handler: auth(handler.HandleBatchByUUID(s.storage))},
 		{Method: http.MethodPatch, Path: "/batches/{uuid}", Handler: auth(handler.HandleBatchByUUID(s.storage))},
 		{Method: http.MethodDelete, Path: "/batches/{uuid}", Handler: auth(handler.HandleBatchByUUID(s.storage))},
-		{Method: http.MethodGet, Path: "/batches/{uuid}/summary", Handler: auth(handler.HandleBatchSummary(s.storage))},
+		{Method: http.MethodGet, Path: "/batches/{uuid}/summary", Handler: auth(handler.HandleBatchSummaryByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/brew-sessions", Handler: auth(handler.HandleBrewSessions(s.storage))},
 		{Method: http.MethodPost, Path: "/brew-sessions", Handler: auth(handler.HandleBrewSessions(s.storage))},
 		{Method: http.MethodGet, Path: "/brew-sessions/{uuid}", Handler: auth(handler.HandleBrewSessionByUUID(s.storage))},

@@ -28,8 +28,7 @@ func HandleVessels(db VesselStore) http.HandlerFunc {
 		case http.MethodGet:
 			vessels, err := db.ListVessels(r.Context())
 			if err != nil {
-				slog.Error("error listing vessels", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing vessels", "error", err)
 				return
 			}
 
@@ -62,14 +61,13 @@ func HandleVessels(db VesselStore) http.HandlerFunc {
 
 			created, err := db.CreateVessel(r.Context(), vessel)
 			if err != nil {
-				slog.Error("error creating vessel", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating vessel", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewVesselResponse(created))
+			service.JSONCreated(w, dto.NewVesselResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -90,8 +88,7 @@ func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
 				http.Error(w, "vessel not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting vessel", "error", err, "vessel_uuid", vesselUUID)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting vessel", "error", err, "vessel_uuid", vesselUUID)
 				return
 			}
 
@@ -113,8 +110,7 @@ func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
 				http.Error(w, "vessel not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error getting vessel for update", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error getting vessel for update", "error", err)
 				return
 			}
 
@@ -123,8 +119,7 @@ func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
 				(req.Status == storage.VesselStatusInactive || req.Status == storage.VesselStatusRetired) {
 				hasActive, err := db.HasActiveOccupancyByVesselUUID(r.Context(), vesselUUID)
 				if err != nil {
-					slog.Error("error checking active occupancy", "error", err, "vessel_uuid", vesselUUID)
-					service.InternalError(w, err.Error())
+					service.InternalError(w, "error checking active occupancy", "error", err, "vessel_uuid", vesselUUID)
 					return
 				}
 				if hasActive {
@@ -152,8 +147,7 @@ func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
 				http.Error(w, "vessel not found", http.StatusNotFound)
 				return
 			} else if err != nil {
-				slog.Error("error updating vessel", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error updating vessel", "error", err)
 				return
 			}
 
@@ -161,7 +155,7 @@ func HandleVesselByUUID(db VesselStore) http.HandlerFunc {
 
 			service.JSON(w, dto.NewVesselResponse(updated))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }

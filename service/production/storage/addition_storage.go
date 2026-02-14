@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/database"
 	"github.com/brewpipes/brewpipes/service"
-	"github.com/gofrs/uuid/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -38,7 +38,7 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 	}
 
 	var inventoryLotUUID pgtype.UUID
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO addition (
 			batch_id,
 			occupancy_id,
@@ -83,24 +83,24 @@ func (c *Client) CreateAddition(ctx context.Context, addition Addition) (Additio
 		return Addition{}, fmt.Errorf("creating addition: %w", err)
 	}
 
-	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+	database.AssignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
 
 	// Resolve FK UUIDs
 	if addition.BatchID != nil {
 		var batchUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *addition.BatchID).Scan(&batchUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, *addition.BatchID).Scan(&batchUUID); err == nil {
 			addition.BatchUUID = &batchUUID
 		}
 	}
 	if addition.OccupancyID != nil {
 		var occUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, *addition.OccupancyID).Scan(&occUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM occupancy WHERE id = $1`, *addition.OccupancyID).Scan(&occUUID); err == nil {
 			addition.OccupancyUUID = &occUUID
 		}
 	}
 	if addition.VolumeID != nil {
 		var volUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *addition.VolumeID).Scan(&volUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *addition.VolumeID).Scan(&volUUID); err == nil {
 			addition.VolumeUUID = &volUUID
 		}
 	}
@@ -134,7 +134,7 @@ func scanAddition(row pgx.Row) (Addition, error) {
 	if err != nil {
 		return Addition{}, err
 	}
-	assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+	database.AssignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
 	return addition, nil
 }
 
@@ -148,7 +148,7 @@ const additionSelectWithJoins = `
 	LEFT JOIN volume v ON v.id = a.volume_id`
 
 func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
-	addition, err := scanAddition(c.db.QueryRow(ctx,
+	addition, err := scanAddition(c.DB().QueryRow(ctx,
 		additionSelectWithJoins+` WHERE a.id = $1 AND a.deleted_at IS NULL`, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -160,7 +160,7 @@ func (c *Client) GetAddition(ctx context.Context, id int64) (Addition, error) {
 }
 
 func (c *Client) GetAdditionByUUID(ctx context.Context, additionUUID string) (Addition, error) {
-	addition, err := scanAddition(c.db.QueryRow(ctx,
+	addition, err := scanAddition(c.DB().QueryRow(ctx,
 		additionSelectWithJoins+` WHERE a.uuid = $1 AND a.deleted_at IS NULL`, additionUUID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -172,7 +172,7 @@ func (c *Client) GetAdditionByUUID(ctx context.Context, additionUUID string) (Ad
 }
 
 func (c *Client) listAdditions(ctx context.Context, query string, args ...any) ([]Addition, error) {
-	rows, err := c.db.Query(ctx, query, args...)
+	rows, err := c.DB().Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (c *Client) listAdditions(ctx context.Context, query string, args ...any) (
 		); err != nil {
 			return nil, err
 		}
-		assignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
+		database.AssignUUIDPointer(&addition.InventoryLotUUID, inventoryLotUUID)
 		additions = append(additions, addition)
 	}
 	return additions, rows.Err()
@@ -281,14 +281,4 @@ func (c *Client) ListAdditionsByVolumeUUID(ctx context.Context, volumeUUID strin
 		return nil, fmt.Errorf("resolving volume uuid: %w", err)
 	}
 	return c.ListAdditionsByVolume(ctx, vol.ID)
-}
-
-func assignUUIDPointer(destination **uuid.UUID, value pgtype.UUID) {
-	if value.Valid {
-		uuidValue := uuid.UUID(value.Bytes)
-		*destination = &uuidValue
-		return
-	}
-
-	*destination = nil
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateIngredientMaltDetail(ctx context.Context, detail IngredientMaltDetail) (IngredientMaltDetail, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient_malt_detail (
 			ingredient_id,
 			maltster_name,
@@ -44,14 +44,14 @@ func (c *Client) CreateIngredientMaltDetail(ctx context.Context, detail Ingredie
 	}
 
 	// Resolve ingredient UUID
-	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, detail.IngredientID).Scan(&detail.IngredientUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, detail.IngredientID).Scan(&detail.IngredientUUID)
 
 	return detail, nil
 }
 
 func (c *Client) GetIngredientMaltDetail(ctx context.Context, id int64) (IngredientMaltDetail, error) {
 	var detail IngredientMaltDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.maltster_name, d.variety, d.lovibond, d.srm, d.diastatic_power, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_malt_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -83,7 +83,7 @@ func (c *Client) GetIngredientMaltDetail(ctx context.Context, id int64) (Ingredi
 
 func (c *Client) GetIngredientMaltDetailByUUID(ctx context.Context, detailUUID string) (IngredientMaltDetail, error) {
 	var detail IngredientMaltDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.maltster_name, d.variety, d.lovibond, d.srm, d.diastatic_power, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_malt_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -115,7 +115,7 @@ func (c *Client) GetIngredientMaltDetailByUUID(ctx context.Context, detailUUID s
 
 func (c *Client) GetIngredientMaltDetailByIngredient(ctx context.Context, ingredientUUID string) (IngredientMaltDetail, error) {
 	var detail IngredientMaltDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.maltster_name, d.variety, d.lovibond, d.srm, d.diastatic_power, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_malt_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -146,7 +146,7 @@ func (c *Client) GetIngredientMaltDetailByIngredient(ctx context.Context, ingred
 }
 
 func (c *Client) CreateIngredientHopDetail(ctx context.Context, detail IngredientHopDetail) (IngredientHopDetail, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient_hop_detail (
 			ingredient_id,
 			producer_name,
@@ -183,14 +183,14 @@ func (c *Client) CreateIngredientHopDetail(ctx context.Context, detail Ingredien
 	}
 
 	// Resolve ingredient UUID
-	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, detail.IngredientID).Scan(&detail.IngredientUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, detail.IngredientID).Scan(&detail.IngredientUUID)
 
 	return detail, nil
 }
 
 func (c *Client) GetIngredientHopDetail(ctx context.Context, id int64) (IngredientHopDetail, error) {
 	var detail IngredientHopDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.producer_name, d.variety, d.crop_year, d.form, d.alpha_acid, d.beta_acid, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_hop_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -223,7 +223,7 @@ func (c *Client) GetIngredientHopDetail(ctx context.Context, id int64) (Ingredie
 
 func (c *Client) GetIngredientHopDetailByUUID(ctx context.Context, detailUUID string) (IngredientHopDetail, error) {
 	var detail IngredientHopDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.producer_name, d.variety, d.crop_year, d.form, d.alpha_acid, d.beta_acid, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_hop_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -256,7 +256,7 @@ func (c *Client) GetIngredientHopDetailByUUID(ctx context.Context, detailUUID st
 
 func (c *Client) GetIngredientHopDetailByIngredient(ctx context.Context, ingredientUUID string) (IngredientHopDetail, error) {
 	var detail IngredientHopDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.producer_name, d.variety, d.crop_year, d.form, d.alpha_acid, d.beta_acid, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_hop_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -288,7 +288,7 @@ func (c *Client) GetIngredientHopDetailByIngredient(ctx context.Context, ingredi
 }
 
 func (c *Client) CreateIngredientYeastDetail(ctx context.Context, detail IngredientYeastDetail) (IngredientYeastDetail, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient_yeast_detail (
 			ingredient_id,
 			lab_name,
@@ -316,14 +316,14 @@ func (c *Client) CreateIngredientYeastDetail(ctx context.Context, detail Ingredi
 	}
 
 	// Resolve ingredient UUID
-	c.db.QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, detail.IngredientID).Scan(&detail.IngredientUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient WHERE id = $1`, detail.IngredientID).Scan(&detail.IngredientUUID)
 
 	return detail, nil
 }
 
 func (c *Client) GetIngredientYeastDetail(ctx context.Context, id int64) (IngredientYeastDetail, error) {
 	var detail IngredientYeastDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.lab_name, d.strain, d.form, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_yeast_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -353,7 +353,7 @@ func (c *Client) GetIngredientYeastDetail(ctx context.Context, id int64) (Ingred
 
 func (c *Client) GetIngredientYeastDetailByUUID(ctx context.Context, detailUUID string) (IngredientYeastDetail, error) {
 	var detail IngredientYeastDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.lab_name, d.strain, d.form, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_yeast_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id
@@ -383,7 +383,7 @@ func (c *Client) GetIngredientYeastDetailByUUID(ctx context.Context, detailUUID 
 
 func (c *Client) GetIngredientYeastDetailByIngredient(ctx context.Context, ingredientUUID string) (IngredientYeastDetail, error) {
 	var detail IngredientYeastDetail
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT d.id, d.uuid, d.ingredient_id, i.uuid, d.lab_name, d.strain, d.form, d.created_at, d.updated_at, d.deleted_at
 		FROM ingredient_yeast_detail d
 		JOIN ingredient i ON i.id = d.ingredient_id

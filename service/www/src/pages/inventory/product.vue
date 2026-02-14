@@ -82,26 +82,19 @@
     </v-card>
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
+
 </template>
 
 <script lang="ts" setup>
+  import type { BeerLot } from '@/types'
   import { onMounted, reactive, ref } from 'vue'
+  import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeDateTime, normalizeText } from '@/utils/normalize'
 
-  type BeerLot = {
-    uuid: string
-    production_batch_uuid: string
-    lot_code: string
-    packaged_at: string
-    notes: string
-    created_at: string
-    updated_at: string
-  }
-
-  const { request, normalizeText, normalizeDateTime, formatDateTime } = useInventoryApi()
+  const { getBeerLots: fetchBeerLots, createBeerLot: createBeerLotApi } = useInventoryApi()
+  const { showNotice } = useSnackbar()
 
   const beerLots = ref<BeerLot[]>([])
   const errorMessage = ref('')
@@ -115,27 +108,15 @@
     notes: '',
   })
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
-
   onMounted(async () => {
     await loadBeerLots()
   })
-
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
 
   async function loadBeerLots () {
     loading.value = true
     errorMessage.value = ''
     try {
-      beerLots.value = await request<BeerLot[]>('/beer-lots')
+      beerLots.value = await fetchBeerLots()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load product lots'
       errorMessage.value = message
@@ -152,10 +133,7 @@
         packaged_at: normalizeDateTime(beerLotForm.packaged_at),
         notes: normalizeText(beerLotForm.notes),
       }
-      await request<BeerLot>('/beer-lots', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
+      await createBeerLotApi(payload)
       beerLotForm.production_batch_uuid = ''
       beerLotForm.lot_code = ''
       beerLotForm.packaged_at = ''
@@ -173,27 +151,5 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.section-card {
-  background: rgba(var(--v-theme-surface), 0.92);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
-}
-
-.sub-card {
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  background: rgba(var(--v-theme-surface), 0.7);
-}
-
-.data-table :deep(th) {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
-.data-table :deep(td) {
-  font-size: 0.85rem;
 }
 </style>

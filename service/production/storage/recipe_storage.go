@@ -62,7 +62,7 @@ func scanRecipe(row pgx.Row) (Recipe, error) {
 }
 
 func (c *Client) CreateRecipe(ctx context.Context, recipe Recipe) (Recipe, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO recipe (
 			name, style_id, style_name, notes,
 			batch_size, batch_size_unit,
@@ -136,7 +136,7 @@ func (c *Client) CreateRecipe(ctx context.Context, recipe Recipe) (Recipe, error
 	// Resolve style UUID if style_id is set
 	if recipe.StyleID != nil {
 		var styleUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM style WHERE id = $1`, *recipe.StyleID).Scan(&styleUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM style WHERE id = $1`, *recipe.StyleID).Scan(&styleUUID); err == nil {
 			recipe.StyleUUID = &styleUUID
 		}
 	}
@@ -145,6 +145,9 @@ func (c *Client) CreateRecipe(ctx context.Context, recipe Recipe) (Recipe, error
 }
 
 // RecipeQueryOpts controls optional query behavior for recipe retrieval.
+// It lives in the storage package because it governs SQL-level filtering
+// (e.g., whether to include soft-deleted rows). Handler interfaces that
+// accept this type import it from storage rather than duplicating the options.
 type RecipeQueryOpts struct {
 	// IncludeDeleted allows retrieval of soft-deleted recipes.
 	// This is useful for historical references (e.g., batches that reference deleted recipes).
@@ -159,7 +162,7 @@ func (c *Client) GetRecipe(ctx context.Context, recipeUUID string, opts *RecipeQ
 		query += ` AND r.deleted_at IS NULL`
 	}
 
-	recipe, err := scanRecipe(c.db.QueryRow(ctx, query, recipeUUID))
+	recipe, err := scanRecipe(c.DB().QueryRow(ctx, query, recipeUUID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Recipe{}, service.ErrNotFound
@@ -171,7 +174,7 @@ func (c *Client) GetRecipe(ctx context.Context, recipeUUID string, opts *RecipeQ
 }
 
 func (c *Client) ListRecipes(ctx context.Context) ([]Recipe, error) {
-	rows, err := c.db.Query(ctx, recipeSelectWithJoins+`
+	rows, err := c.DB().Query(ctx, recipeSelectWithJoins+`
 		WHERE r.deleted_at IS NULL
 		ORDER BY r.name ASC`)
 	if err != nil {
@@ -181,36 +184,8 @@ func (c *Client) ListRecipes(ctx context.Context) ([]Recipe, error) {
 
 	var recipes []Recipe
 	for rows.Next() {
-		var recipe Recipe
-		if err := rows.Scan(
-			&recipe.ID,
-			&recipe.UUID,
-			&recipe.Name,
-			&recipe.StyleID,
-			&recipe.StyleUUID,
-			&recipe.StyleName,
-			&recipe.Notes,
-			&recipe.BatchSize,
-			&recipe.BatchSizeUnit,
-			&recipe.TargetOG,
-			&recipe.TargetOGMin,
-			&recipe.TargetOGMax,
-			&recipe.TargetFG,
-			&recipe.TargetFGMin,
-			&recipe.TargetFGMax,
-			&recipe.TargetIBU,
-			&recipe.TargetIBUMin,
-			&recipe.TargetIBUMax,
-			&recipe.TargetSRM,
-			&recipe.TargetSRMMin,
-			&recipe.TargetSRMMax,
-			&recipe.TargetCarbonation,
-			&recipe.IBUMethod,
-			&recipe.BrewhouseEfficiency,
-			&recipe.CreatedAt,
-			&recipe.UpdatedAt,
-			&recipe.DeletedAt,
-		); err != nil {
+		recipe, err := scanRecipe(rows)
+		if err != nil {
 			return nil, fmt.Errorf("scanning recipe: %w", err)
 		}
 		recipes = append(recipes, recipe)
@@ -223,7 +198,7 @@ func (c *Client) ListRecipes(ctx context.Context) ([]Recipe, error) {
 }
 
 func (c *Client) UpdateRecipe(ctx context.Context, recipeUUID string, recipe Recipe) (Recipe, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		UPDATE recipe
 		SET name = $1, style_id = $2, style_name = $3, notes = $4,
 		    batch_size = $5, batch_size_unit = $6,
@@ -302,7 +277,7 @@ func (c *Client) UpdateRecipe(ctx context.Context, recipeUUID string, recipe Rec
 	// Resolve style UUID if style_id is set
 	if recipe.StyleID != nil {
 		var styleUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM style WHERE id = $1`, *recipe.StyleID).Scan(&styleUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM style WHERE id = $1`, *recipe.StyleID).Scan(&styleUUID); err == nil {
 			recipe.StyleUUID = &styleUUID
 		}
 	}
@@ -311,7 +286,7 @@ func (c *Client) UpdateRecipe(ctx context.Context, recipeUUID string, recipe Rec
 }
 
 func (c *Client) DeleteRecipe(ctx context.Context, recipeUUID string) error {
-	result, err := c.db.Exec(ctx, `
+	result, err := c.DB().Exec(ctx, `
 		UPDATE recipe
 		SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -338,7 +313,7 @@ func (c *Client) getRecipeByID(ctx context.Context, id int64, opts *RecipeQueryO
 		query += ` AND r.deleted_at IS NULL`
 	}
 
-	recipe, err := scanRecipe(c.db.QueryRow(ctx, query, id))
+	recipe, err := scanRecipe(c.DB().QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Recipe{}, service.ErrNotFound

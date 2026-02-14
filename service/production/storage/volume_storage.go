@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateVolume(ctx context.Context, volume Volume) (Volume, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO volume (
 			name,
 			description,
@@ -42,7 +42,7 @@ func (c *Client) CreateVolume(ctx context.Context, volume Volume) (Volume, error
 
 func (c *Client) GetVolume(ctx context.Context, id int64) (Volume, error) {
 	var volume Volume
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, description, amount, amount_unit, created_at, updated_at, deleted_at
 		FROM volume
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -70,7 +70,7 @@ func (c *Client) GetVolume(ctx context.Context, id int64) (Volume, error) {
 
 func (c *Client) GetVolumeByUUID(ctx context.Context, volumeUUID string) (Volume, error) {
 	var volume Volume
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, description, amount, amount_unit, created_at, updated_at, deleted_at
 		FROM volume
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -97,7 +97,7 @@ func (c *Client) GetVolumeByUUID(ctx context.Context, volumeUUID string) (Volume
 }
 
 func (c *Client) ListVolumes(ctx context.Context) ([]Volume, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, name, description, amount, amount_unit, created_at, updated_at, deleted_at
 		FROM volume
 		WHERE deleted_at IS NULL
@@ -138,7 +138,7 @@ func (c *Client) GetVolumes(ctx context.Context) ([]Volume, error) {
 }
 
 func (c *Client) CreateVolumeRelation(ctx context.Context, relation VolumeRelation) (VolumeRelation, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO volume_relation (
 			parent_volume_id,
 			child_volume_id,
@@ -169,15 +169,15 @@ func (c *Client) CreateVolumeRelation(ctx context.Context, relation VolumeRelati
 	}
 
 	// Resolve parent/child volume UUIDs
-	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, relation.ParentVolumeID).Scan(&relation.ParentVolumeUUID)
-	c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, relation.ChildVolumeID).Scan(&relation.ChildVolumeUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, relation.ParentVolumeID).Scan(&relation.ParentVolumeUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, relation.ChildVolumeID).Scan(&relation.ChildVolumeUUID)
 
 	return relation, nil
 }
 
 func (c *Client) GetVolumeRelation(ctx context.Context, id int64) (VolumeRelation, error) {
 	var relation VolumeRelation
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT vr.id, vr.uuid, vr.parent_volume_id, pv.uuid, vr.child_volume_id, cv.uuid,
 		       vr.relation_type, vr.amount, vr.amount_unit, vr.created_at, vr.updated_at, vr.deleted_at
 		FROM volume_relation vr
@@ -211,7 +211,7 @@ func (c *Client) GetVolumeRelation(ctx context.Context, id int64) (VolumeRelatio
 
 func (c *Client) GetVolumeRelationByUUID(ctx context.Context, relationUUID string) (VolumeRelation, error) {
 	var relation VolumeRelation
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT vr.id, vr.uuid, vr.parent_volume_id, pv.uuid, vr.child_volume_id, cv.uuid,
 		       vr.relation_type, vr.amount, vr.amount_unit, vr.created_at, vr.updated_at, vr.deleted_at
 		FROM volume_relation vr
@@ -244,7 +244,7 @@ func (c *Client) GetVolumeRelationByUUID(ctx context.Context, relationUUID strin
 }
 
 func (c *Client) ListVolumeRelations(ctx context.Context, volumeID int64) ([]VolumeRelation, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT vr.id, vr.uuid, vr.parent_volume_id, pv.uuid, vr.child_volume_id, cv.uuid,
 		       vr.relation_type, vr.amount, vr.amount_unit, vr.created_at, vr.updated_at, vr.deleted_at
 		FROM volume_relation vr

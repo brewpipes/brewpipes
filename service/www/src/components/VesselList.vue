@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Occupancy, Vessel } from '@/composables/useProductionApi'
+  import type { Occupancy, Vessel } from '@/types'
   import { computed } from 'vue'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 

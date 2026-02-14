@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/brewpipes/brewpipes/internal/validate"
 	"github.com/brewpipes/brewpipes/service/production/storage"
 )
 
@@ -14,10 +15,10 @@ type CreateBatchVolumeRequest struct {
 }
 
 func (r CreateBatchVolumeRequest) Validate() error {
-	if err := validateRequired(r.BatchUUID, "batch_uuid"); err != nil {
+	if err := validate.Required(r.BatchUUID, "batch_uuid"); err != nil {
 		return err
 	}
-	if err := validateRequired(r.VolumeUUID, "volume_uuid"); err != nil {
+	if err := validate.Required(r.VolumeUUID, "volume_uuid"); err != nil {
 		return err
 	}
 	if err := validateLiquidPhase(r.LiquidPhase); err != nil {

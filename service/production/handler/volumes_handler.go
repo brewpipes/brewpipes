@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/brewpipes/brewpipes/service"
@@ -25,8 +24,7 @@ func HandleVolumes(db VolumeStore) http.HandlerFunc {
 		case http.MethodGet:
 			volumes, err := db.ListVolumes(r.Context())
 			if err != nil {
-				slog.Error("error listing volumes", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing volumes", "error", err)
 				return
 			}
 
@@ -51,14 +49,13 @@ func HandleVolumes(db VolumeStore) http.HandlerFunc {
 
 			created, err := db.CreateVolume(r.Context(), volume)
 			if err != nil {
-				slog.Error("error creating volume", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating volume", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewVolumeResponse(created))
+			service.JSONCreated(w, dto.NewVolumeResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -66,11 +63,6 @@ func HandleVolumes(db VolumeStore) http.HandlerFunc {
 // HandleVolumeByUUID handles [GET /volumes/{uuid}].
 func HandleVolumeByUUID(db VolumeStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		volumeUUID := r.PathValue("uuid")
 		if volumeUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -82,8 +74,7 @@ func HandleVolumeByUUID(db VolumeStore) http.HandlerFunc {
 			http.Error(w, "volume not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting volume", "error", err, "volume_uuid", volumeUUID)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting volume", "error", err, "volume_uuid", volumeUUID)
 			return
 		}
 

@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateBatchRelation(ctx context.Context, relation BatchRelation) (BatchRelation, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO batch_relation (
 			parent_batch_id,
 			child_batch_id,
@@ -38,11 +38,11 @@ func (c *Client) CreateBatchRelation(ctx context.Context, relation BatchRelation
 	}
 
 	// Resolve UUIDs
-	c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, relation.ParentBatchID).Scan(&relation.ParentBatchUUID)
-	c.db.QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, relation.ChildBatchID).Scan(&relation.ChildBatchUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, relation.ParentBatchID).Scan(&relation.ParentBatchUUID)
+	c.DB().QueryRow(ctx, `SELECT uuid FROM batch WHERE id = $1`, relation.ChildBatchID).Scan(&relation.ChildBatchUUID)
 	if relation.VolumeID != nil {
 		var volUUID string
-		if err := c.db.QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *relation.VolumeID).Scan(&volUUID); err == nil {
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM volume WHERE id = $1`, *relation.VolumeID).Scan(&volUUID); err == nil {
 			relation.VolumeUUID = &volUUID
 		}
 	}
@@ -52,7 +52,7 @@ func (c *Client) CreateBatchRelation(ctx context.Context, relation BatchRelation
 
 func (c *Client) GetBatchRelation(ctx context.Context, id int64) (BatchRelation, error) {
 	var relation BatchRelation
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT br.id, br.uuid, br.parent_batch_id, pb.uuid, br.child_batch_id, cb.uuid,
 		       br.relation_type, br.volume_id, v.uuid,
 		       br.created_at, br.updated_at, br.deleted_at
@@ -88,7 +88,7 @@ func (c *Client) GetBatchRelation(ctx context.Context, id int64) (BatchRelation,
 
 func (c *Client) GetBatchRelationByUUID(ctx context.Context, relationUUID string) (BatchRelation, error) {
 	var relation BatchRelation
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT br.id, br.uuid, br.parent_batch_id, pb.uuid, br.child_batch_id, cb.uuid,
 		       br.relation_type, br.volume_id, v.uuid,
 		       br.created_at, br.updated_at, br.deleted_at
@@ -123,7 +123,7 @@ func (c *Client) GetBatchRelationByUUID(ctx context.Context, relationUUID string
 }
 
 func (c *Client) ListBatchRelations(ctx context.Context, batchID int64) ([]BatchRelation, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT br.id, br.uuid, br.parent_batch_id, pb.uuid, br.child_batch_id, cb.uuid,
 		       br.relation_type, br.volume_id, v.uuid,
 		       br.created_at, br.updated_at, br.deleted_at

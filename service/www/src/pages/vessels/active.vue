@@ -61,27 +61,20 @@
     />
   </v-container>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-    {{ snackbar.text }}
-  </v-snackbar>
+
 </template>
 
 <script lang="ts" setup>
   import type { UpdateVesselRequest } from '@/types'
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import VesselDetails from '@/components/VesselDetails.vue'
   import VesselList from '@/components/VesselList.vue'
-  import { useApiClient } from '@/composables/useApiClient'
   import { useOccupancyStatusFormatters } from '@/composables/useFormatters'
-  import {
-    type Occupancy,
-    type OccupancyStatus,
-    useProductionApi,
-    type Vessel,
-  } from '@/composables/useProductionApi'
-
-  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
+  import { useSnackbar } from '@/composables/useSnackbar'
+  import type { Occupancy, OccupancyStatus, Vessel } from '@/types'
+  import { useProductionApi } from '@/composables/useProductionApi'
+  import { useVesselActions } from '@/composables/useVesselActions'
 
   const vessels = ref<Vessel[]>([])
   const occupancies = ref<Occupancy[]>([])
@@ -92,15 +85,11 @@
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
 
-  const { request } = useApiClient(apiBase)
-  const { getActiveOccupancies, updateOccupancyStatus, updateVessel } = useProductionApi()
+  const { getVessels, getActiveOccupancies, updateOccupancyStatus } = useProductionApi()
   const { formatOccupancyStatus } = useOccupancyStatusFormatters()
+  const { saveVessel } = useVesselActions()
 
-  const snackbar = reactive({
-    show: false,
-    text: '',
-    color: 'success',
-  })
+  const { showNotice } = useSnackbar()
 
   // Filter to only active vessels
   const activeVessels = computed(() =>
@@ -137,17 +126,11 @@
     selectedVesselUuid.value = null
   }
 
-  function showNotice (text: string, color = 'success') {
-    snackbar.text = text
-    snackbar.color = color
-    snackbar.show = true
-  }
-
   async function refreshVessels () {
     loading.value = true
     try {
       const [vesselData] = await Promise.all([
-        request<Vessel[]>('/vessels'),
+        getVessels(),
         loadOccupancies(),
       ])
       vessels.value = vesselData
@@ -193,30 +176,13 @@
   async function handleSaveVessel (data: UpdateVesselRequest) {
     if (!selectedVessel.value) return
 
-    editDialogRef.value?.setSaving(true)
-    editDialogRef.value?.clearError()
-
-    try {
-      const updated = await updateVessel(selectedVessel.value.uuid, data)
-      // Update the vessel in the list
+    const updated = await saveVessel(selectedVessel.value.uuid, data, editDialogRef)
+    if (updated) {
       const index = vessels.value.findIndex(v => v.uuid === updated.uuid)
       if (index !== -1) {
         vessels.value[index] = updated
       }
       editDialogOpen.value = false
-      showNotice('Vessel updated successfully')
-    } catch (error_) {
-      console.error('Failed to update vessel:', error_)
-
-      // Check for 409 Conflict (vessel has active occupancy)
-      if (error_ instanceof Error && error_.message.includes('409')) {
-        editDialogRef.value?.setError('Cannot change status: vessel has an active occupancy')
-      } else {
-        const message = error_ instanceof Error ? error_.message : 'Failed to update vessel'
-        editDialogRef.value?.setError(message)
-      }
-    } finally {
-      editDialogRef.value?.setSaving(false)
     }
   }
 </script>

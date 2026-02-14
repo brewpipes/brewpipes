@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -27,8 +26,7 @@ func HandleInventoryReceipts(db InventoryReceiptStore) http.HandlerFunc {
 		case http.MethodGet:
 			receipts, err := db.ListInventoryReceipts(r.Context())
 			if err != nil {
-				slog.Error("error listing inventory receipts", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing inventory receipts", "error", err)
 				return
 			}
 
@@ -68,14 +66,13 @@ func HandleInventoryReceipts(db InventoryReceiptStore) http.HandlerFunc {
 
 			created, err := db.CreateInventoryReceipt(r.Context(), receipt)
 			if err != nil {
-				slog.Error("error creating inventory receipt", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating inventory receipt", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewInventoryReceiptResponse(created))
+			service.JSONCreated(w, dto.NewInventoryReceiptResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -83,11 +80,6 @@ func HandleInventoryReceipts(db InventoryReceiptStore) http.HandlerFunc {
 // HandleInventoryReceiptByUUID handles [GET /inventory-receipts/{uuid}].
 func HandleInventoryReceiptByUUID(db InventoryReceiptStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		receiptUUID := r.PathValue("uuid")
 		if receiptUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -99,8 +91,7 @@ func HandleInventoryReceiptByUUID(db InventoryReceiptStore) http.HandlerFunc {
 			http.Error(w, "inventory receipt not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting inventory receipt", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting inventory receipt", "error", err)
 			return
 		}
 

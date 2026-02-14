@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateStyle(ctx context.Context, style Style) (Style, error) {
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		INSERT INTO style (
 			name
 		) VALUES ($1)
@@ -33,7 +33,7 @@ func (c *Client) CreateStyle(ctx context.Context, style Style) (Style, error) {
 
 func (c *Client) GetStyle(ctx context.Context, id int64) (Style, error) {
 	var style Style
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, created_at, updated_at, deleted_at
 		FROM style
 		WHERE id = $1 AND deleted_at IS NULL`,
@@ -58,7 +58,7 @@ func (c *Client) GetStyle(ctx context.Context, id int64) (Style, error) {
 
 func (c *Client) GetStyleByUUID(ctx context.Context, styleUUID string) (Style, error) {
 	var style Style
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, created_at, updated_at, deleted_at
 		FROM style
 		WHERE uuid = $1 AND deleted_at IS NULL`,
@@ -83,7 +83,7 @@ func (c *Client) GetStyleByUUID(ctx context.Context, styleUUID string) (Style, e
 
 func (c *Client) GetStyleByName(ctx context.Context, name string) (Style, error) {
 	var style Style
-	err := c.db.QueryRow(ctx, `
+	err := c.DB().QueryRow(ctx, `
 		SELECT id, uuid, name, created_at, updated_at, deleted_at
 		FROM style
 		WHERE lower(name) = lower($1) AND deleted_at IS NULL`,
@@ -107,7 +107,7 @@ func (c *Client) GetStyleByName(ctx context.Context, name string) (Style, error)
 }
 
 func (c *Client) ListStyles(ctx context.Context) ([]Style, error) {
-	rows, err := c.db.Query(ctx, `
+	rows, err := c.DB().Query(ctx, `
 		SELECT id, uuid, name, created_at, updated_at, deleted_at
 		FROM style
 		WHERE deleted_at IS NULL

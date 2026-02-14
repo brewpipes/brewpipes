@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -27,8 +26,7 @@ func HandleInventoryUsage(db InventoryUsageStore) http.HandlerFunc {
 		case http.MethodGet:
 			usageRecords, err := db.ListInventoryUsage(r.Context())
 			if err != nil {
-				slog.Error("error listing inventory usage", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error listing inventory usage", "error", err)
 				return
 			}
 
@@ -67,14 +65,13 @@ func HandleInventoryUsage(db InventoryUsageStore) http.HandlerFunc {
 
 			created, err := db.CreateInventoryUsage(r.Context(), usage)
 			if err != nil {
-				slog.Error("error creating inventory usage", "error", err)
-				service.InternalError(w, err.Error())
+				service.InternalError(w, "error creating inventory usage", "error", err)
 				return
 			}
 
-			service.JSON(w, dto.NewInventoryUsageResponse(created))
+			service.JSONCreated(w, dto.NewInventoryUsageResponse(created))
 		default:
-			methodNotAllowed(w)
+			service.MethodNotAllowed(w)
 		}
 	}
 }
@@ -82,11 +79,6 @@ func HandleInventoryUsage(db InventoryUsageStore) http.HandlerFunc {
 // HandleInventoryUsageByUUID handles [GET /inventory-usage/{uuid}].
 func HandleInventoryUsageByUUID(db InventoryUsageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-
 		usageUUID := r.PathValue("uuid")
 		if usageUUID == "" {
 			http.Error(w, "invalid uuid", http.StatusBadRequest)
@@ -98,8 +90,7 @@ func HandleInventoryUsageByUUID(db InventoryUsageStore) http.HandlerFunc {
 			http.Error(w, "inventory usage not found", http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("error getting inventory usage", "error", err)
-			service.InternalError(w, err.Error())
+			service.InternalError(w, "error getting inventory usage", "error", err)
 			return
 		}
 

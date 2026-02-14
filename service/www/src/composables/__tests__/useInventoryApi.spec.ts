@@ -187,6 +187,50 @@ describe('useInventoryApi', () => {
     })
   })
 
+  describe('stock levels API', () => {
+    it('getStockLevels fetches stock levels', async () => {
+      const mockStockLevels = [
+        {
+          ingredient_uuid: 'ing-uuid-1',
+          ingredient_name: 'Pale Malt 2-Row',
+          category: 'fermentable',
+          default_unit: 'kg',
+          total_on_hand: 500,
+          locations: [
+            { location_uuid: 'loc-1', location_name: 'Grain Room', quantity: 500 },
+          ],
+        },
+        {
+          ingredient_uuid: 'ing-uuid-2',
+          ingredient_name: 'Cascade Hops',
+          category: 'hop',
+          default_unit: 'kg',
+          total_on_hand: 25,
+          locations: [
+            { location_uuid: 'loc-2', location_name: 'Cold Storage', quantity: 25 },
+          ],
+        },
+      ]
+      mockRequest.mockResolvedValue(mockStockLevels)
+
+      const { getStockLevels } = useInventoryApi()
+      const result = await getStockLevels()
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-levels')
+      expect(result).toEqual(mockStockLevels)
+    })
+
+    it('getStockLevels returns empty array when no stock', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { getStockLevels } = useInventoryApi()
+      const result = await getStockLevels()
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-levels')
+      expect(result).toEqual([])
+    })
+  })
+
   describe('edge cases', () => {
     it('normalizeText handles strings with only whitespace characters', () => {
       const { normalizeText } = useInventoryApi()

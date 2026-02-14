@@ -8,10 +8,11 @@ import (
 )
 
 type CreateInventoryReceiptRequest struct {
-	SupplierUUID  *string    `json:"supplier_uuid"`
-	ReferenceCode *string    `json:"reference_code"`
-	ReceivedAt    *time.Time `json:"received_at"`
-	Notes         *string    `json:"notes"`
+	SupplierUUID      *string    `json:"supplier_uuid"`
+	PurchaseOrderUUID *string    `json:"purchase_order_uuid"`
+	ReferenceCode     *string    `json:"reference_code"`
+	ReceivedAt        *time.Time `json:"received_at"`
+	Notes             *string    `json:"notes"`
 }
 
 func (r CreateInventoryReceiptRequest) Validate() error {
@@ -19,26 +20,28 @@ func (r CreateInventoryReceiptRequest) Validate() error {
 }
 
 type InventoryReceiptResponse struct {
-	UUID          string     `json:"uuid"`
-	SupplierUUID  *string    `json:"supplier_uuid,omitempty"`
-	ReferenceCode *string    `json:"reference_code,omitempty"`
-	ReceivedAt    time.Time  `json:"received_at"`
-	Notes         *string    `json:"notes,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
+	UUID              string     `json:"uuid"`
+	SupplierUUID      *string    `json:"supplier_uuid,omitempty"`
+	PurchaseOrderUUID *string    `json:"purchase_order_uuid,omitempty"`
+	ReferenceCode     *string    `json:"reference_code,omitempty"`
+	ReceivedAt        time.Time  `json:"received_at"`
+	Notes             *string    `json:"notes,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
 }
 
 func NewInventoryReceiptResponse(receipt storage.InventoryReceipt) InventoryReceiptResponse {
 	return InventoryReceiptResponse{
-		UUID:          receipt.UUID.String(),
-		SupplierUUID:  uuidutil.ToStringPointer(receipt.SupplierUUID),
-		ReferenceCode: receipt.ReferenceCode,
-		ReceivedAt:    receipt.ReceivedAt,
-		Notes:         receipt.Notes,
-		CreatedAt:     receipt.CreatedAt,
-		UpdatedAt:     receipt.UpdatedAt,
-		DeletedAt:     receipt.DeletedAt,
+		UUID:              receipt.UUID.String(),
+		SupplierUUID:      uuidutil.ToStringPointer(receipt.SupplierUUID),
+		PurchaseOrderUUID: uuidutil.ToStringPointer(receipt.PurchaseOrderUUID),
+		ReferenceCode:     receipt.ReferenceCode,
+		ReceivedAt:        receipt.ReceivedAt,
+		Notes:             receipt.Notes,
+		CreatedAt:         receipt.CreatedAt,
+		UpdatedAt:         receipt.UpdatedAt,
+		DeletedAt:         receipt.DeletedAt,
 	}
 }
 

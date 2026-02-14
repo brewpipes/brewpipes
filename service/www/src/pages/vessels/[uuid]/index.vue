@@ -202,11 +202,10 @@
 </template>
 
 <script lang="ts" setup>
-  import type { UpdateVesselRequest } from '@/types'
+  import type { Batch, Occupancy, UpdateVesselRequest, Vessel } from '@/types'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
-  import type { Batch, Occupancy, Vessel } from '@/types'
   import {
     useFormatters,
     useOccupancyStatusFormatters,

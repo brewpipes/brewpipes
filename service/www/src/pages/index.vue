@@ -111,7 +111,50 @@
       </v-col>
 
       <v-col cols="12" lg="5">
-        <v-card class="section-card">
+        <v-card class="section-card" :class="{ 'low-stock-alert': hasLowStock }">
+          <v-card-title class="d-flex align-center">
+            <v-icon
+              class="mr-2"
+              :color="hasLowStock ? 'warning' : 'success'"
+              :icon="hasLowStock ? 'mdi-alert' : 'mdi-check-circle'"
+            />
+            {{ hasLowStock ? 'Low Stock' : 'Stock Status' }}
+            <v-spacer />
+            <v-btn size="small" to="/inventory/stock-levels" variant="text">View Stock Levels</v-btn>
+          </v-card-title>
+          <v-card-text>
+            <template v-if="hasLowStock">
+              <div class="text-body-2 mb-3">
+                {{ lowStockCount }} {{ lowStockCount === 1 ? 'ingredient' : 'ingredients' }} out of stock
+              </div>
+              <v-list class="low-stock-list" density="compact" lines="one">
+                <v-list-item
+                  v-for="item in lowStockItems"
+                  :key="item.ingredient_uuid"
+                  :to="`/inventory/stock-levels?ingredient=${item.ingredient_uuid}`"
+                >
+                  <template #prepend>
+                    <v-icon color="warning" icon="mdi-circle-small" size="small" />
+                  </template>
+                  <v-list-item-title>{{ item.ingredient_name }}</v-list-item-title>
+                  <template #append>
+                    <v-chip color="secondary" size="x-small" variant="tonal">
+                      {{ item.category }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </template>
+            <template v-else>
+              <div class="d-flex align-center text-body-2 text-success">
+                <v-icon class="mr-2" icon="mdi-check" size="small" />
+                All ingredients in stock
+              </div>
+            </template>
+          </v-card-text>
+        </v-card>
+
+        <v-card class="section-card mt-4">
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-silo" />
             Vessels
@@ -173,8 +216,8 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Batch, Occupancy, Vessel, Volume } from '@/types'
   import type { BatchProcessPhase, ProcessPhase } from '@/components/batch/types'
+  import type { Batch, Occupancy, StockLevel, Vessel, Volume } from '@/types'
   import { computed, onMounted, ref } from 'vue'
   import {
     formatDate,
@@ -183,6 +226,7 @@
     usePhaseFormatters,
     useVesselStatusFormatters,
   } from '@/composables/useFormatters'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { useUserSettings } from '@/composables/useUserSettings'
@@ -214,10 +258,12 @@
   const volumes = ref<Volume[]>([])
   const processPhases = ref<BatchProcessPhase[]>([])
   const occupancies = ref<Occupancy[]>([])
+  const stockLevels = ref<StockLevel[]>([])
   const errorMessage = ref('')
   const loading = ref(false)
 
   const { getBatches, getVessels, getVolumes, getActiveOccupancies, request } = useProductionApi()
+  const { getStockLevels } = useInventoryApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { breweryName } = useUserSettings()
   const { formatPhase, getPhaseColor } = usePhaseFormatters()
@@ -337,6 +383,14 @@
     return { occupied, available, outOfService }
   })
 
+  const lowStockItems = computed(() =>
+    stockLevels.value.filter(item => item.total_on_hand <= 0),
+  )
+
+  const lowStockCount = computed(() => lowStockItems.value.length)
+
+  const hasLowStock = computed(() => lowStockCount.value > 0)
+
   onMounted(async () => {
     await refreshAll()
   })
@@ -345,14 +399,16 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      const [batchData, vesselData, volumeData] = await Promise.all([
+      const [batchData, vesselData, volumeData, stockData] = await Promise.all([
         getBatches(),
         getVessels(),
         getVolumes(),
+        getStockLevels(),
       ])
       batches.value = batchData
       vessels.value = vesselData
       volumes.value = volumeData
+      stockLevels.value = stockData
 
       await Promise.all([loadProcessPhases(), loadOccupancies()])
     } catch (error) {
@@ -565,5 +621,14 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.low-stock-alert {
+  border-left: 4px solid rgb(var(--v-theme-warning));
+}
+
+.low-stock-list {
+  max-height: 200px;
+  overflow: auto;
 }
 </style>

@@ -17,6 +17,7 @@ type InventoryReceiptStore interface {
 	CreateInventoryReceipt(context.Context, storage.InventoryReceipt) (storage.InventoryReceipt, error)
 	GetInventoryReceiptByUUID(context.Context, string) (storage.InventoryReceipt, error)
 	ListInventoryReceipts(context.Context) ([]storage.InventoryReceipt, error)
+	ListInventoryReceiptsByPurchaseOrderUUID(context.Context, string) ([]storage.InventoryReceipt, error)
 }
 
 // HandleInventoryReceipts handles [GET /inventory-receipts] and [POST /inventory-receipts].
@@ -24,6 +25,18 @@ func HandleInventoryReceipts(db InventoryReceiptStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			purchaseOrderValue := r.URL.Query().Get("purchase_order_uuid")
+			if purchaseOrderValue != "" {
+				receipts, err := db.ListInventoryReceiptsByPurchaseOrderUUID(r.Context(), purchaseOrderValue)
+				if err != nil {
+					service.InternalError(w, "error listing inventory receipts by purchase order", "error", err)
+					return
+				}
+
+				service.JSON(w, dto.NewInventoryReceiptsResponse(receipts))
+				return
+			}
+
 			receipts, err := db.ListInventoryReceipts(r.Context())
 			if err != nil {
 				service.InternalError(w, "error listing inventory receipts", "error", err)
@@ -57,11 +70,22 @@ func HandleInventoryReceipts(db InventoryReceiptStore) http.HandlerFunc {
 				supplierUUID = &parsed
 			}
 
+			var purchaseOrderUUID *uuid.UUID
+			if req.PurchaseOrderUUID != nil {
+				parsed, err := uuid.FromString(*req.PurchaseOrderUUID)
+				if err != nil {
+					http.Error(w, "invalid purchase_order_uuid", http.StatusBadRequest)
+					return
+				}
+				purchaseOrderUUID = &parsed
+			}
+
 			receipt := storage.InventoryReceipt{
-				SupplierUUID:  supplierUUID,
-				ReferenceCode: req.ReferenceCode,
-				ReceivedAt:    receivedAt,
-				Notes:         req.Notes,
+				SupplierUUID:      supplierUUID,
+				PurchaseOrderUUID: purchaseOrderUUID,
+				ReferenceCode:     req.ReferenceCode,
+				ReceivedAt:        receivedAt,
+				Notes:             req.Notes,
 			}
 
 			created, err := db.CreateInventoryReceipt(r.Context(), receipt)

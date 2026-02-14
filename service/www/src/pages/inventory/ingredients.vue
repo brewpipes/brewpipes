@@ -366,9 +366,9 @@
                   prepend-icon="mdi-plus"
                   size="small"
                   variant="text"
-                  @click="openReceiptDialog"
+                  @click="receiveWithoutPODialogOpen = true"
                 >
-                  Create receipt
+                  Receive inventory
                 </v-btn>
               </v-card-title>
               <v-card-text>
@@ -636,12 +636,19 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Receive Without PO Dialog -->
+  <ReceiveWithoutPODialog
+    v-model="receiveWithoutPODialogOpen"
+    @received="handleReceiveWithoutPO"
+  />
 </template>
 
 <script lang="ts" setup>
   import type { Ingredient, IngredientLot, InventoryReceipt, InventoryUsage } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
   import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
@@ -693,6 +700,7 @@
   const receiptDialog = ref(false)
   const lotDialog = ref(false)
   const usageDialog = ref(false)
+  const receiveWithoutPODialogOpen = ref(false)
 
   // Category filter for lot creation
   const lotDialogCategory = ref<string>('fermentable')
@@ -927,7 +935,7 @@
     ingredientDialog.value = false
   }
 
-  function openReceiptDialog () {
+  function _openReceiptDialog () {
     receiptForm.supplier_uuid = ''
     receiptForm.reference_code = ''
     receiptForm.received_at = ''
@@ -1107,6 +1115,11 @@
       path: '/inventory/lot-details',
       query: { lot_uuid: lotUuid },
     })
+  }
+
+  async function handleReceiveWithoutPO () {
+    showNotice('Inventory received successfully', 'success')
+    await Promise.allSettled([loadReceipts(), loadLots()])
   }
 </script>
 

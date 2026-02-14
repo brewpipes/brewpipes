@@ -203,9 +203,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, ref, watch } from 'vue'
-  import { srmToColor, useBrewingFormatters } from '@/composables/useFormatters'
-  import { useSnackbar } from '@/composables/useSnackbar'
   import type {
     CreateRecipeIngredientRequest,
     Recipe,
@@ -215,7 +212,10 @@
     UpdateRecipeIngredientRequest,
     UpdateRecipeRequest,
   } from '@/types'
+  import { computed, onMounted, ref, watch } from 'vue'
+  import { srmToColor, useBrewingFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import RecipeDeleteDialog from './RecipeDeleteDialog.vue'
   import RecipeEditDialog from './RecipeEditDialog.vue'
   import RecipeFermentablesTab from './RecipeFermentablesTab.vue'

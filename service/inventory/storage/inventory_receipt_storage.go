@@ -162,3 +162,46 @@ func (c *Client) ListInventoryReceipts(ctx context.Context) ([]InventoryReceipt,
 
 	return receipts, nil
 }
+
+func (c *Client) ListInventoryReceiptsByPurchaseOrderUUID(ctx context.Context, purchaseOrderUUID string) ([]InventoryReceipt, error) {
+	rows, err := c.DB().Query(ctx, `
+		SELECT id, uuid, supplier_uuid, purchase_order_uuid, reference_code, received_at, notes, created_at, updated_at, deleted_at
+		FROM inventory_receipt
+		WHERE purchase_order_uuid = $1 AND deleted_at IS NULL
+		ORDER BY received_at DESC`,
+		purchaseOrderUUID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing inventory receipts by purchase order: %w", err)
+	}
+	defer rows.Close()
+
+	var receipts []InventoryReceipt
+	for rows.Next() {
+		var receipt InventoryReceipt
+		var supplierUUID pgtype.UUID
+		var purchaseOrderUUID pgtype.UUID
+		if err := rows.Scan(
+			&receipt.ID,
+			&receipt.UUID,
+			&supplierUUID,
+			&purchaseOrderUUID,
+			&receipt.ReferenceCode,
+			&receipt.ReceivedAt,
+			&receipt.Notes,
+			&receipt.CreatedAt,
+			&receipt.UpdatedAt,
+			&receipt.DeletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning inventory receipt: %w", err)
+		}
+		database.AssignUUIDPointer(&receipt.SupplierUUID, supplierUUID)
+		database.AssignUUIDPointer(&receipt.PurchaseOrderUUID, purchaseOrderUUID)
+		receipts = append(receipts, receipt)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing inventory receipts by purchase order: %w", err)
+	}
+
+	return receipts, nil
+}

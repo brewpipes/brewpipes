@@ -107,3 +107,22 @@ export interface PurchaseOrderFee {
   created_at: string
   updated_at: string
 }
+
+/** Request payload for updating an existing purchase order line */
+export interface UpdatePurchaseOrderLineRequest {
+  line_number?: number
+  item_type?: string
+  item_name?: string
+  inventory_item_uuid?: string | null
+  quantity?: number
+  quantity_unit?: string
+  unit_cost_cents?: number
+  currency?: string
+}
+
+/** Request payload for updating an existing purchase order fee */
+export interface UpdatePurchaseOrderFeeRequest {
+  fee_type?: string
+  amount_cents?: number
+  currency?: string
+}

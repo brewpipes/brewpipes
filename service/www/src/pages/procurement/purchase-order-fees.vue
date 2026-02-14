@@ -92,9 +92,9 @@
 </template>
 
 <script lang="ts" setup>
+  import type { PurchaseOrder, PurchaseOrderFee } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
-  import type { PurchaseOrder, PurchaseOrderFee } from '@/types'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
 

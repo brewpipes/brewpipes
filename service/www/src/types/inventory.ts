@@ -176,3 +176,86 @@ export interface InventoryTransfer {
   transferred_at: string
   notes: string | null
 }
+
+// ============================================================================
+// Request Types
+// ============================================================================
+
+/** Request payload for creating an inventory receipt */
+export interface CreateInventoryReceiptRequest {
+  supplier_uuid?: string | null
+  purchase_order_uuid?: string | null
+  reference_code?: string | null
+  received_at?: string | null
+  notes?: string | null
+}
+
+/** Request payload for creating an ingredient lot */
+export interface CreateIngredientLotRequest {
+  ingredient_uuid: string
+  receipt_uuid?: string | null
+  purchase_order_line_uuid?: string | null
+  supplier_uuid?: string | null
+  brewery_lot_code?: string | null
+  originator_lot_code?: string | null
+  originator_name?: string | null
+  originator_type?: string | null
+  received_at?: string | null
+  received_amount: number
+  received_unit: string
+  best_by_at?: string | null
+  expires_at?: string | null
+  notes?: string | null
+}
+
+/** Request payload for creating an inventory movement */
+export interface CreateInventoryMovementRequest {
+  ingredient_lot_uuid?: string | null
+  beer_lot_uuid?: string | null
+  stock_location_uuid: string
+  direction: 'in' | 'out'
+  reason: 'receive' | 'use' | 'transfer' | 'adjust' | 'waste'
+  amount: number
+  amount_unit: string
+  occurred_at?: string | null
+  receipt_uuid?: string | null
+  usage_uuid?: string | null
+  adjustment_uuid?: string | null
+  transfer_uuid?: string | null
+  notes?: string | null
+}
+
+// ============================================================================
+// Stock Level Types
+// ============================================================================
+
+/** Stock quantity at a specific location */
+export interface StockLevelLocation {
+  location_uuid: string
+  location_name: string
+  quantity: number
+}
+
+/** Aggregated stock level for an ingredient across all locations */
+export interface StockLevel {
+  ingredient_uuid: string
+  ingredient_name: string
+  category: string
+  default_unit: string
+  total_on_hand: number
+  locations: StockLevelLocation[]
+}
+
+// ============================================================================
+// Receiving Workflow Types
+// ============================================================================
+
+/** Details for each line being received in a shipment */
+export interface LineReceivingDetails {
+  lineUuid: string
+  quantity: number
+  unit: string
+  locationUuid: string
+  breweryLotCode: string
+  supplierLotCode: string
+}

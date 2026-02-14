@@ -195,11 +195,11 @@
 
 <script lang="ts" setup>
   import type {
-    Addition as ProductionAddition,
     BrewSession,
+    Addition as ProductionAddition,
     Measurement as ProductionMeasurement,
-    Vessel,
     Volume as ProductionVolume,
+    Vessel,
   } from '@/types'
   import { computed } from 'vue'
   import { useFormatters } from '@/composables/useFormatters'

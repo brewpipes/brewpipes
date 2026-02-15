@@ -526,6 +526,12 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - [ ] No supplier detail page — clicking a supplier row does nothing; consider adding a detail page with supplier info and associated POs
 - [ ] PO Fees standalone page create form uses plain text field for fee type — should use combobox with suggestions for consistency with PO detail page dialog
 
+#### Settings & Auth (Pass 7)
+- [ ] Login error message capitalization inconsistency — backend returns lowercase "invalid username or password" while client-side messages use sentence case
+- [ ] Settings page "Reset to Default" vs "Reset to Defaults" — inconsistent singular/plural button text between Brewery Settings and Display Units sections
+- [ ] Settings page card subtitles truncated on mobile (375px) — default Vuetify `v-card-subtitle` ellipsis behavior hides useful context
+- [ ] Vue framework warnings on login page load (`onScopeDispose`, `Missing ref owner context`) — development-only, no user impact
+
 ---
 
 ## Appendix: Current System Capabilities

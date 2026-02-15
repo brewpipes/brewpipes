@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
-**Last Updated:** 2026-02-14  
-**Status:** Phase 4 Complete
+**Last Updated:** 2026-02-15  
+**Status:** Phase 5 Complete
 
 ---
 
@@ -340,12 +340,12 @@ Enable fermentation monitoring and complex transfers.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| FERM-01 | Frontend: Active fermentations dashboard | M | 3 | Not Started |
-| FERM-02 | Frontend: Fermentation curve visualization | M | 3 | Not Started |
-| FERM-03 | Frontend: Transfer wizard (simple transfer) | M | 3 | Not Started |
-| FERM-04 | Frontend: Volume split UI | L | 3 | Not Started |
-| FERM-05 | Frontend: Volume blend UI | L | 3 | Not Started |
-| FERM-06 | Frontend: Quick measurement entry (mobile-friendly) | M | 3 | Not Started |
+| FERM-01 | Frontend: Active fermentations dashboard | M | 3 | **Complete** |
+| FERM-02 | Frontend: Fermentation curve visualization | M | 3 | **Complete** |
+| FERM-03 | Frontend: Transfer wizard (simple transfer) | M | 3 | **Complete** |
+| FERM-04 | Frontend: Volume split UI | L | 3 | **Complete** |
+| FERM-05 | Frontend: Volume blend UI | L | 3 | **Complete** |
+| FERM-06 | Frontend: Quick measurement entry (mobile-friendly) | M | 3 | **Complete** |
 
 ---
 
@@ -403,7 +403,7 @@ Track brewhouse removals for future TTB compliance.
 | **M2: Core Complete** | Phases 1-2 complete (CRUD, recipes) | **Complete** (RCP-06 delivered in Phase 4) |
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | **Complete** |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | **Complete** |
-| **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | Not Started |
+| **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | **Complete** |
 | **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | Not Started |
 | **M7: Costing Complete** | Phase 7 complete (batch costing) | Not Started |
 | **M8: V1 Alpha** | All phases complete, internal testing | Not Started |
@@ -445,6 +445,12 @@ Track brewhouse removals for future TTB compliance.
 | BREW-02 | Frontend: Lot selection for ingredient picks | 2026-02-14 |
 | RCP-06 | Recipe scaling calculator | 2026-02-14 |
 | BREW-06 | Mobile-optimized brew day wizard | 2026-02-14 |
+| FERM-01 | Frontend: Active fermentations dashboard | 2026-02-15 |
+| FERM-02 | Frontend: Fermentation curve visualization | 2026-02-15 |
+| FERM-03 | Frontend: Transfer wizard (simple transfer) | 2026-02-15 |
+| FERM-04 | Frontend: Volume split UI | 2026-02-15 |
+| FERM-05 | Frontend: Volume blend UI | 2026-02-15 |
+| FERM-06 | Frontend: Quick measurement entry (mobile-friendly) | 2026-02-15 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -487,6 +493,16 @@ Track brewhouse removals for future TTB compliance.
 - **Recipe Scaling (RCP-06):** `useRecipeScaling` composable with cross-unit volume conversion (bbl/gal/L/hL). Scaling controls in recipe details and brew day tab. 23 tests.
 - **Brew Day Wizard (BREW-06):** Three-step guided wizard (pick ingredients → record session → assign fermenter) optimized for mobile. Fullscreen on small screens, non-linear step navigation, auto-fill FIFO lots, visual fermenter card picker, completion summary. Reviewed and refined by frontend tech lead.
 - **Seed Data Enhancement:** 20 new ingredients, 22 lots, 4 new batches, 5 new vessels, missing enum values, FIFO test lots, cross-service UUID fix migration.
+
+**Phase 5 Details:** Implemented fermentation monitoring and transfer workflows:
+- **Active Fermentations Dashboard (FERM-01):** New standalone `/fermentation` page with card-per-tank layout. Shows vessel name, batch, occupancy status, days in tank, gravity/temperature sparklines, apparent attenuation, estimated ABV. Attention indicators (orange for stale data 24h+, blue for stable gravity). "Log Reading" button opens quick measurement sheet. Overflow menu with Transfer, Split, Blend, Change Status, Mark Empty actions. Responsive grid (1/2/3 columns). New top-level nav item.
+- **Fermentation Curve (FERM-02):** New "Fermentation" tab in batch detail with Chart.js dual-axis line chart. Gravity (left Y-axis) and temperature (right Y-axis) over time. OG/FG reference lines via chartjs-plugin-annotation. Toggle controls for gravity/temperature visibility. Stats summary cards (OG, current, target FG, attenuation, days, temp). Unit conversion for display. Empty state with navigation to Timeline tab.
+- **Transfer Wizard (FERM-03):** 2-step dialog (details → review/confirm) for vessel-to-vessel transfers. Source pre-selection from batch detail or fermentation dashboard. Available vessel filtering for destination. Smart status defaults (fermenting→conditioning, etc.). Close source checkbox. Volume math with loss calculation. Visual flow diagram in review step. Integrated into batch summary tab and fermentation dashboard.
+- **Volume Split (FERM-04):** Split mode in transfer dialog. One source → 2-4 destinations. Per-destination vessel/volume/status selection. Running total with source volume match indicator. Creates child volumes, transfers, volume relations, and batch-volume records.
+- **Volume Blend (FERM-05):** Blend mode in transfer dialog. 2-4 sources → one destination. Per-source close checkbox. Batch identity selection when blending from different batches. Creates blended volume, transfers, volume relations, and batch-volume record.
+- **Quick Measurement Entry (FERM-06):** Mobile-optimized `v-bottom-sheet` for recording gravity, temperature, and pH. Auto-format gravity shorthand (1050→1.050). Collapsible pH field. Unit conversion to storage units on save. Pre-fills batch/occupancy from context. Integrated with fermentation dashboard cards.
+- **Backend Enhancements:** Transfer endpoint enhanced with `close_source` (boolean, default true) and `dest_status` parameters. Batch summary now includes `current_occupancy_uuid`. New composite index on measurement(occupancy_id, kind, observed_at DESC) for dashboard performance.
+- **Frontend Infrastructure:** 17 new API wrapper functions in useProductionApi. 18 new TypeScript types. Chart.js + vue-chartjs + chartjs-plugin-annotation added. BatchDetails.vue refactored to use typed composable functions instead of raw request() calls. 83 new frontend tests (468 total).
 
 ### Deferred QA Items
 
@@ -544,11 +560,12 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 
 ### Frontend Screens
 - Dashboard with operational overview
-- Batch management (all, in-progress, detail with 5 tabs)
+- Fermentation dashboard with tank cards, sparklines, and quick measurement entry
+- Batch management (all, in-progress, detail with 8 tabs including fermentation curve)
 - Vessel management (active, all, detail)
-- Recipe management (list with basic CRUD)
-- Inventory hub (ingredients by category, activity, locations, adjustments/transfers, product)
-- Procurement (purchase orders, suppliers)
+- Recipe management (list, detail with ingredient bills and specs)
+- Inventory hub (ingredients by category, activity, locations, adjustments/transfers, product, stock levels)
+- Procurement (purchase orders with receiving workflow, suppliers)
 - Settings (brewery name, display units)
 
 ### Key Strengths
@@ -559,14 +576,17 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - Polished UI with consistent design patterns
 - User display preferences (units)
 
-### Key Gaps (to be addressed in Phases 5-8)
-- Limited edit/delete operations
-- No stock level visibility
-- No PO → receipt workflow
-- Recipe lacks ingredient details
-- No cost tracking
+### Key Gaps (to be addressed in Phases 6-8)
 - No packaging workflow
+- No cost tracking
 - No removal tracking
+
+### Recently Addressed (Phase 5)
+- ✅ Fermentation dashboard - daily monitoring with tank cards, sparklines, attention indicators
+- ✅ Fermentation curve - Chart.js visualization with dual axes and reference lines
+- ✅ Quick measurement entry - mobile-optimized bottom sheet for brew floor use
+- ✅ Transfer workflow - guided wizard for simple transfers, splits, and blends
+- ✅ Frontend infrastructure - 83 new tests (468 total), 17 new API wrappers, Chart.js integration
 
 ### Recently Addressed (Phase 4)
 - ✅ Brew day workflow - complete ingredient picking, session recording, fermenter assignment

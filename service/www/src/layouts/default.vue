@@ -63,6 +63,12 @@
         <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
 
+      <v-list-item
+        prepend-icon="mdi-flask-round-bottom"
+        title="Fermentation"
+        to="/fermentation"
+      />
+
       <v-list-group class="nav-group" value="vessels">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-silo" title="Vessels" />

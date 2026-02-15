@@ -129,6 +129,7 @@
           <v-tab value="summary">Summary</v-tab>
           <v-tab value="brew-day">Brew Day</v-tab>
           <v-tab value="brew-sessions">Brew Sessions</v-tab>
+          <v-tab value="fermentation">Fermentation</v-tab>
           <v-tab value="timeline">Timeline</v-tab>
           <v-tab value="flow">Flow</v-tab>
           <v-tab value="measurements">Measurements</v-tab>
@@ -170,6 +171,7 @@
               @assign-fermenter="openAssignFermenterDialog"
               @mark-empty="openMarkEmptyDialog"
               @occupancy-status-change="changeOccupancyStatus"
+              @transfer="openTransferDialog"
             />
           </v-window-item>
 
@@ -197,6 +199,17 @@
               @create-session="openCreateBrewSessionDialog"
               @edit-session="openEditBrewSessionDialog"
               @select-session="selectBrewSession"
+            />
+          </v-window-item>
+
+          <v-window-item value="fermentation">
+            <FermentationCurve
+              v-if="activeTab === 'fermentation'"
+              :batch-summary="batchSummary"
+              :measurements="measurements"
+              :target-fg="recipeTargetFg"
+              :target-og="recipeTargetOg"
+              @go-to-timeline="activeTab = 'timeline'"
             />
           </v-window-item>
 
@@ -347,6 +360,15 @@
     :volumes="batchProductionVolumes"
     @completed="handleBrewDayWizardCompleted"
   />
+
+  <TransferDialog
+    v-model="transferDialog"
+    :source-batch="selectedBatch"
+    :source-occupancy="transferOccupancy"
+    :source-vessel="transferVessel"
+    :source-volume="transferVolume"
+    @transferred="handleTransferCompleted"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -366,7 +388,6 @@
                 VolumeUnit } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useApiClient } from '@/composables/useApiClient'
   import { formatDate, formatDateTime, useAdditionTypeFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
@@ -411,6 +432,7 @@
     type Volume,
     type VolumeRelation,
   } from './batch'
+  import { FermentationCurve, TransferDialog } from './fermentation'
 
   // Props
   const props = withDefaults(
@@ -434,8 +456,6 @@
   }>()
 
   const router = useRouter()
-  const apiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
-  const { request } = useApiClient(apiBase)
   const {
     getVessels,
     getVolumes: getProductionVolumes,
@@ -444,7 +464,9 @@
     createBrewSession,
     updateBrewSession,
     getAdditionsByVolume,
+    getAdditionsByBatch,
     getMeasurementsByVolume,
+    getMeasurementsByBatch,
     createAddition,
     createMeasurement,
     updateBatch,
@@ -454,6 +476,12 @@
     getOccupancy,
     updateOccupancyStatus,
     getRecipes,
+    getRecipe,
+    getBatchProcessPhases,
+    getBatchVolumes,
+    getVolumeRelations,
+    getBatch,
+    request,
   } = useProductionApi()
 
   const {
@@ -476,6 +504,7 @@
   const volumeRelations = ref<VolumeRelation[]>([])
   const batchSummary = ref<BatchSummary | null>(null)
   const batchSummaryLoading = ref(false)
+  const batchRecipe = ref<Recipe | null>(null)
 
   const activeTab = ref('summary')
   const createAdditionDialog = ref(false)
@@ -608,6 +637,12 @@
   // Brew Day Wizard state
   const brewDayWizardDialog = ref(false)
 
+  // Transfer dialog state
+  const transferDialog = ref(false)
+  const transferOccupancy = ref<Occupancy | null>(null)
+  const transferVessel = ref<Vessel | null>(null)
+  const transferVolume = ref<ProductionVolume | null>(null)
+
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
   const latestLiquidPhase = computed(() => getLatest(batchVolumes.value, item => item.phase_at))
@@ -630,6 +665,10 @@
   })
 
   const hasBatchVolumes = computed(() => batchProductionVolumes.value.length > 0)
+
+  // Recipe target specs for fermentation curve
+  const recipeTargetOg = computed(() => batchRecipe.value?.target_og ?? null)
+  const recipeTargetFg = computed(() => batchRecipe.value?.target_fg ?? null)
 
   // Whether the batch is in the 'finished' process phase
   const isFinished = computed(() =>
@@ -666,15 +705,15 @@
       ),
   )
 
-  const flowUnit = computed<Unit | null>(() => {
-    const counts = new Map<Unit, number>()
+  const flowUnit = computed<string | null>(() => {
+    const counts = new Map<string, number>()
     for (const relation of volumeRelations.value) {
       if (!relation.amount || relation.amount <= 0) {
         continue
       }
       counts.set(relation.amount_unit, (counts.get(relation.amount_unit) ?? 0) + 1)
     }
-    let selectedUnit: Unit | null = null
+    let selectedUnit: string | null = null
     let selectedCount = 0
     for (const [unit, count] of counts.entries()) {
       if (count > selectedCount) {
@@ -860,6 +899,7 @@
     measurements.value = []
     volumeRelations.value = []
     batchSummary.value = null
+    batchRecipe.value = null
     batchProductionVolumes.value = []
     activeOccupancies.value = []
     markEmptyOccupancy.value = null
@@ -867,14 +907,6 @@
     selectedBrewSessionUuid.value = null
     wortAdditions.value = []
     wortMeasurements.value = []
-  }
-
-  function get<T> (path: string) {
-    return request<T>(path)
-  }
-
-  function post<T> (path: string, payload: unknown) {
-    return request<T>(path, { method: 'POST', body: JSON.stringify(payload) })
   }
 
   async function loadReferenceData () {
@@ -886,7 +918,7 @@
   }
 
   async function loadVolumes () {
-    volumes.value = await get<Volume[]>('/volumes')
+    volumes.value = await getProductionVolumes()
   }
 
   async function loadVesselsData () {
@@ -909,13 +941,13 @@
     loading.value = true
     try {
       const [batchData, batchVolumesData, processPhasesData, additionsData, measurementsData, brewSessionsData, batchProdVolumesData] = await Promise.all([
-        get<Batch>(`/batches/${batchUuid}`),
-        get<BatchVolume[]>(`/batch-volumes?batch_uuid=${batchUuid}`),
-        get<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batchUuid}`),
-        get<Addition[]>(`/additions?batch_uuid=${batchUuid}`),
-        get<Measurement[]>(`/measurements?batch_uuid=${batchUuid}`),
+        getBatch(batchUuid),
+        getBatchVolumes(`batch_uuid=${batchUuid}`),
+        getBatchProcessPhases(batchUuid),
+        getAdditionsByBatch(batchUuid),
+        getMeasurementsByBatch(batchUuid),
         getBrewSessions(batchUuid),
-        get<ProductionVolume[]>(`/volumes?batch_uuid=${batchUuid}`),
+        request<ProductionVolume[]>(`/volumes?batch_uuid=${batchUuid}`),
       ])
 
       selectedBatch.value = batchData
@@ -931,8 +963,9 @@
       wortAdditions.value = []
       wortMeasurements.value = []
 
-      // Load batch summary in parallel (non-blocking)
+      // Load batch summary and recipe in parallel (non-blocking)
       loadBatchSummary(batchUuid)
+      loadBatchRecipe(batchData.recipe_uuid)
 
       await loadVolumeRelations(batchVolumesData)
     } catch (error) {
@@ -940,6 +973,16 @@
       selectedBatch.value = null
     } finally {
       loading.value = false
+    }
+  }
+
+  async function loadBatchRecipe (recipeUuid: string | null) {
+    batchRecipe.value = null
+    if (!recipeUuid) return
+    try {
+      batchRecipe.value = await getRecipe(recipeUuid)
+    } catch (error) {
+      console.error('Failed to load batch recipe:', error)
     }
   }
 
@@ -978,7 +1021,7 @@
     }
 
     const results = await Promise.allSettled(
-      volumeUuids.map(uuid => get<VolumeRelation[]>(`/volume-relations?volume_uuid=${uuid}`)),
+      volumeUuids.map(uuid => getVolumeRelations(`volume_uuid=${uuid}`)),
     )
 
     volumeRelations.value = results.flatMap(result =>
@@ -1093,18 +1136,20 @@
       return
     }
     try {
+      const amount = toNumber(additionForm.amount)
+      if (amount === null) return
       const payload = {
         batch_uuid: additionForm.target === 'batch' ? props.batchUuid : null,
         occupancy_uuid: additionForm.target === 'occupancy' ? additionForm.occupancy_uuid : null,
         addition_type: additionForm.addition_type,
         stage: normalizeText(additionForm.stage),
         inventory_lot_uuid: normalizeText(additionForm.inventory_lot_uuid),
-        amount: toNumber(additionForm.amount),
+        amount,
         amount_unit: additionForm.amount_unit,
         added_at: normalizeDateTime(additionForm.added_at),
         notes: normalizeText(additionForm.notes),
       }
-      await post<Addition>('/additions', payload)
+      await createAddition(payload)
       showNotice('Addition recorded')
       additionForm.stage = ''
       additionForm.inventory_lot_uuid = ''
@@ -1129,16 +1174,18 @@
       return
     }
     try {
+      const value = toNumber(measurementForm.value)
+      if (value === null) return
       const payload = {
         batch_uuid: measurementForm.target === 'batch' ? props.batchUuid : null,
         occupancy_uuid: measurementForm.target === 'occupancy' ? measurementForm.occupancy_uuid : null,
         kind: measurementForm.kind.trim(),
-        value: toNumber(measurementForm.value),
+        value,
         unit: normalizeText(measurementForm.unit),
         observed_at: normalizeDateTime(measurementForm.observed_at),
         notes: normalizeText(measurementForm.notes),
       }
-      await post<Measurement>('/measurements', payload)
+      await createMeasurement(payload)
       showNotice('Measurement recorded')
       measurementForm.kind = ''
       measurementForm.value = ''
@@ -1225,7 +1272,7 @@
         })
       }
 
-      await Promise.all(payloads.map(payload => post<Measurement>('/measurements', payload)))
+      await Promise.all(payloads.map(payload => createMeasurement(payload)))
       showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
       resetTimelineReading()
       await loadBatchData(props.batchUuid)
@@ -1330,7 +1377,7 @@
         })
       }
 
-      await Promise.all(payloads.map(payload => post<Measurement>('/measurements', payload)))
+      await Promise.all(payloads.map(payload => createMeasurement(payload)))
       showNotice(`Recorded ${payloads.length} timeline ${payloads.length === 1 ? 'entry' : 'entries'}`)
       resetTimelineReading()
       resetTimelineExtended()
@@ -1493,7 +1540,7 @@
       const [occupanciesData, volumesData] = await Promise.all([
         getActiveOccupancies(),
         props.batchUuid
-          ? get<ProductionVolume[]>(`/volumes?batch_uuid=${props.batchUuid}`)
+          ? request<ProductionVolume[]>(`/volumes?batch_uuid=${props.batchUuid}`)
           : Promise.resolve([]),
       ])
       activeOccupancies.value = occupanciesData
@@ -1519,7 +1566,7 @@
       const [occupanciesData, volumesData] = await Promise.all([
         getActiveOccupancies(),
         props.batchUuid
-          ? get<ProductionVolume[]>(`/volumes?batch_uuid=${props.batchUuid}`)
+          ? request<ProductionVolume[]>(`/volumes?batch_uuid=${props.batchUuid}`)
           : Promise.resolve([]),
       ])
       activeOccupancies.value = occupanciesData
@@ -1552,6 +1599,44 @@
 
   async function handleVesselEmptied () {
     showNotice('Vessel marked as empty')
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
+    }
+  }
+
+  // ==================== Transfer Functions ====================
+
+  async function openTransferDialog () {
+    if (!batchSummary.value?.current_occupancy_uuid) return
+
+    try {
+      const occupancy = await getOccupancy(batchSummary.value.current_occupancy_uuid)
+      transferOccupancy.value = occupancy
+
+      // Resolve vessel and volume
+      const vessel = vessels.value.find(v => v.uuid === occupancy.vessel_uuid) ?? null
+      transferVessel.value = vessel
+
+      if (occupancy.volume_uuid) {
+        try {
+          transferVolume.value = await getProductionVolumes().then(
+            vols => vols.find(v => v.uuid === occupancy.volume_uuid) ?? null,
+          )
+        } catch {
+          transferVolume.value = null
+        }
+      } else {
+        transferVolume.value = null
+      }
+
+      transferDialog.value = true
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function handleTransferCompleted () {
+    showNotice('Transfer complete')
     if (props.batchUuid) {
       await loadBatchData(props.batchUuid)
     }

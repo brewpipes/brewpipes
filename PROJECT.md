@@ -453,3 +453,45 @@ Phase 4 enables complete brew day recording with inventory integration. A brewer
 3. BREW-02 (Lot Selection) — depends on BREW-01 + BREW-03
 4. RCP-06 (Recipe Scaling) — enhances pick list with scaled amounts
 5. BREW-06 (Mobile Wizard) — capstone that unifies the workflow
+
+## Implemented: Phase 5 — Fermentation & Transfers
+
+### Overview
+
+Phase 5 enables fermentation monitoring and complex vessel-to-vessel transfers. Brewers can monitor all active fermentations at a glance, visualize fermentation curves, quickly record daily readings from their phone, and transfer beer between vessels with support for splits and blends.
+
+### New pages and navigation
+
+- **Fermentation Dashboard** (`/fermentation`) — New top-level page showing all active fermentations with tank cards, sparklines, and attention indicators. Accessible from the main sidebar navigation.
+
+### New components
+
+- `FermentationCard` — Per-tank card with vessel name, batch, status, gravity/temp sparklines, attenuation, ABV, and action buttons
+- `FermentationCurve` — Chart.js dual-axis line chart (gravity + temperature over time) with OG/FG reference lines
+- `QuickReadingSheet` — Mobile-optimized bottom sheet for fast measurement entry (gravity, temperature, pH)
+- `TransferDialog` — 2-step wizard supporting three modes: Transfer (1:1), Split (1:N), and Blend (N:1)
+
+### New batch detail tab
+
+- **Fermentation** tab added between "Brew Sessions" and "Timeline" — shows fermentation curve chart with toggle controls and stats summary
+
+### Transfer workflow
+
+- **Simple transfer:** Source vessel → destination vessel with volume, loss, and status
+- **Split:** One source → 2-4 destinations with volume math validation
+- **Blend:** 2-4 sources → one destination with batch identity selection
+- All modes create appropriate volumes, transfers, volume relations, and batch-volume records
+
+### Backend enhancements
+
+- `POST /api/transfers` enhanced with `close_source` (boolean) and `dest_status` (occupancy status) parameters
+- `GET /api/batches/{uuid}/summary` now includes `current_occupancy_uuid`
+- New composite index on `measurement(occupancy_id, kind, observed_at DESC)` for dashboard performance
+
+### Frontend infrastructure
+
+- 17 new API wrapper functions in `useProductionApi`
+- 18 new TypeScript types in `types/production.ts`
+- Chart.js + vue-chartjs + chartjs-plugin-annotation for fermentation curve
+- `BatchDetails.vue` refactored to use typed composable functions
+- 83 new frontend tests (468 total across 15 test files)

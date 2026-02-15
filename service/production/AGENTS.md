@@ -53,6 +53,8 @@ Occupancy
 Transfer
 - A transfer records a move from one occupancy to another (e.g., fermenter A to brite tank B).
 - It captures how much moved, when it started/ended, and any losses.
+- `close_source` (optional, default true): controls whether the source occupancy is closed (sets `out_at`). Set to false for partial transfers where the source remains active.
+- `dest_status` (optional): sets the status on the destination occupancy (e.g., `fermenting`, `conditioning`).
 
 Batch Volume
 - This links a batch to the volume that represents it at a given liquid phase (water, wort, beer).
@@ -126,6 +128,7 @@ The `GET /batches/{uuid}/summary` endpoint provides an aggregated view of a batc
 ### Current state
 - `current_phase` (most recent process phase)
 - `current_vessel` (from active occupancy)
+- `current_occupancy_uuid` (UUID of the active occupancy, omitted if none)
 - `current_occupancy_status` (fermenting, conditioning, etc.)
 
 ### Key measurements

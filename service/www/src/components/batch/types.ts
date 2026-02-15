@@ -1,9 +1,10 @@
 /**
  * Shared types for batch-related components.
  *
- * Entity types (Batch, Volume, Addition, Measurement, etc.) are imported from
- * '@/types'. This file contains only component-specific types used by batch
- * UI components.
+ * Entity types (Batch, Volume, Addition, Measurement, BatchProcessPhase,
+ * BatchVolume, VolumeRelation, etc.) are imported from '@/types'. This file
+ * contains only component-specific types used by batch UI components and
+ * re-exports canonical types for barrel-file consumers.
  */
 
 import type { Measurement } from '@/types'
@@ -13,59 +14,25 @@ export type {
   Addition,
   AdditionType,
   Batch,
+  BatchProcessPhase,
+  BatchVolume,
+  LiquidPhase,
   Measurement,
+  ProcessPhase,
   Volume,
+  VolumeRelation,
+  VolumeRelationType,
 } from '@/types'
 
 // Aliases for VolumeUnit used in batch component forms
 export type Unit = import('@/types').VolumeUnit
 
+// Re-export relation type alias for backwards compatibility
+export type RelationType = import('@/types').VolumeRelationType
+
 // ============================================================================
 // Component-specific types (not duplicated in @/types)
 // ============================================================================
-
-export type LiquidPhase = 'water' | 'wort' | 'beer'
-export type ProcessPhase
-  = | 'planning'
-    | 'mashing'
-    | 'heating'
-    | 'boiling'
-    | 'cooling'
-    | 'fermenting'
-    | 'conditioning'
-    | 'packaging'
-    | 'finished'
-export type RelationType = 'split' | 'blend'
-
-export type VolumeRelation = {
-  uuid: string
-  parent_volume_uuid: string
-  child_volume_uuid: string
-  relation_type: RelationType
-  amount: number
-  amount_unit: Unit
-  created_at: string
-  updated_at: string
-}
-
-export type BatchVolume = {
-  uuid: string
-  batch_uuid: string
-  volume_uuid: string
-  liquid_phase: LiquidPhase
-  phase_at: string
-  created_at: string
-  updated_at: string
-}
-
-export type BatchProcessPhase = {
-  uuid: string
-  batch_uuid: string
-  process_phase: ProcessPhase
-  phase_at: string
-  created_at: string
-  updated_at: string
-}
 
 export type TimelineEvent = {
   id: string

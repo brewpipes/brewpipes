@@ -18,6 +18,8 @@ type CreateTransferRequest struct {
 	LossUnit            *string    `json:"loss_unit"`
 	StartedAt           *time.Time `json:"started_at"`
 	EndedAt             *time.Time `json:"ended_at"`
+	CloseSource         *bool      `json:"close_source,omitempty"` // default true if nil
+	DestStatus          *string    `json:"dest_status,omitempty"`  // status for destination occupancy
 }
 
 func (r CreateTransferRequest) Validate() error {
@@ -50,6 +52,11 @@ func (r CreateTransferRequest) Validate() error {
 	if r.StartedAt != nil && r.EndedAt != nil {
 		if r.EndedAt.Before(*r.StartedAt) {
 			return fmt.Errorf("ended_at must be after started_at")
+		}
+	}
+	if r.DestStatus != nil {
+		if err := validateOccupancyStatus(*r.DestStatus); err != nil {
+			return fmt.Errorf("invalid dest_status: %w", err)
 		}
 	}
 

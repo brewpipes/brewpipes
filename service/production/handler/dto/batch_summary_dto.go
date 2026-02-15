@@ -33,6 +33,7 @@ type BatchSummaryResponse struct {
 	// Current state
 	CurrentPhase           *string `json:"current_phase,omitempty"`
 	CurrentVessel          *string `json:"current_vessel,omitempty"`
+	CurrentOccupancyUUID   *string `json:"current_occupancy_uuid,omitempty"`
 	CurrentOccupancyStatus *string `json:"current_occupancy_status,omitempty"`
 
 	// Key measurements
@@ -103,6 +104,7 @@ func NewBatchSummaryResponse(summary storage.BatchSummary) BatchSummaryResponse 
 	if summary.CurrentVessel != nil {
 		resp.CurrentVessel = &summary.CurrentVessel.Name
 	}
+	resp.CurrentOccupancyUUID = summary.CurrentOccupancyUUID
 	resp.CurrentOccupancyStatus = summary.CurrentOccupancyStatus
 
 	// Key measurements

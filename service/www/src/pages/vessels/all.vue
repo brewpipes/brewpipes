@@ -156,9 +156,9 @@
           <v-col cols="12" md="6">
             <v-select
               v-model="newVessel.type"
-              :items="vesselTypeOptions"
               item-title="title"
               item-value="value"
+              :items="vesselTypeOptions"
               label="Type"
             />
           </v-col>
@@ -178,9 +178,9 @@
           <v-col cols="12" md="4">
             <v-select
               v-model="newVessel.status"
-              :items="vesselStatusOptions"
               item-title="title"
               item-value="value"
+              :items="vesselStatusOptions"
               label="Status"
             />
           </v-col>
@@ -209,7 +209,6 @@
 
 <script lang="ts" setup>
   import type { Batch, Occupancy, UpdateVesselRequest, Vessel, VesselStatus, VolumeUnit } from '@/types'
-  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
@@ -222,6 +221,7 @@
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences, volumeOptions } from '@/composables/useUnitPreferences'
   import { useVesselActions } from '@/composables/useVesselActions'
+  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { normalizeText, toNumber } from '@/utils/normalize'
 
   type BatchInfo = {

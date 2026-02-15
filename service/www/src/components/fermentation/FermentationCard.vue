@@ -56,6 +56,11 @@
             @click="emit('blend')"
           />
           <v-list-item
+            prepend-icon="mdi-package-variant"
+            title="Package"
+            @click="emit('package')"
+          />
+          <v-list-item
             prepend-icon="mdi-flask-empty-outline"
             title="Mark Empty"
             @click="emit('markEmpty')"
@@ -80,8 +85,8 @@
     <v-card-text class="pt-0">
       <!-- Status chip -->
       <v-chip
-        :color="statusColor"
         class="mb-3"
+        :color="statusColor"
         size="small"
         variant="tonal"
       >
@@ -191,6 +196,7 @@
     blend: []
     logReading: []
     markEmpty: []
+    package: []
     split: []
     statusChanged: []
     transfer: []
@@ -258,7 +264,7 @@
   const attenuation = computed(() => {
     if (og.value === null || !latestGravity.value) return null
     const currentGravity = latestGravity.value.value
-    const denominator = og.value - 1.0
+    const denominator = og.value - 1
     if (denominator <= 0) return null
     return ((og.value - currentGravity) / denominator) * 100
   })

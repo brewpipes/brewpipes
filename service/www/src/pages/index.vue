@@ -30,11 +30,11 @@
     <!-- Loading skeleton -->
     <v-row v-if="!dataReady && loading" class="mt-4">
       <v-col cols="12" lg="7">
-        <v-skeleton-loader type="card" class="mb-4" />
+        <v-skeleton-loader class="mb-4" type="card" />
         <v-skeleton-loader type="card" />
       </v-col>
       <v-col cols="12" lg="5">
-        <v-skeleton-loader type="card" class="mb-4" />
+        <v-skeleton-loader class="mb-4" type="card" />
         <v-skeleton-loader type="card" />
       </v-col>
     </v-row>

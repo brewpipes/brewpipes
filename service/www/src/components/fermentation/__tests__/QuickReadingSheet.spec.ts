@@ -6,7 +6,7 @@ import * as directives from 'vuetify/directives'
 import QuickReadingSheet from '../QuickReadingSheet.vue'
 
 // Polyfill visualViewport for happy-dom (used by Vuetify overlay positioning)
-if (typeof globalThis.visualViewport === 'undefined') {
+if (globalThis.visualViewport === undefined) {
   Object.defineProperty(globalThis, 'visualViewport', {
     value: {
       width: 1024,
@@ -56,7 +56,7 @@ function mountSheet (props: {
 } = {}) {
   const div = document.createElement('div')
   div.id = 'app'
-  document.body.appendChild(div)
+  document.body.append(div)
 
   return mount(QuickReadingSheet, {
     attachTo: div,

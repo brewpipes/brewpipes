@@ -5,7 +5,7 @@
     scrollable
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card :max-width="xs ? undefined : 500" :class="{ 'mx-auto': !xs }">
+    <v-card :class="{ 'mx-auto': !xs }" :max-width="xs ? undefined : 500">
       <!-- Drag handle -->
       <div class="d-flex justify-center pt-2 pb-1">
         <div class="drag-handle" />
@@ -123,8 +123,8 @@
   import { useDisplay } from 'vuetify'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { convertGravity, convertTemperature, gravityLabels, temperatureLabels } from '@/composables/useUnitConversion'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { nowInputValue } from '@/utils/normalize'
 
   const props = defineProps<{
@@ -182,24 +182,24 @@
   // Validation rules
   const rules = {
     gravity: (v: string): boolean | string => {
-      const num = parseFloat(v)
+      const num = Number.parseFloat(v)
       if (isNaN(num)) return 'Enter a valid number'
       if (gravityUnit.value === 'sg') {
-        if (num < 0.990 || num > 1.200) return 'SG must be between 0.990 and 1.200'
+        if (num < 0.99 || num > 1.2) return 'SG must be between 0.990 and 1.200'
       } else {
         if (num < 0 || num > 45) return 'Plato must be between 0 and 45'
       }
       return true
     },
     temperature: (v: string): boolean | string => {
-      const num = parseFloat(v)
+      const num = Number.parseFloat(v)
       if (isNaN(num)) return 'Enter a valid number'
       return true
     },
     ph: (v: string): boolean | string => {
-      const num = parseFloat(v)
+      const num = Number.parseFloat(v)
       if (isNaN(num)) return 'Enter a valid number'
-      if (num < 2.0 || num > 14.0) return 'pH must be between 2.0 and 14.0'
+      if (num < 2 || num > 14) return 'pH must be between 2.0 and 14.0'
       return true
     },
   }
@@ -212,7 +212,7 @@
     // If it already has a decimal point, leave it
     if (raw.includes('.')) return
 
-    const num = parseFloat(raw)
+    const num = Number.parseFloat(raw)
     if (isNaN(num)) return
 
     // "1050" → 1.050 (value between 900 and 1200 with no decimal)
@@ -278,7 +278,7 @@
 
       // Gravity measurement
       if (form.value.gravity.trim() && rules.gravity(form.value.gravity) === true) {
-        const userValue = parseFloat(form.value.gravity)
+        const userValue = Number.parseFloat(form.value.gravity)
         // Convert from user's preferred unit to SG (storage unit)
         const sgValue = convertGravity(userValue, gravityUnit.value, 'sg')
         if (sgValue !== null) {
@@ -295,7 +295,7 @@
 
       // Temperature measurement
       if (form.value.temperature.trim() && rules.temperature(form.value.temperature) === true) {
-        const userValue = parseFloat(form.value.temperature)
+        const userValue = Number.parseFloat(form.value.temperature)
         // Convert from user's preferred unit to Celsius (storage unit)
         const celsiusValue = convertTemperature(userValue, temperatureUnit.value, 'c')
         if (celsiusValue !== null) {
@@ -312,7 +312,7 @@
 
       // pH measurement
       if (showPh.value && form.value.ph.trim() && rules.ph(form.value.ph) === true) {
-        const phValue = parseFloat(form.value.ph)
+        const phValue = Number.parseFloat(form.value.ph)
         promises.push(createMeasurement({
           ...target,
           kind: 'ph',

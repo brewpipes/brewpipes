@@ -1,6 +1,7 @@
 import type {
   BatchUsageResponse,
   BeerLot,
+  BeerLotStockLevel,
   CreateBatchUsageRequest,
   CreateIngredientLotRequest,
   CreateInventoryMovementRequest,
@@ -43,7 +44,7 @@ export function useInventoryApi () {
     })
 
   // Ingredient Lots API
-  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string; ingredient_uuid?: string }) => {
+  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string, ingredient_uuid?: string }) => {
     const query = new URLSearchParams()
     if (filters?.purchase_order_line_uuid) {
       query.set('purchase_order_line_uuid', filters.purchase_order_line_uuid)
@@ -160,6 +161,9 @@ export function useInventoryApi () {
   // Stock Levels API
   const getStockLevels = () => request<StockLevel[]>('/stock-levels')
 
+  // Beer Lot Stock Levels API
+  const getBeerLotStockLevels = () => request<BeerLotStockLevel[]>('/beer-lot-stock-levels')
+
   return {
     apiBase: inventoryApiBase,
     request,
@@ -207,5 +211,7 @@ export function useInventoryApi () {
     createBeerLot,
     // Stock Levels
     getStockLevels,
+    // Beer Lot Stock Levels
+    getBeerLotStockLevels,
   }
 }

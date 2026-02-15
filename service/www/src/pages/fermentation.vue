@@ -37,7 +37,13 @@
 
     <!-- Loading skeleton -->
     <v-row v-if="!dataReady && loading" class="mt-4">
-      <v-col v-for="n in 3" :key="n" cols="12" lg="4" sm="6">
+      <v-col
+        v-for="n in 3"
+        :key="n"
+        cols="12"
+        lg="4"
+        sm="6"
+      >
         <v-skeleton-loader type="card" />
       </v-col>
     </v-row>
@@ -79,6 +85,7 @@
           @blend="openBlend(card)"
           @log-reading="openReadingSheet(card)"
           @mark-empty="openMarkEmpty(card)"
+          @package="openPackaging(card)"
           @split="openSplit(card)"
           @status-changed="refreshAll"
           @transfer="openTransfer(card)"
@@ -115,13 +122,23 @@
       :source-volume="transferSourceVolume"
       @transferred="refreshAll"
     />
+
+    <!-- PackagingDialog (single instance) -->
+    <PackagingDialog
+      v-model="showPackaging"
+      :source-batch="packagingSourceBatch"
+      :source-occupancy="packagingSourceOccupancy"
+      :source-vessel="packagingSourceVessel"
+      :source-volume="packagingSourceVolume"
+      @packaged="refreshAll"
+    />
   </v-container>
 </template>
 
 <script lang="ts" setup>
   import type { Batch, BatchSummary, Measurement, Occupancy, Vessel, Volume } from '@/types'
   import { computed, onMounted, ref } from 'vue'
-  import { BatchMarkEmptyDialog } from '@/components/batch'
+  import { BatchMarkEmptyDialog, PackagingDialog } from '@/components/batch'
   import { FermentationCard, QuickReadingSheet, TransferDialog } from '@/components/fermentation'
   import { useProductionApi } from '@/composables/useProductionApi'
 
@@ -173,6 +190,13 @@
   const transferSourceVessel = ref<Vessel | null>(null)
   const transferSourceBatch = ref<Batch | null>(null)
   const transferSourceVolume = ref<Volume | null>(null)
+
+  // PackagingDialog state
+  const showPackaging = ref(false)
+  const packagingSourceOccupancy = ref<Occupancy | null>(null)
+  const packagingSourceVessel = ref<Vessel | null>(null)
+  const packagingSourceBatch = ref<Batch | null>(null)
+  const packagingSourceVolume = ref<Volume | null>(null)
 
   // Vessel lookup map
   const vesselMap = computed(
@@ -256,8 +280,7 @@
   )
 
   const subtitleText = computed(() => {
-    const parts: string[] = []
-    parts.push(`${activeCount.value} active`)
+    const parts: string[] = [`${activeCount.value} active`]
     if (attentionCount.value > 0) {
       parts.push(`${attentionCount.value} need attention`)
     }
@@ -297,19 +320,19 @@
         ])
 
         const newSummaries = new Map<string, BatchSummary>()
-        summaryResults.forEach((result, index) => {
+        for (const [index, result] of summaryResults.entries()) {
           if (result.status === 'fulfilled') {
             newSummaries.set(batchUuids[index]!, result.value)
           }
-        })
+        }
         batchSummaries.value = newSummaries
 
         const newMeasurements = new Map<string, Measurement[]>()
-        measurementResults.forEach((result, index) => {
+        for (const [index, result] of measurementResults.entries()) {
           if (result.status === 'fulfilled') {
             newMeasurements.set(batchUuids[index]!, result.value)
           }
-        })
+        }
         batchMeasurements.value = newMeasurements
       } else {
         batchSummaries.value = new Map()
@@ -394,6 +417,28 @@
 
   function openBlend (card: FermentationCardData) {
     openTransferWithMode(card, 'blend')
+  }
+
+  // PackagingDialog handlers
+  async function openPackaging (card: FermentationCardData) {
+    packagingSourceOccupancy.value = card.occupancy
+    packagingSourceVessel.value = card.vessel
+    packagingSourceBatch.value = null
+    packagingSourceVolume.value = null
+
+    // Resolve batch and volume for the packaging dialog (non-critical — dialog opens regardless)
+    const [batchData, volumeData] = await Promise.allSettled([
+      card.occupancy.batch_uuid ? getBatch(card.occupancy.batch_uuid) : Promise.reject(new Error('no batch')),
+      card.occupancy.volume_uuid ? getVolume(card.occupancy.volume_uuid) : Promise.reject(new Error('no volume')),
+    ])
+    if (batchData.status === 'fulfilled') {
+      packagingSourceBatch.value = batchData.value
+    }
+    if (volumeData.status === 'fulfilled') {
+      packagingSourceVolume.value = volumeData.value
+    }
+
+    showPackaging.value = true
   }
 </script>
 

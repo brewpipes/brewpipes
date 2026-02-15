@@ -103,6 +103,9 @@ In short:
 - Inventory balances can be derived from movements and reconciled by location and by lot.
 - Inventory records retain traceability to production and procurement via opaque UUIDs, without shared tables or foreign keys.
 - Beer lots can be created for finished product inventory and related back to production batch UUIDs.
+- Beer lots support packaging metadata: packaging run UUID, best-by date, package format name, container type, volume per unit, and quantity.
+- Beer lots can be created with an initial inventory movement atomically when a stock location is provided (`POST /beer-lots` with `stock_location_uuid`).
+- Beer lot stock levels can be queried via `GET /beer-lot-stock-levels`, showing current volume and derived quantity per lot per location.
 - A brewer can atomically deduct inventory for a batch's ingredient picks via `POST /inventory-usage/batch`, with per-pick stock validation and descriptive error messages on insufficient stock.
 
 ## API Convention: UUID-Only

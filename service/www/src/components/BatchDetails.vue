@@ -171,6 +171,7 @@
               @assign-fermenter="openAssignFermenterDialog"
               @mark-empty="openMarkEmptyDialog"
               @occupancy-status-change="changeOccupancyStatus"
+              @package="openPackagingDialog"
               @transfer="openTransferDialog"
             />
           </v-window-item>
@@ -369,6 +370,15 @@
     :source-volume="transferVolume"
     @transferred="handleTransferCompleted"
   />
+
+  <PackagingDialog
+    v-model="packagingDialog"
+    :source-batch="selectedBatch"
+    :source-occupancy="packagingOccupancy"
+    :source-vessel="packagingVessel"
+    :source-volume="packagingVolume"
+    @packaged="handlePackagingCompleted"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -407,13 +417,13 @@
     BatchBrewDayTab,
     BatchBrewSessionDialog,
     BatchBrewSessionsTab,
-    BatchMarkEmptyDialog,
     BatchDeleteDialog,
     BatchEditDialog,
     type BatchEditForm,
     BatchFlowTab,
     BatchHotSideAdditionDialog,
     BatchHotSideMeasurementDialog,
+    BatchMarkEmptyDialog,
     BatchMeasurementDialog,
     BatchMeasurementsTab,
     type BatchProcessPhase,
@@ -427,6 +437,7 @@
     type FlowLink,
     type FlowNode,
     type Measurement,
+    PackagingDialog,
     type TimelineEvent,
     type Unit,
     type Volume,
@@ -642,6 +653,12 @@
   const transferOccupancy = ref<Occupancy | null>(null)
   const transferVessel = ref<Vessel | null>(null)
   const transferVolume = ref<ProductionVolume | null>(null)
+
+  // Packaging dialog state
+  const packagingDialog = ref(false)
+  const packagingOccupancy = ref<Occupancy | null>(null)
+  const packagingVessel = ref<Vessel | null>(null)
+  const packagingVolume = ref<ProductionVolume | null>(null)
 
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
@@ -1637,6 +1654,43 @@
 
   async function handleTransferCompleted () {
     showNotice('Transfer complete')
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
+    }
+  }
+
+  // ==================== Packaging Functions ====================
+
+  async function openPackagingDialog () {
+    if (!batchSummary.value?.current_occupancy_uuid) return
+
+    try {
+      const occupancy = await getOccupancy(batchSummary.value.current_occupancy_uuid)
+      packagingOccupancy.value = occupancy
+
+      // Resolve vessel and volume
+      const vessel = vessels.value.find(v => v.uuid === occupancy.vessel_uuid) ?? null
+      packagingVessel.value = vessel
+
+      if (occupancy.volume_uuid) {
+        try {
+          packagingVolume.value = await getProductionVolumes().then(
+            vols => vols.find(v => v.uuid === occupancy.volume_uuid) ?? null,
+          )
+        } catch {
+          packagingVolume.value = null
+        }
+      } else {
+        packagingVolume.value = null
+      }
+
+      packagingDialog.value = true
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function handlePackagingCompleted () {
     if (props.batchUuid) {
       await loadBatchData(props.batchUuid)
     }

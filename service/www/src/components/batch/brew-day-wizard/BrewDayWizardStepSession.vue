@@ -18,9 +18,9 @@
           v-model="form.mashVesselUuid"
           density="comfortable"
           hide-details
-          :items="mashVesselOptions"
           item-title="name"
           item-value="uuid"
+          :items="mashVesselOptions"
           placeholder="Select mash vessel"
         >
           <template #no-data>
@@ -40,9 +40,9 @@
           v-model="form.boilVesselUuid"
           density="comfortable"
           hide-details
-          :items="boilVesselOptions"
           item-title="name"
           item-value="uuid"
+          :items="boilVesselOptions"
           placeholder="Select boil vessel"
         >
           <template #no-data>
@@ -166,13 +166,13 @@
   )
 
   // Auto-select if only one option
-  watch(mashVesselOptions, (options) => {
+  watch(mashVesselOptions, options => {
     if (options.length === 1 && options[0] && !form.mashVesselUuid) {
       form.mashVesselUuid = options[0].uuid
     }
   }, { immediate: true })
 
-  watch(boilVesselOptions, (options) => {
+  watch(boilVesselOptions, options => {
     if (options.length === 1 && options[0] && !form.boilVesselUuid) {
       form.boilVesselUuid = options[0].uuid
     }
@@ -252,13 +252,13 @@
 
       emit('completed', {
         session,
-        mashTemp: mashTempValue !== null ? `${mashTempValue}${temperatureSuffix.value}` : null,
-        originalGravity: ogValue !== null ? ogValue.toFixed(3) : null,
+        mashTemp: mashTempValue === null ? null : `${mashTempValue}${temperatureSuffix.value}`,
+        originalGravity: ogValue === null ? null : ogValue.toFixed(3),
       })
 
       return true
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to save brew session'
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to save brew session'
       errorMessage.value = message
       showNotice(message, 'error')
       return false

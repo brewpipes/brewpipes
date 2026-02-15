@@ -326,3 +326,43 @@ type RecipeIngredient struct {
 	Notes                 *string
 	entity.Timestamps
 }
+
+// PackageFormat represents a container type for packaged beer (e.g., 1/2 BBL Keg, 16oz Can).
+type PackageFormat struct {
+	entity.Identifiers
+	Name              string
+	Container         string
+	VolumePerUnit     int64
+	VolumePerUnitUnit string
+	IsActive          bool
+	entity.Timestamps
+}
+
+// PackagingRun represents a packaging event for a batch.
+type PackagingRun struct {
+	entity.Identifiers
+	BatchID       int64
+	BatchUUID     string // Joined from batch table
+	OccupancyID   int64
+	OccupancyUUID string // Joined from occupancy table
+	StartedAt     time.Time
+	EndedAt       *time.Time
+	LossAmount    *int64
+	LossUnit      *string
+	Notes         *string
+	entity.Timestamps
+}
+
+// PackagingRunLine represents one format line within a packaging run.
+type PackagingRunLine struct {
+	entity.Identifiers
+	PackagingRunID                 int64
+	PackagingRunUUID               string // Joined from packaging_run table
+	PackageFormatID                int64
+	PackageFormatUUID              string // Joined from package_format table
+	PackageFormatName              string // Joined from package_format table
+	PackageFormatVolumePerUnit     int64  // Joined from package_format table
+	PackageFormatVolumePerUnitUnit string // Joined from package_format table
+	Quantity                       int
+	entity.Timestamps
+}

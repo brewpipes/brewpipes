@@ -112,6 +112,32 @@ Brew Session
 - A batch can have multiple brew sessions (double batching).
 - References mash and boil vessels by UUID for traceability.
 
+Package Format
+- A reference table for container types used in packaging (e.g., 1/2 BBL Keg, 16oz Can).
+- Each format has a name, container type, volume per unit, and active flag.
+- Container types: keg, can, bottle, cask, growler, other.
+- Case-insensitive unique name constraint (among non-deleted records).
+- Soft-delete is blocked if any non-deleted packaging_run_line references the format (returns 409 Conflict).
+- CRUD endpoints: `GET/POST /package-formats`, `GET/PATCH/DELETE /package-formats/{uuid}`.
+- PATCH supports partial updates (all fields optional).
+- New formats default to `is_active = true`.
+
+Packaging Run
+- A packaging run records a packaging event for a batch from a specific occupancy (vessel).
+- Each run has one or more lines, each specifying a package format and quantity.
+- `close_source` (optional, default true): closes the source occupancy (sets `out_at` to `started_at`).
+- `stock_location_uuid` (optional): when provided, triggers inter-service HTTP calls to the Inventory service to create beer lots with initial inventory movements.
+- `lot_code_prefix` (optional): prefix for auto-generated lot codes; defaults to the batch `short_name`.
+- Lot codes are generated as `{prefix}-{container_abbreviation}-{line_index}` (e.g., `IPA24-07-KEG-01`).
+- Container abbreviations: keg→KEG, can→CAN, bottle→BTL, cask→CSK, growler→GRL, other→OTH.
+- Beer lot creation is best-effort: failures are logged but do not roll back the packaging run.
+- The auth token from the inbound request is forwarded to the Inventory service (JWT pass-through).
+- `INVENTORY_API_URL` env var configures the inventory service base URL (default `http://localhost:8080/api`).
+- CRUD endpoints: `GET/POST /packaging-runs`, `GET/DELETE /packaging-runs/{uuid}`.
+- `GET /packaging-runs` supports optional `?batch_uuid=` filter.
+- Responses always include nested `lines` array with format details.
+- Soft-delete cascades to lines via DB `ON DELETE CASCADE` on the `packaging_run_line` table.
+
 ## Batch Summary
 
 The `GET /batches/{uuid}/summary` endpoint provides an aggregated view of a batch with derived metrics:
@@ -200,6 +226,9 @@ In short:
 - ABV is auto-calculated from OG and FG measurements using `(OG - FG) × 131.25` when no manual ABV measurement exists.
 - A brewmaster can define recipe target specifications including batch size, OG/FG/IBU/SRM ranges, carbonation, and brewhouse efficiency.
 - A brewmaster can manage recipe ingredient bills with full CRUD operations on `/recipes/{uuid}/ingredients`.
+- A brewmaster can manage package formats (container types for packaged beer) with full CRUD operations on `/package-formats`.
+- A brewmaster can record a packaging run for a batch with one or more packaging lines (format + quantity).
+- A packaging run optionally closes the source occupancy (default true) and optionally creates beer lots in the Inventory service via inter-service HTTP call.
 
 ## API Convention: UUID-Only
 

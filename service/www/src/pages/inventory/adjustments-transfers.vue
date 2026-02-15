@@ -237,7 +237,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { BeerLot, Ingredient, IngredientLot, StockLocation } from '@/types'
+  import type { BeerLotStockLevel, Ingredient, IngredientLot, StockLocation } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
@@ -259,7 +259,7 @@
     getStockLocations,
     getIngredients: fetchIngredients,
     getIngredientLots: fetchIngredientLots,
-    getBeerLots: fetchBeerLots,
+    getBeerLotStockLevels: fetchBeerLotStockLevels,
     createInventoryAdjustment,
     createInventoryTransfer,
   } = useInventoryApi()
@@ -270,7 +270,7 @@
   const locations = ref<StockLocation[]>([])
   const ingredients = ref<Ingredient[]>([])
   const ingredientLots = ref<IngredientLot[]>([])
-  const beerLots = ref<BeerLot[]>([])
+  const beerLotStockLevels = ref<BeerLotStockLevel[]>([])
 
   // UI state
   const loading = ref(false)
@@ -355,18 +355,17 @@
       })
     }
 
-    // Add beer lots
-    for (const lot of beerLots.value) {
-      const location = locations.value.find(l => l.uuid === lot.stock_location_uuid)
+    // Add beer lot stock levels
+    for (const level of beerLotStockLevels.value) {
       items.push({
-        key: `beer-${lot.uuid}`,
+        key: `beer-${level.beer_lot_uuid}-${level.stock_location_uuid}`,
         type: 'beer',
-        lotUuid: lot.uuid,
-        name: lot.lot_code || 'Unknown Beer Lot',
-        quantity: lot.volume,
-        unit: lot.volume_unit,
-        locationUuid: lot.stock_location_uuid,
-        locationName: location?.name ?? 'Unknown Location',
+        lotUuid: level.beer_lot_uuid,
+        name: level.lot_code || 'Unknown Beer Lot',
+        quantity: level.current_volume,
+        unit: level.current_volume_unit,
+        locationUuid: level.stock_location_uuid,
+        locationName: level.stock_location_name,
       })
     }
 
@@ -432,7 +431,7 @@
         loadLocations(),
         loadIngredients(),
         loadIngredientLots(),
-        loadBeerLots(),
+        loadBeerLotStockLevels(),
       ])
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load data'
@@ -454,8 +453,8 @@
     ingredientLots.value = await fetchIngredientLots()
   }
 
-  async function loadBeerLots () {
-    beerLots.value = await fetchBeerLots()
+  async function loadBeerLotStockLevels () {
+    beerLotStockLevels.value = await fetchBeerLotStockLevels()
   }
 
   // Adjust dialog

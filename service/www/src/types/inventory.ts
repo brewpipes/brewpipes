@@ -77,14 +77,38 @@ export interface IngredientLotYeastDetail {
 export interface BeerLot {
   uuid: string
   production_batch_uuid: string
+  packaging_run_uuid?: string
   lot_code: string | null
+  best_by?: string
+  package_format_name?: string
+  container?: string
+  volume_per_unit?: number
+  volume_per_unit_unit?: string
+  quantity?: number
   packaged_at: string
-  notes: string
+  notes: string | null
   created_at: string
   updated_at: string
+}
+
+/** Current stock level for a beer lot at a specific location */
+export interface BeerLotStockLevel {
+  beer_lot_uuid: string
+  production_batch_uuid: string
+  packaging_run_uuid?: string
+  lot_code?: string
+  best_by?: string
+  package_format_name?: string
+  container?: string
+  volume_per_unit?: number
+  volume_per_unit_unit?: string
+  initial_quantity?: number
+  packaged_at: string
   stock_location_uuid: string
-  volume: number
-  volume_unit: string
+  stock_location_name: string
+  current_volume: number
+  current_volume_unit: string
+  current_quantity?: number
 }
 
 // ============================================================================

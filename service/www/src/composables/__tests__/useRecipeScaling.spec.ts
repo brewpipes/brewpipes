@@ -88,7 +88,7 @@ describe('useRecipeScaling', () => {
 
       // 1 bbl = 31 gal, so 31 gal target should give factor ~1.0
       setTargetBatchSize(31, 'gal')
-      expect(scaleFactor.value).toBeCloseTo(1.0, 2)
+      expect(scaleFactor.value).toBeCloseTo(1, 2)
     })
 
     it('handles cross-unit scaling (gal to bbl)', () => {
@@ -98,7 +98,7 @@ describe('useRecipeScaling', () => {
 
       // 31 gal recipe, target 2 bbl = 62 gal → factor ~2.0
       setTargetBatchSize(2, 'bbl')
-      expect(scaleFactor.value).toBeCloseTo(2.0, 2)
+      expect(scaleFactor.value).toBeCloseTo(2, 2)
     })
 
     it('returns 1 when target batch size is null', () => {

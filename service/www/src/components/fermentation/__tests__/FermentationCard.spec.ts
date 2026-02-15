@@ -7,7 +7,7 @@ import * as directives from 'vuetify/directives'
 import FermentationCard from '../FermentationCard.vue'
 
 // Polyfill visualViewport for happy-dom (used by Vuetify overlay positioning)
-if (typeof globalThis.visualViewport === 'undefined') {
+if (globalThis.visualViewport === undefined) {
   Object.defineProperty(globalThis, 'visualViewport', {
     value: {
       width: 1024,
@@ -132,7 +132,7 @@ function makeMeasurement (overrides: Partial<Measurement> = {}): Measurement {
     occupancy_uuid: 'occ-1',
     volume_uuid: null,
     kind: 'gravity',
-    value: 1.050,
+    value: 1.05,
     unit: 'sg',
     observed_at: new Date().toISOString(),
     notes: null,
@@ -151,7 +151,7 @@ function mountCard (props: {
 } = {}) {
   const div = document.createElement('div')
   div.id = 'app'
-  document.body.appendChild(div)
+  document.body.append(div)
 
   return mount(FermentationCard, {
     attachTo: div,
@@ -167,7 +167,7 @@ function mountCard (props: {
     props: {
       occupancy: props.occupancy ?? makeOccupancy(),
       vessel: props.vessel ?? makeVessel(),
-      batchSummary: props.batchSummary !== undefined ? props.batchSummary : makeBatchSummary(),
+      batchSummary: props.batchSummary === undefined ? makeBatchSummary() : props.batchSummary,
       measurements: props.measurements ?? [],
     },
   })
@@ -237,8 +237,8 @@ describe('FermentationCard', () => {
   describe('metrics', () => {
     it('shows latest gravity value', () => {
       const measurements = [
-        makeMeasurement({ kind: 'gravity', value: 1.050, observed_at: '2025-01-02T00:00:00Z' }),
-        makeMeasurement({ uuid: 'meas-2', kind: 'gravity', value: 1.030, observed_at: '2025-01-03T00:00:00Z' }),
+        makeMeasurement({ kind: 'gravity', value: 1.05, observed_at: '2025-01-02T00:00:00Z' }),
+        makeMeasurement({ uuid: 'meas-2', kind: 'gravity', value: 1.03, observed_at: '2025-01-03T00:00:00Z' }),
       ]
       mountCard({ measurements })
       // Should show the latest gravity (1.030) formatted as SG
@@ -255,7 +255,7 @@ describe('FermentationCard', () => {
     })
 
     it('computes attenuation correctly', () => {
-      const summary = makeBatchSummary({ original_gravity: 1.060 })
+      const summary = makeBatchSummary({ original_gravity: 1.06 })
       const measurements = [
         makeMeasurement({ kind: 'gravity', value: 1.015, observed_at: '2025-01-03T00:00:00Z' }),
       ]
@@ -265,7 +265,7 @@ describe('FermentationCard', () => {
     })
 
     it('computes ABV correctly when no summary ABV', () => {
-      const summary = makeBatchSummary({ original_gravity: 1.060, abv: null })
+      const summary = makeBatchSummary({ original_gravity: 1.06, abv: null })
       const measurements = [
         makeMeasurement({ kind: 'gravity', value: 1.015, observed_at: '2025-01-03T00:00:00Z' }),
       ]
@@ -293,7 +293,7 @@ describe('FermentationCard', () => {
     it('applies warning class when gravity reading is stale (24+ hours)', () => {
       const staleTime = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
       const measurements = [
-        makeMeasurement({ kind: 'gravity', value: 1.050, observed_at: staleTime }),
+        makeMeasurement({ kind: 'gravity', value: 1.05, observed_at: staleTime }),
       ]
       const wrapper = mountCard({ measurements })
       expect(wrapper.find('.attention-warning').exists()).toBe(true)
@@ -313,8 +313,8 @@ describe('FermentationCard', () => {
     it('has no attention class when readings are normal', () => {
       const now = Date.now()
       const measurements = [
-        makeMeasurement({ uuid: 'm1', kind: 'gravity', value: 1.050, observed_at: new Date(now - 2 * 60 * 60 * 1000).toISOString() }),
-        makeMeasurement({ uuid: 'm2', kind: 'gravity', value: 1.040, observed_at: new Date(now - 1 * 60 * 60 * 1000).toISOString() }),
+        makeMeasurement({ uuid: 'm1', kind: 'gravity', value: 1.05, observed_at: new Date(now - 2 * 60 * 60 * 1000).toISOString() }),
+        makeMeasurement({ uuid: 'm2', kind: 'gravity', value: 1.04, observed_at: new Date(now - 1 * 60 * 60 * 1000).toISOString() }),
       ]
       const wrapper = mountCard({ measurements })
       expect(wrapper.find('.attention-warning').exists()).toBe(false)

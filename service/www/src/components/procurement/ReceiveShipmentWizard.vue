@@ -407,11 +407,7 @@
 
       // Check for partial failures
       if (failedLines.length > 0) {
-        if (createdLots.length > 0) {
-          saveError.value = `Partially completed. Created ${createdLots.length} lot(s). Failed: ${failedLines.join(', ')}. Please review inventory and retry failed items.`
-        } else {
-          saveError.value = `Failed to create lots for: ${failedLines.join(', ')}. Receipt was created but no inventory was added.`
-        }
+        saveError.value = createdLots.length > 0 ? `Partially completed. Created ${createdLots.length} lot(s). Failed: ${failedLines.join(', ')}. Please review inventory and retry failed items.` : `Failed to create lots for: ${failedLines.join(', ')}. Receipt was created but no inventory was added.`
         // Don't close dialog on partial failure - let user see the error
         return
       }

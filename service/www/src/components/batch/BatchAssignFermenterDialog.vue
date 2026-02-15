@@ -24,9 +24,9 @@
             v-model="form.vessel_uuid"
             class="mb-2"
             density="comfortable"
-            :items="availableVesselOptions"
             item-title="title"
             item-value="value"
+            :items="availableVesselOptions"
             label="Vessel"
             :rules="[rules.required]"
           >
@@ -49,9 +49,9 @@
             v-model="form.volume_uuid"
             class="mb-2"
             density="comfortable"
-            :items="volumeOptions"
             item-title="title"
             item-value="value"
+            :items="volumeOptions"
             label="Volume"
             :rules="[rules.required]"
           >
@@ -74,9 +74,9 @@
           <v-select
             v-model="form.status"
             density="comfortable"
-            :items="statusOptions"
             item-title="title"
             item-value="value"
+            :items="statusOptions"
             label="Initial Status"
           />
         </v-form>
@@ -182,11 +182,7 @@
         form.status = 'fermenting'
 
         // Auto-select volume if there's exactly one
-        if (props.batchVolumes.length === 1 && props.batchVolumes[0]) {
-          form.volume_uuid = props.batchVolumes[0].uuid
-        } else {
-          form.volume_uuid = ''
-        }
+        form.volume_uuid = props.batchVolumes.length === 1 && props.batchVolumes[0] ? props.batchVolumes[0].uuid : ''
       }
     },
   )

@@ -245,6 +245,96 @@ export function useAdditionTypeFormatters () {
   }
 }
 
+// Purchase order status formatting
+const PURCHASE_ORDER_STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  submitted: 'Submitted',
+  confirmed: 'Confirmed',
+  partially_received: 'Partially Received',
+  received: 'Received',
+  cancelled: 'Cancelled',
+}
+
+const PURCHASE_ORDER_STATUS_COLORS: Record<string, string> = {
+  draft: 'grey',
+  submitted: 'blue',
+  confirmed: 'green',
+  partially_received: 'orange',
+  received: 'green',
+  cancelled: 'red',
+}
+
+export function usePurchaseOrderStatusFormatters () {
+  function formatPurchaseOrderStatus (status: string): string {
+    return PURCHASE_ORDER_STATUS_LABELS[status] ?? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
+  }
+
+  function getPurchaseOrderStatusColor (status: string): string {
+    return PURCHASE_ORDER_STATUS_COLORS[status] ?? 'grey'
+  }
+
+  const purchaseOrderStatusOptions = Object.entries(PURCHASE_ORDER_STATUS_LABELS).map(
+    ([value, title]) => ({ title, value }),
+  )
+
+  return {
+    formatPurchaseOrderStatus,
+    getPurchaseOrderStatusColor,
+    purchaseOrderStatusOptions,
+  }
+}
+
+// Line item type formatting
+const LINE_ITEM_TYPE_LABELS: Record<string, string> = {
+  ingredient: 'Ingredient',
+  packaging: 'Packaging',
+  service: 'Service',
+  equipment: 'Equipment',
+  other: 'Other',
+}
+
+export function useLineItemTypeFormatters () {
+  function formatLineItemType (type: string): string {
+    return LINE_ITEM_TYPE_LABELS[type] ?? type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+  }
+
+  const lineItemTypeOptions = Object.entries(LINE_ITEM_TYPE_LABELS).map(
+    ([value, title]) => ({ title, value }),
+  )
+
+  return {
+    formatLineItemType,
+    lineItemTypeOptions,
+  }
+}
+
+// Fee type formatting
+const FEE_TYPE_LABELS: Record<string, string> = {
+  shipping: 'Shipping',
+  handling: 'Handling',
+  tax: 'Tax',
+  insurance: 'Insurance',
+  customs: 'Customs',
+  freight: 'Freight',
+  hazmat: 'Hazmat',
+  other: 'Other',
+}
+
+export function useFeeTypeFormatters () {
+  function formatFeeType (type: string): string {
+    return FEE_TYPE_LABELS[type] ?? type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')
+  }
+
+  const feeTypeOptions = Object.entries(FEE_TYPE_LABELS).map(
+    ([value, title]) => ({ title, value }),
+  )
+
+  return {
+    formatFeeType,
+    feeTypeOptions,
+  }
+}
+
 // ============================================================================
 // Recipe/Brewing Formatters
 // ============================================================================

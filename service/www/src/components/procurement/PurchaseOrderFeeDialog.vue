@@ -77,7 +77,11 @@
     currency: string
   }
 
-  const feeTypeOptions = ['shipping', 'handling', 'tax', 'insurance', 'customs', 'other']
+  // v-combobox requires plain string items — {title,value} objects cause the
+  // model to be set to the full object on selection, breaking .trim() calls
+  // and API payloads. Use raw enum values as suggestions; display formatting
+  // is handled by formatFeeType in list/table contexts.
+  const feeTypeOptions = ['shipping', 'handling', 'tax', 'insurance', 'customs', 'freight', 'hazmat', 'other']
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
   const form = reactive<FeeForm>({

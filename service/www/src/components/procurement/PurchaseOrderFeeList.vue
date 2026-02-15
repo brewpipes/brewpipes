@@ -23,6 +23,9 @@
         :items="fees"
         :loading="loading"
       >
+        <template #item.fee_type="{ item }">
+          {{ formatFeeType(item.fee_type) }}
+        </template>
         <template #item.amount_cents="{ item }">
           {{ formatCurrency(item.amount_cents, item.currency) }}
         </template>
@@ -69,7 +72,7 @@
             <div class="d-flex justify-space-between align-start">
               <div>
                 <div class="text-body-2 font-weight-medium">
-                  {{ fee.fee_type }}
+                  {{ formatFeeType(fee.fee_type) }}
                 </div>
                 <div class="text-body-2 mt-1">
                   {{ formatCurrency(fee.amount_cents, fee.currency) }}
@@ -123,7 +126,7 @@
     <v-card>
       <v-card-title class="text-h6">Delete fee?</v-card-title>
       <v-card-text>
-        Are you sure you want to delete the {{ deletingFee?.fee_type }} fee?
+        Are you sure you want to delete the {{ deletingFee ? formatFeeType(deletingFee.fee_type) : '' }} fee?
         This action cannot be undone.
       </v-card-text>
       <v-card-actions class="justify-end">
@@ -143,6 +146,7 @@
 <script lang="ts" setup>
   import type { PurchaseOrderFee } from '@/types'
   import { ref } from 'vue'
+  import { useFeeTypeFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import PurchaseOrderFeeDialog, { type FeeForm } from './PurchaseOrderFeeDialog.vue'
@@ -164,6 +168,7 @@
     formatCurrency,
   } = useProcurementApi()
   const { showNotice } = useSnackbar()
+  const { formatFeeType } = useFeeTypeFormatters()
 
   const headers = [
     { title: 'Fee Type', key: 'fee_type', sortable: true },

@@ -97,6 +97,7 @@
 <script lang="ts" setup>
   import type { PurchaseOrderLine } from '@/types'
   import { computed, reactive, watch } from 'vue'
+  import { useLineItemTypeFormatters } from '@/composables/useFormatters'
 
   const props = defineProps<{
     modelValue: boolean
@@ -121,7 +122,7 @@
     currency: string
   }
 
-  const itemTypeOptions = ['ingredient', 'packaging', 'service', 'equipment', 'other']
+  const { lineItemTypeOptions: itemTypeOptions } = useLineItemTypeFormatters()
   const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 

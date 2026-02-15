@@ -99,6 +99,8 @@
         </template>
         <v-list-item title="Purchase orders" to="/procurement/purchase-orders" />
         <v-list-item title="Suppliers" to="/procurement/suppliers" />
+        <v-list-item title="Order Lines" to="/procurement/purchase-order-lines" />
+        <v-list-item title="Order Fees" to="/procurement/purchase-order-fees" />
       </v-list-group>
     </v-list>
   </v-navigation-drawer>

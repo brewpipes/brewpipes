@@ -519,6 +519,13 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - [ ] Locations page has no edit/delete actions on location rows — can create but not modify or remove
 - [ ] Vue "Scroll target is not found" warnings on mobile resize across multiple inventory pages
 
+#### Procurement (Pass 6)
+- [ ] Mobile (375px): PO list and Suppliers list table columns are clipped/truncated — needs broader mobile table strategy (card view or horizontal scroll)
+- [ ] Line item and fee cost/amount fields accept values in cents but display in dollars — confusing UX; needs input format alignment or clear conversion UI
+- [ ] Line item "Inventory item UUID" field is a raw text input — should be a searchable combobox listing inventory items by name
+- [ ] No supplier detail page — clicking a supplier row does nothing; consider adding a detail page with supplier info and associated POs
+- [ ] PO Fees standalone page create form uses plain text field for fee type — should use combobox with suggestions for consistency with PO detail page dialog
+
 ---
 
 ## Appendix: Current System Capabilities

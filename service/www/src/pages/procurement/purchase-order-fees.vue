@@ -44,6 +44,9 @@
                   <template #item.purchase_order_uuid="{ item }">
                     {{ orderNumber(item.purchase_order_uuid) }}
                   </template>
+                  <template #item.fee_type="{ item }">
+                    {{ formatFeeType(item.fee_type) }}
+                  </template>
                   <template #item.amount_cents="{ item }">
                     {{ formatCurrency(item.amount_cents, item.currency) }}
                   </template>
@@ -66,7 +69,11 @@
                   :items="orderSelectItems"
                   label="Purchase order"
                 />
-                <v-text-field v-model="feeForm.fee_type" label="Fee type" />
+                <v-combobox
+                  v-model="feeForm.fee_type"
+                  :items="feeTypeOptions"
+                  label="Fee type"
+                />
                 <v-text-field v-model="feeForm.amount_cents" label="Amount (cents)" type="number" />
                 <v-combobox
                   v-model="feeForm.currency"
@@ -95,6 +102,7 @@
   import type { PurchaseOrder, PurchaseOrderFee } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
+  import { useFeeTypeFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
 
@@ -108,6 +116,10 @@
   } = useProcurementApi()
   const route = useRoute()
   const { showNotice } = useSnackbar()
+  const { formatFeeType } = useFeeTypeFormatters()
+  // v-combobox requires plain string items — {title,value} objects cause the
+  // model to be set to the full object on selection, breaking .trim() and API payloads.
+  const feeTypeOptions = ['shipping', 'handling', 'tax', 'insurance', 'customs', 'freight', 'hazmat', 'other']
 
   // Table configuration
   const feeHeaders = [

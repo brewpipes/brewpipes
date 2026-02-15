@@ -57,7 +57,7 @@
             <div v-else class="mt-1">
               <div class="text-body-2 text-medium-emphasis mb-2">Not assigned</div>
               <v-btn
-                v-if="hasVolumes"
+                v-if="hasVolumes && !isFinished"
                 color="primary"
                 prepend-icon="mdi-flask-round-bottom"
                 size="small"
@@ -285,6 +285,7 @@
     summary: BatchSummary | null
     loading: boolean
     hasVolumes: boolean
+    isFinished?: boolean
   }>()
 
   const emit = defineEmits<{

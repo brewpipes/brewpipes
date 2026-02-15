@@ -11,6 +11,7 @@ import (
 
 // RecipeIngredientRequest is the request body for creating or updating a recipe ingredient.
 type RecipeIngredientRequest struct {
+	Name                  string   `json:"name"`
 	IngredientUUID        *string  `json:"ingredient_uuid,omitempty"`
 	IngredientType        string   `json:"ingredient_type"`
 	Amount                float64  `json:"amount"`
@@ -57,6 +58,7 @@ func (r RecipeIngredientRequest) Validate() error {
 type RecipeIngredientResponse struct {
 	UUID                  string    `json:"uuid"`
 	RecipeUUID            string    `json:"recipe_uuid"`
+	Name                  string    `json:"name"`
 	IngredientUUID        *string   `json:"ingredient_uuid,omitempty"`
 	IngredientType        string    `json:"ingredient_type"`
 	Amount                float64   `json:"amount"`
@@ -79,6 +81,7 @@ func NewRecipeIngredientResponse(ri storage.RecipeIngredient, recipeUUID string)
 	return RecipeIngredientResponse{
 		UUID:                  ri.UUID.String(),
 		RecipeUUID:            recipeUUID,
+		Name:                  ri.Name,
 		IngredientUUID:        uuidutil.ToStringPointer(ri.IngredientUUID),
 		IngredientType:        ri.IngredientType,
 		Amount:                ri.Amount,

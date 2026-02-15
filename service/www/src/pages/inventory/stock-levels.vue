@@ -80,10 +80,23 @@
 <script lang="ts" setup>
   import type { StockLevel } from '@/types'
   import { computed, onMounted, ref } from 'vue'
+  import { useRoute } from 'vue-router'
   import StockLevelTable from '@/components/inventory/StockLevelTable.vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
 
+  const route = useRoute()
   const { getStockLevels } = useInventoryApi()
+
+  const categoryToTab: Record<string, string> = {
+    fermentable: 'malt',
+    hop: 'hops',
+    yeast: 'yeast',
+    adjunct: 'other',
+    salt: 'other',
+    chemical: 'other',
+    gas: 'other',
+    other: 'other',
+  }
 
   const activeTab = ref('malt')
   const stockLevels = ref<StockLevel[]>([])
@@ -117,11 +130,21 @@
     errorMessage.value = ''
     try {
       stockLevels.value = await getStockLevels()
+      autoSelectTab()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load stock levels'
       errorMessage.value = message
     } finally {
       loading.value = false
+    }
+  }
+
+  function autoSelectTab () {
+    const ingredientUuid = route.query.ingredient as string | undefined
+    if (!ingredientUuid) return
+    const match = stockLevels.value.find(item => item.ingredient_uuid === ingredientUuid)
+    if (match) {
+      activeTab.value = categoryToTab[match.category] ?? 'malt'
     }
   }
 </script>

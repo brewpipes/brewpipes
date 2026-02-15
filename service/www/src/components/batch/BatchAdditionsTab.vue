@@ -25,7 +25,7 @@
             </thead>
             <tbody>
               <tr v-for="addition in additionsSorted" :key="addition.uuid">
-                <td>{{ addition.addition_type }}</td>
+                <td>{{ formatAdditionType(addition.addition_type) }}</td>
                 <td>{{ formatAmount(addition.amount, addition.amount_unit) }}</td>
                 <td>{{ addition.occupancy_uuid ? 'Occupancy' : 'Batch' }}</td>
                 <td>{{ formatDateTime(addition.added_at) }}</td>
@@ -44,7 +44,7 @@
 <script lang="ts" setup>
   import type { Addition } from './types'
   import { computed } from 'vue'
-  import { useFormatters } from '@/composables/useFormatters'
+  import { useAdditionTypeFormatters, useFormatters } from '@/composables/useFormatters'
 
   const props = defineProps<{
     additions: Addition[]
@@ -55,6 +55,7 @@
   }>()
 
   const { formatDateTime } = useFormatters()
+  const { formatAdditionType } = useAdditionTypeFormatters()
 
   const additionsSorted = computed(() =>
     sortByTime(props.additions, item => item.added_at),

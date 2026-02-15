@@ -93,7 +93,7 @@ describe('VesselList', () => {
       ]
       const wrapper = mountVesselList({ vessels })
 
-      expect(wrapper.text()).toContain('fermenter')
+      expect(wrapper.text()).toContain('Fermenter')
       expect(wrapper.text()).toContain('15 bbl')
     })
 

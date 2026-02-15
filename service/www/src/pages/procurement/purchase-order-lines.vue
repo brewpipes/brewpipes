@@ -117,6 +117,7 @@
   import type { PurchaseOrder, PurchaseOrderLine } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
+  import { useLineItemTypeFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
 
@@ -145,7 +146,7 @@
   const loading = ref(false)
   const errorMessage = ref('')
 
-  const itemTypeOptions = ['ingredient', 'packaging', 'service', 'equipment', 'other']
+  const { lineItemTypeOptions: itemTypeOptions } = useLineItemTypeFormatters()
   const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 

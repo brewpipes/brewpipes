@@ -88,6 +88,7 @@ func HandleRecipeIngredients(db RecipeIngredientStore, recipes RecipeExistenceCh
 
 			ri := storage.RecipeIngredient{
 				RecipeID:              recipe.ID, // Use internal ID for FK
+				Name:                  req.Name,
 				IngredientUUID:        ingredientUUID,
 				IngredientType:        req.IngredientType,
 				Amount:                req.Amount,
@@ -211,6 +212,7 @@ func HandleRecipeIngredient(db RecipeIngredientStore, recipes RecipeExistenceChe
 				sortOrder = *req.SortOrder
 			}
 
+			existing.Name = req.Name
 			existing.IngredientUUID = invIngredientUUID
 			existing.IngredientType = req.IngredientType
 			existing.Amount = req.Amount

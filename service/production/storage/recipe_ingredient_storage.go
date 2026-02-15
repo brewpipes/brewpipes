@@ -14,7 +14,7 @@ import (
 // ListRecipeIngredients returns all ingredients for a recipe, ordered by sort_order.
 func (c *Client) ListRecipeIngredients(ctx context.Context, recipeUUID string) ([]RecipeIngredient, error) {
 	rows, err := c.DB().Query(ctx, `
-		SELECT ri.id, ri.uuid, ri.recipe_id, ri.ingredient_uuid, ri.ingredient_type, ri.amount, ri.amount_unit,
+		SELECT ri.id, ri.uuid, ri.recipe_id, ri.name, ri.ingredient_uuid, ri.ingredient_type, ri.amount, ri.amount_unit,
 		       ri.use_stage, ri.use_type, ri.timing_duration_minutes, ri.timing_temperature_c,
 		       ri.alpha_acid_assumed, ri.scaling_factor, ri.sort_order, ri.notes,
 		       ri.created_at, ri.updated_at, ri.deleted_at
@@ -47,7 +47,7 @@ func (c *Client) ListRecipeIngredients(ctx context.Context, recipeUUID string) (
 // GetRecipeIngredient returns a recipe ingredient by UUID.
 func (c *Client) GetRecipeIngredient(ctx context.Context, ingredientUUID string) (RecipeIngredient, error) {
 	row := c.DB().QueryRow(ctx, `
-		SELECT id, uuid, recipe_id, ingredient_uuid, ingredient_type, amount, amount_unit,
+		SELECT id, uuid, recipe_id, name, ingredient_uuid, ingredient_type, amount, amount_unit,
 		       use_stage, use_type, timing_duration_minutes, timing_temperature_c,
 		       alpha_acid_assumed, scaling_factor, sort_order, notes,
 		       created_at, updated_at, deleted_at
@@ -77,15 +77,16 @@ func (c *Client) CreateRecipeIngredient(ctx context.Context, ri RecipeIngredient
 	var ingredientUUIDResult pgtype.UUID
 	err := c.DB().QueryRow(ctx, `
 		INSERT INTO recipe_ingredient (
-			recipe_id, ingredient_uuid, ingredient_type, amount, amount_unit,
+			recipe_id, name, ingredient_uuid, ingredient_type, amount, amount_unit,
 			use_stage, use_type, timing_duration_minutes, timing_temperature_c,
 			alpha_acid_assumed, scaling_factor, sort_order, notes
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id, uuid, recipe_id, ingredient_uuid, ingredient_type, amount, amount_unit,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		RETURNING id, uuid, recipe_id, name, ingredient_uuid, ingredient_type, amount, amount_unit,
 		          use_stage, use_type, timing_duration_minutes, timing_temperature_c,
 		          alpha_acid_assumed, scaling_factor, sort_order, notes,
 		          created_at, updated_at, deleted_at`,
 		ri.RecipeID,
+		ri.Name,
 		ingredientUUID,
 		ri.IngredientType,
 		ri.Amount,
@@ -102,6 +103,7 @@ func (c *Client) CreateRecipeIngredient(ctx context.Context, ri RecipeIngredient
 		&ri.ID,
 		&ri.UUID,
 		&ri.RecipeID,
+		&ri.Name,
 		&ingredientUUIDResult,
 		&ri.IngredientType,
 		&ri.Amount,
@@ -136,24 +138,26 @@ func (c *Client) UpdateRecipeIngredient(ctx context.Context, ingredientUUID stri
 	var invIngredientUUIDResult pgtype.UUID
 	err := c.DB().QueryRow(ctx, `
 		UPDATE recipe_ingredient
-		SET ingredient_uuid = $1,
-		    ingredient_type = $2,
-		    amount = $3,
-		    amount_unit = $4,
-		    use_stage = $5,
-		    use_type = $6,
-		    timing_duration_minutes = $7,
-		    timing_temperature_c = $8,
-		    alpha_acid_assumed = $9,
-		    scaling_factor = $10,
-		    sort_order = $11,
-		    notes = $12,
+		SET name = $1,
+		    ingredient_uuid = $2,
+		    ingredient_type = $3,
+		    amount = $4,
+		    amount_unit = $5,
+		    use_stage = $6,
+		    use_type = $7,
+		    timing_duration_minutes = $8,
+		    timing_temperature_c = $9,
+		    alpha_acid_assumed = $10,
+		    scaling_factor = $11,
+		    sort_order = $12,
+		    notes = $13,
 		    updated_at = timezone('utc', now())
-		WHERE uuid = $13 AND deleted_at IS NULL
-		RETURNING id, uuid, recipe_id, ingredient_uuid, ingredient_type, amount, amount_unit,
+		WHERE uuid = $14 AND deleted_at IS NULL
+		RETURNING id, uuid, recipe_id, name, ingredient_uuid, ingredient_type, amount, amount_unit,
 		          use_stage, use_type, timing_duration_minutes, timing_temperature_c,
 		          alpha_acid_assumed, scaling_factor, sort_order, notes,
 		          created_at, updated_at, deleted_at`,
+		ri.Name,
 		invIngredientUUID,
 		ri.IngredientType,
 		ri.Amount,
@@ -171,6 +175,7 @@ func (c *Client) UpdateRecipeIngredient(ctx context.Context, ingredientUUID stri
 		&ri.ID,
 		&ri.UUID,
 		&ri.RecipeID,
+		&ri.Name,
 		&invIngredientUUIDResult,
 		&ri.IngredientType,
 		&ri.Amount,
@@ -226,6 +231,7 @@ func scanRecipeIngredient(rows pgx.Rows) (RecipeIngredient, error) {
 		&ri.ID,
 		&ri.UUID,
 		&ri.RecipeID,
+		&ri.Name,
 		&ingredientUUID,
 		&ri.IngredientType,
 		&ri.Amount,
@@ -259,6 +265,7 @@ func scanRecipeIngredientRow(row pgx.Row) (RecipeIngredient, error) {
 		&ri.ID,
 		&ri.UUID,
 		&ri.RecipeID,
+		&ri.Name,
 		&ingredientUUID,
 		&ri.IngredientType,
 		&ri.Amount,

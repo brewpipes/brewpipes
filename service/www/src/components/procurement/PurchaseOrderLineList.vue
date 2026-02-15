@@ -23,6 +23,9 @@
         :items="lines"
         :loading="loading"
       >
+        <template #item.item_type="{ item }">
+          {{ formatLineItemType(item.item_type) }}
+        </template>
         <template #item.quantity="{ item }">
           {{ item.quantity }} {{ item.quantity_unit }}
         </template>
@@ -78,7 +81,7 @@
                   #{{ line.line_number }} - {{ line.item_name }}
                 </div>
                 <div class="text-caption text-medium-emphasis">
-                  {{ line.item_type }} | {{ line.quantity }} {{ line.quantity_unit }}
+                  {{ formatLineItemType(line.item_type) }} | {{ line.quantity }} {{ line.quantity_unit }}
                 </div>
                 <div class="text-body-2 mt-1">
                   {{ formatCurrency(line.unit_cost_cents, line.currency) }} each |
@@ -155,6 +158,7 @@
 <script lang="ts" setup>
   import type { PurchaseOrderLine } from '@/types'
   import { ref } from 'vue'
+  import { useLineItemTypeFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeText } from '@/utils/normalize'
@@ -177,6 +181,7 @@
     formatCurrency,
   } = useProcurementApi()
   const { showNotice } = useSnackbar()
+  const { formatLineItemType } = useLineItemTypeFormatters()
 
   const headers = [
     { title: 'Line #', key: 'line_number', sortable: true, width: '80px' },

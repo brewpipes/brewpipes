@@ -88,6 +88,7 @@
         <v-list-item title="Activity" to="/inventory/activity" />
         <v-list-item title="Product" to="/inventory/product" />
         <v-list-item title="Ingredients" to="/inventory/ingredients" />
+        <v-list-item title="Lot Details" to="/inventory/lot-details" />
         <v-list-item title="Adjustments & Transfers" to="/inventory/adjustments-transfers" />
         <v-list-item title="Locations" to="/inventory/locations" />
       </v-list-group>
@@ -98,6 +99,8 @@
         </template>
         <v-list-item title="Purchase orders" to="/procurement/purchase-orders" />
         <v-list-item title="Suppliers" to="/procurement/suppliers" />
+        <v-list-item title="Order Lines" to="/procurement/purchase-order-lines" />
+        <v-list-item title="Order Fees" to="/procurement/purchase-order-fees" />
       </v-list-group>
     </v-list>
   </v-navigation-drawer>
@@ -159,7 +162,7 @@
   }
 
   function toggleTheme () {
-    theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
+    theme.change(isDark.value ? 'brewLight' : 'brewDark')
   }
 
   async function handleLogout () {
@@ -189,10 +192,10 @@
   onMounted(() => {
     const storedTheme = localStorage.getItem(themeStorageKey)
     if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
-      theme.global.name.value = storedTheme
+      theme.change(storedTheme)
     } else {
       const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
-      theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
+      theme.change(prefersDark ? 'brewDark' : 'brewLight')
     }
 
     // Load low stock count for navigation badge

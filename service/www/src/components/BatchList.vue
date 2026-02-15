@@ -16,7 +16,7 @@
     <v-card-text>
       <v-progress-linear v-if="loading" class="mb-3" color="primary" indeterminate />
 
-      <v-list active-color="primary" class="batch-list" lines="two">
+      <v-list class="batch-list" color="primary" lines="two">
         <v-list-item
           v-for="batch in batches"
           :key="batch.uuid"

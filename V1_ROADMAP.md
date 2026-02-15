@@ -488,6 +488,50 @@ Track brewhouse removals for future TTB compliance.
 - **Brew Day Wizard (BREW-06):** Three-step guided wizard (pick ingredients → record session → assign fermenter) optimized for mobile. Fullscreen on small screens, non-linear step navigation, auto-fill FIFO lots, visual fermenter card picker, completion summary. Reviewed and refined by frontend tech lead.
 - **Seed Data Enhancement:** 20 new ingredients, 22 lots, 4 new batches, 5 new vessels, missing enum values, FIFO test lots, cross-service UUID fix migration.
 
+### Deferred QA Items
+
+Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
+
+#### Dashboard (Pass 1)
+- [ ] Low stock ingredient link auto-selects correct tab but doesn't highlight/scroll to the specific ingredient row
+- [ ] Footer overlaps content on mobile at 375px width
+
+#### Production — Batches (Pass 2)
+- [ ] OG/FG show "—" in batch summary even when gravity measurements exist — backend `populateMeasurements` may not be extracting OG/FG from measurements correctly
+- [ ] Inventory lot UUID fields in addition/measurement dialogs require raw UUID input — should be searchable comboboxes with lot codes and ingredient names
+- [ ] Measurement "Kind" field inconsistency — hot-side dialog uses curated dropdown, batch-level dialog uses free text input
+- [ ] Temperature unit inconsistency — sparkline converts to user preference (°F), measurement table shows raw values (°C)
+
+#### Production — Recipes (Pass 3)
+- [ ] Vue "Scroll target is not found" warnings when resizing to mobile width on recipe detail pages
+
+#### Vessels (Pass 4)
+- [ ] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — should pre-select "Retired" status or use a dedicated confirmation dialog
+- [ ] Vessel detail page header clips Active status chip on mobile at 375px width
+
+#### Inventory (Pass 5)
+- [ ] Adjustments & Transfers page shows "Unknown Location" for all items — backend `ingredient-lots` API doesn't return `stock_location_uuid`; needs backend change or frontend refactor to derive from stock-levels API
+- [ ] Activity page "Unknown Lot" entry for soft-deleted lot — backend should include deleted lot info or show last-known name
+- [ ] Transfer dialog max quantity shows wrong unit and value — uses raw `current_amount` (kg) before unit conversion instead of converted display value
+- [ ] Activity page has no mobile-responsive layout at 375px — table columns cut off with no horizontal scroll; needs card layout redesign
+- [ ] Product page create form requires raw batch UUID input — should be a searchable combobox listing available batches
+- [ ] Lot Details page shows all 3 detail sections (Malt, Hop, Yeast) for every lot type regardless of category
+- [ ] Locations page has no edit/delete actions on location rows — can create but not modify or remove
+- [ ] Vue "Scroll target is not found" warnings on mobile resize across multiple inventory pages
+
+#### Procurement (Pass 6)
+- [ ] Mobile (375px): PO list and Suppliers list table columns are clipped/truncated — needs broader mobile table strategy (card view or horizontal scroll)
+- [ ] Line item and fee cost/amount fields accept values in cents but display in dollars — confusing UX; needs input format alignment or clear conversion UI
+- [ ] Line item "Inventory item UUID" field is a raw text input — should be a searchable combobox listing inventory items by name
+- [ ] No supplier detail page — clicking a supplier row does nothing; consider adding a detail page with supplier info and associated POs
+- [ ] PO Fees standalone page create form uses plain text field for fee type — should use combobox with suggestions for consistency with PO detail page dialog
+
+#### Settings & Auth (Pass 7)
+- [ ] Login error message capitalization inconsistency — backend returns lowercase "invalid username or password" while client-side messages use sentence case
+- [ ] Settings page "Reset to Default" vs "Reset to Defaults" — inconsistent singular/plural button text between Brewery Settings and Display Units sections
+- [ ] Settings page card subtitles truncated on mobile (375px) — default Vuetify `v-card-subtitle` ellipsis behavior hides useful context
+- [ ] Vue framework warnings on login page load (`onScopeDispose`, `Missing ref owner context`) — development-only, no user impact
+
 ---
 
 ## Appendix: Current System Capabilities

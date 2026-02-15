@@ -65,15 +65,15 @@
                   </template>
                   <template #item.status="{ item }">
                     <v-chip
-                      :color="getStatusColor(item.status)"
+                      :color="getPurchaseOrderStatusColor(item.status)"
                       size="x-small"
                       variant="flat"
                     >
-                      {{ formatStatus(item.status) }}
+                      {{ formatPurchaseOrderStatus(item.status) }}
                     </v-chip>
                   </template>
                   <template #item.expected_at="{ item }">
-                    {{ formatDateTime(item.expected_at) }}
+                    {{ formatDate(item.expected_at) }}
                   </template>
                   <template #item.actions="{ item }">
                     <v-btn
@@ -125,7 +125,7 @@
             <v-text-field v-model="orderForm.order_number" label="Order number" />
           </v-col>
           <v-col cols="12" md="6">
-            <v-select v-model="orderForm.status" clearable :items="statusOptions" label="Status" />
+            <v-select v-model="orderForm.status" clearable :items="purchaseOrderStatusOptions" label="Status" />
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field v-model="orderForm.ordered_at" label="Ordered at" type="datetime-local" />
@@ -157,7 +157,7 @@
   import type { PurchaseOrder, Supplier } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { formatDateTime } from '@/composables/useFormatters'
+  import { formatDate, usePurchaseOrderStatusFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeDateTime, normalizeText, toLocalDateTimeInput } from '@/utils/normalize'
@@ -170,6 +170,11 @@
   } = useProcurementApi()
   const { showNotice } = useSnackbar()
   const router = useRouter()
+  const {
+    formatPurchaseOrderStatus,
+    getPurchaseOrderStatusColor,
+    purchaseOrderStatusOptions,
+  } = usePurchaseOrderStatusFormatters()
 
   // Table configuration
   const orderHeaders = [
@@ -179,35 +184,6 @@
     { title: 'Expected', key: 'expected_at', sortable: true },
     { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '60px' },
   ]
-
-  // Status formatting
-  type PurchaseOrderStatus = 'draft' | 'submitted' | 'confirmed' | 'partially_received' | 'received' | 'cancelled'
-
-  const STATUS_COLORS: Record<PurchaseOrderStatus, string> = {
-    draft: 'grey',
-    submitted: 'blue',
-    confirmed: 'green',
-    partially_received: 'orange',
-    received: 'green',
-    cancelled: 'red',
-  }
-
-  const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
-    draft: 'Draft',
-    submitted: 'Submitted',
-    confirmed: 'Confirmed',
-    partially_received: 'Partially Received',
-    received: 'Received',
-    cancelled: 'Cancelled',
-  }
-
-  function getStatusColor (status: string): string {
-    return STATUS_COLORS[status as PurchaseOrderStatus] ?? 'grey'
-  }
-
-  function formatStatus (status: string): string {
-    return STATUS_LABELS[status as PurchaseOrderStatus] ?? status
-  }
 
   const suppliers = ref<Supplier[]>([])
   const orders = ref<PurchaseOrder[]>([])
@@ -221,15 +197,6 @@
   const dialogError = ref('')
 
   const isEditMode = computed(() => editingOrder.value !== null)
-
-  const statusOptions = [
-    'draft',
-    'submitted',
-    'confirmed',
-    'partially_received',
-    'received',
-    'cancelled',
-  ]
 
   const filters = reactive({
     supplier_uuid: null as string | null,

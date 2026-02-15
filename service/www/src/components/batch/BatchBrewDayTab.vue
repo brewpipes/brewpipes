@@ -225,7 +225,7 @@
             >
               {{ unlinkedIngredients.length }} ingredient{{ unlinkedIngredients.length > 1 ? 's are' : ' is' }}
               not linked to inventory and cannot be picked:
-              {{ unlinkedIngredients.map(i => i.name).join(', ') }}.
+              {{ unlinkedIngredients.map(i => i.name || i.ingredient_type || 'Unknown ingredient').join(', ') }}.
             </v-alert>
 
             <!-- Confirm button -->

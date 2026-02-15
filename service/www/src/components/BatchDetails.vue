@@ -164,6 +164,7 @@
 
             <BatchSummaryTab
               :has-volumes="hasBatchVolumes"
+              :is-finished="isFinished"
               :loading="batchSummaryLoading"
               :summary="batchSummary"
               @assign-fermenter="openAssignFermenterDialog"
@@ -174,6 +175,7 @@
 
           <v-window-item value="brew-day">
             <BatchBrewDayTab
+              v-if="activeTab === 'brew-day'"
               :batch-uuid="selectedBatch?.uuid ?? null"
               :recipe-name="selectedBatch?.recipe_name ?? null"
               :recipe-uuid="selectedBatch?.recipe_uuid ?? null"
@@ -182,6 +184,7 @@
 
           <v-window-item value="brew-sessions">
             <BatchBrewSessionsTab
+              v-if="activeTab === 'brew-sessions'"
               :additions="wortAdditions"
               :measurements="wortMeasurements"
               :selected-session-uuid="selectedBrewSessionUuid"
@@ -199,6 +202,7 @@
 
           <v-window-item value="timeline">
             <BatchTimelineTab
+              v-if="activeTab === 'timeline'"
               :events="timelineItems"
               :gravity-unit="preferences.gravity"
               :reading="timelineReading"
@@ -212,6 +216,7 @@
 
           <v-window-item value="flow">
             <BatchFlowTab
+              v-if="activeTab === 'flow'"
               :links="flowLinks"
               :nodes="flowNodes"
               :notice="flowNotice"
@@ -220,6 +225,7 @@
 
           <v-window-item value="measurements">
             <BatchMeasurementsTab
+              v-if="activeTab === 'measurements'"
               :measurements="measurements"
               @create="createMeasurementDialog = true"
             />
@@ -227,6 +233,7 @@
 
           <v-window-item value="additions">
             <BatchAdditionsTab
+              v-if="activeTab === 'additions'"
               :additions="additions"
               @create="createAdditionDialog = true"
             />
@@ -360,7 +367,7 @@
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useApiClient } from '@/composables/useApiClient'
-  import { formatDate, formatDateTime, useOccupancyStatusFormatters } from '@/composables/useFormatters'
+  import { formatDate, formatDateTime, useAdditionTypeFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import {
@@ -456,6 +463,7 @@
   } = useUnitPreferences()
 
   const { formatOccupancyStatus } = useOccupancyStatusFormatters()
+  const { formatAdditionType } = useAdditionTypeFormatters()
 
   // State
   const loading = ref(false)
@@ -623,9 +631,16 @@
 
   const hasBatchVolumes = computed(() => batchProductionVolumes.value.length > 0)
 
+  // Whether the batch is in the 'finished' process phase
+  const isFinished = computed(() =>
+    batchSummary.value?.current_phase === 'finished',
+  )
+
   // Brew Day Wizard computed
   const showStartBrewDay = computed(() => {
     if (!selectedBatch.value) return false
+    // Hide on finished batches
+    if (isFinished.value) return false
     // Show when batch has a recipe
     if (!selectedBatch.value.recipe_uuid) return false
     // Show when batch has no occupancy (fermenter not yet assigned)
@@ -738,7 +753,7 @@
     for (const addition of additions.value) {
       items.push({
         id: `addition-${addition.uuid}`,
-        title: `Addition: ${addition.addition_type}`,
+        title: `Addition: ${formatAdditionType(addition.addition_type)}`,
         subtitle: `${formatAmount(addition.amount, addition.amount_unit)} ${addition.stage ?? ''}`.trim(),
         at: addition.added_at ?? addition.created_at,
         color: 'primary',

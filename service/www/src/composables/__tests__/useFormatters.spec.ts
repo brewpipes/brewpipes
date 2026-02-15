@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  useAdditionTypeFormatters,
+  useFeeTypeFormatters,
   useFormatters,
+  useLineItemTypeFormatters,
   useOccupancyStatusFormatters,
+  usePurchaseOrderStatusFormatters,
   useVesselStatusFormatters,
   type VesselStatus,
 } from '../useFormatters'
@@ -144,6 +148,31 @@ describe('useVesselStatusFormatters', () => {
   })
 })
 
+describe('useAdditionTypeFormatters', () => {
+  const { formatAdditionType } = useAdditionTypeFormatters()
+
+  describe('formatAdditionType', () => {
+    it('formats known addition types correctly', () => {
+      expect(formatAdditionType('hop')).toBe('Hop')
+      expect(formatAdditionType('malt')).toBe('Malt')
+      expect(formatAdditionType('yeast')).toBe('Yeast')
+      expect(formatAdditionType('adjunct')).toBe('Adjunct')
+      expect(formatAdditionType('water_chem')).toBe('Water Chemistry')
+      expect(formatAdditionType('fining')).toBe('Fining')
+      expect(formatAdditionType('gas')).toBe('Gas')
+      expect(formatAdditionType('other')).toBe('Other')
+    })
+
+    it('capitalizes and formats unknown types with underscores', () => {
+      expect(formatAdditionType('dry_hop')).toBe('Dry hop')
+    })
+
+    it('capitalizes simple unknown types', () => {
+      expect(formatAdditionType('enzyme')).toBe('Enzyme')
+    })
+  })
+})
+
 describe('useOccupancyStatusFormatters', () => {
   const { formatOccupancyStatus, getOccupancyStatusColor, getOccupancyStatusIcon }
     = useOccupancyStatusFormatters()
@@ -221,6 +250,135 @@ describe('useOccupancyStatusFormatters', () => {
 
     it('returns circle icon for unknown status', () => {
       expect(getOccupancyStatusIcon('unknown_status')).toBe('mdi-circle')
+    })
+  })
+})
+
+describe('usePurchaseOrderStatusFormatters', () => {
+  const {
+    formatPurchaseOrderStatus,
+    getPurchaseOrderStatusColor,
+    purchaseOrderStatusOptions,
+  } = usePurchaseOrderStatusFormatters()
+
+  describe('formatPurchaseOrderStatus', () => {
+    it('formats known statuses correctly', () => {
+      expect(formatPurchaseOrderStatus('draft')).toBe('Draft')
+      expect(formatPurchaseOrderStatus('submitted')).toBe('Submitted')
+      expect(formatPurchaseOrderStatus('confirmed')).toBe('Confirmed')
+      expect(formatPurchaseOrderStatus('partially_received')).toBe('Partially Received')
+      expect(formatPurchaseOrderStatus('received')).toBe('Received')
+      expect(formatPurchaseOrderStatus('cancelled')).toBe('Cancelled')
+    })
+
+    it('capitalizes and formats unknown status with underscores', () => {
+      expect(formatPurchaseOrderStatus('on_hold')).toBe('On hold')
+    })
+
+    it('capitalizes simple unknown status', () => {
+      expect(formatPurchaseOrderStatus('pending')).toBe('Pending')
+    })
+  })
+
+  describe('getPurchaseOrderStatusColor', () => {
+    it('returns correct colors for known statuses', () => {
+      expect(getPurchaseOrderStatusColor('draft')).toBe('grey')
+      expect(getPurchaseOrderStatusColor('submitted')).toBe('blue')
+      expect(getPurchaseOrderStatusColor('confirmed')).toBe('green')
+      expect(getPurchaseOrderStatusColor('partially_received')).toBe('orange')
+      expect(getPurchaseOrderStatusColor('received')).toBe('green')
+      expect(getPurchaseOrderStatusColor('cancelled')).toBe('red')
+    })
+
+    it('returns "grey" for unknown status', () => {
+      expect(getPurchaseOrderStatusColor('unknown')).toBe('grey')
+    })
+  })
+
+  describe('purchaseOrderStatusOptions', () => {
+    it('returns options with title and value for each status', () => {
+      expect(purchaseOrderStatusOptions).toEqual([
+        { title: 'Draft', value: 'draft' },
+        { title: 'Submitted', value: 'submitted' },
+        { title: 'Confirmed', value: 'confirmed' },
+        { title: 'Partially Received', value: 'partially_received' },
+        { title: 'Received', value: 'received' },
+        { title: 'Cancelled', value: 'cancelled' },
+      ])
+    })
+  })
+})
+
+describe('useLineItemTypeFormatters', () => {
+  const { formatLineItemType, lineItemTypeOptions } = useLineItemTypeFormatters()
+
+  describe('formatLineItemType', () => {
+    it('formats known types correctly', () => {
+      expect(formatLineItemType('ingredient')).toBe('Ingredient')
+      expect(formatLineItemType('packaging')).toBe('Packaging')
+      expect(formatLineItemType('service')).toBe('Service')
+      expect(formatLineItemType('equipment')).toBe('Equipment')
+      expect(formatLineItemType('other')).toBe('Other')
+    })
+
+    it('capitalizes and formats unknown types with underscores', () => {
+      expect(formatLineItemType('raw_material')).toBe('Raw material')
+    })
+
+    it('capitalizes simple unknown types', () => {
+      expect(formatLineItemType('chemical')).toBe('Chemical')
+    })
+  })
+
+  describe('lineItemTypeOptions', () => {
+    it('returns options with title and value for each type', () => {
+      expect(lineItemTypeOptions).toEqual([
+        { title: 'Ingredient', value: 'ingredient' },
+        { title: 'Packaging', value: 'packaging' },
+        { title: 'Service', value: 'service' },
+        { title: 'Equipment', value: 'equipment' },
+        { title: 'Other', value: 'other' },
+      ])
+    })
+  })
+})
+
+describe('useFeeTypeFormatters', () => {
+  const { formatFeeType, feeTypeOptions } = useFeeTypeFormatters()
+
+  describe('formatFeeType', () => {
+    it('formats known types correctly', () => {
+      expect(formatFeeType('shipping')).toBe('Shipping')
+      expect(formatFeeType('handling')).toBe('Handling')
+      expect(formatFeeType('tax')).toBe('Tax')
+      expect(formatFeeType('insurance')).toBe('Insurance')
+      expect(formatFeeType('customs')).toBe('Customs')
+      expect(formatFeeType('freight')).toBe('Freight')
+      expect(formatFeeType('hazmat')).toBe('Hazmat')
+      expect(formatFeeType('other')).toBe('Other')
+    })
+
+    it('capitalizes and formats unknown types with underscores', () => {
+      expect(formatFeeType('cold_storage')).toBe('Cold storage')
+    })
+
+    it('capitalizes simple unknown types', () => {
+      expect(formatFeeType('surcharge')).toBe('Surcharge')
+    })
+  })
+
+  describe('feeTypeOptions', () => {
+    it('returns options with title and value for each type', () => {
+      expect(feeTypeOptions).toEqual([
+        { title: 'Shipping', value: 'shipping' },
+        { title: 'Handling', value: 'handling' },
+        { title: 'Tax', value: 'tax' },
+        { title: 'Insurance', value: 'insurance' },
+        { title: 'Customs', value: 'customs' },
+        { title: 'Freight', value: 'freight' },
+        { title: 'Hazmat', value: 'hazmat' },
+        { title: 'Other', value: 'other' },
+      ])
     })
   })
 })

@@ -509,6 +509,16 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - [ ] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — should pre-select "Retired" status or use a dedicated confirmation dialog
 - [ ] Vessel detail page header clips Active status chip on mobile at 375px width
 
+#### Inventory (Pass 5)
+- [ ] Adjustments & Transfers page shows "Unknown Location" for all items — backend `ingredient-lots` API doesn't return `stock_location_uuid`; needs backend change or frontend refactor to derive from stock-levels API
+- [ ] Activity page "Unknown Lot" entry for soft-deleted lot — backend should include deleted lot info or show last-known name
+- [ ] Transfer dialog max quantity shows wrong unit and value — uses raw `current_amount` (kg) before unit conversion instead of converted display value
+- [ ] Activity page has no mobile-responsive layout at 375px — table columns cut off with no horizontal scroll; needs card layout redesign
+- [ ] Product page create form requires raw batch UUID input — should be a searchable combobox listing available batches
+- [ ] Lot Details page shows all 3 detail sections (Malt, Hop, Yeast) for every lot type regardless of category
+- [ ] Locations page has no edit/delete actions on location rows — can create but not modify or remove
+- [ ] Vue "Scroll target is not found" warnings on mobile resize across multiple inventory pages
+
 ---
 
 ## Appendix: Current System Capabilities

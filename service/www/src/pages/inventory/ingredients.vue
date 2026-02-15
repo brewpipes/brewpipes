@@ -335,7 +335,7 @@
                   :loading="usageLoading"
                 >
                   <template #item.production_ref_uuid="{ item }">
-                    {{ item.production_ref_uuid || 'n/a' }}
+                    {{ item.production_ref_uuid ? (batchMap.get(item.production_ref_uuid)?.short_name ?? item.production_ref_uuid) : 'n/a' }}
                   </template>
                   <template #item.used_at="{ item }">
                     {{ formatDateTime(item.used_at) }}
@@ -393,7 +393,7 @@
                     {{ item.reference_code || 'n/a' }}
                   </template>
                   <template #item.supplier_uuid="{ item }">
-                    {{ item.supplier_uuid || 'n/a' }}
+                    {{ item.supplier_uuid ? (supplierMap.get(item.supplier_uuid)?.name ?? item.supplier_uuid) : 'n/a' }}
                   </template>
                   <template #item.received_at="{ item }">
                     {{ formatDateTime(item.received_at) }}
@@ -645,12 +645,14 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Ingredient, IngredientLot, InventoryReceipt, InventoryUsage } from '@/types'
+  import type { Batch, Ingredient, IngredientLot, InventoryReceipt, InventoryUsage, Supplier } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
   import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
+  import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
@@ -665,6 +667,8 @@
     getInventoryUsages,
     createInventoryUsage,
   } = useInventoryApi()
+  const { getBatches } = useProductionApi()
+  const { getSuppliers } = useProcurementApi()
   const { showNotice } = useSnackbar()
   const { formatAmountPreferred } = useUnitPreferences()
   const router = useRouter()
@@ -676,6 +680,8 @@
   const receipts = ref<InventoryReceipt[]>([])
   const lots = ref<IngredientLot[]>([])
   const usages = ref<InventoryUsage[]>([])
+  const batches = ref<Batch[]>([])
+  const suppliers = ref<Supplier[]>([])
 
   // Loading states
   const ingredientLoading = ref(false)
@@ -782,7 +788,7 @@
   ]
 
   const usageHeaders = [
-    { title: 'Batch Reference', key: 'production_ref_uuid', sortable: true },
+    { title: 'Batch', key: 'production_ref_uuid', sortable: true },
     { title: 'Used At', key: 'used_at', sortable: true },
     { title: 'Notes', key: 'notes', sortable: false },
   ]
@@ -802,6 +808,9 @@
     }
     return map
   })
+
+  const batchMap = computed(() => new Map(batches.value.map(b => [b.uuid, b])))
+  const supplierMap = computed(() => new Map(suppliers.value.map(s => [s.uuid, s])))
 
   // Computed: Filter lots by category
   const maltLots = computed(() => {
@@ -867,7 +876,20 @@
   })
 
   async function refreshAll () {
-    await Promise.allSettled([loadIngredients(), loadReceipts(), loadLots(), loadUsage()])
+    const [, , , , batchResult, supplierResult] = await Promise.allSettled([
+      loadIngredients(),
+      loadReceipts(),
+      loadLots(),
+      loadUsage(),
+      getBatches(),
+      getSuppliers(),
+    ])
+    if (batchResult.status === 'fulfilled') {
+      batches.value = batchResult.value
+    }
+    if (supplierResult.status === 'fulfilled') {
+      suppliers.value = supplierResult.value
+    }
   }
 
   async function loadIngredients () {

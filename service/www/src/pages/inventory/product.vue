@@ -32,14 +32,14 @@
                     <v-table class="data-table" density="compact">
                       <thead>
                         <tr>
-                          <th>Batch UUID</th>
+                          <th>Batch</th>
                           <th>Lot code</th>
                           <th>Packaged at</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-for="beerLot in beerLots" :key="beerLot.uuid">
-                          <td>{{ beerLot.production_batch_uuid }}</td>
+                          <td>{{ batchName(beerLot.production_batch_uuid) }}</td>
                           <td>{{ beerLot.lot_code || 'n/a' }}</td>
                           <td>{{ formatDateTime(beerLot.packaged_at) }}</td>
                         </tr>
@@ -85,20 +85,29 @@
 </template>
 
 <script lang="ts" setup>
-  import type { BeerLot } from '@/types'
-  import { onMounted, reactive, ref } from 'vue'
+  import type { Batch, BeerLot } from '@/types'
+  import { computed, onMounted, reactive, ref } from 'vue'
   import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeDateTime, normalizeText } from '@/utils/normalize'
 
   const { getBeerLots: fetchBeerLots, createBeerLot: createBeerLotApi } = useInventoryApi()
+  const { getBatches } = useProductionApi()
   const { showNotice } = useSnackbar()
 
   const beerLots = ref<BeerLot[]>([])
+  const batches = ref<Batch[]>([])
   const errorMessage = ref('')
   const loading = ref(false)
   const activeTab = ref('stock')
+
+  const batchMap = computed(() => new Map(batches.value.map(b => [b.uuid, b])))
+
+  function batchName (uuid: string): string {
+    return batchMap.value.get(uuid)?.short_name ?? uuid.substring(0, 8)
+  }
 
   const beerLotForm = reactive({
     production_batch_uuid: '',
@@ -115,7 +124,12 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      beerLots.value = await fetchBeerLots()
+      const [beerLotData, batchData] = await Promise.all([
+        fetchBeerLots(),
+        getBatches(),
+      ])
+      beerLots.value = beerLotData
+      batches.value = batchData
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load product lots'
       errorMessage.value = message

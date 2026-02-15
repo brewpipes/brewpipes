@@ -88,6 +88,7 @@
         <v-list-item title="Activity" to="/inventory/activity" />
         <v-list-item title="Product" to="/inventory/product" />
         <v-list-item title="Ingredients" to="/inventory/ingredients" />
+        <v-list-item title="Lot Details" to="/inventory/lot-details" />
         <v-list-item title="Adjustments & Transfers" to="/inventory/adjustments-transfers" />
         <v-list-item title="Locations" to="/inventory/locations" />
       </v-list-group>

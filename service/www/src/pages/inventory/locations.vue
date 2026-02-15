@@ -46,7 +46,7 @@
           :loading="loading"
         >
           <template #item.location_type="{ item }">
-            {{ item.location_type || 'n/a' }}
+            {{ item.location_type ? item.location_type.charAt(0).toUpperCase() + item.location_type.slice(1) : 'n/a' }}
           </template>
           <template #item.description="{ item }">
             {{ item.description || 'n/a' }}

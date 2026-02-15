@@ -20,6 +20,8 @@ type TransferRecord struct {
 	LossUnit          *string
 	StartedAt         time.Time
 	EndedAt           *time.Time
+	CloseSource       bool    // whether to close the source occupancy
+	DestStatus        *string // status for the destination occupancy
 }
 
 func (c *Client) CreateTransfer(ctx context.Context, transfer Transfer) (Transfer, error) {
@@ -165,19 +167,22 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 		_ = tx.Rollback(ctx)
 	}()
 
-	var updatedID int64
-	if err := tx.QueryRow(ctx, `
-		UPDATE occupancy
-		SET out_at = $1, updated_at = timezone('utc', now())
-		WHERE id = $2 AND deleted_at IS NULL
-		RETURNING id`,
-		outAt,
-		record.SourceOccupancyID,
-	).Scan(&updatedID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return Transfer{}, Occupancy{}, service.ErrNotFound
+	// Only close the source occupancy if requested
+	if record.CloseSource {
+		var updatedID int64
+		if err := tx.QueryRow(ctx, `
+			UPDATE occupancy
+			SET out_at = $1, updated_at = timezone('utc', now())
+			WHERE id = $2 AND deleted_at IS NULL
+			RETURNING id`,
+			outAt,
+			record.SourceOccupancyID,
+		).Scan(&updatedID); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return Transfer{}, Occupancy{}, service.ErrNotFound
+			}
+			return Transfer{}, Occupancy{}, fmt.Errorf("updating source occupancy: %w", err)
 		}
-		return Transfer{}, Occupancy{}, fmt.Errorf("updating source occupancy: %w", err)
 	}
 
 	var dest Occupancy
@@ -185,12 +190,14 @@ func (c *Client) RecordTransfer(ctx context.Context, record TransferRecord) (Tra
 		INSERT INTO occupancy (
 			vessel_id,
 			volume_id,
-			in_at
-		) VALUES ($1, $2, $3)
+			in_at,
+			status
+		) VALUES ($1, $2, $3, $4)
 		RETURNING id, uuid, vessel_id, volume_id, in_at, out_at, status, created_at, updated_at, deleted_at`,
 		record.DestVesselID,
 		record.VolumeID,
 		startedAt,
+		record.DestStatus,
 	).Scan(
 		&dest.ID,
 		&dest.UUID,

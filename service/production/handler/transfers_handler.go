@@ -76,6 +76,12 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 				startedAt = *req.StartedAt
 			}
 
+			// Default CloseSource to true if not specified (backward-compatible)
+			closeSource := true
+			if req.CloseSource != nil {
+				closeSource = *req.CloseSource
+			}
+
 			record := storage.TransferRecord{
 				SourceOccupancyID: sourceOcc.ID,
 				DestVesselID:      destVessel.ID,
@@ -86,6 +92,8 @@ func HandleTransfers(db TransferStore) http.HandlerFunc {
 				LossUnit:          req.LossUnit,
 				StartedAt:         startedAt,
 				EndedAt:           req.EndedAt,
+				CloseSource:       closeSource,
+				DestStatus:        req.DestStatus,
 			}
 
 			transfer, occupancy, err := db.RecordTransfer(r.Context(), record)

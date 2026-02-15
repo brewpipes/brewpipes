@@ -23,6 +23,7 @@ declare module 'vue-router/auto-routes' {
     '/batches/[uuid]/': RouteRecordInfo<'/batches/[uuid]/', '/batches/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     '/batches/all': RouteRecordInfo<'/batches/all', '/batches/all', Record<never, never>, Record<never, never>>,
     '/batches/in-progress': RouteRecordInfo<'/batches/in-progress', '/batches/in-progress', Record<never, never>, Record<never, never>>,
+    '/fermentation': RouteRecordInfo<'/fermentation', '/fermentation', Record<never, never>, Record<never, never>>,
     '/inventory/activity': RouteRecordInfo<'/inventory/activity', '/inventory/activity', Record<never, never>, Record<never, never>>,
     '/inventory/adjustments-transfers': RouteRecordInfo<'/inventory/adjustments-transfers', '/inventory/adjustments-transfers', Record<never, never>, Record<never, never>>,
     '/inventory/ingredients': RouteRecordInfo<'/inventory/ingredients', '/inventory/ingredients', Record<never, never>, Record<never, never>>,
@@ -76,6 +77,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/batches/in-progress.vue': {
       routes: '/batches/in-progress'
+      views: never
+    }
+    'src/pages/fermentation.vue': {
+      routes: '/fermentation'
       views: never
     }
     'src/pages/inventory/activity.vue': {

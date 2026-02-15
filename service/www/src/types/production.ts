@@ -494,6 +494,159 @@ export interface Occupancy {
 }
 
 // ============================================================================
+// Transfer Types
+// ============================================================================
+
+/** A transfer of liquid between vessel occupancies */
+export interface Transfer {
+  uuid: string
+  source_occupancy_uuid: string
+  dest_occupancy_uuid: string
+  amount: number
+  amount_unit: string
+  loss_amount: number | null
+  loss_unit: string | null
+  started_at: string
+  ended_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a new transfer */
+export interface CreateTransferRequest {
+  source_occupancy_uuid: string
+  dest_vessel_uuid: string
+  volume_uuid: string
+  amount: number
+  amount_unit: string
+  loss_amount?: number
+  loss_unit?: string
+  started_at?: string
+  ended_at?: string
+  close_source?: boolean
+  dest_status?: OccupancyStatus
+}
+
+/** Response from creating a transfer, includes the new destination occupancy */
+export interface TransferRecordResponse {
+  transfer: Transfer
+  dest_occupancy: Occupancy
+}
+
+// ============================================================================
+// Batch Process Phase Types
+// ============================================================================
+
+/** Process phase of a batch (e.g. mashing, fermenting, conditioning) */
+export type ProcessPhase
+  = | 'planning'
+    | 'mashing'
+    | 'heating'
+    | 'boiling'
+    | 'cooling'
+    | 'fermenting'
+    | 'conditioning'
+    | 'packaging'
+    | 'finished'
+
+/** A batch process phase record tracking when a batch entered a phase */
+export interface BatchProcessPhase {
+  uuid: string
+  batch_uuid: string
+  process_phase: ProcessPhase
+  phase_at: string
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a new batch process phase */
+export interface CreateBatchProcessPhaseRequest {
+  batch_uuid: string
+  process_phase: string
+  phase_at?: string
+}
+
+// ============================================================================
+// Batch Volume Types
+// ============================================================================
+
+/** Liquid phase classification */
+export type LiquidPhase = 'water' | 'wort' | 'beer'
+
+/** A batch volume record linking a batch to a volume with a liquid phase */
+export interface BatchVolume {
+  uuid: string
+  batch_uuid: string
+  volume_uuid: string
+  liquid_phase: LiquidPhase
+  phase_at: string
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a new batch volume */
+export interface CreateBatchVolumeRequest {
+  batch_uuid: string
+  volume_uuid: string
+  liquid_phase: string
+  phase_at?: string
+}
+
+// ============================================================================
+// Volume Relation Types
+// ============================================================================
+
+/** Relation type between volumes */
+export type VolumeRelationType = 'split' | 'blend'
+
+/** A relation between two volumes (parent → child) */
+export interface VolumeRelation {
+  uuid: string
+  parent_volume_uuid: string
+  child_volume_uuid: string
+  relation_type: VolumeRelationType
+  amount: number
+  amount_unit: string
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a new volume relation */
+export interface CreateVolumeRelationRequest {
+  parent_volume_uuid: string
+  child_volume_uuid: string
+  relation_type: VolumeRelationType
+  amount: number
+  amount_unit: string
+}
+
+// ============================================================================
+// Batch Relation Types
+// ============================================================================
+
+/** Relation type between batches */
+export type BatchRelationType = 'split' | 'blend'
+
+/** A relation between two batches (parent → child) */
+export interface BatchRelation {
+  uuid: string
+  parent_batch_uuid: string
+  child_batch_uuid: string
+  relation_type: BatchRelationType
+  volume_uuid: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a new batch relation */
+export interface CreateBatchRelationRequest {
+  parent_batch_uuid: string
+  child_batch_uuid: string
+  relation_type: BatchRelationType
+  volume_uuid?: string
+}
+
+// ============================================================================
 // Batch Summary Types
 // ============================================================================
 

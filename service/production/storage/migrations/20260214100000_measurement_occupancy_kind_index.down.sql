@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_measurement_occupancy_kind_observed;

@@ -43,16 +43,24 @@
               <div class="text-body-1 font-weight-medium">
                 {{ summary.current_vessel }}
               </div>
-              <v-btn
-                v-if="summary.current_occupancy_uuid"
-                class="mt-2"
-                prepend-icon="mdi-flask-empty-outline"
-                size="small"
-                variant="text"
-                @click="emit('mark-empty')"
-              >
-                Mark Empty
-              </v-btn>
+              <div v-if="summary.current_occupancy_uuid" class="d-flex flex-wrap ga-1 mt-2">
+                <v-btn
+                  prepend-icon="mdi-arrow-right-bold"
+                  size="small"
+                  variant="text"
+                  @click="emit('transfer')"
+                >
+                  Transfer
+                </v-btn>
+                <v-btn
+                  prepend-icon="mdi-flask-empty-outline"
+                  size="small"
+                  variant="text"
+                  @click="emit('mark-empty')"
+                >
+                  Mark Empty
+                </v-btn>
+              </div>
             </div>
             <div v-else class="mt-1">
               <div class="text-body-2 text-medium-emphasis mb-2">Not assigned</div>
@@ -292,6 +300,7 @@
     'occupancy-status-change': [occupancyUuid: string, status: OccupancyStatus]
     'assign-fermenter': []
     'mark-empty': []
+    'transfer': []
   }>()
 
   const { formatDateTime } = useFormatters()

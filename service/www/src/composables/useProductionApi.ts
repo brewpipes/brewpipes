@@ -1,15 +1,23 @@
 import type {
   Addition,
   Batch,
+  BatchProcessPhase,
+  BatchRelation,
   BatchSummary,
+  BatchVolume,
   BrewSession,
   CreateAdditionRequest,
+  CreateBatchProcessPhaseRequest,
+  CreateBatchRelationRequest,
+  CreateBatchVolumeRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
   CreateOccupancyRequest,
   CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,
+  CreateTransferRequest,
+  CreateVolumeRelationRequest,
   CreateVolumeRequest,
   Measurement,
   Occupancy,
@@ -17,6 +25,8 @@ import type {
   Recipe,
   RecipeIngredient,
   Style,
+  Transfer,
+  TransferRecordResponse,
   UpdateBatchRequest,
   UpdateBrewSessionRequest,
   UpdateRecipeIngredientRequest,
@@ -24,6 +34,7 @@ import type {
   UpdateVesselRequest,
   Vessel,
   Volume,
+  VolumeRelation,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
 import { formatDateTime } from '@/composables/useFormatters'
@@ -120,18 +131,26 @@ export function useProductionApi () {
       body: JSON.stringify(data),
     })
 
-  // Additions API (volume-targeted)
+  // Additions API
   const getAdditionsByVolume = (volumeUuid: string) =>
     request<Addition[]>(`/additions?volume_uuid=${volumeUuid}`)
+  const getAdditionsByBatch = (batchUuid: string) =>
+    request<Addition[]>(`/additions?batch_uuid=${batchUuid}`)
+  const getAdditionsByOccupancy = (occupancyUuid: string) =>
+    request<Addition[]>(`/additions?occupancy_uuid=${occupancyUuid}`)
   const createAddition = (data: CreateAdditionRequest) =>
     request<Addition>('/additions', {
       method: 'POST',
       body: JSON.stringify(data),
     })
 
-  // Measurements API (volume-targeted)
+  // Measurements API
   const getMeasurementsByVolume = (volumeUuid: string) =>
     request<Measurement[]>(`/measurements?volume_uuid=${volumeUuid}`)
+  const getMeasurementsByBatch = (batchUuid: string) =>
+    request<Measurement[]>(`/measurements?batch_uuid=${batchUuid}`)
+  const getMeasurementsByOccupancy = (occupancyUuid: string) =>
+    request<Measurement[]>(`/measurements?occupancy_uuid=${occupancyUuid}`)
   const createMeasurement = (data: CreateMeasurementRequest) =>
     request<Measurement>('/measurements', {
       method: 'POST',
@@ -181,6 +200,55 @@ export function useProductionApi () {
       method: 'PATCH',
       body: JSON.stringify(outAt ? { out_at: outAt } : {}),
     })
+  const getActiveOccupancyByVessel = (vesselUuid: string) =>
+    request<Occupancy>(`/occupancies/active?active_vessel_uuid=${vesselUuid}`)
+
+  // Transfers API
+  const getTransfers = (batchUuid: string) =>
+    request<Transfer[]>(`/transfers?batch_uuid=${batchUuid}`)
+  const getTransfer = (uuid: string) =>
+    request<Transfer>(`/transfers/${uuid}`)
+  const createTransfer = (data: CreateTransferRequest) =>
+    request<TransferRecordResponse>('/transfers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Batch Process Phases API
+  const getBatchProcessPhases = (batchUuid: string) =>
+    request<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batchUuid}`)
+  const createBatchProcessPhase = (data: CreateBatchProcessPhaseRequest) =>
+    request<BatchProcessPhase>('/batch-process-phases', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Batch Volumes API
+  const getBatchVolumes = (params?: string) =>
+    request<BatchVolume[]>(`/batch-volumes${params ? `?${params}` : ''}`)
+  const createBatchVolume = (data: CreateBatchVolumeRequest) =>
+    request<BatchVolume>('/batch-volumes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Volume Relations API
+  const getVolumeRelations = (params?: string) =>
+    request<VolumeRelation[]>(`/volume-relations${params ? `?${params}` : ''}`)
+  const createVolumeRelation = (data: CreateVolumeRelationRequest) =>
+    request<VolumeRelation>('/volume-relations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+
+  // Batch Relations API
+  const getBatchRelations = (params?: string) =>
+    request<BatchRelation[]>(`/batch-relations${params ? `?${params}` : ''}`)
+  const createBatchRelation = (data: CreateBatchRelationRequest) =>
+    request<BatchRelation>('/batch-relations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
 
   return {
     apiBase: productionApiBase,
@@ -221,9 +289,13 @@ export function useProductionApi () {
     updateBrewSession,
     // Additions
     getAdditionsByVolume,
+    getAdditionsByBatch,
+    getAdditionsByOccupancy,
     createAddition,
     // Measurements
     getMeasurementsByVolume,
+    getMeasurementsByBatch,
+    getMeasurementsByOccupancy,
     createMeasurement,
     // Batches
     getBatches,
@@ -239,5 +311,22 @@ export function useProductionApi () {
     createOccupancy,
     updateOccupancyStatus,
     closeOccupancy,
+    getActiveOccupancyByVessel,
+    // Transfers
+    getTransfers,
+    getTransfer,
+    createTransfer,
+    // Batch Process Phases
+    getBatchProcessPhases,
+    createBatchProcessPhase,
+    // Batch Volumes
+    getBatchVolumes,
+    createBatchVolume,
+    // Volume Relations
+    getVolumeRelations,
+    createVolumeRelation,
+    // Batch Relations
+    getBatchRelations,
+    createBatchRelation,
   }
 }

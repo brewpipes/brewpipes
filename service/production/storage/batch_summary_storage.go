@@ -26,6 +26,9 @@ type BatchSummary struct {
 	// Current vessel (from active occupancy of a batch volume)
 	CurrentVessel *Vessel
 
+	// Current occupancy UUID
+	CurrentOccupancyUUID *string
+
 	// Current occupancy status
 	CurrentOccupancyStatus *string
 
@@ -140,6 +143,8 @@ func (c *Client) GetBatchSummary(ctx context.Context, batchID int64) (BatchSumma
 		if occ.Occupancy.OutAt == nil {
 			summary.CurrentVessel = &occ.Vessel
 			summary.CurrentOccupancyStatus = occ.Occupancy.Status
+			occUUID := occ.Occupancy.UUID.String()
+			summary.CurrentOccupancyUUID = &occUUID
 			break
 		}
 	}

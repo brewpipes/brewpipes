@@ -11,7 +11,7 @@ COPY service/www/ ./
 RUN pnpm build
 
 # Stage 2: Build Go binary
-FROM golang:1.25.5-alpine AS go-builder
+FROM golang:1.26.0-alpine AS go-builder
 WORKDIR /app
 # Copy go.mod and go.sum first for better caching
 COPY go.mod go.sum ./

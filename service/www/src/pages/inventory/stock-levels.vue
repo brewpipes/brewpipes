@@ -7,6 +7,16 @@
           Stock Levels
         </div>
         <v-btn
+          color="primary"
+          size="small"
+          variant="tonal"
+          @click="receiveDialogOpen = true"
+        >
+          <v-icon class="mr-1" icon="mdi-package-down" size="small" />
+          <span class="d-none d-sm-inline">Receive Stock</span>
+        </v-btn>
+        <v-btn
+          class="ml-2"
           :loading="loading"
           size="small"
           variant="text"
@@ -75,6 +85,11 @@
       </v-card-text>
     </v-card>
   </v-container>
+
+  <ReceiveWithoutPODialog
+    v-model="receiveDialogOpen"
+    @received="handleReceiveComplete"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -82,11 +97,16 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import StockLevelTable from '@/components/inventory/StockLevelTable.vue'
+  import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useInventoryApi } from '@/composables/useInventoryApi'
+  import { useSnackbar } from '@/composables/useSnackbar'
 
   const route = useRoute()
   const { getStockLevels } = useInventoryApi()
+  const { showNotice } = useSnackbar()
+
+  const receiveDialogOpen = ref(false)
 
   const categoryToTab: Record<string, string> = {
     fermentable: 'malt',
@@ -140,6 +160,11 @@
     if (match) {
       activeTab.value = categoryToTab[match.category] ?? 'malt'
     }
+  }
+
+  async function handleReceiveComplete () {
+    showNotice('Inventory received successfully', 'success')
+    await loadStockLevels()
   }
 </script>
 

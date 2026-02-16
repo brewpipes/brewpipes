@@ -100,12 +100,10 @@
             </template>
           </v-list-item>
         </template>
-        <v-list-item title="Receive Inventory" @click="openReceiveDialog" />
         <v-list-item title="Stock Levels" to="/inventory/stock-levels" />
         <v-list-item title="Activity" to="/inventory/activity" />
-        <v-list-item title="Product" to="/inventory/product" />
+        <v-list-item title="Finished Goods" to="/inventory/product" />
         <v-list-item title="Ingredients" to="/inventory/ingredients" />
-        <v-list-item title="Lot Details" to="/inventory/lot-details" />
         <v-list-item title="Adjustments & Transfers" to="/inventory/adjustments-transfers" />
         <v-list-item title="Removals" to="/inventory/removals" />
         <v-list-item title="Locations" to="/inventory/locations" />
@@ -120,8 +118,6 @@
         </template>
         <v-list-item title="Purchase orders" to="/procurement/purchase-orders" />
         <v-list-item title="Suppliers" to="/procurement/suppliers" />
-        <v-list-item title="Order Lines" to="/procurement/purchase-order-lines" />
-        <v-list-item title="Order Fees" to="/procurement/purchase-order-fees" />
       </v-list-group>
     </v-list>
   </v-navigation-drawer>
@@ -136,23 +132,18 @@
     {{ snackbar.text }}
   </v-snackbar>
 
-  <ReceiveWithoutPODialog
-    v-model="receiveDialogOpen"
-    @received="handleReceiveComplete"
-  />
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useDisplay, useTheme } from 'vuetify'
-  import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUserSettings } from '@/composables/useUserSettings'
   import { useAuthStore } from '@/stores/auth'
 
-  const { snackbar, showNotice } = useSnackbar()
+  const { snackbar } = useSnackbar()
 
   const authStore = useAuthStore()
   const router = useRouter()
@@ -168,7 +159,6 @@
   const themeStorageKey = 'brewpipes:theme'
   const userLabel = computed(() => authStore.username ?? 'Account')
   const lowStockCount = ref(0)
-  const receiveDialogOpen = ref(false)
 
   const navItems = [
     { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/' },
@@ -199,15 +189,6 @@
       // Silently fail - badge is non-critical
       lowStockCount.value = 0
     }
-  }
-
-  function openReceiveDialog () {
-    receiveDialogOpen.value = true
-  }
-
-  function handleReceiveComplete () {
-    receiveDialogOpen.value = false
-    showNotice('Inventory received successfully', 'success')
   }
 
   onMounted(() => {

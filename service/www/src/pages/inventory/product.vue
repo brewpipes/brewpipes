@@ -371,6 +371,7 @@
   import type { Batch, BeerLot, BeerLotStockLevel } from '@/types'
   import { computed, onMounted, ref } from 'vue'
   import BestByIndicator from '@/components/inventory/BestByIndicator.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { formatDate } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProductionApi } from '@/composables/useProductionApi'
@@ -387,9 +388,9 @@
   const batches = ref<Batch[]>([])
 
   // UI state
-  const loading = ref(false)
-  const errorMessage = ref('')
   const activeTab = ref('stock-levels')
+
+  const { execute, loading, error: errorMessage } = useAsyncAction()
   const searchQuery = ref('')
   const containerFilter = ref('all')
   const locationFilter = ref<string | null>(null)
@@ -498,7 +499,11 @@
       items = items.filter(item => item.stock_location_uuid === locationFilter.value)
     }
 
-    return items
+    // Add batch_name for Vuetify search (slot-rendered fields aren't searchable)
+    return items.map(item => ({
+      ...item,
+      batch_name: batchName(item.production_batch_uuid),
+    }))
   })
 
   // Mobile uses the same filtered list (search handled by v-data-table on desktop,
@@ -547,9 +552,7 @@
   })
 
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await execute(async () => {
       // Load inventory data and cross-service data in parallel
       const [stockLevelResult, beerLotResult, batchResult] = await Promise.allSettled([
         getBeerLotStockLevels(),
@@ -560,7 +563,7 @@
       if (stockLevelResult.status === 'fulfilled') {
         stockLevels.value = stockLevelResult.value
       } else {
-        errorMessage.value = 'Unable to load stock levels'
+        throw new Error('Unable to load stock levels')
       }
 
       if (beerLotResult.status === 'fulfilled') {
@@ -571,12 +574,7 @@
       if (batchResult.status === 'fulfilled') {
         batches.value = batchResult.value
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load finished goods'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 </script>
 

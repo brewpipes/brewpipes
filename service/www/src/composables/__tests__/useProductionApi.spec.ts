@@ -15,49 +15,6 @@ describe('useProductionApi', () => {
     vi.clearAllMocks()
   })
 
-  describe('utility functions', () => {
-    it('normalizeText trims whitespace and returns null for empty strings', () => {
-      const { normalizeText } = useProductionApi()
-
-      expect(normalizeText('  hello  ')).toBe('hello')
-      expect(normalizeText('test')).toBe('test')
-      expect(normalizeText('   ')).toBeNull()
-      expect(normalizeText('')).toBeNull()
-    })
-
-    it('normalizeDateTime converts to ISO string', () => {
-      const { normalizeDateTime } = useProductionApi()
-
-      const result = normalizeDateTime('2024-01-15T10:30:00')
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-
-      expect(normalizeDateTime('')).toBeNull()
-    })
-
-    it('toNumber parses numeric values correctly', () => {
-      const { toNumber } = useProductionApi()
-
-      expect(toNumber('42')).toBe(42)
-      expect(toNumber(42)).toBe(42)
-      expect(toNumber('3.14')).toBe(3.14)
-      expect(toNumber('')).toBeNull()
-      expect(toNumber(null)).toBeNull()
-      expect(toNumber('not a number')).toBeNull()
-    })
-
-    it('formatDateTime formats dates correctly', () => {
-      const { formatDateTime } = useProductionApi()
-
-      // Test with a valid date
-      const result = formatDateTime('2024-01-15T10:30:00Z')
-      expect(result).toContain('2024')
-
-      expect(formatDateTime(null)).toBe('Unknown')
-      expect(formatDateTime(undefined)).toBe('Unknown')
-      expect(formatDateTime('')).toBe('Unknown')
-    })
-  })
-
   describe('Styles API', () => {
     it('getStyles calls correct endpoint', async () => {
       mockRequest.mockResolvedValue([{ uuid: 'style-uuid-1', name: 'IPA' }])
@@ -339,6 +296,49 @@ describe('useProductionApi', () => {
 
       expect(mockRequest).toHaveBeenCalledWith('/batches/batch-uuid-1/summary')
       expect(result).toEqual(summary)
+    })
+  })
+
+  describe('Batch Costs API', () => {
+    it('getBatchCosts calls correct endpoint with uuid', async () => {
+      const costsResponse = {
+        batch_uuid: 'batch-uuid-1',
+        currency: 'USD',
+        line_items: [
+          {
+            addition_uuid: 'add-uuid-1',
+            ingredient_lot_uuid: 'lot-uuid-1',
+            ingredient_uuid: 'ing-uuid-1',
+            ingredient_name: '2-Row Pale Malt',
+            ingredient_category: 'malt',
+            lot_code: 'LOT-001',
+            addition_type: 'malt',
+            amount_used: 500,
+            amount_unit: 'lb',
+            unit_cost_cents: 55,
+            unit_cost_unit: 'lb',
+            cost_cents: 27500,
+            cost_source: 'purchase_order',
+            purchase_order_line_uuid: 'pol-uuid-1',
+          },
+        ],
+        uncosted_additions: [],
+        totals: {
+          total_cost_cents: 27500,
+          costed_line_count: 1,
+          uncosted_line_count: 0,
+          cost_complete: true,
+          cost_per_bbl_cents: 3929,
+          batch_volume_bbl: 7,
+        },
+      }
+      mockRequest.mockResolvedValue(costsResponse)
+
+      const { getBatchCosts } = useProductionApi()
+      const result = await getBatchCosts('batch-uuid-1')
+
+      expect(mockRequest).toHaveBeenCalledWith('/batches/batch-uuid-1/costs')
+      expect(result).toEqual(costsResponse)
     })
   })
 

@@ -1,4 +1,6 @@
 import type {
+  CreatePurchaseOrderFeeRequest,
+  CreatePurchaseOrderLineRequest,
   CreatePurchaseOrderRequest,
   PurchaseOrder,
   PurchaseOrderFee,
@@ -10,8 +12,6 @@ import type {
   UpdateSupplierRequest,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
-import { formatDateTime } from '@/composables/useFormatters'
-import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
 const procurementApiBase = import.meta.env.VITE_PROCUREMENT_API_URL ?? '/api'
 
@@ -70,7 +70,7 @@ export function useProcurementApi () {
     const path = query.toString() ? `/purchase-order-lines?${query.toString()}` : '/purchase-order-lines'
     return request<PurchaseOrderLine[]>(path)
   }
-  const createPurchaseOrderLine = (data: Record<string, unknown>) =>
+  const createPurchaseOrderLine = (data: CreatePurchaseOrderLineRequest) =>
     request<PurchaseOrderLine>('/purchase-order-lines', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -94,7 +94,7 @@ export function useProcurementApi () {
     const path = query.toString() ? `/purchase-order-fees?${query.toString()}` : '/purchase-order-fees'
     return request<PurchaseOrderFee[]>(path)
   }
-  const createPurchaseOrderFee = (data: Record<string, unknown>) =>
+  const createPurchaseOrderFee = (data: CreatePurchaseOrderFeeRequest) =>
     request<PurchaseOrderFee>('/purchase-order-fees', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -112,10 +112,6 @@ export function useProcurementApi () {
   return {
     apiBase: procurementApiBase,
     request,
-    normalizeText,
-    normalizeDateTime,
-    toNumber,
-    formatDateTime,
     formatCurrency,
     // Suppliers
     getSuppliers,

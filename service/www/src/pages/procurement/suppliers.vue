@@ -79,67 +79,23 @@
   </v-container>
 
   <!-- Create/Edit Supplier Dialog -->
-  <v-dialog v-model="supplierDialog" :max-width="$vuetify.display.xs ? '100%' : 720" persistent>
-    <v-card>
-      <v-card-title class="text-h6">
-        {{ isEditing ? 'Edit supplier' : 'Create supplier' }}
-      </v-card-title>
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.name" label="Name" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.contact_name" label="Contact name" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.email" label="Email" type="email" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.phone" label="Phone" type="tel" />
-          </v-col>
-          <v-col cols="12">
-            <v-text-field v-model="supplierForm.address_line1" label="Address line 1" />
-          </v-col>
-          <v-col cols="12">
-            <v-text-field v-model="supplierForm.address_line2" label="Address line 2" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.city" label="City" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.region" label="Region" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.postal_code" label="Postal code" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="supplierForm.country" label="Country" />
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeSupplierDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!supplierForm.name.trim()"
-          :loading="saving"
-          @click="saveSupplier"
-        >
-          {{ isEditing ? 'Save changes' : 'Add supplier' }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <SupplierCreateEditDialog
+    v-model="supplierDialog"
+    :edit-supplier="editingSupplier"
+    :saving="saving"
+    @submit="saveSupplier"
+  />
 </template>
 
 <script lang="ts" setup>
   import type { Supplier } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { onMounted, ref } from 'vue'
+  import SupplierCreateEditDialog from '@/components/procurement/SupplierCreateEditDialog.vue'
+  import type { SupplierFormData } from '@/components/procurement/SupplierCreateEditDialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { formatDateTime } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { normalizeText } from '@/utils/normalize'
 
   const {
     getSuppliers,
@@ -159,29 +115,13 @@
 
   // State
   const suppliers = ref<Supplier[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
-  const errorMessage = ref('')
+
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving, error: saveError } = useAsyncAction()
 
   // Dialog state
   const supplierDialog = ref(false)
-  const editingSupplierUuid = ref<string | null>(null)
-
-  const supplierForm = reactive({
-    name: '',
-    contact_name: '',
-    email: '',
-    phone: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    region: '',
-    postal_code: '',
-    country: '',
-  })
-
-  // Computed
-  const isEditing = computed(() => editingSupplierUuid.value !== null)
+  const editingSupplier = ref<Supplier | null>(null)
 
   // Lifecycle
   onMounted(async () => {
@@ -189,96 +129,39 @@
   })
 
   // Methods
-  function resetForm () {
-    supplierForm.name = ''
-    supplierForm.contact_name = ''
-    supplierForm.email = ''
-    supplierForm.phone = ''
-    supplierForm.address_line1 = ''
-    supplierForm.address_line2 = ''
-    supplierForm.city = ''
-    supplierForm.region = ''
-    supplierForm.postal_code = ''
-    supplierForm.country = ''
-  }
-
   function openCreateDialog () {
-    editingSupplierUuid.value = null
-    resetForm()
+    editingSupplier.value = null
     supplierDialog.value = true
   }
 
   function openEditDialog (supplier: Supplier) {
-    editingSupplierUuid.value = supplier.uuid
-    supplierForm.name = supplier.name
-    supplierForm.contact_name = supplier.contact_name ?? ''
-    supplierForm.email = supplier.email ?? ''
-    supplierForm.phone = supplier.phone ?? ''
-    supplierForm.address_line1 = supplier.address_line1 ?? ''
-    supplierForm.address_line2 = supplier.address_line2 ?? ''
-    supplierForm.city = supplier.city ?? ''
-    supplierForm.region = supplier.region ?? ''
-    supplierForm.postal_code = supplier.postal_code ?? ''
-    supplierForm.country = supplier.country ?? ''
+    editingSupplier.value = supplier
     supplierDialog.value = true
   }
 
-  function closeSupplierDialog () {
-    supplierDialog.value = false
-    editingSupplierUuid.value = null
-  }
-
   async function loadSuppliers () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       suppliers.value = await getSuppliers()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load suppliers'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
-  async function saveSupplier () {
-    if (!supplierForm.name.trim()) {
-      return
-    }
-
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
-      const payload = {
-        name: supplierForm.name.trim(),
-        contact_name: normalizeText(supplierForm.contact_name),
-        email: normalizeText(supplierForm.email),
-        phone: normalizeText(supplierForm.phone),
-        address_line1: normalizeText(supplierForm.address_line1),
-        address_line2: normalizeText(supplierForm.address_line2),
-        city: normalizeText(supplierForm.city),
-        region: normalizeText(supplierForm.region),
-        postal_code: normalizeText(supplierForm.postal_code),
-        country: normalizeText(supplierForm.country),
-      }
-
-      if (isEditing.value && editingSupplierUuid.value) {
-        await updateSupplier(editingSupplierUuid.value, payload)
+  async function saveSupplier (data: SupplierFormData) {
+    await executeSave(async () => {
+      if (editingSupplier.value) {
+        await updateSupplier(editingSupplier.value.uuid, data)
         showNotice('Supplier updated')
       } else {
-        await createSupplier(payload)
+        await createSupplier(data)
         showNotice('Supplier created')
       }
 
-      closeSupplierDialog()
+      supplierDialog.value = false
+      editingSupplier.value = null
       await loadSuppliers()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save supplier'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
+    })
+    if (saveError.value) {
+      errorMessage.value = saveError.value
+      showNotice(saveError.value, 'error')
     }
   }
 </script>

@@ -82,6 +82,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import StockLevelTable from '@/components/inventory/StockLevelTable.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useInventoryApi } from '@/composables/useInventoryApi'
 
   const route = useRoute()
@@ -100,8 +101,8 @@
 
   const activeTab = ref('malt')
   const stockLevels = ref<StockLevel[]>([])
-  const loading = ref(false)
-  const errorMessage = ref('')
+
+  const { execute, loading, error: errorMessage } = useAsyncAction()
 
   // Category groupings
   const maltItems = computed(() =>
@@ -126,17 +127,10 @@
   })
 
   async function loadStockLevels () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await execute(async () => {
       stockLevels.value = await getStockLevels()
       autoSelectTab()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load stock levels'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   function autoSelectTab () {

@@ -40,6 +40,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodPost, Path: "/purchase-orders", Handler: auth(handler.HandlePurchaseOrders(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-orders/{uuid}", Handler: auth(handler.HandlePurchaseOrderByUUID(s.storage))},
 		{Method: http.MethodPatch, Path: "/purchase-orders/{uuid}", Handler: auth(handler.HandlePurchaseOrderByUUID(s.storage))},
+		{Method: http.MethodPost, Path: "/purchase-order-lines/batch-lookup", Handler: auth(handler.HandleBatchLookupPurchaseOrderLines(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-order-lines", Handler: auth(handler.HandlePurchaseOrderLines(s.storage))},
 		{Method: http.MethodPost, Path: "/purchase-order-lines", Handler: auth(handler.HandlePurchaseOrderLines(s.storage))},
 		{Method: http.MethodGet, Path: "/purchase-order-lines/{uuid}", Handler: auth(handler.HandlePurchaseOrderLineByUUID(s.storage))},

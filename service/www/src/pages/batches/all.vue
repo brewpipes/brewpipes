@@ -147,73 +147,12 @@
   />
 
   <!-- Bulk Import Dialog -->
-  <v-dialog v-model="bulkImportDialog" :max-width="$vuetify.display.xs ? '100%' : 720">
-    <v-card>
-      <v-card-title class="text-h6">Bulk import batches</v-card-title>
-      <v-card-text>
-        <v-alert class="mb-4" density="compact" type="info" variant="tonal">
-          Expected columns: short_name (required), brew_date (optional), notes (optional).
-        </v-alert>
-
-        <v-file-input
-          v-model="importFile"
-          accept=".csv,text/csv"
-          density="comfortable"
-          label="CSV file"
-          placeholder="Select batch import CSV"
-          prepend-icon="mdi-file-delimited-outline"
-          show-size
-        />
-
-        <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
-          <div class="text-caption text-medium-emphasis">
-            Brew date format: YYYY-MM-DD.
-          </div>
-          <v-btn prepend-icon="mdi-download" size="small" variant="text" @click="downloadBatchTemplate">
-            Download template
-          </v-btn>
-        </div>
-
-        <v-alert
-          v-if="importSummary"
-          class="mb-3"
-          density="compact"
-          :type="importSummary.type"
-          variant="tonal"
-        >
-          {{ importSummary.message }}
-        </v-alert>
-
-        <v-table v-if="importErrors.length > 0" class="data-table" density="compact">
-          <thead>
-            <tr>
-              <th>Row</th>
-              <th>Issue</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(rowError, index) in importErrors" :key="index">
-              <td>{{ rowError.row ?? '-' }}</td>
-              <td>{{ rowError.message }}</td>
-            </tr>
-          </tbody>
-        </v-table>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="importUploading" variant="text" @click="bulkImportDialog = false">
-          Close
-        </v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!canImport"
-          :loading="importUploading"
-          @click="uploadBatchImport"
-        >
-          Upload
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <BulkImportDialog
+    ref="bulkImportDialogRef"
+    v-model="bulkImportDialog"
+    :saving="importUploading"
+    @submit="handleBulkImport"
+  />
 
   <!-- Edit Batch Dialog -->
   <BatchEditDialog
@@ -238,39 +177,16 @@
 
 <script lang="ts" setup>
   import type { Batch, Recipe, UpdateBatchRequest } from '@/types'
-  import { computed, onMounted, ref, watch } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { BatchCreateDialog, type BatchCreateForm, BatchDeleteDialog, BatchEditDialog, type BatchEditForm } from '@/components/batch'
+  import BulkImportDialog from '@/components/batch/BulkImportDialog.vue'
+  import type { BatchImportResponse } from '@/components/batch/BulkImportDialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { formatDate, formatDateTime, usePhaseFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { normalizeDateOnly, normalizeText } from '@/utils/normalize'
-
-  type ImportRowError = {
-    row: number | null
-    message: string
-  }
-
-  type BatchImportRowResult = {
-    row: number
-    status: 'created' | 'error'
-    error?: string | null
-    batch?: Batch
-  }
-
-  type BatchImportResponse = {
-    totals: {
-      total_rows: number
-      created: number
-      failed: number
-    }
-    results: BatchImportRowResult[]
-  }
-
-  type ImportSummary = {
-    message: string
-    type: 'success' | 'warning' | 'error'
-  }
 
   const router = useRouter()
   const { getBatches, createBatch: createBatchApi, getRecipes, updateBatch, deleteBatch, request } = useProductionApi()
@@ -280,32 +196,26 @@
   // State
   const batches = ref<Batch[]>([])
   const recipes = ref<Recipe[]>([])
-  const loading = ref(false)
-  const recipesLoading = ref(false)
-  const saving = ref(false)
-  const errorMessage = ref('')
   const search = ref('')
+
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving, error: saveError } = useAsyncAction()
+  const { execute: executeEdit, loading: savingBatchEdit, error: editBatchError } = useAsyncAction()
+  const { execute: executeDelete, loading: deletingBatch, error: deleteBatchError } = useAsyncAction()
+  const { execute: executeImport, loading: importUploading, error: importError } = useAsyncAction()
+  const { execute: executeLoadRecipes, loading: recipesLoading } = useAsyncAction({ onError: () => {} })
 
   // Dialogs
   const createBatchDialog = ref(false)
   const bulkImportDialog = ref(false)
+  const bulkImportDialogRef = ref<InstanceType<typeof BulkImportDialog> | null>(null)
 
   // Edit/Delete state
   const editBatchDialog = ref(false)
   const editingBatch = ref<Batch | null>(null)
-  const savingBatchEdit = ref(false)
-  const editBatchError = ref('')
 
   const deleteBatchDialog = ref(false)
   const deletingBatchItem = ref<Batch | null>(null)
-  const deletingBatch = ref(false)
-  const deleteBatchError = ref('')
-
-  // Import state
-  const importFile = ref<File | File[] | null>(null)
-  const importUploading = ref(false)
-  const importResult = ref<BatchImportResponse | null>(null)
-  const importErrors = ref<ImportRowError[]>([])
 
   // Table configuration
   const headers = [
@@ -316,29 +226,6 @@
     { title: 'Updated', key: 'updated_at', sortable: true },
     { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '100px' },
   ]
-
-  // Computed
-  const canImport = computed(() => Boolean(getSelectedImportFile()) && !importUploading.value)
-
-  const importSummary = computed<ImportSummary | null>(() => {
-    if (!importResult.value) {
-      return null
-    }
-    const successCount = getImportSuccessCount(importResult.value)
-    const failureCount = getImportFailureCount(importResult.value, importErrors.value)
-    const total = successCount + failureCount
-    const message
-      = total > 0
-        ? `Imported ${successCount} ${successCount === 1 ? 'batch' : 'batches'}, ${failureCount} failed.`
-        : 'Import completed.'
-    if (failureCount > 0 && successCount === 0) {
-      return { message, type: 'error' }
-    }
-    if (failureCount > 0) {
-      return { message, type: 'warning' }
-    }
-    return { message, type: 'success' }
-  })
 
   /**
    * Sort batches by:
@@ -393,45 +280,21 @@
     await Promise.all([loadBatches(), loadRecipes()])
   })
 
-  // Watch for import dialog close to reset state
-  watch(bulkImportDialog, isOpen => {
-    if (!isOpen) {
-      resetImportState()
-    }
-  })
-
-  watch(importFile, value => {
-    if (value) {
-      importResult.value = null
-      importErrors.value = []
-    }
-  })
-
   // Methods
   async function loadBatches () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       batches.value = await getBatches()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load batches'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      loading.value = false
+    })
+    if (errorMessage.value) {
+      showNotice(errorMessage.value, 'error')
     }
   }
 
   async function loadRecipes () {
-    recipesLoading.value = true
-    try {
+    // Recipe loading failure is non-critical
+    await executeLoadRecipes(async () => {
       recipes.value = await getRecipes()
-    } catch (error) {
-      // Recipe loading failure is non-critical
-      console.error('Failed to load recipes:', error)
-    } finally {
-      recipesLoading.value = false
-    }
+    })
   }
 
   function openCreateDialog () {
@@ -439,10 +302,7 @@
   }
 
   async function handleCreateBatch (form: BatchCreateForm) {
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
+    await executeSave(async () => {
       const payload = {
         short_name: form.short_name.trim(),
         brew_date: normalizeDateOnly(form.brew_date),
@@ -455,12 +315,10 @@
       showNotice('Batch created')
       createBatchDialog.value = false
       await loadBatches()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create batch'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
+    })
+    if (saveError.value) {
+      errorMessage.value = saveError.value
+      showNotice(saveError.value, 'error')
     }
   }
 
@@ -478,10 +336,7 @@
   async function saveBatchEdit (form: BatchEditForm) {
     if (!editingBatch.value) return
 
-    savingBatchEdit.value = true
-    editBatchError.value = ''
-
-    try {
+    await executeEdit(async () => {
       const payload: UpdateBatchRequest = {
         short_name: form.short_name.trim(),
         brew_date: form.brew_date ? normalizeDateOnly(form.brew_date) : null,
@@ -489,17 +344,12 @@
         notes: normalizeText(form.notes),
       }
 
-      await updateBatch(editingBatch.value.uuid, payload)
+      await updateBatch(editingBatch.value!.uuid, payload)
       showNotice('Batch updated')
       editBatchDialog.value = false
       editingBatch.value = null
       await loadBatches()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update batch'
-      editBatchError.value = message
-    } finally {
-      savingBatchEdit.value = false
-    }
+    })
   }
 
   function openDeleteDialog (batch: Batch) {
@@ -511,74 +361,29 @@
   async function confirmDeleteBatch () {
     if (!deletingBatchItem.value) return
 
-    deletingBatch.value = true
-    deleteBatchError.value = ''
-
-    try {
-      await deleteBatch(deletingBatchItem.value.uuid)
+    await executeDelete(async () => {
+      await deleteBatch(deletingBatchItem.value!.uuid)
       showNotice('Batch deleted')
       deleteBatchDialog.value = false
       deletingBatchItem.value = null
       await loadBatches()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete batch'
-      deleteBatchError.value = message
-    } finally {
-      deletingBatch.value = false
-    }
+    })
   }
 
   // Import functions
-  function getSelectedImportFile (): File | null {
-    if (!importFile.value) return null
-    return Array.isArray(importFile.value) ? importFile.value[0] ?? null : importFile.value
-  }
-
-  function resetImportState () {
-    importFile.value = null
-    importResult.value = null
-    importErrors.value = []
-  }
-
-  function getImportSuccessCount (response: BatchImportResponse): number {
-    return response.totals?.created ?? response.results.filter(r => r.status === 'created').length
-  }
-
-  function getImportFailureCount (response: BatchImportResponse, errors: ImportRowError[]): number {
-    const fromResponse = response.totals?.failed ?? response.results.filter(r => r.status === 'error').length
-    return fromResponse > 0 ? fromResponse : errors.length
-  }
-
-  function parseImportErrors (response: BatchImportResponse): ImportRowError[] {
-    return response.results
-      .filter(r => r.status === 'error')
-      .map(r => ({
-        row: r.row,
-        message: r.error ?? 'Unknown error',
-      }))
-  }
-
-  async function uploadBatchImport () {
-    const file = getSelectedImportFile()
-    if (!file) {
-      return
-    }
+  async function handleBulkImport (file: File) {
     errorMessage.value = ''
-    importUploading.value = true
-    importResult.value = null
-    importErrors.value = []
-    try {
-      const form = new FormData()
-      form.append('file', file)
+    await executeImport(async () => {
+      const formData = new FormData()
+      formData.append('file', file)
       const response = await request<BatchImportResponse>('/batches/import', {
         method: 'POST',
-        body: form,
+        body: formData,
         headers: new Headers(),
       })
-      importResult.value = response
-      importErrors.value = parseImportErrors(response)
-      const successCount = getImportSuccessCount(response)
-      const failureCount = getImportFailureCount(response, importErrors.value)
+      bulkImportDialogRef.value?.setImportResult(response)
+      const successCount = response.totals?.created ?? 0
+      const failureCount = response.totals?.failed ?? 0
       if (failureCount > 0) {
         const color = successCount > 0 ? 'warning' : 'error'
         showNotice(`Imported ${successCount} batches, ${failureCount} failed`, color)
@@ -586,24 +391,11 @@
         showNotice(`Imported ${successCount} ${successCount === 1 ? 'batch' : 'batches'}`)
       }
       await loadBatches()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Import failed'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      importUploading.value = false
+    })
+    if (importError.value) {
+      errorMessage.value = importError.value
+      showNotice(importError.value, 'error')
     }
-  }
-
-  function downloadBatchTemplate () {
-    const header = 'short_name,brew_date,notes\n'
-    const blob = new Blob([header], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'batch-import-template.csv'
-    link.click()
-    URL.revokeObjectURL(url)
   }
 
 </script>

@@ -118,17 +118,16 @@
 <script lang="ts" setup>
   import type { PurchaseOrder, PurchaseOrderLine } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
-  import { useRoute } from 'vue-router'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useLineItemTypeFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
+  import { normalizeText, toNumber } from '@/utils/normalize'
 
   const {
     getPurchaseOrders,
     getPurchaseOrderLines,
     createPurchaseOrderLine,
-    normalizeText,
-    toNumber,
     formatCurrency,
   } = useProcurementApi()
   const route = useRoute()
@@ -145,9 +144,9 @@
 
   const orders = ref<PurchaseOrder[]>([])
   const lines = ref<PurchaseOrderLine[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
-  const errorMessage = ref('')
+
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving, error: saveError } = useAsyncAction()
 
   const { lineItemTypeOptions: itemTypeOptions } = useLineItemTypeFormatters()
   const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
@@ -186,16 +185,9 @@
   })
 
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       await Promise.all([loadOrders(), loadLines()])
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load order lines'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   async function loadOrders () {
@@ -207,8 +199,7 @@
   }
 
   async function createLine () {
-    saving.value = true
-    try {
+    await executeSave(async () => {
       const payload = {
         purchase_order_uuid: lineForm.purchase_order_uuid,
         line_number: toNumber(lineForm.line_number),
@@ -232,12 +223,10 @@
       lineForm.currency = 'USD'
       await loadLines()
       showNotice('Order line created')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create order line'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
+    })
+    if (saveError.value) {
+      errorMessage.value = saveError.value
+      showNotice(saveError.value, 'error')
     }
   }
 

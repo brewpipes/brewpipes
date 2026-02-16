@@ -41,6 +41,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/inventory-receipts", Handler: auth(handler.HandleInventoryReceipts(s.storage))},
 		{Method: http.MethodPost, Path: "/inventory-receipts", Handler: auth(handler.HandleInventoryReceipts(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-receipts/{uuid}", Handler: auth(handler.HandleInventoryReceiptByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lots/batch", Handler: auth(handler.HandleBatchIngredientLots(s.storage))},
 		{Method: http.MethodGet, Path: "/ingredient-lots", Handler: auth(handler.HandleIngredientLots(s.storage))},
 		{Method: http.MethodPost, Path: "/ingredient-lots", Handler: auth(handler.HandleIngredientLots(s.storage))},
 		{Method: http.MethodGet, Path: "/ingredient-lots/{uuid}", Handler: auth(handler.HandleIngredientLotByUUID(s.storage))},

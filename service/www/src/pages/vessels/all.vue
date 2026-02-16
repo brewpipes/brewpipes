@@ -148,70 +148,20 @@
   />
 
   <!-- Create Vessel Dialog -->
-  <v-dialog v-model="createVesselDialog" :max-width="$vuetify.display.xs ? '100%' : 640" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Register vessel</v-card-title>
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-select
-              v-model="newVessel.type"
-              item-title="title"
-              item-value="value"
-              :items="vesselTypeOptions"
-              label="Type"
-            />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.name" label="Name" placeholder="FV-01" />
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-text-field v-model="newVessel.capacity" label="Capacity" :min="0" type="number" />
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="newVessel.capacity_unit"
-              :items="unitOptions"
-              label="Capacity unit"
-            />
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="newVessel.status"
-              item-title="title"
-              item-value="value"
-              :items="vesselStatusOptions"
-              label="Status"
-            />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.make" label="Make" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="newVessel.model" label="Model" />
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeCreateDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isFormValid"
-          :loading="saving"
-          @click="createVessel"
-        >
-          Add vessel
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <VesselCreateDialog
+    v-model="createVesselDialog"
+    :saving="saving"
+    @submit="handleCreateVessel"
+  />
 </template>
 
 <script lang="ts" setup>
-  import type { Batch, Occupancy, UpdateVesselRequest, Vessel, VesselStatus, VolumeUnit } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import type { Batch, CreateVesselRequest, Occupancy, UpdateVesselRequest, Vessel, VesselStatus } from '@/types'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import VesselCreateDialog from '@/components/vessel/VesselCreateDialog.vue'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import {
     useFormatters,
     useVesselStatusFormatters,
@@ -219,10 +169,8 @@
   } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { useUnitPreferences, volumeOptions } from '@/composables/useUnitPreferences'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { useVesselActions } from '@/composables/useVesselActions'
-  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
-  import { normalizeText, toNumber } from '@/utils/normalize'
 
   type BatchInfo = {
     uuid: string
@@ -236,47 +184,20 @@
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
   const { formatVesselType } = useVesselTypeFormatters()
 
-  const unitOptions = volumeOptions.map(opt => opt.value)
-
-  const vesselTypeOptions = computed(() =>
-    VESSEL_TYPE_VALUES.map(type => ({
-      value: type,
-      title: formatVesselType(type),
-    })),
-  )
-
-  const vesselStatusOptions = computed(() =>
-    VESSEL_STATUS_VALUES.map(status => ({
-      value: status,
-      title: formatVesselStatus(status),
-    })),
-  )
-
   // State
   const vessels = ref<Vessel[]>([])
   const occupancies = ref<Occupancy[]>([])
   const batches = ref<Batch[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
-  const errorMessage = ref('')
   const search = ref('')
+
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving, error: saveError } = useAsyncAction()
 
   // Dialog state
   const createVesselDialog = ref(false)
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
   const editingVessel = ref<Vessel | null>(null)
-
-  // Form state
-  const newVessel = reactive({
-    type: '',
-    name: '',
-    capacity: '',
-    capacity_unit: preferences.value.volume as VolumeUnit,
-    status: 'active',
-    make: '',
-    model: '',
-  })
 
   const { showNotice } = useSnackbar()
   const { saveVessel } = useVesselActions()
@@ -291,16 +212,6 @@
     { title: 'Updated', key: 'updated_at', sortable: true },
     { title: '', key: 'actions', sortable: false, align: 'end' as const, width: '100px' },
   ]
-
-  // Computed
-  const isFormValid = computed(() => {
-    const capacity = Number(newVessel.capacity)
-    return newVessel.type.trim().length > 0
-      && newVessel.name.trim().length > 0
-      && newVessel.capacity !== ''
-      && Number.isFinite(capacity)
-      && capacity > 0
-  })
 
   // Map vessel_uuid -> occupancy for quick lookup
   const occupancyMap = computed(
@@ -351,9 +262,7 @@
 
   // Methods
   async function refreshData () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       const [vesselData, occupancyData, batchData] = await Promise.all([
         getVessels(),
         getActiveOccupancies(),
@@ -362,12 +271,9 @@
       vessels.value = vesselData
       occupancies.value = occupancyData
       batches.value = batchData
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load data'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      loading.value = false
+    })
+    if (errorMessage.value) {
+      showNotice(errorMessage.value, 'error')
     }
   }
 
@@ -385,48 +291,20 @@
   }
 
   function openCreateDialog () {
-    newVessel.type = ''
-    newVessel.name = ''
-    newVessel.capacity = ''
-    newVessel.capacity_unit = preferences.value.volume
-    newVessel.status = 'active'
-    newVessel.make = ''
-    newVessel.model = ''
     createVesselDialog.value = true
   }
 
-  function closeCreateDialog () {
-    createVesselDialog.value = false
-  }
-
-  async function createVessel () {
-    if (!isFormValid.value) return
-
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
-      const payload = {
-        type: newVessel.type.trim(),
-        name: newVessel.name.trim(),
-        capacity: toNumber(newVessel.capacity),
-        capacity_unit: newVessel.capacity_unit,
-        status: newVessel.status,
-        make: normalizeText(newVessel.make),
-        model: normalizeText(newVessel.model),
-      }
-
-      await createVesselApi(payload)
+  async function handleCreateVessel (data: CreateVesselRequest) {
+    await executeSave(async () => {
+      await createVesselApi(data)
 
       showNotice('Vessel registered')
-      closeCreateDialog()
+      createVesselDialog.value = false
       await refreshData()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create vessel'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
+    })
+    if (saveError.value) {
+      errorMessage.value = saveError.value
+      showNotice(saveError.value, 'error')
     }
   }
 

@@ -1099,9 +1099,16 @@
     props.sourceVessel?.name ?? 'Unknown Vessel',
   )
 
-  const sourceBatchName = computed(() =>
-    props.sourceBatch?.short_name ?? `Batch ${props.sourceOccupancy?.batch_uuid?.slice(0, 8) ?? '—'}`,
-  )
+  const sourceBatchName = computed(() => {
+    if (props.sourceBatch?.short_name) return props.sourceBatch.short_name
+    // Try resolving from blend batch data if source batch prop is not available
+    const batchUuid = props.sourceOccupancy?.batch_uuid
+    if (batchUuid) {
+      const resolved = blendResolvedBatches.value.get(batchUuid)
+      if (resolved?.short_name) return resolved.short_name
+    }
+    return `Batch ${batchUuid?.slice(0, 8) ?? '—'}`
+  })
 
   const sourceDaysInTank = computed(() => {
     const occ = props.sourceOccupancy
@@ -1128,7 +1135,9 @@
       .map(occ => {
         const vessel = vesselMap.value.get(occ.vessel_uuid)
         return {
-          title: vessel ? `${vessel.name} · Batch ${occ.batch_uuid?.slice(0, 8) ?? '—'}` : `Vessel ${occ.vessel_uuid.slice(0, 8)}`,
+          title: vessel
+            ? `${vessel.name} · ${blendResolvedBatches.value.get(occ.batch_uuid!)?.short_name ?? `Batch ${occ.batch_uuid?.slice(0, 8) ?? '—'}`}`
+            : `Vessel ${occ.vessel_uuid.slice(0, 8)}`,
           value: occ.uuid,
           subtitle: vessel ? `${formatVesselType(vessel.type)}` : '',
         }

@@ -140,6 +140,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { BatchMarkEmptyDialog, PackagingDialog } from '@/components/batch'
   import { FermentationCard, QuickReadingSheet, TransferDialog } from '@/components/fermentation'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useProductionApi } from '@/composables/useProductionApi'
 
   /** Data for a single fermentation card */
@@ -161,9 +162,9 @@
     getMeasurementsByBatch,
   } = useProductionApi()
 
-  const loading = ref(false)
   const dataReady = ref(false)
-  const errorMessage = ref('')
+
+  const { execute, loading, error: errorMessage } = useAsyncAction()
 
   // Raw data
   const occupancies = ref<Occupancy[]>([])
@@ -293,10 +294,7 @@
   })
 
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-
-    try {
+    await execute(async () => {
       const [occupancyData, vesselData] = await Promise.all([
         getActiveOccupancies(),
         getVessels(),
@@ -340,12 +338,7 @@
       }
 
       dataReady.value = true
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load fermentation data'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   // Refresh measurements for a specific batch

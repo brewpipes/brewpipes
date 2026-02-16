@@ -3,9 +3,18 @@ import type {
   BeerLot,
   BeerLotStockLevel,
   CreateBatchUsageRequest,
+  CreateBeerLotRequest,
+  CreateIngredientLotHopDetailRequest,
+  CreateIngredientLotMaltDetailRequest,
   CreateIngredientLotRequest,
+  CreateIngredientLotYeastDetailRequest,
+  CreateIngredientRequest,
+  CreateInventoryAdjustmentRequest,
   CreateInventoryMovementRequest,
   CreateInventoryReceiptRequest,
+  CreateInventoryTransferRequest,
+  CreateInventoryUsageRequest,
+  CreateStockLocationRequest,
   Ingredient,
   IngredientLot,
   IngredientLotHopDetail,
@@ -18,10 +27,11 @@ import type {
   InventoryUsage,
   StockLevel,
   StockLocation,
+  UpdateIngredientLotHopDetailRequest,
+  UpdateIngredientLotMaltDetailRequest,
+  UpdateIngredientLotYeastDetailRequest,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
-import { formatDateTime } from '@/composables/useFormatters'
-import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
 const inventoryApiBase = import.meta.env.VITE_INVENTORY_API_URL ?? '/api'
 
@@ -37,7 +47,7 @@ export function useInventoryApi () {
 
   // Ingredients API
   const getIngredients = () => request<Ingredient[]>('/ingredients')
-  const createIngredient = (data: Record<string, unknown>) =>
+  const createIngredient = (data: CreateIngredientRequest) =>
     request<Ingredient>('/ingredients', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -56,7 +66,7 @@ export function useInventoryApi () {
     return request<IngredientLot[]>(path)
   }
   const getIngredientLot = (uuid: string) => request<IngredientLot>(`/ingredient-lots/${uuid}`)
-  const createIngredientLot = (data: CreateIngredientLotRequest | Record<string, unknown>) =>
+  const createIngredientLot = (data: CreateIngredientLotRequest) =>
     request<IngredientLot>('/ingredient-lots', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -65,36 +75,36 @@ export function useInventoryApi () {
   // Ingredient Lot Details API
   const getIngredientLotMaltDetail = (ingredientLotUuid: string) =>
     request<IngredientLotMaltDetail>(`/ingredient-lot-malt-details?ingredient_lot_uuid=${ingredientLotUuid}`)
-  const createIngredientLotMaltDetail = (data: Record<string, unknown>) =>
+  const createIngredientLotMaltDetail = (data: CreateIngredientLotMaltDetailRequest) =>
     request<IngredientLotMaltDetail>('/ingredient-lot-malt-details', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updateIngredientLotMaltDetail = (uuid: string, data: Record<string, unknown>) =>
+  const updateIngredientLotMaltDetail = (uuid: string, data: UpdateIngredientLotMaltDetailRequest) =>
     request<IngredientLotMaltDetail>(`/ingredient-lot-malt-details/${uuid}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   const getIngredientLotHopDetail = (ingredientLotUuid: string) =>
     request<IngredientLotHopDetail>(`/ingredient-lot-hop-details?ingredient_lot_uuid=${ingredientLotUuid}`)
-  const createIngredientLotHopDetail = (data: Record<string, unknown>) =>
+  const createIngredientLotHopDetail = (data: CreateIngredientLotHopDetailRequest) =>
     request<IngredientLotHopDetail>('/ingredient-lot-hop-details', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updateIngredientLotHopDetail = (uuid: string, data: Record<string, unknown>) =>
+  const updateIngredientLotHopDetail = (uuid: string, data: UpdateIngredientLotHopDetailRequest) =>
     request<IngredientLotHopDetail>(`/ingredient-lot-hop-details/${uuid}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   const getIngredientLotYeastDetail = (ingredientLotUuid: string) =>
     request<IngredientLotYeastDetail>(`/ingredient-lot-yeast-details?ingredient_lot_uuid=${ingredientLotUuid}`)
-  const createIngredientLotYeastDetail = (data: Record<string, unknown>) =>
+  const createIngredientLotYeastDetail = (data: CreateIngredientLotYeastDetailRequest) =>
     request<IngredientLotYeastDetail>('/ingredient-lot-yeast-details', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-  const updateIngredientLotYeastDetail = (uuid: string, data: Record<string, unknown>) =>
+  const updateIngredientLotYeastDetail = (uuid: string, data: UpdateIngredientLotYeastDetailRequest) =>
     request<IngredientLotYeastDetail>(`/ingredient-lot-yeast-details/${uuid}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -102,7 +112,7 @@ export function useInventoryApi () {
 
   // Stock Locations API
   const getStockLocations = () => request<StockLocation[]>('/stock-locations')
-  const createStockLocation = (data: Record<string, unknown>) =>
+  const createStockLocation = (data: CreateStockLocationRequest) =>
     request<StockLocation>('/stock-locations', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -110,7 +120,7 @@ export function useInventoryApi () {
 
   // Inventory Receipts API
   const getInventoryReceipts = () => request<InventoryReceipt[]>('/inventory-receipts')
-  const createInventoryReceipt = (data: CreateInventoryReceiptRequest | Record<string, unknown>) =>
+  const createInventoryReceipt = (data: CreateInventoryReceiptRequest) =>
     request<InventoryReceipt>('/inventory-receipts', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -118,7 +128,7 @@ export function useInventoryApi () {
 
   // Inventory Usages API
   const getInventoryUsages = () => request<InventoryUsage[]>('/inventory-usage')
-  const createInventoryUsage = (data: Record<string, unknown>) =>
+  const createInventoryUsage = (data: CreateInventoryUsageRequest) =>
     request<InventoryUsage>('/inventory-usage', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -133,7 +143,7 @@ export function useInventoryApi () {
 
   // Inventory Adjustments API
   const getInventoryAdjustments = () => request<InventoryAdjustment[]>('/inventory-adjustments')
-  const createInventoryAdjustment = (data: Record<string, unknown>) =>
+  const createInventoryAdjustment = (data: CreateInventoryAdjustmentRequest) =>
     request<InventoryAdjustment>('/inventory-adjustments', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -141,7 +151,7 @@ export function useInventoryApi () {
 
   // Inventory Transfers API
   const getInventoryTransfers = () => request<InventoryTransfer[]>('/inventory-transfers')
-  const createInventoryTransfer = (data: Record<string, unknown>) =>
+  const createInventoryTransfer = (data: CreateInventoryTransferRequest) =>
     request<InventoryTransfer>('/inventory-transfers', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -167,7 +177,7 @@ export function useInventoryApi () {
 
   // Beer Lots API
   const getBeerLots = () => request<BeerLot[]>('/beer-lots')
-  const createBeerLot = (data: Record<string, unknown>) =>
+  const createBeerLot = (data: CreateBeerLotRequest) =>
     request<BeerLot>('/beer-lots', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -182,10 +192,6 @@ export function useInventoryApi () {
   return {
     apiBase: inventoryApiBase,
     request,
-    normalizeText,
-    normalizeDateTime,
-    toNumber,
-    formatDateTime,
     formatAmount,
     // Ingredients
     getIngredients,

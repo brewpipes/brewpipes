@@ -38,6 +38,12 @@ Cross-domain references
 - The Procurement service stores external identifiers (e.g., inventory item UUIDs) without foreign keys.
 - This keeps the service deployable on its own database while preserving traceability.
 
+Batch Lookup
+- `POST /purchase-order-lines/batch-lookup` accepts a JSON body with `uuids` (array of PO line UUIDs, max 100) and returns matching PO line records.
+- Used by the Production service for batch cost calculation to avoid N individual lookups.
+- UUIDs not found are silently omitted from the response (not an error).
+- Returns the standard `PurchaseOrderLineResponse` shape for each matched line.
+
 ## User Journey: Procurement Manager
 
 Here is a simple procurement story that follows purchasing records, told in brewery terms.
@@ -64,6 +70,7 @@ In short:
 - Fees can be attached to a purchase order with fee type, amount, and currency.
 - Purchase orders can store expected arrival timestamps and notes for receiving coordination.
 - Procurement records retain traceability for inventory and production without shared tables or cross-service foreign keys.
+- Multiple purchase order lines can be looked up by UUID in a single call via `POST /purchase-order-lines/batch-lookup`, supporting efficient cross-service cost aggregation.
 
 ## API Convention: UUID-Only
 

@@ -63,54 +63,21 @@
   </v-container>
 
   <!-- Create Location Dialog -->
-  <v-dialog v-model="createDialog" :max-width="$vuetify.display.xs ? '100%' : 480" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Create stock location</v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="locationForm.name"
-          density="comfortable"
-          label="Name"
-          placeholder="Main warehouse"
-          :rules="[rules.required]"
-        />
-        <v-text-field
-          v-model="locationForm.location_type"
-          density="comfortable"
-          label="Location type"
-          placeholder="Warehouse, Cold storage, etc."
-        />
-        <v-textarea
-          v-model="locationForm.description"
-          auto-grow
-          density="comfortable"
-          label="Description"
-          placeholder="Additional details about this location..."
-          rows="2"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeCreateDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isFormValid"
-          :loading="saving"
-          @click="createLocation"
-        >
-          Create
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <LocationCreateDialog
+    v-model="createDialog"
+    :saving="saving"
+    @submit="handleCreateLocation"
+  />
 </template>
 
 <script lang="ts" setup>
-  import type { StockLocation } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import type { CreateStockLocationRequest, StockLocation } from '@/types'
+  import { onMounted, ref } from 'vue'
+  import LocationCreateDialog from '@/components/inventory/LocationCreateDialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { normalizeText } from '@/utils/normalize'
 
   const { getStockLocations, createStockLocation } = useInventoryApi()
   const { showNotice } = useSnackbar()
@@ -124,23 +91,11 @@
   ]
 
   const locations = ref<StockLocation[]>([])
-  const errorMessage = ref('')
-  const loading = ref(false)
-  const saving = ref(false)
   const createDialog = ref(false)
 
-  const locationForm = reactive({
-    name: '',
-    location_type: '',
-    description: '',
-  })
-
-  const rules = {
-    required: (v: string) => !!v?.trim() || 'Required',
-  }
-
-  const isFormValid = computed(() => {
-    return locationForm.name.trim().length > 0
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
   })
 
   onMounted(async () => {
@@ -148,53 +103,22 @@
   })
 
   function openCreateDialog () {
-    locationForm.name = ''
-    locationForm.location_type = ''
-    locationForm.description = ''
     createDialog.value = true
   }
 
-  function closeCreateDialog () {
-    createDialog.value = false
-  }
-
   async function loadLocations () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       locations.value = await getStockLocations()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load locations'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
-  async function createLocation () {
-    if (!isFormValid.value) {
-      return
-    }
-
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
-      const payload = {
-        name: locationForm.name.trim(),
-        location_type: normalizeText(locationForm.location_type),
-        description: normalizeText(locationForm.description),
-      }
-      await createStockLocation(payload)
-      closeCreateDialog()
+  async function handleCreateLocation (data: CreateStockLocationRequest) {
+    await executeSave(async () => {
+      await createStockLocation(data)
+      createDialog.value = false
       await loadLocations()
       showNotice('Stock location created')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create location'
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
-    }
+    })
   }
 </script>
 

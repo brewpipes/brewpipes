@@ -15,53 +15,8 @@ describe('useProcurementApi', () => {
     vi.clearAllMocks()
   })
 
-  describe('utility functions', () => {
-    it('normalizeText trims whitespace and returns null for empty strings', () => {
-      const { normalizeText } = useProcurementApi()
-
-      expect(normalizeText('  hello  ')).toBe('hello')
-      expect(normalizeText('test')).toBe('test')
-      expect(normalizeText('   ')).toBeNull()
-      expect(normalizeText('')).toBeNull()
-    })
-
-    it('normalizeDateTime converts to ISO string', () => {
-      const { normalizeDateTime } = useProcurementApi()
-
-      const result = normalizeDateTime('2024-01-15T10:30:00')
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-
-      expect(normalizeDateTime('')).toBeNull()
-    })
-
-    it('toNumber parses numeric values correctly', () => {
-      const { toNumber } = useProcurementApi()
-
-      expect(toNumber('42')).toBe(42)
-      expect(toNumber(42)).toBe(42)
-      expect(toNumber('3.14')).toBe(3.14)
-      expect(toNumber('0')).toBe(0)
-      expect(toNumber(0)).toBe(0)
-      expect(toNumber('')).toBeNull()
-      expect(toNumber(null)).toBeNull()
-      expect(toNumber('not a number')).toBeNull()
-      expect(toNumber('NaN')).toBeNull()
-      expect(toNumber('Infinity')).toBeNull()
-    })
-
-    it('formatDateTime formats dates correctly', () => {
-      const { formatDateTime } = useProcurementApi()
-
-      // Test with a valid date
-      const result = formatDateTime('2024-01-15T10:30:00Z')
-      expect(result).toContain('2024')
-
-      expect(formatDateTime(null)).toBe('Unknown')
-      expect(formatDateTime(undefined)).toBe('Unknown')
-      expect(formatDateTime('')).toBe('Unknown')
-    })
-
-    it('formatCurrency formats cents to currency string', () => {
+  describe('formatCurrency', () => {
+    it('formats cents to currency string', () => {
       const { formatCurrency } = useProcurementApi()
 
       expect(formatCurrency(1000, 'USD')).toBe('10.00 USD')
@@ -70,18 +25,38 @@ describe('useProcurementApi', () => {
       expect(formatCurrency(0, 'USD')).toBe('0.00 USD')
     })
 
-    it('formatCurrency handles null/undefined currency', () => {
+    it('handles null/undefined currency', () => {
       const { formatCurrency } = useProcurementApi()
 
       expect(formatCurrency(1000, null)).toBe('10.00')
       expect(formatCurrency(1000, undefined)).toBe('10.00')
     })
 
-    it('formatCurrency returns n/a for null/undefined cents', () => {
+    it('returns n/a for null/undefined cents', () => {
       const { formatCurrency } = useProcurementApi()
 
       expect(formatCurrency(null, 'USD')).toBe('n/a')
       expect(formatCurrency(undefined, 'USD')).toBe('n/a')
+    })
+
+    it('handles large amounts', () => {
+      const { formatCurrency } = useProcurementApi()
+
+      expect(formatCurrency(1_000_000, 'USD')).toBe('10000.00 USD')
+      expect(formatCurrency(123_456_789, 'USD')).toBe('1234567.89 USD')
+    })
+
+    it('handles small amounts', () => {
+      const { formatCurrency } = useProcurementApi()
+
+      expect(formatCurrency(1, 'USD')).toBe('0.01 USD')
+      expect(formatCurrency(5, 'EUR')).toBe('0.05 EUR')
+    })
+
+    it('handles zero correctly', () => {
+      const { formatCurrency } = useProcurementApi()
+
+      expect(formatCurrency(0, 'USD')).toBe('0.00 USD')
     })
   })
 
@@ -97,13 +72,9 @@ describe('useProcurementApi', () => {
       expect(typeof api.request).toBe('function')
     })
 
-    it('exposes all utility functions', () => {
+    it('exposes formatCurrency function', () => {
       const api = useProcurementApi()
 
-      expect(typeof api.normalizeText).toBe('function')
-      expect(typeof api.normalizeDateTime).toBe('function')
-      expect(typeof api.toNumber).toBe('function')
-      expect(typeof api.formatDateTime).toBe('function')
       expect(typeof api.formatCurrency).toBe('function')
     })
   })
@@ -216,43 +187,6 @@ describe('useProcurementApi', () => {
       const { request } = useProcurementApi()
 
       await expect(request('/purchase-orders')).rejects.toThrow('Unauthorized')
-    })
-  })
-
-  describe('edge cases', () => {
-    it('normalizeText handles strings with only whitespace characters', () => {
-      const { normalizeText } = useProcurementApi()
-
-      expect(normalizeText('\t\n\r ')).toBeNull()
-      expect(normalizeText('  \t  ')).toBeNull()
-    })
-
-    it('toNumber handles edge numeric cases', () => {
-      const { toNumber } = useProcurementApi()
-
-      expect(toNumber('-5')).toBe(-5)
-      expect(toNumber('0.001')).toBe(0.001)
-      expect(toNumber('1e10')).toBe(1e10)
-    })
-
-    it('formatCurrency handles large amounts', () => {
-      const { formatCurrency } = useProcurementApi()
-
-      expect(formatCurrency(1_000_000, 'USD')).toBe('10000.00 USD')
-      expect(formatCurrency(123_456_789, 'USD')).toBe('1234567.89 USD')
-    })
-
-    it('formatCurrency handles small amounts', () => {
-      const { formatCurrency } = useProcurementApi()
-
-      expect(formatCurrency(1, 'USD')).toBe('0.01 USD')
-      expect(formatCurrency(5, 'EUR')).toBe('0.05 EUR')
-    })
-
-    it('formatCurrency handles zero correctly', () => {
-      const { formatCurrency } = useProcurementApi()
-
-      expect(formatCurrency(0, 'USD')).toBe('0.00 USD')
     })
   })
 

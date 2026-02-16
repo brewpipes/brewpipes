@@ -236,6 +236,14 @@ export interface Batch {
   updated_at: string
 }
 
+/** Request payload for creating a new batch */
+export interface CreateBatchRequest {
+  short_name: string
+  brew_date?: string | null
+  notes?: string | null
+  recipe_uuid?: string | null
+}
+
 /** Request payload for updating an existing batch */
 export interface UpdateBatchRequest {
   short_name: string
@@ -294,6 +302,17 @@ export interface Vessel {
   created_at: string
   updated_at: string
   deleted_at: string | null
+}
+
+/** Request payload for creating a new vessel */
+export interface CreateVesselRequest {
+  type: VesselType
+  name: string
+  capacity: number
+  capacity_unit: VolumeUnit
+  make?: string | null
+  model?: string | null
+  status?: VesselStatus | null
 }
 
 /** Request payload for updating an existing vessel */
@@ -743,6 +762,62 @@ export interface CreatePackagingRunRequest {
   close_source?: boolean
   stock_location_uuid?: string
   lot_code_prefix?: string
+}
+
+// ============================================================================
+// Batch Cost Types
+// ============================================================================
+
+/** Source of cost data for a line item */
+export type CostSource = 'purchase_order' | 'unavailable'
+
+/** Reason an addition could not be costed */
+export type UncostedReason = 'no_inventory_lot' | 'non_ingredient'
+
+/** A single costed ingredient line item in a batch */
+export interface CostLineItem {
+  addition_uuid: string
+  ingredient_lot_uuid: string
+  ingredient_uuid: string | null
+  ingredient_name: string | null
+  ingredient_category: string | null
+  lot_code: string | null
+  addition_type: string
+  amount_used: number
+  amount_unit: string
+  unit_cost_cents: number | null
+  unit_cost_unit: string | null
+  cost_cents: number | null
+  cost_source: CostSource
+  purchase_order_line_uuid: string | null
+}
+
+/** An addition that could not be costed */
+export interface UncostedAddition {
+  addition_uuid: string
+  addition_type: string
+  amount_used: number
+  amount_unit: string
+  reason: UncostedReason
+}
+
+/** Aggregate cost totals for a batch */
+export interface CostTotals {
+  total_cost_cents: number
+  costed_line_count: number
+  uncosted_line_count: number
+  cost_complete: boolean
+  cost_per_bbl_cents: number | null
+  batch_volume_bbl: number | null
+}
+
+/** Full batch cost breakdown response */
+export interface BatchCostsResponse {
+  batch_uuid: string
+  currency: string | null
+  line_items: CostLineItem[]
+  uncosted_additions: UncostedAddition[]
+  totals: CostTotals
 }
 
 // ============================================================================

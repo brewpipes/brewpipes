@@ -238,14 +238,14 @@ func populateVolumeMetrics(resp *BatchSummaryResponse, summary *storage.BatchSum
 
 	// Calculate volumes in BBL
 	if startingVolume != nil {
-		bbl := convertToBBL(startingVolume.Volume.Amount, startingVolume.Volume.AmountUnit)
+		bbl := ConvertToBBL(startingVolume.Volume.Amount, startingVolume.Volume.AmountUnit)
 		if bbl != nil {
 			resp.StartingVolumeBBL = bbl
 		}
 	}
 
 	if currentVolume != nil {
-		bbl := convertToBBL(currentVolume.Volume.Amount, currentVolume.Volume.AmountUnit)
+		bbl := ConvertToBBL(currentVolume.Volume.Amount, currentVolume.Volume.AmountUnit)
 		if bbl != nil {
 			resp.CurrentVolumeBBL = bbl
 		}
@@ -255,7 +255,7 @@ func populateVolumeMetrics(resp *BatchSummaryResponse, summary *storage.BatchSum
 	var totalLossBBL float64
 	for _, transfer := range summary.Transfers {
 		if transfer.LossAmount != nil && transfer.LossUnit != nil {
-			loss := convertToBBL(*transfer.LossAmount, *transfer.LossUnit)
+			loss := ConvertToBBL(*transfer.LossAmount, *transfer.LossUnit)
 			if loss != nil {
 				totalLossBBL += *loss
 			}
@@ -275,9 +275,9 @@ func populateVolumeMetrics(resp *BatchSummaryResponse, summary *storage.BatchSum
 	}
 }
 
-// convertToBBL converts a volume amount to US barrels.
+// ConvertToBBL converts a volume amount to US barrels.
 // Returns nil if the unit is not supported.
-func convertToBBL(amount int64, unit string) *float64 {
+func ConvertToBBL(amount int64, unit string) *float64 {
 	const (
 		mlPerBBL     = 117347.77 // 31 gallons * 3785.41 ml/gallon
 		usFlOzPerBBL = 3968.0    // 31 gallons * 128 oz/gallon

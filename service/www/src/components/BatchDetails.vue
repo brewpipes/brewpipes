@@ -173,6 +173,7 @@
               @mark-empty="openMarkEmptyDialog"
               @occupancy-status-change="changeOccupancyStatus"
               @package="openPackagingDialog"
+              @record-removal="openRemovalDialog"
               @transfer="openTransferDialog"
             />
           </v-window-item>
@@ -390,6 +391,15 @@
     :source-volume="packagingVolume"
     @packaged="handlePackagingCompleted"
   />
+
+  <RemovalDialog
+    v-model="removalDialog"
+    :batch-name="selectedBatch?.short_name"
+    :batch-uuid="selectedBatch?.uuid"
+    default-category="dump"
+    :occupancy-uuid="batchSummary?.current_occupancy_uuid ?? undefined"
+    @created="handleRemovalCreated"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -455,6 +465,7 @@
     type Volume,
     type VolumeRelation,
   } from './batch'
+  import RemovalDialog from '@/components/removal/RemovalDialog.vue'
   import { FermentationCurve, TransferDialog } from './fermentation'
 
   // Props
@@ -672,6 +683,9 @@
   const packagingOccupancy = ref<Occupancy | null>(null)
   const packagingVessel = ref<Vessel | null>(null)
   const packagingVolume = ref<ProductionVolume | null>(null)
+
+  // Removal dialog state
+  const removalDialog = ref(false)
 
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
@@ -1710,6 +1724,18 @@
   }
 
   async function handlePackagingCompleted () {
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
+    }
+  }
+
+  // ==================== Removal Functions ====================
+
+  function openRemovalDialog () {
+    removalDialog.value = true
+  }
+
+  async function handleRemovalCreated () {
     if (props.batchUuid) {
       await loadBatchData(props.batchUuid)
     }

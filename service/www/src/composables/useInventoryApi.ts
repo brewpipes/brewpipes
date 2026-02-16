@@ -14,6 +14,7 @@ import type {
   CreateInventoryReceiptRequest,
   CreateInventoryTransferRequest,
   CreateInventoryUsageRequest,
+  CreateRemovalRequest,
   CreateStockLocationRequest,
   Ingredient,
   IngredientLot,
@@ -25,11 +26,14 @@ import type {
   InventoryReceipt,
   InventoryTransfer,
   InventoryUsage,
+  Removal,
+  RemovalSummary,
   StockLevel,
   StockLocation,
   UpdateIngredientLotHopDetailRequest,
   UpdateIngredientLotMaltDetailRequest,
   UpdateIngredientLotYeastDetailRequest,
+  UpdateRemovalRequest,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
 
@@ -189,6 +193,40 @@ export function useInventoryApi () {
   // Beer Lot Stock Levels API
   const getBeerLotStockLevels = () => request<BeerLotStockLevel[]>('/beer-lot-stock-levels')
 
+  // Removals API
+  const listRemovals = (params?: { batch_uuid?: string; beer_lot_uuid?: string; category?: string; from?: string; to?: string }) => {
+    const query = new URLSearchParams()
+    if (params?.batch_uuid) query.set('batch_uuid', params.batch_uuid)
+    if (params?.beer_lot_uuid) query.set('beer_lot_uuid', params.beer_lot_uuid)
+    if (params?.category) query.set('category', params.category)
+    if (params?.from) query.set('from', params.from)
+    if (params?.to) query.set('to', params.to)
+    const path = query.toString() ? `/removals?${query.toString()}` : '/removals'
+    return request<Removal[]>(path)
+  }
+  const getRemoval = (uuid: string) => request<Removal>(`/removals/${uuid}`)
+  const createRemoval = (data: CreateRemovalRequest) =>
+    request<Removal>('/removals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const updateRemoval = (uuid: string, data: UpdateRemovalRequest) =>
+    request<Removal>(`/removals/${uuid}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deleteRemoval = (uuid: string) =>
+    request<null>(`/removals/${uuid}`, {
+      method: 'DELETE',
+    })
+  const getRemovalSummary = (params?: { from?: string; to?: string }) => {
+    const query = new URLSearchParams()
+    if (params?.from) query.set('from', params.from)
+    if (params?.to) query.set('to', params.to)
+    const path = query.toString() ? `/removal-summary?${query.toString()}` : '/removal-summary'
+    return request<RemovalSummary>(path)
+  }
+
   return {
     apiBase: inventoryApiBase,
     request,
@@ -237,5 +275,12 @@ export function useInventoryApi () {
     getStockLevels,
     // Beer Lot Stock Levels
     getBeerLotStockLevels,
+    // Removals
+    listRemovals,
+    getRemoval,
+    createRemoval,
+    updateRemoval,
+    deleteRemoval,
+    getRemovalSummary,
   }
 }

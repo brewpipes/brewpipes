@@ -111,7 +111,7 @@ The frontend is served at all non-API routes with SPA fallback (unknown paths se
 ## Core entities (current)
 
 - Procurement: supplier, purchase_order, purchase_order_line, purchase_order_fee.
-- Inventory: ingredient, ingredient_*_detail, stock_location, inventory_receipt, ingredient_lot, inventory_usage, inventory_adjustment, inventory_transfer, inventory_movement, beer_lot.
+- Inventory: ingredient, ingredient_*_detail, stock_location, inventory_receipt, ingredient_lot, inventory_usage, inventory_adjustment, inventory_transfer, inventory_movement, beer_lot, inventory_removal.
 - Production: style, recipe, batch, brew_session, volume, volume_relation, vessel, occupancy, transfer, batch_volume, batch_process_phase, batch_relation, addition, measurement.
 
 ## Change posture
@@ -584,3 +584,50 @@ New "Costs" tab in batch detail view with:
 | Variable | Service | Default | Description |
 |----------|---------|---------|-------------|
 | `PROCUREMENT_API_URL` | Production | `http://localhost:8080/api` | Base URL for Procurement service API |
+
+## Implemented: Phase 8 — Removals & Compliance Prep
+
+### Overview
+
+Phase 8 enables tracking of beer removals from the production system — dumps, waste, spillage, sample pulls, and expired product destruction. This data supports future TTB (Alcohol and Tobacco Tax and Trade Bureau) compliance reporting by categorizing losses and computing taxable vs. tax-free volumes.
+
+### New entities
+
+**Inventory Removal** (Inventory) — Records beer leaving the production system with category (dump/waste/sample/expired/other), reason (13 sub-categories), amount with auto-calculated BBL equivalent, and TTB taxability flag. Cross-references Production batches and occupancies via opaque UUIDs, and Inventory beer lots via FK.
+
+### Removal categories
+
+| Category | Description | Taxable (V1) |
+|----------|-------------|--------------|
+| `dump` | Batch disposal (infection, off-flavor, failed fermentation) | No |
+| `waste` | Spillage, cleaning waste, accidental loss | No |
+| `sample` | QC pulls, tasting, competition entries | No |
+| `expired` | Destruction of past-date packaged beer | No |
+| `other` | Catch-all | No |
+
+### Inventory movement integration
+
+When a removal references a `beer_lot_uuid` (packaged beer in inventory), the system atomically creates an `inventory_movement` with `direction='out'` and `reason='removal'` to decrement beer lot stock. In-process removals (batch dumps via `batch_uuid`/`occupancy_uuid`) do not create movements because the beer is not yet in inventory.
+
+### New API endpoints
+
+| Method | Path | Service | Description |
+|--------|------|---------|-------------|
+| `POST` | `/api/removals` | Inventory | Create removal (with optional movement) |
+| `GET` | `/api/removals` | Inventory | List removals with filters |
+| `GET` | `/api/removals/{uuid}` | Inventory | Get single removal |
+| `PATCH` | `/api/removals/{uuid}` | Inventory | Update removal |
+| `DELETE` | `/api/removals/{uuid}` | Inventory | Soft-delete removal + movement |
+| `GET` | `/api/removal-summary` | Inventory | Aggregated summary for reporting |
+
+### Frontend components
+
+- **RemovalDialog** — 2-step wizard (details → review/confirm) for recording removals. Category selection with icons, filtered reason dropdown, amount with unit preferences. Accessible from 4 entry points.
+- **Removals page** — `/inventory/removals` with summary cards, date range filtering, sortable history table, and delete confirmation. Mobile card layout.
+
+### Entry points
+
+1. **Batch detail** — Summary tab "Record Removal" button (default: dump)
+2. **Fermentation dashboard** — Card overflow menu "Record Removal" (default: dump)
+3. **Product page** — Beer lot row action button (default: sample)
+4. **Removals page** — Standalone "Record Removal" button (no default)

@@ -10,7 +10,7 @@ The Inventory service models ingredients and consumables inventory: malt/ferment
 
 ## Overview
 
-The big picture: the system tracks ingredients from receiving, into storage, through usage, and into adjustments and transfers.
+The big picture: the system tracks ingredients from receiving, into storage, through usage, and into adjustments, transfers, and removals.
 
 ## Auth
 
@@ -46,7 +46,7 @@ Stock Location
 
 Inventory Movement
 - A movement is the append-only record of inventory changes.
-- Movements capture the amount, unit, timestamp, and a reason (receive, use, transfer, adjust, waste).
+- Movements capture the amount, unit, timestamp, and a reason (receive, use, transfer, adjust, waste, package, removal).
 
 Receipt
 - A receipt records receiving inventory from a supplier or a production transfer-in.
@@ -70,6 +70,20 @@ Transfer
 - The transfer is represented by paired movements (out from source, in to destination).
 - `POST /inventory-transfers` atomically creates the transfer record and two inventory movements (out from source, in to destination) in a single transaction.
 - The request accepts `ingredient_lot_uuid` or `beer_lot_uuid` (exactly one), `source_location_uuid`, `dest_location_uuid`, `amount` (positive), `amount_unit`, and optional `notes` and `transferred_at`.
+
+Removal
+- A removal records inventory that has been permanently removed from the system (dumps, waste, samples, expired product).
+- Removals reference at least one of: batch_uuid (in-process beer), beer_lot_id (packaged product), or occupancy_uuid (vessel occupancy).
+- Categories: dump, waste, sample, expired, other.
+- Reasons: infection, off_flavor, failed_fermentation, equipment_failure, quality_reject, past_date, damaged_package, spillage, cleaning, qc_sample, tasting, competition, other.
+- Amounts are stored in the original unit and converted to BBL (1 BBL = 31 US gal = 117.34777 L).
+- All V1 categories are `is_taxable = false`.
+- When a beer lot is referenced, `POST /removals` atomically creates the removal record and a corresponding inventory movement (`direction='out'`, `reason='removal'`) in a single transaction.
+- The removal and movement are cross-referenced: `inventory_removal.movement_id` ↔ `inventory_movement.removal_id`.
+- `PATCH /removals/{uuid}` supports partial updates; cannot change batch_uuid, beer_lot_uuid, occupancy_uuid, or stock_location_uuid.
+- `DELETE /removals/{uuid}` soft-deletes the removal and its linked movement.
+- `GET /removal-summary` returns aggregated BBL totals (total, taxable, tax-free) and per-category breakdowns.
+- List filters: batch_uuid, beer_lot_uuid, category, from (RFC3339), to (RFC3339).
 
 Beer Lot
 - A beer lot tracks finished product inventory and ties back to a production batch UUID.
@@ -100,7 +114,8 @@ In short:
 - receipts increase inventory,
 - usage reduces inventory,
 - adjustments reconcile reality,
-- transfers move stock between locations.
+- transfers move stock between locations,
+- removals permanently remove inventory (dumps, waste, samples, expired product).
 
 ## Acceptance Criteria
 
@@ -121,6 +136,9 @@ In short:
 - Beer lot stock levels can be queried via `GET /beer-lot-stock-levels`, showing current volume and derived quantity per lot per location.
 - A brewer can atomically deduct inventory for a batch's ingredient picks via `POST /inventory-usage/batch`, with per-pick stock validation and descriptive error messages on insufficient stock.
 - The system can return all ingredient lots consumed by a production batch via `GET /ingredient-lots/batch?production_ref_uuid={uuid}`, joining through usage records and movements to resolve lot and ingredient details.
+- Removals can be created, listed, retrieved, updated, and soft-deleted via `/removals` endpoints.
+- Removals with beer lot references atomically create inventory movements for stock deduction.
+- Removal summaries can be queried via `GET /removal-summary` with optional filters for reporting and TTB compliance.
 
 ## API Convention: UUID-Only
 

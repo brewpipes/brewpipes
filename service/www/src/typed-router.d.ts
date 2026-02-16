@@ -29,6 +29,7 @@ declare module 'vue-router/auto-routes' {
     '/inventory/locations': RouteRecordInfo<'/inventory/locations', '/inventory/locations', Record<never, never>, Record<never, never>>,
     '/inventory/lot-details': RouteRecordInfo<'/inventory/lot-details', '/inventory/lot-details', Record<never, never>, Record<never, never>>,
     '/inventory/product': RouteRecordInfo<'/inventory/product', '/inventory/product', Record<never, never>, Record<never, never>>,
+    '/inventory/removals': RouteRecordInfo<'/inventory/removals', '/inventory/removals', Record<never, never>, Record<never, never>>,
     '/inventory/stock-levels': RouteRecordInfo<'/inventory/stock-levels', '/inventory/stock-levels', Record<never, never>, Record<never, never>>,
     '/login': RouteRecordInfo<'/login', '/login', Record<never, never>, Record<never, never>>,
     '/procurement/': RouteRecordInfo<'/procurement/', '/procurement', Record<never, never>, Record<never, never>>,
@@ -100,6 +101,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/inventory/product.vue': {
       routes: '/inventory/product'
+      views: never
+    }
+    'src/pages/inventory/removals.vue': {
+      routes: '/inventory/removals'
       views: never
     }
     'src/pages/inventory/stock-levels.vue': {

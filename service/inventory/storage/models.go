@@ -63,6 +63,33 @@ const (
 	MovementReasonAdjust   = "adjust"
 	MovementReasonWaste    = "waste"
 	MovementReasonPackage  = "package"
+	MovementReasonRemoval  = "removal"
+)
+
+// Removal categories.
+const (
+	RemovalCategoryDump    = "dump"
+	RemovalCategoryWaste   = "waste"
+	RemovalCategorySample  = "sample"
+	RemovalCategoryExpired = "expired"
+	RemovalCategoryOther   = "other"
+)
+
+// Removal reasons.
+const (
+	RemovalReasonInfection          = "infection"
+	RemovalReasonOffFlavor          = "off_flavor"
+	RemovalReasonFailedFermentation = "failed_fermentation"
+	RemovalReasonEquipmentFailure   = "equipment_failure"
+	RemovalReasonQualityReject      = "quality_reject"
+	RemovalReasonPastDate           = "past_date"
+	RemovalReasonDamagedPackage     = "damaged_package"
+	RemovalReasonSpillage           = "spillage"
+	RemovalReasonCleaning           = "cleaning"
+	RemovalReasonQCSample           = "qc_sample"
+	RemovalReasonTasting            = "tasting"
+	RemovalReasonCompetition        = "competition"
+	RemovalReasonOther              = "other"
 )
 
 // Beer lot container types.
@@ -258,6 +285,30 @@ type BeerLotItem struct {
 	entity.Timestamps
 }
 
+type InventoryRemoval struct {
+	entity.Identifiers
+	Category      string
+	Reason        string
+	BatchUUID     *string
+	BeerLotID     *int64
+	BeerLotUUID   *string // Resolved from beer_lot table
+	OccupancyUUID *string
+	Amount        int64
+	AmountUnit    string
+	AmountBBL     *float64
+	IsTaxable     bool
+	ReferenceCode *string
+	PerformedBy   *string
+	RemovedAt     time.Time
+	Destination   *string
+	Notes         *string
+	MovementID    *int64
+	MovementUUID  *string // Resolved from inventory_movement table
+	// Stock location UUID resolved from the linked movement, if present.
+	StockLocationUUID *string
+	entity.Timestamps
+}
+
 type InventoryMovement struct {
 	entity.Identifiers
 	IngredientLotID   *int64
@@ -279,6 +330,8 @@ type InventoryMovement struct {
 	AdjustmentUUID    *string // Joined from inventory_adjustment table
 	TransferID        *int64
 	TransferUUID      *string // Joined from inventory_transfer table
+	RemovalID         *int64
+	RemovalUUID       *string // Joined from inventory_removal table
 	Notes             *string
 	entity.Timestamps
 }

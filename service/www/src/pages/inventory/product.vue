@@ -145,6 +145,18 @@
                   <BestByIndicator :best-by="item.best_by" />
                 </template>
 
+                <template #item.actions="{ item }">
+                  <v-btn
+                    aria-label="Record removal"
+                    color="error"
+                    density="compact"
+                    icon="mdi-delete-variant"
+                    size="small"
+                    variant="text"
+                    @click="openRemovalForLot(item)"
+                  />
+                </template>
+
                 <template #no-data>
                   <div class="text-center py-8 text-medium-emphasis">
                     <v-icon class="mb-2" icon="mdi-package-variant-closed" size="48" />
@@ -195,6 +207,15 @@
                     {{ batchName(item.production_batch_uuid) }}
                   </span>
                   <v-spacer />
+                  <v-btn
+                    aria-label="Record removal"
+                    color="error"
+                    density="compact"
+                    icon="mdi-delete-variant"
+                    size="x-small"
+                    variant="text"
+                    @click="openRemovalForLot(item)"
+                  />
                   <BestByIndicator :best-by="item.best_by" chip-only />
                 </v-card-title>
 
@@ -364,6 +385,17 @@
         </v-window>
       </v-card-text>
     </v-card>
+    <!-- Removal dialog -->
+    <RemovalDialog
+      v-model="showRemovalDialog"
+      :batch-name="removalBatchName"
+      :batch-uuid="removalBatchUuid"
+      :beer-lot-code="removalBeerLotCode"
+      :beer-lot-uuid="removalBeerLotUuid"
+      default-category="sample"
+      :stock-location-uuid="removalStockLocationUuid"
+      @created="handleRemovalCreated"
+    />
   </v-container>
 </template>
 
@@ -371,6 +403,7 @@
   import type { Batch, BeerLot, BeerLotStockLevel } from '@/types'
   import { computed, onMounted, ref } from 'vue'
   import BestByIndicator from '@/components/inventory/BestByIndicator.vue'
+  import RemovalDialog from '@/components/removal/RemovalDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import { formatDate } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
@@ -394,6 +427,14 @@
   const searchQuery = ref('')
   const containerFilter = ref('all')
   const locationFilter = ref<string | null>(null)
+
+  // Removal dialog state
+  const showRemovalDialog = ref(false)
+  const removalBeerLotUuid = ref<string | undefined>(undefined)
+  const removalBeerLotCode = ref<string | undefined>(undefined)
+  const removalBatchUuid = ref<string | undefined>(undefined)
+  const removalBatchName = ref<string | undefined>(undefined)
+  const removalStockLocationUuid = ref<string | undefined>(undefined)
 
   // Lookup maps
   const batchMap = computed(() =>
@@ -534,6 +575,7 @@
     { title: 'Location', key: 'stock_location_name', sortable: true },
     { title: 'Packaged', key: 'packaged_at', sortable: true },
     { title: 'Best By', key: 'best_by', sortable: true },
+    { title: '', key: 'actions', sortable: false, width: 48 },
   ]
 
   const allLotsHeaders = [
@@ -575,6 +617,20 @@
         batches.value = batchResult.value
       }
     })
+  }
+
+  // Removal dialog handlers
+  function openRemovalForLot (item: BeerLotStockLevel) {
+    removalBeerLotUuid.value = item.beer_lot_uuid
+    removalBeerLotCode.value = item.lot_code ?? undefined
+    removalBatchUuid.value = item.production_batch_uuid
+    removalBatchName.value = batchMap.value.get(item.production_batch_uuid)?.short_name ?? undefined
+    removalStockLocationUuid.value = item.stock_location_uuid
+    showRemovalDialog.value = true
+  }
+
+  function handleRemovalCreated () {
+    refreshAll()
   }
 </script>
 

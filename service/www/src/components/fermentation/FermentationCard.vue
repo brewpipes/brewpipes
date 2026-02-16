@@ -61,6 +61,11 @@
             @click="emit('package')"
           />
           <v-list-item
+            prepend-icon="mdi-delete-variant"
+            title="Record Removal"
+            @click="emit('recordRemoval')"
+          />
+          <v-list-item
             prepend-icon="mdi-flask-empty-outline"
             title="Mark Empty"
             @click="emit('markEmpty')"
@@ -197,6 +202,7 @@
     logReading: []
     markEmpty: []
     package: []
+    recordRemoval: []
     split: []
     statusChanged: []
     transfer: []

@@ -90,7 +90,43 @@ func validateMovementReason(reason string) error {
 		storage.MovementReasonUse,
 		storage.MovementReasonTransfer,
 		storage.MovementReasonAdjust,
-		storage.MovementReasonWaste:
+		storage.MovementReasonWaste,
+		storage.MovementReasonPackage,
+		storage.MovementReasonRemoval:
+		return nil
+	default:
+		return fmt.Errorf("invalid reason")
+	}
+}
+
+func validateRemovalCategory(category string) error {
+	switch category {
+	case storage.RemovalCategoryDump,
+		storage.RemovalCategoryWaste,
+		storage.RemovalCategorySample,
+		storage.RemovalCategoryExpired,
+		storage.RemovalCategoryOther:
+		return nil
+	default:
+		return fmt.Errorf("invalid category")
+	}
+}
+
+func validateRemovalReason(reason string) error {
+	switch reason {
+	case storage.RemovalReasonInfection,
+		storage.RemovalReasonOffFlavor,
+		storage.RemovalReasonFailedFermentation,
+		storage.RemovalReasonEquipmentFailure,
+		storage.RemovalReasonQualityReject,
+		storage.RemovalReasonPastDate,
+		storage.RemovalReasonDamagedPackage,
+		storage.RemovalReasonSpillage,
+		storage.RemovalReasonCleaning,
+		storage.RemovalReasonQCSample,
+		storage.RemovalReasonTasting,
+		storage.RemovalReasonCompetition,
+		storage.RemovalReasonOther:
 		return nil
 	default:
 		return fmt.Errorf("invalid reason")

@@ -75,6 +75,12 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodPost, Path: "/ingredient-lot-yeast-details", Handler: auth(handler.HandleIngredientLotYeastDetails(s.storage))},
 		{Method: http.MethodGet, Path: "/ingredient-lot-yeast-details/{uuid}", Handler: auth(handler.HandleIngredientLotYeastDetailByUUID(s.storage))},
 		{Method: http.MethodPut, Path: "/ingredient-lot-yeast-details/{uuid}", Handler: auth(handler.HandleIngredientLotYeastDetailByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/removals", Handler: auth(handler.HandleRemovals(s.storage))},
+		{Method: http.MethodPost, Path: "/removals", Handler: auth(handler.HandleRemovals(s.storage))},
+		{Method: http.MethodGet, Path: "/removals/{uuid}", Handler: auth(handler.HandleRemovalByUUID(s.storage))},
+		{Method: http.MethodPatch, Path: "/removals/{uuid}", Handler: auth(handler.HandleRemovalByUUID(s.storage))},
+		{Method: http.MethodDelete, Path: "/removals/{uuid}", Handler: auth(handler.HandleRemovalByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/removal-summary", Handler: auth(handler.HandleRemovalSummary(s.storage))},
 	}
 }
 

@@ -36,6 +36,7 @@ export type {
   CreateInventoryReceiptRequest,
   CreateInventoryTransferRequest,
   CreateInventoryUsageRequest,
+  CreateRemovalRequest,
   CreateStockLocationRequest,
   Ingredient,
   IngredientLot,
@@ -48,12 +49,18 @@ export type {
   InventoryTransfer,
   InventoryUsage,
   LineReceivingDetails,
+  Removal,
+  RemovalCategory,
+  RemovalCategorySummary,
+  RemovalReason,
+  RemovalSummary,
   StockLevel,
   StockLevelLocation,
   StockLocation,
   UpdateIngredientLotHopDetailRequest,
   UpdateIngredientLotMaltDetailRequest,
   UpdateIngredientLotYeastDetailRequest,
+  UpdateRemovalRequest,
 } from './inventory'
 
 // Procurement types

@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
-**Last Updated:** 2026-02-15  
-**Status:** Phase 7 Complete
+**Last Updated:** 2026-02-16  
+**Status:** Phase 8 Complete
 
 ---
 
@@ -383,12 +383,12 @@ Track brewhouse removals for future TTB compliance.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| REM-01 | Design removal tracking data model | M | 6 | Not Started |
-| REM-02 | Backend: Removal CRUD endpoints | M | 6 | Not Started |
-| REM-03 | Frontend: Record batch dump | S | 6 | Not Started |
-| REM-04 | Frontend: Record waste/spillage | S | 6 | Not Started |
-| REM-05 | Frontend: Record sample pulls | S | 6 | Not Started |
-| REM-06 | Removal history and reporting | M | 6 | Not Started |
+| REM-01 | Design removal tracking data model | M | 6 | **Complete** |
+| REM-02 | Backend: Removal CRUD endpoints | M | 6 | **Complete** |
+| REM-03 | Frontend: Record batch dump | S | 6 | **Complete** |
+| REM-04 | Frontend: Record waste/spillage | S | 6 | **Complete** |
+| REM-05 | Frontend: Record sample pulls | S | 6 | **Complete** |
+| REM-06 | Removal history and reporting | M | 6 | **Complete** |
 
 ---
 
@@ -406,7 +406,7 @@ Track brewhouse removals for future TTB compliance.
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | **Complete** |
 | **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | **Complete** |
 | **M7: Costing Complete** | Phase 7 complete (batch costing) | **Complete** |
-| **M8: V1 Alpha** | All phases complete, internal testing | Not Started |
+| **M8: V1 Alpha** | All phases complete, internal testing | **In Progress** |
 | **M9: V1 Beta** | External testing, bug fixes | Not Started |
 | **M10: V1 Release** | Production ready | Not Started |
 
@@ -461,6 +461,12 @@ Track brewhouse removals for future TTB compliance.
 | COST-02 | Backend: Calculate cost per barrel | 2026-02-16 |
 | COST-03 | Frontend: Batch cost breakdown view | 2026-02-16 |
 | COST-04 | Frontend: Actual vs. target comparison | 2026-02-16 |
+| REM-01 | Design removal tracking data model | 2026-02-16 |
+| REM-02 | Backend: Removal CRUD endpoints | 2026-02-16 |
+| REM-03 | Frontend: Record batch dump | 2026-02-16 |
+| REM-04 | Frontend: Record waste/spillage | 2026-02-16 |
+| REM-05 | Frontend: Record sample pulls | 2026-02-16 |
+| REM-06 | Removal history and reporting | 2026-02-16 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -531,6 +537,16 @@ Track brewhouse removals for future TTB compliance.
 - **Supporting Endpoints:** New `GET /ingredient-lots/batch` on Inventory service (batch lot lookup). New `POST /purchase-order-lines/batch-lookup` on Procurement service (batch PO line lookup). New `ProcurementClient` inter-service HTTP client on Production service.
 - **Infrastructure:** Second inter-service HTTP client (Production → Procurement). JWT pass-through for all cross-service calls. 543 frontend tests (1 new), 10 new backend handler tests.
 
+**Phase 8 Details:** Implemented removal tracking for TTB compliance preparation:
+- **Data Model (REM-01):** New `inventory_removal` table in Inventory service with category/reason classification, cross-service references (batch, beer lot, occupancy), BBL auto-conversion, and TTB taxability flag. Extended `inventory_movement` with `removal_id` FK and `removal` reason. 4 seed removals with 2 linked inventory movements.
+- **Backend CRUD (REM-02):** 6 endpoints: POST/GET/PATCH/DELETE for removals, GET for removal summary. Atomic transaction for beer lot removals (removal + inventory movement). Dynamic filter building for list queries. BBL conversion for 5 volume units.
+- **Record Batch Dump (REM-03):** RemovalDialog accessible from batch detail Summary tab. Pre-populates batch and occupancy context. Default category: dump.
+- **Record Waste/Spillage (REM-04):** Same RemovalDialog with waste category. Accessible from fermentation dashboard overflow menu.
+- **Record Sample Pulls (REM-05):** RemovalDialog accessible from product page beer lot rows. Pre-populates beer lot and stock location context. Default category: sample.
+- **Removal History (REM-06):** New `/inventory/removals` page with summary cards (total, dumps, waste, samples), date range filtering (month/quarter/year/all), sortable data table with category chips and batch links, delete with confirmation. Mobile card layout.
+- **Integration Points:** 4 entry points — batch detail, fermentation dashboard, product page, and standalone removals page. Shared removal constants extracted to `constants.ts`.
+- **Infrastructure:** 12 new frontend tests (555 total), new nav item in Inventory group, shared removal formatting constants.
+
 ### Deferred QA Items
 
 Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
@@ -582,7 +598,7 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 ### Backend Services
 - **Identity:** Authentication, JWT tokens, session management
 - **Production:** Batches, recipes, styles, vessels, occupancies, brew sessions, volumes, transfers, additions, measurements, process phases, package formats, packaging runs, batch cost aggregation
-- **Inventory:** Ingredients, lots, receipts, usage, adjustments, transfers, movements, stock locations, beer lots, beer lot stock levels
+- **Inventory:** Ingredients, lots, receipts, usage, adjustments, transfers, movements, stock locations, beer lots, beer lot stock levels, removals, removal summary
 - **Procurement:** Suppliers, purchase orders, line items, fees
 
 ### Frontend Screens
@@ -595,6 +611,7 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - Procurement (purchase orders with receiving workflow, suppliers)
 - Packaging run recording (3-step wizard from batch summary or fermentation dashboard)
 - Settings (brewery name, display units)
+- Removal tracking (history page with summary cards, record removal dialog from 4 entry points)
 
 ### Key Strengths
 - Comprehensive batch lifecycle tracking
@@ -604,8 +621,15 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - Polished UI with consistent design patterns
 - User display preferences (units)
 
-### Key Gaps (to be addressed in Phase 8)
-- No removal tracking
+### Key Gaps (to be addressed in V1 Alpha/Beta)
+- No remaining feature gaps — all V1 feature phases complete
+
+### Recently Addressed (Phase 8)
+- ✅ Removal tracking — complete CRUD with 5 categories and 13 reasons
+- ✅ TTB compliance prep — barrel auto-conversion, taxability flag, removal summary aggregation
+- ✅ Multi-entry-point UX — record removals from batch detail, fermentation dashboard, product page, or standalone page
+- ✅ Removal history — filterable history page with summary cards and date range filtering
+- ✅ Inventory integration — beer lot removals atomically create inventory movements
 
 ### Recently Addressed (Phase 7)
 - ✅ Batch cost tracking - ingredient cost aggregation from PO data via cross-service calls

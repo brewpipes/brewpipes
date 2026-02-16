@@ -78,6 +78,7 @@ declare module 'vue' {
     RecipeOverviewTab: typeof import('./components/recipe/RecipeOverviewTab.vue')['default']
     RecipeSpecsTab: typeof import('./components/recipe/RecipeSpecsTab.vue')['default']
     RecipeYeastTab: typeof import('./components/recipe/RecipeYeastTab.vue')['default']
+    RemovalDialog: typeof import('./components/removal/RemovalDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SankeyDiagram: typeof import('./components/SankeyDiagram.vue')['default']

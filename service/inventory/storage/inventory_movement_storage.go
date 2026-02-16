@@ -28,6 +28,9 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 	if movement.TransferID != nil {
 		referenceCount++
 	}
+	if movement.RemovalID != nil {
+		referenceCount++
+	}
 	if referenceCount > 1 {
 		return InventoryMovement{}, fmt.Errorf("inventory movement must have at most one reference")
 	}
@@ -48,6 +51,10 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 	case MovementReasonAdjust, MovementReasonWaste:
 		if movement.AdjustmentID == nil {
 			return InventoryMovement{}, fmt.Errorf("adjustment movement must reference adjustment")
+		}
+	case MovementReasonRemoval:
+		if movement.RemovalID == nil {
+			return InventoryMovement{}, fmt.Errorf("removal movement must reference removal")
 		}
 	}
 
@@ -70,9 +77,10 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 			usage_id,
 			adjustment_id,
 			transfer_id,
+			removal_id,
 			notes
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id, uuid, ingredient_lot_id, beer_lot_id, stock_location_id, direction, reason, amount, amount_unit, occurred_at, receipt_id, usage_id, adjustment_id, transfer_id, notes, created_at, updated_at, deleted_at`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		RETURNING id, uuid, ingredient_lot_id, beer_lot_id, stock_location_id, direction, reason, amount, amount_unit, occurred_at, receipt_id, usage_id, adjustment_id, transfer_id, removal_id, notes, created_at, updated_at, deleted_at`,
 		movement.IngredientLotID,
 		movement.BeerLotID,
 		movement.StockLocationID,
@@ -85,6 +93,7 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 		movement.UsageID,
 		movement.AdjustmentID,
 		movement.TransferID,
+		movement.RemovalID,
 		movement.Notes,
 	).Scan(
 		&movement.ID,
@@ -101,6 +110,7 @@ func (c *Client) CreateInventoryMovement(ctx context.Context, movement Inventory
 		&movement.UsageID,
 		&movement.AdjustmentID,
 		&movement.TransferID,
+		&movement.RemovalID,
 		&movement.Notes,
 		&movement.CreatedAt,
 		&movement.UpdatedAt,
@@ -175,6 +185,7 @@ const movementSelectSQL = `
 	       m.usage_id, us.uuid,
 	       m.adjustment_id, aj.uuid,
 	       m.transfer_id, tr.uuid,
+	       m.removal_id, rm.uuid,
 	       m.notes, m.created_at, m.updated_at, m.deleted_at
 	FROM inventory_movement m
 	LEFT JOIN ingredient_lot il ON il.id = m.ingredient_lot_id
@@ -184,6 +195,7 @@ const movementSelectSQL = `
 	LEFT JOIN inventory_usage us ON us.id = m.usage_id
 	LEFT JOIN inventory_adjustment aj ON aj.id = m.adjustment_id
 	LEFT JOIN inventory_transfer tr ON tr.id = m.transfer_id
+	LEFT JOIN inventory_removal rm ON rm.id = m.removal_id
 `
 
 func (c *Client) scanMovementRow(row pgx.Row) (InventoryMovement, error) {
@@ -210,6 +222,8 @@ func (c *Client) scanMovementRow(row pgx.Row) (InventoryMovement, error) {
 		&movement.AdjustmentUUID,
 		&movement.TransferID,
 		&movement.TransferUUID,
+		&movement.RemovalID,
+		&movement.RemovalUUID,
 		&movement.Notes,
 		&movement.CreatedAt,
 		&movement.UpdatedAt,
@@ -251,6 +265,8 @@ func (c *Client) scanMovementRows(rows pgx.Rows) ([]InventoryMovement, error) {
 			&movement.AdjustmentUUID,
 			&movement.TransferID,
 			&movement.TransferUUID,
+			&movement.RemovalID,
+			&movement.RemovalUUID,
 			&movement.Notes,
 			&movement.CreatedAt,
 			&movement.UpdatedAt,
@@ -320,6 +336,14 @@ func (c *Client) resolveMovementUUIDs(ctx context.Context, m *InventoryMovement)
 		var trUUID string
 		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_transfer WHERE id = $1`, *m.TransferID).Scan(&trUUID); err == nil {
 			m.TransferUUID = &trUUID
+		}
+	}
+
+	// Removal UUID (optional)
+	if m.RemovalID != nil {
+		var rmUUID string
+		if err := c.DB().QueryRow(ctx, `SELECT uuid FROM inventory_removal WHERE id = $1`, *m.RemovalID).Scan(&rmUUID); err == nil {
+			m.RemovalUUID = &rmUUID
 		}
 	}
 }

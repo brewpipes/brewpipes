@@ -75,6 +75,14 @@ Beer Lot
 - A beer lot tracks finished product inventory and ties back to a production batch UUID.
 - It supports traceability from packaged product back to the source batch.
 
+Batch Ingredient Lot Lookup
+- `GET /ingredient-lots/batch?production_ref_uuid={uuid}` returns all ingredient lots consumed by a specific production batch.
+- Joins through `inventory_usage` → `inventory_movement` → `ingredient_lot` → `ingredient` to resolve lot and ingredient details.
+- Returns `ingredient_lot_uuid`, `ingredient_uuid`, `ingredient_name`, `ingredient_category`, `brewery_lot_code`, `purchase_order_line_uuid`, and `received_unit`.
+- Uses `DISTINCT ON (il.uuid)` to deduplicate when multiple movements reference the same lot.
+- Returns empty array (not 404) when no matching lots are found.
+- Used by the Production service for batch cost calculation.
+
 ## User Journey: Inventory Manager
 
 Here is a simple inventory story that follows the inventory records, told in brewery terms.
@@ -112,6 +120,7 @@ In short:
 - Beer lots can be created with an initial inventory movement atomically when a stock location is provided (`POST /beer-lots` with `stock_location_uuid`).
 - Beer lot stock levels can be queried via `GET /beer-lot-stock-levels`, showing current volume and derived quantity per lot per location.
 - A brewer can atomically deduct inventory for a batch's ingredient picks via `POST /inventory-usage/batch`, with per-pick stock validation and descriptive error messages on insufficient stock.
+- The system can return all ingredient lots consumed by a production batch via `GET /ingredient-lots/batch?production_ref_uuid={uuid}`, joining through usage records and movements to resolve lot and ingredient details.
 
 ## API Convention: UUID-Only
 

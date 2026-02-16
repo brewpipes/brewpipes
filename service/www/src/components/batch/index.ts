@@ -4,6 +4,7 @@ export type { AdditionForm } from './BatchAdditionDialog.vue'
 export { default as BatchAdditionsTab } from './BatchAdditionsTab.vue'
 // Dialog components
 export { default as BatchAssignFermenterDialog } from './BatchAssignFermenterDialog.vue'
+export { default as BatchCostsTab } from './BatchCostsTab.vue'
 export { default as BatchBrewDayTab } from './BatchBrewDayTab.vue'
 export { default as BatchBrewSessionDialog } from './BatchBrewSessionDialog.vue'
 export type { BrewSessionForm } from './BatchBrewSessionDialog.vue'

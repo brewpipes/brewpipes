@@ -538,3 +538,49 @@ First backend-to-backend HTTP call in the system. Production service calls Inven
 - **PackagingDialog** — 3-step wizard for recording packaging runs (details → format lines → review)
 - **BestByIndicator** — Reusable component for best-by date display with expiry indicators
 - **Product page** — Redesigned with Stock Levels and All Lots tabs, container filtering, best-by indicators
+
+## Implemented: Phase 7 — Cost Tracking
+
+### Overview
+
+Phase 7 enables batch cost tracking by aggregating ingredient costs from procurement data. Brewers can see the full ingredient cost breakdown for any batch, cost per barrel, and compare actual batch metrics against recipe targets.
+
+### New endpoints
+
+| Method | Path | Service | Description |
+|--------|------|---------|-------------|
+| `GET` | `/api/batches/{uuid}/costs` | Production | Batch cost breakdown with cross-service aggregation |
+| `GET` | `/api/ingredient-lots/batch?production_ref_uuid={uuid}` | Inventory | Ingredient lots consumed by a batch |
+| `POST` | `/api/purchase-order-lines/batch-lookup` | Procurement | Batch lookup of PO lines by UUID |
+
+### Cross-service data flow
+
+```
+Production: batch → additions (inventory_lot_uuid)
+  → Inventory: ingredient_lot → purchase_order_line_uuid
+    → Procurement: purchase_order_line → unit_cost_cents
+```
+
+The Production service orchestrates two inter-service HTTP calls (Inventory + Procurement) with JWT pass-through to aggregate cost data into a single response.
+
+### Cost calculation
+
+- Per-ingredient cost: `addition.amount × po_line.unit_cost_cents` (when units match)
+- Cost per barrel: `total_cost_cents / starting_volume_bbl`
+- Unit mismatch handling: flagged as "unavailable" rather than silently computing wrong values
+- Mixed currency handling: individual costs shown, totals marked as "MIXED"
+
+### Frontend — Costs tab
+
+New "Costs" tab in batch detail view with:
+- Summary cards: total cost, cost/bbl, costing completeness status
+- Actual vs. target comparison: OG, FG, ABV, IBU, volume against recipe specs
+- Ingredient cost table: sorted by cost descending, with category chips and lot codes
+- Uncosted additions section: explains why certain items couldn't be costed
+- Mobile-responsive: card layouts on small screens, tables on desktop
+
+### Environment variables
+
+| Variable | Service | Default | Description |
+|----------|---------|---------|-------------|
+| `PROCUREMENT_API_URL` | Production | `http://localhost:8080/api` | Base URL for Procurement service API |

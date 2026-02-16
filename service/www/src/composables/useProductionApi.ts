@@ -1,6 +1,7 @@
 import type {
   Addition,
   Batch,
+  BatchCostsResponse,
   BatchProcessPhase,
   BatchRelation,
   BatchSummary,
@@ -185,6 +186,10 @@ export function useProductionApi () {
   const getBatchSummary = (uuid: string) =>
     request<BatchSummary>(`/batches/${uuid}/summary`)
 
+  // Batch Costs API
+  const getBatchCosts = (uuid: string) =>
+    request<BatchCostsResponse>(`/batches/${uuid}/costs`)
+
   // Occupancy API
   const getActiveOccupancies = () =>
     request<Occupancy[]>('/occupancies?active=true')
@@ -338,6 +343,8 @@ export function useProductionApi () {
     deleteBatch,
     // Batch Summary
     getBatchSummary,
+    // Batch Costs
+    getBatchCosts,
     // Occupancy
     getActiveOccupancies,
     getOccupancy,

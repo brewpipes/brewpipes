@@ -134,6 +134,7 @@
           <v-tab value="flow">Flow</v-tab>
           <v-tab value="measurements">Measurements</v-tab>
           <v-tab value="additions">Additions</v-tab>
+          <v-tab value="costs">Costs</v-tab>
         </v-tabs>
 
         <v-window v-model="activeTab" class="mt-4">
@@ -250,6 +251,16 @@
               v-if="activeTab === 'additions'"
               :additions="additions"
               @create="createAdditionDialog = true"
+            />
+          </v-window-item>
+
+          <v-window-item value="costs">
+            <BatchCostsTab
+              v-if="activeTab === 'costs' && selectedBatch"
+              :batch-uuid="selectedBatch.uuid"
+              :recipe="batchRecipe"
+              :recipe-loading="!!selectedBatch.recipe_uuid && !batchRecipe"
+              :summary="batchSummary"
             />
           </v-window-item>
         </v-window>
@@ -417,6 +428,7 @@
     BatchBrewDayTab,
     BatchBrewSessionDialog,
     BatchBrewSessionsTab,
+    BatchCostsTab,
     BatchDeleteDialog,
     BatchEditDialog,
     type BatchEditForm,

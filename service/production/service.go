@@ -18,9 +18,10 @@ type Config struct {
 }
 
 type Service struct {
-	storage         *storage.Client
-	secretKey       string
-	inventoryClient *handler.InventoryClient
+	storage           *storage.Client
+	secretKey         string
+	inventoryClient   *handler.InventoryClient
+	procurementClient *handler.ProcurementClient
 }
 
 // New creates and initializes a new production service instance.
@@ -55,6 +56,7 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodPatch, Path: "/batches/{uuid}", Handler: auth(handler.HandleBatchByUUID(s.storage))},
 		{Method: http.MethodDelete, Path: "/batches/{uuid}", Handler: auth(handler.HandleBatchByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/batches/{uuid}/summary", Handler: auth(handler.HandleBatchSummaryByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/batches/{uuid}/costs", Handler: auth(handler.HandleBatchCosts(s.storage, s.inventoryClient, s.procurementClient))},
 		{Method: http.MethodGet, Path: "/brew-sessions", Handler: auth(handler.HandleBrewSessions(s.storage))},
 		{Method: http.MethodPost, Path: "/brew-sessions", Handler: auth(handler.HandleBrewSessions(s.storage))},
 		{Method: http.MethodGet, Path: "/brew-sessions/{uuid}", Handler: auth(handler.HandleBrewSessionByUUID(s.storage))},
@@ -121,6 +123,14 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 	s.inventoryClient = handler.NewInventoryClient(inventoryURL)
 	slog.Info("inventory client configured", "inventory_api_url", inventoryURL)
+
+	// Initialize procurement client for inter-service cost lookups.
+	procurementURL := os.Getenv("PROCUREMENT_API_URL")
+	if procurementURL == "" {
+		procurementURL = "http://localhost:8080/api"
+	}
+	s.procurementClient = handler.NewProcurementClient(procurementURL)
+	slog.Info("procurement client configured", "procurement_api_url", procurementURL)
 
 	return nil
 }

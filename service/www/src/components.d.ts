@@ -18,6 +18,7 @@ declare module 'vue' {
     BatchBrewDayTab: typeof import('./components/batch/BatchBrewDayTab.vue')['default']
     BatchBrewSessionDialog: typeof import('./components/batch/BatchBrewSessionDialog.vue')['default']
     BatchBrewSessionsTab: typeof import('./components/batch/BatchBrewSessionsTab.vue')['default']
+    BatchCostsTab: typeof import('./components/batch/BatchCostsTab.vue')['default']
     BatchCreateDialog: typeof import('./components/batch/BatchCreateDialog.vue')['default']
     BatchDeleteDialog: typeof import('./components/batch/BatchDeleteDialog.vue')['default']
     BatchDetails: typeof import('./components/BatchDetails.vue')['default']

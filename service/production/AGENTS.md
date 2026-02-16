@@ -138,6 +138,19 @@ Packaging Run
 - Responses always include nested `lines` array with format details.
 - Soft-delete cascades to lines via DB `ON DELETE CASCADE` on the `packaging_run_line` table.
 
+Batch Costs
+- `GET /batches/{uuid}/costs` returns the ingredient cost breakdown for a batch.
+- Orchestrates cross-service HTTP calls to Inventory (lot data) and Procurement (PO line costs).
+- Uses `InventoryClient.GetBatchIngredientLots` to fetch lots consumed by the batch.
+- Uses `ProcurementClient.BatchLookupPOLines` to fetch PO line cost data.
+- Cost formula: `addition.amount × po_line.unit_cost_cents` when `addition.amount_unit == po_line.quantity_unit`.
+- Unit mismatches are flagged as `cost_source: "unavailable"` rather than silently computing wrong values.
+- Mixed currencies across PO lines result in `currency: "MIXED"` and `cost_per_bbl_cents: null`.
+- Cost per barrel: `total_cost_cents / starting_volume_bbl` (from batch summary).
+- Additions without `inventory_lot_uuid` are reported as uncosted with reason `"no_inventory_lot"`.
+- `PROCUREMENT_API_URL` env var configures the procurement service base URL (default `http://localhost:8080/api`).
+- Inter-service failures are hard errors (500), not best-effort.
+
 ## Batch Summary
 
 The `GET /batches/{uuid}/summary` endpoint provides an aggregated view of a batch with derived metrics:
@@ -229,6 +242,7 @@ In short:
 - A brewmaster can manage package formats (container types for packaged beer) with full CRUD operations on `/package-formats`.
 - A brewmaster can record a packaging run for a batch with one or more packaging lines (format + quantity).
 - A packaging run optionally closes the source occupancy (default true) and optionally creates beer lots in the Inventory service via inter-service HTTP call.
+- A brewmaster can view the ingredient cost breakdown for any batch via `GET /batches/{uuid}/costs`, with costs traced from additions through inventory lots to purchase order line items.
 
 ## API Convention: UUID-Only
 

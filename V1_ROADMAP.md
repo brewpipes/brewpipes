@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
 **Last Updated:** 2026-02-15  
-**Status:** Phase 6 Complete
+**Status:** Phase 7 Complete
 
 ---
 
@@ -370,10 +370,10 @@ Enable batch costing from procurement data.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| COST-01 | Backend: Calculate ingredient cost per batch | M | 5 | Not Started |
-| COST-02 | Backend: Calculate cost per barrel | S | 5 | Not Started |
-| COST-03 | Frontend: Batch cost breakdown view | M | 5 | Not Started |
-| COST-04 | Frontend: Actual vs. target comparison | M | 5 | Not Started |
+| COST-01 | Backend: Calculate ingredient cost per batch | M | 5 | **Complete** |
+| COST-02 | Backend: Calculate cost per barrel | S | 5 | **Complete** |
+| COST-03 | Frontend: Batch cost breakdown view | M | 5 | **Complete** |
+| COST-04 | Frontend: Actual vs. target comparison | M | 5 | **Complete** |
 
 ---
 
@@ -405,7 +405,7 @@ Track brewhouse removals for future TTB compliance.
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | **Complete** |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | **Complete** |
 | **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | **Complete** |
-| **M7: Costing Complete** | Phase 7 complete (batch costing) | Not Started |
+| **M7: Costing Complete** | Phase 7 complete (batch costing) | **Complete** |
 | **M8: V1 Alpha** | All phases complete, internal testing | Not Started |
 | **M9: V1 Beta** | External testing, bug fixes | Not Started |
 | **M10: V1 Release** | Production ready | Not Started |
@@ -457,6 +457,10 @@ Track brewhouse removals for future TTB compliance.
 | PKG-04 | Backend: Beer lot creation from packaging | 2026-02-15 |
 | PKG-05 | Frontend: Beer lot / finished goods inventory view | 2026-02-15 |
 | PKG-06 | Packaging loss calculation | 2026-02-15 |
+| COST-01 | Backend: Calculate ingredient cost per batch | 2026-02-16 |
+| COST-02 | Backend: Calculate cost per barrel | 2026-02-16 |
+| COST-03 | Frontend: Batch cost breakdown view | 2026-02-16 |
+| COST-04 | Frontend: Actual vs. target comparison | 2026-02-16 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -519,6 +523,14 @@ Track brewhouse removals for future TTB compliance.
 - **Loss Calculation (PKG-06):** Real-time loss estimation in packaging wizard (source volume - total packaged). Loss recorded on packaging run with amount + unit pair. Remaining volume treated as loss when source vessel is closed.
 - **Infrastructure:** 7 seeded package formats, 470 frontend tests (2 new), beer lot stock levels endpoint, package format reference table.
 
+**Phase 7 Details:** Implemented batch cost tracking with cross-service aggregation:
+- **Ingredient Cost Calculation (COST-01):** New `GET /batches/{uuid}/costs` endpoint on Production service. Orchestrates cross-service calls to Inventory (lot data) and Procurement (PO line costs). Traces batch → additions → ingredient lots → PO line items → unit costs. Handles edge cases: missing PO links, unit mismatches, mixed currencies. 10 handler tests.
+- **Cost per Barrel (COST-02):** Calculated as total_cost_cents / starting_volume_bbl. Included in the costs endpoint response. Null when volume unknown or currencies mixed.
+- **Batch Cost Breakdown UI (COST-03):** New "Costs" tab in batch detail view. Summary cards (total cost, cost/bbl, costing status). Ingredient cost table sorted by cost descending. Uncosted additions section with explanations. Mobile-responsive with card layouts.
+- **Actual vs. Target Comparison (COST-04):** Comparison section in Costs tab. Compares OG, FG, ABV, IBU, and volume against recipe targets. Range-based evaluation with color-coded status chips. Unit-preference-aware display. Graceful handling when no recipe linked.
+- **Supporting Endpoints:** New `GET /ingredient-lots/batch` on Inventory service (batch lot lookup). New `POST /purchase-order-lines/batch-lookup` on Procurement service (batch PO line lookup). New `ProcurementClient` inter-service HTTP client on Production service.
+- **Infrastructure:** Second inter-service HTTP client (Production → Procurement). JWT pass-through for all cross-service calls. 543 frontend tests (1 new), 10 new backend handler tests.
+
 ### Deferred QA Items
 
 Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
@@ -569,14 +581,14 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 
 ### Backend Services
 - **Identity:** Authentication, JWT tokens, session management
-- **Production:** Batches, recipes, styles, vessels, occupancies, brew sessions, volumes, transfers, additions, measurements, process phases, package formats, packaging runs
+- **Production:** Batches, recipes, styles, vessels, occupancies, brew sessions, volumes, transfers, additions, measurements, process phases, package formats, packaging runs, batch cost aggregation
 - **Inventory:** Ingredients, lots, receipts, usage, adjustments, transfers, movements, stock locations, beer lots, beer lot stock levels
 - **Procurement:** Suppliers, purchase orders, line items, fees
 
 ### Frontend Screens
 - Dashboard with operational overview
 - Fermentation dashboard with tank cards, sparklines, and quick measurement entry
-- Batch management (all batches list, detail with 8 tabs including fermentation curve)
+- Batch management (all batches list, detail with 9 tabs including fermentation curve and cost breakdown)
 - Vessel management (active, all, detail)
 - Recipe management (list, detail with ingredient bills and specs)
 - Inventory hub (ingredients by category, activity, locations, adjustments/transfers, product with stock levels and lot tabs, stock levels)
@@ -592,9 +604,15 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - Polished UI with consistent design patterns
 - User display preferences (units)
 
-### Key Gaps (to be addressed in Phases 7-8)
-- No cost tracking
+### Key Gaps (to be addressed in Phase 8)
 - No removal tracking
+
+### Recently Addressed (Phase 7)
+- ✅ Batch cost tracking - ingredient cost aggregation from PO data via cross-service calls
+- ✅ Cost per barrel - calculated from total ingredient cost and batch volume
+- ✅ Cost breakdown UI - new Costs tab with summary cards, ingredient table, and uncosted additions
+- ✅ Actual vs. target comparison - OG/FG/ABV/IBU/volume comparison against recipe specs
+- ✅ Inter-service infrastructure - second backend-to-backend HTTP client (Production → Procurement)
 
 ### Recently Addressed (Phase 6)
 - ✅ Packaging workflow - complete packaging run recording with format lines and loss tracking

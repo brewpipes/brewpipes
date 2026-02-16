@@ -62,6 +62,15 @@
                   Package
                 </v-btn>
                 <v-btn
+                  color="error"
+                  prepend-icon="mdi-delete-variant"
+                  size="small"
+                  variant="text"
+                  @click="emit('record-removal')"
+                >
+                  Record Removal
+                </v-btn>
+                <v-btn
                   prepend-icon="mdi-flask-empty-outline"
                   size="small"
                   variant="text"
@@ -310,6 +319,7 @@
     'assign-fermenter': []
     'mark-empty': []
     'package': []
+    'record-removal': []
     'transfer': []
   }>()
 

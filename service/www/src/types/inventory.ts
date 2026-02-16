@@ -441,3 +441,93 @@ export interface LineReceivingDetails {
   breweryLotCode: string
   supplierLotCode: string
 }
+
+// ============================================================================
+// Removal Types
+// ============================================================================
+
+/** Category of a removal event */
+export type RemovalCategory = 'dump' | 'waste' | 'sample' | 'expired' | 'other'
+
+/** Reason for a removal event */
+export type RemovalReason =
+  | 'infection'
+  | 'off_flavor'
+  | 'failed_fermentation'
+  | 'equipment_failure'
+  | 'quality_reject'
+  | 'past_date'
+  | 'damaged_package'
+  | 'spillage'
+  | 'cleaning'
+  | 'qc_sample'
+  | 'tasting'
+  | 'competition'
+  | 'other'
+
+/** A removal record (beer dumped, wasted, sampled, expired, etc.) */
+export interface Removal {
+  uuid: string
+  category: RemovalCategory
+  reason: RemovalReason
+  amount: number
+  amount_unit: string
+  amount_bbl: number | null
+  is_taxable: boolean
+  removed_at: string
+  batch_uuid?: string
+  beer_lot_uuid?: string
+  occupancy_uuid?: string
+  stock_location_uuid?: string
+  movement_uuid?: string
+  reference_code?: string
+  performed_by?: string
+  destination?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a removal */
+export interface CreateRemovalRequest {
+  category: RemovalCategory
+  reason: RemovalReason
+  amount: number
+  amount_unit: string
+  removed_at?: string
+  batch_uuid?: string
+  beer_lot_uuid?: string
+  occupancy_uuid?: string
+  stock_location_uuid?: string
+  reference_code?: string
+  performed_by?: string
+  destination?: string
+  notes?: string
+}
+
+/** Request payload for updating a removal */
+export interface UpdateRemovalRequest {
+  category?: RemovalCategory
+  reason?: RemovalReason
+  amount?: number
+  amount_unit?: string
+  removed_at?: string
+  destination?: string
+  notes?: string
+}
+
+/** Aggregated removal summary */
+export interface RemovalSummary {
+  total_bbl: number
+  taxable_bbl: number
+  tax_free_bbl: number
+  total_count: number
+  by_category: RemovalCategorySummary[]
+}
+
+/** Per-category breakdown in a removal summary */
+export interface RemovalCategorySummary {
+  category: RemovalCategory
+  total_bbl: number
+  count: number
+}

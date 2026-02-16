@@ -353,5 +353,159 @@ describe('useInventoryApi', () => {
     })
   })
 
+  describe('removals API', () => {
+    it('listRemovals fetches all removals without filters', async () => {
+      const mockRemovals = [{ uuid: 'rem-1', category: 'dump', reason: 'infection' }]
+      mockRequest.mockResolvedValue(mockRemovals)
+
+      const { listRemovals } = useInventoryApi()
+      const result = await listRemovals()
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals')
+      expect(result).toEqual(mockRemovals)
+    })
+
+    it('listRemovals applies batch_uuid filter', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { listRemovals } = useInventoryApi()
+      await listRemovals({ batch_uuid: 'batch-1' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals?batch_uuid=batch-1')
+    })
+
+    it('listRemovals applies category filter', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { listRemovals } = useInventoryApi()
+      await listRemovals({ category: 'dump' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals?category=dump')
+    })
+
+    it('listRemovals applies date range filters', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { listRemovals } = useInventoryApi()
+      await listRemovals({ from: '2026-01-01T00:00:00Z', to: '2026-02-01T00:00:00Z' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals?from=2026-01-01T00%3A00%3A00Z&to=2026-02-01T00%3A00%3A00Z')
+    })
+
+    it('listRemovals supports multiple filters simultaneously', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { listRemovals } = useInventoryApi()
+      await listRemovals({ batch_uuid: 'batch-1', category: 'sample' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals?batch_uuid=batch-1&category=sample')
+    })
+
+    it('getRemoval fetches a single removal', async () => {
+      const mockRemoval = { uuid: 'rem-1', category: 'dump', reason: 'infection', amount: 800, amount_unit: 'l' }
+      mockRequest.mockResolvedValue(mockRemoval)
+
+      const { getRemoval } = useInventoryApi()
+      const result = await getRemoval('rem-1')
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals/rem-1')
+      expect(result).toEqual(mockRemoval)
+    })
+
+    it('createRemoval sends POST request with correct body', async () => {
+      const mockRemoval = { uuid: 'rem-new', category: 'dump', reason: 'infection', amount: 800, amount_unit: 'l' }
+      mockRequest.mockResolvedValue(mockRemoval)
+
+      const { createRemoval } = useInventoryApi()
+      const requestData = {
+        category: 'dump' as const,
+        reason: 'infection' as const,
+        amount: 800,
+        amount_unit: 'l',
+        batch_uuid: 'batch-1',
+        notes: 'Infected batch',
+      }
+
+      const result = await createRemoval(requestData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      })
+      expect(result).toEqual(mockRemoval)
+    })
+
+    it('updateRemoval sends PATCH request with correct body', async () => {
+      const mockRemoval = { uuid: 'rem-1', category: 'dump', reason: 'off_flavor', amount: 800, amount_unit: 'l' }
+      mockRequest.mockResolvedValue(mockRemoval)
+
+      const { updateRemoval } = useInventoryApi()
+      const updateData = { reason: 'off_flavor' as const, notes: 'Updated reason' }
+
+      const result = await updateRemoval('rem-1', updateData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals/rem-1', {
+        method: 'PATCH',
+        body: JSON.stringify(updateData),
+      })
+      expect(result).toEqual(mockRemoval)
+    })
+
+    it('deleteRemoval sends DELETE request', async () => {
+      mockRequest.mockResolvedValue(null)
+
+      const { deleteRemoval } = useInventoryApi()
+      const result = await deleteRemoval('rem-1')
+
+      expect(mockRequest).toHaveBeenCalledWith('/removals/rem-1', {
+        method: 'DELETE',
+      })
+      expect(result).toBeNull()
+    })
+
+    it('getRemovalSummary fetches summary without filters', async () => {
+      const mockSummary = {
+        total_bbl: 7.16,
+        taxable_bbl: 0,
+        tax_free_bbl: 7.16,
+        total_count: 4,
+        by_category: [
+          { category: 'dump', total_bbl: 6.82, count: 1 },
+        ],
+      }
+      mockRequest.mockResolvedValue(mockSummary)
+
+      const { getRemovalSummary } = useInventoryApi()
+      const result = await getRemovalSummary()
+
+      expect(mockRequest).toHaveBeenCalledWith('/removal-summary')
+      expect(result).toEqual(mockSummary)
+    })
+
+    it('getRemovalSummary applies date range filters', async () => {
+      mockRequest.mockResolvedValue({ total_bbl: 0, taxable_bbl: 0, tax_free_bbl: 0, total_count: 0, by_category: [] })
+
+      const { getRemovalSummary } = useInventoryApi()
+      await getRemovalSummary({ from: '2026-01-01T00:00:00Z' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/removal-summary?from=2026-01-01T00%3A00%3A00Z')
+    })
+
+    it('createRemoval propagates errors', async () => {
+      const error = new Error('Validation failed')
+      mockRequest.mockRejectedValue(error)
+
+      const { createRemoval } = useInventoryApi()
+
+      await expect(
+        createRemoval({
+          category: 'dump',
+          reason: 'infection',
+          amount: 0,
+          amount_unit: 'l',
+        }),
+      ).rejects.toThrow('Validation failed')
+    })
+  })
 
 })

@@ -86,6 +86,7 @@
           @log-reading="openReadingSheet(card)"
           @mark-empty="openMarkEmpty(card)"
           @package="openPackaging(card)"
+          @record-removal="openRemoval(card)"
           @split="openSplit(card)"
           @status-changed="refreshAll"
           @transfer="openTransfer(card)"
@@ -132,6 +133,16 @@
       :source-volume="packagingSourceVolume"
       @packaged="refreshAll"
     />
+
+    <!-- RemovalDialog (single instance) -->
+    <RemovalDialog
+      v-model="showRemoval"
+      :batch-name="removalBatchName"
+      :batch-uuid="removalBatchUuid"
+      default-category="dump"
+      :occupancy-uuid="removalOccupancyUuid"
+      @created="refreshAll"
+    />
   </v-container>
 </template>
 
@@ -140,6 +151,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { BatchMarkEmptyDialog, PackagingDialog } from '@/components/batch'
   import { FermentationCard, QuickReadingSheet, TransferDialog } from '@/components/fermentation'
+  import RemovalDialog from '@/components/removal/RemovalDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useProductionApi } from '@/composables/useProductionApi'
 
@@ -198,6 +210,12 @@
   const packagingSourceVessel = ref<Vessel | null>(null)
   const packagingSourceBatch = ref<Batch | null>(null)
   const packagingSourceVolume = ref<Volume | null>(null)
+
+  // RemovalDialog state
+  const showRemoval = ref(false)
+  const removalBatchUuid = ref<string | undefined>(undefined)
+  const removalBatchName = ref<string | undefined>(undefined)
+  const removalOccupancyUuid = ref<string | undefined>(undefined)
 
   // Vessel lookup map
   const vesselMap = computed(
@@ -432,6 +450,14 @@
     }
 
     showPackaging.value = true
+  }
+
+  // RemovalDialog handlers
+  function openRemoval (card: FermentationCardData) {
+    removalBatchUuid.value = card.occupancy.batch_uuid ?? undefined
+    removalBatchName.value = card.batchSummary?.short_name ?? undefined
+    removalOccupancyUuid.value = card.occupancy.uuid
+    showRemoval.value = true
   }
 </script>
 

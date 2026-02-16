@@ -119,6 +119,7 @@ type InventoryMovementResponse struct {
 	UsageUUID         *string    `json:"usage_uuid,omitempty"`
 	AdjustmentUUID    *string    `json:"adjustment_uuid,omitempty"`
 	TransferUUID      *string    `json:"transfer_uuid,omitempty"`
+	RemovalUUID       *string    `json:"removal_uuid,omitempty"`
 	Notes             *string    `json:"notes,omitempty"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
@@ -140,6 +141,7 @@ func NewInventoryMovementResponse(movement storage.InventoryMovement) InventoryM
 		UsageUUID:         movement.UsageUUID,
 		AdjustmentUUID:    movement.AdjustmentUUID,
 		TransferUUID:      movement.TransferUUID,
+		RemovalUUID:       movement.RemovalUUID,
 		Notes:             movement.Notes,
 		CreatedAt:         movement.CreatedAt,
 		UpdatedAt:         movement.UpdatedAt,

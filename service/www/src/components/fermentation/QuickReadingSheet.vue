@@ -227,13 +227,14 @@
     }
   }
 
-  // Can save if at least one measurement field has a valid value
+  // Can save if at least one measurement field has a valid value or notes are provided
   const canSave = computed(() => {
     if (saving.value) return false
     const hasGravity = form.value.gravity.trim() !== '' && rules.gravity(form.value.gravity) === true
     const hasTemp = form.value.temperature.trim() !== '' && rules.temperature(form.value.temperature) === true
     const hasPh = showPh.value && form.value.ph.trim() !== '' && rules.ph(form.value.ph) === true
-    return hasGravity || hasTemp || hasPh
+    const hasNotes = form.value.notes.trim() !== ''
+    return hasGravity || hasTemp || hasPh || hasNotes
   })
 
   // Reset form when sheet opens
@@ -318,6 +319,18 @@
           kind: 'ph',
           value: phValue,
           unit: 'ph',
+          observed_at: observedAt,
+          notes,
+        }))
+      }
+
+      // If no measurement promises but we have notes, create a note measurement
+      if (promises.length === 0 && notes) {
+        promises.push(createMeasurement({
+          ...target,
+          kind: 'note',
+          value: 0,
+          unit: null,
           observed_at: observedAt,
           notes,
         }))

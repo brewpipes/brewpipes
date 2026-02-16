@@ -95,7 +95,7 @@
     </v-card>
   </v-container>
 
-  <v-dialog v-model="orderDialog" :max-width="$vuetify.display.xs ? '100%' : 640">
+  <v-dialog v-model="orderDialog" :max-width="$vuetify.display.xs ? '100%' : 640" persistent>
     <v-card>
       <v-card-title class="text-h6">
         {{ isEditMode ? 'Edit purchase order' : 'Create purchase order' }}

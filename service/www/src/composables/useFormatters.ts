@@ -39,6 +39,14 @@ export function formatRelativeTime (value: string | null | undefined): string {
   const date = new Date(value)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
+
+  // Future dates: return formatted date directly
+  if (diffMs < 0) {
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+    }).format(date)
+  }
+
   const diffSecs = Math.floor(diffMs / 1000)
   const diffMins = Math.floor(diffSecs / 60)
   const diffHours = Math.floor(diffMins / 60)

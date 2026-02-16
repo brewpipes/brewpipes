@@ -28,14 +28,20 @@ meta:
         />
         <v-text-field
           v-model="password"
-          :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
           autocomplete="current-password"
           density="comfortable"
           hide-details="auto"
           label="Password"
           :type="showPassword ? 'text' : 'password'"
-          @click:append-inner="showPassword = !showPassword"
-        />
+        >
+          <template #append-inner>
+            <v-icon
+              aria-label="Toggle password visibility"
+              :icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+              @click="showPassword = !showPassword"
+            />
+          </template>
+        </v-text-field>
 
         <v-btn
           block
@@ -95,12 +101,12 @@ meta:
     errorMessage.value = ''
     try {
       await authStore.login(user, password.value)
+      password.value = ''
       await router.replace(redirectPath.value)
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : 'Unable to sign in.'
     } finally {
       submitting.value = false
-      password.value = ''
     }
   }
 </script>

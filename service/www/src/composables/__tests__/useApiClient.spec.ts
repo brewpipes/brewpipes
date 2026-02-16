@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useApiClient } from '@/composables/useApiClient'
 
 // Mock vue-router
-const mockPush = vi.fn()
+const mockPush = vi.fn().mockResolvedValue(undefined)
 const mockCurrentRoute = {
   value: {
     path: '/dashboard',
@@ -34,6 +34,7 @@ describe('useApiClient', () => {
   beforeEach(() => {
     originalFetch = global.fetch
     vi.clearAllMocks()
+    mockPush.mockResolvedValue(undefined)
     mockAuthStore.accessToken = null
     mockAuthStore.refresh.mockReset()
     mockCurrentRoute.value = {

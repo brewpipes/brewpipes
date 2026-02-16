@@ -109,21 +109,6 @@
             <div v-if="!recipe.batch_size" class="text-caption text-medium-emphasis mt-1">
               Set in Specs to scale
             </div>
-            <v-btn
-              v-if="recipe.batch_size"
-              class="mt-1"
-              :color="isScaling ? 'primary' : undefined"
-              density="compact"
-              :prepend-icon="isScaling ? 'mdi-close' : 'mdi-resize'"
-              size="x-small"
-              :variant="isScaling ? 'tonal' : 'text'"
-              @click="toggleScaling"
-            >
-              {{ isScaling ? 'Reset' : 'Scale' }}
-            </v-btn>
-            <div v-if="!recipe.batch_size" class="text-caption text-medium-emphasis mt-1">
-              Set in Specs to scale
-            </div>
           </div>
         </v-col>
       </v-row>

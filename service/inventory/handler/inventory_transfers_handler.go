@@ -13,9 +13,11 @@ import (
 )
 
 type InventoryTransferStore interface {
-	CreateInventoryTransfer(context.Context, storage.InventoryTransfer) (storage.InventoryTransfer, error)
+	CreateInventoryTransferWithMovements(context.Context, storage.TransferWithMovementsRequest) (storage.TransferWithMovementsResult, error)
 	GetInventoryTransferByUUID(context.Context, string) (storage.InventoryTransfer, error)
 	ListInventoryTransfers(context.Context) ([]storage.InventoryTransfer, error)
+	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
+	GetBeerLotByUUID(context.Context, string) (storage.BeerLot, error)
 	GetStockLocationByUUID(context.Context, string) (storage.StockLocation, error)
 }
 
@@ -47,32 +49,54 @@ func HandleInventoryTransfers(db InventoryTransferStore) http.HandlerFunc {
 				transferredAt = *req.TransferredAt
 			}
 
-			// Resolve source location UUID to internal ID
+			// Resolve source location UUID to internal ID.
 			sourceLocation, ok := service.ResolveFK(r.Context(), w, req.SourceLocationUUID, "source location", db.GetStockLocationByUUID)
 			if !ok {
 				return
 			}
 
-			// Resolve dest location UUID to internal ID
+			// Resolve dest location UUID to internal ID.
 			destLocation, ok := service.ResolveFK(r.Context(), w, req.DestLocationUUID, "dest location", db.GetStockLocationByUUID)
 			if !ok {
 				return
 			}
 
-			transfer := storage.InventoryTransfer{
-				SourceLocationID: sourceLocation.ID,
-				DestLocationID:   destLocation.ID,
-				TransferredAt:    transferredAt,
-				Notes:            req.Notes,
+			// Resolve ingredient lot UUID to internal ID if provided.
+			var ingredientLotID *int64
+			if lot, ok := service.ResolveFKOptional(r.Context(), w, req.IngredientLotUUID, "ingredient lot", db.GetIngredientLotByUUID); !ok {
+				return
+			} else if req.IngredientLotUUID != nil {
+				ingredientLotID = &lot.ID
 			}
 
-			created, err := db.CreateInventoryTransfer(r.Context(), transfer)
+			// Resolve beer lot UUID to internal ID if provided.
+			var beerLotID *int64
+			if lot, ok := service.ResolveFKOptional(r.Context(), w, req.BeerLotUUID, "beer lot", db.GetBeerLotByUUID); !ok {
+				return
+			} else if req.BeerLotUUID != nil {
+				beerLotID = &lot.ID
+			}
+
+			result, err := db.CreateInventoryTransferWithMovements(r.Context(), storage.TransferWithMovementsRequest{
+				IngredientLotID:    ingredientLotID,
+				BeerLotID:          beerLotID,
+				SourceLocationID:   sourceLocation.ID,
+				DestLocationID:     destLocation.ID,
+				Amount:             req.Amount,
+				AmountUnit:         req.AmountUnit,
+				TransferredAt:      transferredAt,
+				Notes:              req.Notes,
+				IngredientLotUUID:  req.IngredientLotUUID,
+				BeerLotUUID:        req.BeerLotUUID,
+				SourceLocationUUID: req.SourceLocationUUID,
+				DestLocationUUID:   req.DestLocationUUID,
+			})
 			if err != nil {
 				service.InternalError(w, "error creating inventory transfer", "error", err)
 				return
 			}
 
-			service.JSONCreated(w, dto.NewInventoryTransferResponse(created))
+			service.JSONCreated(w, dto.NewInventoryTransferResponse(result.Transfer))
 		default:
 			service.MethodNotAllowed(w)
 		}

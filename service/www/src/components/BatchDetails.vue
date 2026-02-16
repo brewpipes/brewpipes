@@ -470,6 +470,7 @@
   const {
     getVessels,
     getVolumes: getProductionVolumes,
+    getVolume,
     createVolume: createProductionVolume,
     getBrewSessions,
     createBrewSession,
@@ -609,7 +610,7 @@
     stage: '',
     inventory_lot_uuid: '',
     amount: '',
-    amount_unit: 'ml' as VolumeUnit,
+    amount_unit: preferences.value.mass as string,
     added_at: '',
     notes: '',
   })
@@ -889,9 +890,9 @@
   })
 
   // Exposed methods
-  function refresh () {
+  async function refresh () {
     if (props.batchUuid) {
-      loadBatchData(props.batchUuid)
+      await loadBatchData(props.batchUuid)
     }
   }
 
@@ -928,14 +929,10 @@
 
   async function loadReferenceData () {
     try {
-      await Promise.all([loadVolumes(), loadVesselsData(), loadAllVolumesData()])
+      await Promise.all([loadAllVolumesData(), loadVesselsData()])
     } catch (error) {
       console.error('Failed to load reference data:', error)
     }
-  }
-
-  async function loadVolumes () {
-    volumes.value = await getProductionVolumes()
   }
 
   async function loadVesselsData () {
@@ -948,7 +945,9 @@
 
   async function loadAllVolumesData () {
     try {
-      allVolumes.value = await getProductionVolumes()
+      const volumesData = await getProductionVolumes()
+      allVolumes.value = volumesData
+      volumes.value = volumesData
     } catch (error) {
       console.error('Failed to load volumes:', error)
     }
@@ -1450,7 +1449,7 @@
     hotSideAdditionForm.stage = ''
     hotSideAdditionForm.inventory_lot_uuid = ''
     hotSideAdditionForm.amount = ''
-    hotSideAdditionForm.amount_unit = 'ml'
+    hotSideAdditionForm.amount_unit = preferences.value.mass
     hotSideAdditionForm.added_at = nowInputValue()
     hotSideAdditionForm.notes = ''
     hotSideAdditionDialog.value = true
@@ -1462,6 +1461,12 @@
       return
     }
 
+    const amount = Number(hotSideAdditionForm.amount)
+    if (!Number.isFinite(amount)) {
+      showNotice('Invalid amount value', 'error')
+      return
+    }
+
     savingHotSideAddition.value = true
 
     try {
@@ -1470,7 +1475,7 @@
         addition_type: hotSideAdditionForm.addition_type,
         stage: normalizeText(hotSideAdditionForm.stage),
         inventory_lot_uuid: normalizeText(hotSideAdditionForm.inventory_lot_uuid),
-        amount: Number(hotSideAdditionForm.amount),
+        amount,
         amount_unit: hotSideAdditionForm.amount_unit,
         added_at: hotSideAdditionForm.added_at ? new Date(hotSideAdditionForm.added_at).toISOString() : null,
         notes: normalizeText(hotSideAdditionForm.notes),
@@ -1503,13 +1508,19 @@
       return
     }
 
+    const measurementValue = Number(hotSideMeasurementForm.value)
+    if (!Number.isFinite(measurementValue)) {
+      showNotice('Invalid measurement value', 'error')
+      return
+    }
+
     savingHotSideMeasurement.value = true
 
     try {
       const payload = {
         volume_uuid: session.wort_volume_uuid,
         kind: hotSideMeasurementForm.kind,
-        value: Number(hotSideMeasurementForm.value),
+        value: measurementValue,
         unit: normalizeText(hotSideMeasurementForm.unit) ?? getDefaultUnitForKind(hotSideMeasurementForm.kind),
         observed_at: hotSideMeasurementForm.observed_at ? new Date(hotSideMeasurementForm.observed_at).toISOString() : null,
         notes: normalizeText(hotSideMeasurementForm.notes),
@@ -1636,9 +1647,7 @@
 
       if (occupancy.volume_uuid) {
         try {
-          transferVolume.value = await getProductionVolumes().then(
-            vols => vols.find(v => v.uuid === occupancy.volume_uuid) ?? null,
-          )
+          transferVolume.value = await getVolume(occupancy.volume_uuid)
         } catch {
           transferVolume.value = null
         }
@@ -1674,9 +1683,7 @@
 
       if (occupancy.volume_uuid) {
         try {
-          packagingVolume.value = await getProductionVolumes().then(
-            vols => vols.find(v => v.uuid === occupancy.volume_uuid) ?? null,
-          )
+          packagingVolume.value = await getVolume(occupancy.volume_uuid)
         } catch {
           packagingVolume.value = null
         }

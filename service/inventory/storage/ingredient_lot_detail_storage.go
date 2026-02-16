@@ -121,6 +121,36 @@ func (c *Client) GetIngredientLotMaltDetailByLot(ctx context.Context, lotUUID st
 	return detail, nil
 }
 
+func (c *Client) UpdateIngredientLotMaltDetail(ctx context.Context, detailUUID string, detail IngredientLotMaltDetail) (IngredientLotMaltDetail, error) {
+	err := c.DB().QueryRow(ctx, `
+		UPDATE ingredient_lot_malt_detail
+		SET moisture_percent = $1, updated_at = timezone('utc', now())
+		WHERE uuid = $2 AND deleted_at IS NULL
+		RETURNING id, uuid, ingredient_lot_id, moisture_percent, created_at, updated_at, deleted_at`,
+		detail.MoisturePercent,
+		detailUUID,
+	).Scan(
+		&detail.ID,
+		&detail.UUID,
+		&detail.IngredientLotID,
+		&detail.MoisturePercent,
+		&detail.CreatedAt,
+		&detail.UpdatedAt,
+		&detail.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IngredientLotMaltDetail{}, service.ErrNotFound
+		}
+		return IngredientLotMaltDetail{}, fmt.Errorf("updating ingredient lot malt detail: %w", err)
+	}
+
+	// Resolve ingredient lot UUID
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, detail.IngredientLotID).Scan(&detail.IngredientLotUUID)
+
+	return detail, nil
+}
+
 func (c *Client) CreateIngredientLotHopDetail(ctx context.Context, detail IngredientLotHopDetail) (IngredientLotHopDetail, error) {
 	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient_lot_hop_detail (
@@ -239,6 +269,38 @@ func (c *Client) GetIngredientLotHopDetailByLot(ctx context.Context, lotUUID str
 	return detail, nil
 }
 
+func (c *Client) UpdateIngredientLotHopDetail(ctx context.Context, detailUUID string, detail IngredientLotHopDetail) (IngredientLotHopDetail, error) {
+	err := c.DB().QueryRow(ctx, `
+		UPDATE ingredient_lot_hop_detail
+		SET alpha_acid = $1, beta_acid = $2, updated_at = timezone('utc', now())
+		WHERE uuid = $3 AND deleted_at IS NULL
+		RETURNING id, uuid, ingredient_lot_id, alpha_acid, beta_acid, created_at, updated_at, deleted_at`,
+		detail.AlphaAcid,
+		detail.BetaAcid,
+		detailUUID,
+	).Scan(
+		&detail.ID,
+		&detail.UUID,
+		&detail.IngredientLotID,
+		&detail.AlphaAcid,
+		&detail.BetaAcid,
+		&detail.CreatedAt,
+		&detail.UpdatedAt,
+		&detail.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IngredientLotHopDetail{}, service.ErrNotFound
+		}
+		return IngredientLotHopDetail{}, fmt.Errorf("updating ingredient lot hop detail: %w", err)
+	}
+
+	// Resolve ingredient lot UUID
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, detail.IngredientLotID).Scan(&detail.IngredientLotUUID)
+
+	return detail, nil
+}
+
 func (c *Client) CreateIngredientLotYeastDetail(ctx context.Context, detail IngredientLotYeastDetail) (IngredientLotYeastDetail, error) {
 	err := c.DB().QueryRow(ctx, `
 		INSERT INTO ingredient_lot_yeast_detail (
@@ -324,6 +386,38 @@ func (c *Client) GetIngredientLotYeastDetailByUUID(ctx context.Context, detailUU
 		}
 		return IngredientLotYeastDetail{}, fmt.Errorf("getting ingredient lot yeast detail by uuid: %w", err)
 	}
+
+	return detail, nil
+}
+
+func (c *Client) UpdateIngredientLotYeastDetail(ctx context.Context, detailUUID string, detail IngredientLotYeastDetail) (IngredientLotYeastDetail, error) {
+	err := c.DB().QueryRow(ctx, `
+		UPDATE ingredient_lot_yeast_detail
+		SET viability_percent = $1, generation = $2, updated_at = timezone('utc', now())
+		WHERE uuid = $3 AND deleted_at IS NULL
+		RETURNING id, uuid, ingredient_lot_id, viability_percent, generation, created_at, updated_at, deleted_at`,
+		detail.ViabilityPercent,
+		detail.Generation,
+		detailUUID,
+	).Scan(
+		&detail.ID,
+		&detail.UUID,
+		&detail.IngredientLotID,
+		&detail.ViabilityPercent,
+		&detail.Generation,
+		&detail.CreatedAt,
+		&detail.UpdatedAt,
+		&detail.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return IngredientLotYeastDetail{}, service.ErrNotFound
+		}
+		return IngredientLotYeastDetail{}, fmt.Errorf("updating ingredient lot yeast detail: %w", err)
+	}
+
+	// Resolve ingredient lot UUID
+	c.DB().QueryRow(ctx, `SELECT uuid FROM ingredient_lot WHERE id = $1`, detail.IngredientLotID).Scan(&detail.IngredientLotUUID)
 
 	return detail, nil
 }

@@ -218,7 +218,7 @@
         // Compute attention level
         const gravityReadings = measurements
           .filter(m => m.kind === 'gravity')
-          .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime())
+          .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime())
 
         let attentionLevel: 'warning' | 'info' | null = null
 
@@ -227,7 +227,7 @@
           attentionLevel = 'warning'
         } else {
           const lastReading = gravityReadings.at(-1)!
-          const hoursSince = (Date.now() - new Date(lastReading.observed_at).getTime()) / (1000 * 60 * 60)
+          const hoursSince = (Date.now() - new Date(lastReading.observed_at || lastReading.created_at || 0).getTime()) / (1000 * 60 * 60)
           if (hoursSince >= 24) {
             attentionLevel = 'warning'
           } else if (gravityReadings.length >= 3) {

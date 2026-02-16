@@ -104,7 +104,7 @@
   </v-container>
 
   <!-- Adjustment Modal -->
-  <v-dialog v-model="adjustDialog" max-width="500" persistent>
+  <v-dialog v-model="adjustDialog" :fullscreen="$vuetify.display.xs" :max-width="$vuetify.display.xs ? undefined : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Adjust inventory</v-card-title>
       <v-card-text>
@@ -128,12 +128,12 @@
           persistent-hint
           type="number"
         />
-        <v-text-field
+        <v-select
           v-model="adjustForm.reason"
           class="mt-2"
           density="comfortable"
+          :items="adjustmentReasonOptions"
           label="Reason"
-          placeholder="Damaged, expired, count correction, etc."
           :rules="[rules.required]"
         />
         <v-textarea
@@ -167,7 +167,7 @@
   </v-dialog>
 
   <!-- Transfer Modal -->
-  <v-dialog v-model="transferDialog" max-width="500" persistent>
+  <v-dialog v-model="transferDialog" :fullscreen="$vuetify.display.xs" :max-width="$vuetify.display.xs ? undefined : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Transfer inventory</v-card-title>
       <v-card-text>
@@ -299,6 +299,15 @@
     notes: '',
     transferred_at: '',
   })
+
+  const adjustmentReasonOptions = [
+    { title: 'Cycle Count', value: 'cycle_count' },
+    { title: 'Spoilage', value: 'spoilage' },
+    { title: 'Shrink', value: 'shrink' },
+    { title: 'Damage', value: 'damage' },
+    { title: 'Correction', value: 'correction' },
+    { title: 'Other', value: 'other' },
+  ]
 
   const rules = {
     required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
@@ -533,8 +542,8 @@
         beer_lot_uuid: selectedItem.value.type === 'beer' ? selectedItem.value.lotUuid : null,
         source_location_uuid: selectedItem.value.locationUuid,
         dest_location_uuid: transferForm.to_location_uuid,
-        quantity: Number(transferForm.quantity),
-        quantity_unit: selectedItem.value.unit,
+        amount: Number(transferForm.quantity),
+        amount_unit: selectedItem.value.unit,
         notes: normalizeText(transferForm.notes),
         transferred_at: normalizeDateTime(transferForm.transferred_at),
       }

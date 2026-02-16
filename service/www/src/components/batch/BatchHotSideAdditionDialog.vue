@@ -37,7 +37,7 @@
           <v-col cols="4">
             <v-select
               density="comfortable"
-              :items="volumeUnitOptions"
+              :items="unitOptions"
               label="Unit"
               :model-value="form.amount_unit"
               @update:model-value="updateForm('amount_unit', $event)"
@@ -76,14 +76,14 @@
 </template>
 
 <script lang="ts" setup>
-  import type { AdditionType as ProductionAdditionType, VolumeUnit } from '@/types'
+  import type { AdditionType as ProductionAdditionType, MassUnit, VolumeUnit } from '@/types'
 
   export type HotSideAdditionForm = {
     addition_type: ProductionAdditionType
     stage: string
     inventory_lot_uuid: string
     amount: string
-    amount_unit: VolumeUnit
+    amount_unit: string
     added_at: string
     notes: string
   }
@@ -100,7 +100,7 @@
     'submit': []
   }>()
 
-  const volumeUnitOptions: VolumeUnit[] = ['ml', 'usfloz', 'ukfloz', 'bbl']
+  const unitOptions: Array<MassUnit | VolumeUnit> = ['g', 'kg', 'oz', 'lb', 'ml', 'l', 'usfloz', 'usgal', 'bbl']
   const additionTypeOptions: ProductionAdditionType[] = [
     'malt',
     'hop',

@@ -30,8 +30,11 @@ router.beforeEach(to => {
   }
 
   if (authStore.isAuthenticated && to.path === '/login') {
-    const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/'
-    return redirect
+    const redirect = to.query.redirect
+    if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      return redirect
+    }
+    return '/'
   }
 
   return true
@@ -39,13 +42,16 @@ router.beforeEach(to => {
 
 // Workaround for https://github.com/vitejs/vite/issues/11804
 router.onError((err, to) => {
-  if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
-    if (localStorage.getItem('vuetify:dynamic-reload')) {
-      console.error('Dynamic import error, reloading page did not fix it', err)
-    } else {
+  if (err?.message?.includes?.('Failed to fetch dynamically imported module') ||
+      err?.message?.includes?.('Importing a module script failed')) {
+    const lastReload = localStorage.getItem('vuetify:dynamic-reload')
+    const now = Date.now()
+    if (!lastReload || (now - Number(lastReload)) > 10000) {
       console.log('Reloading page to fix dynamic import error')
-      localStorage.setItem('vuetify:dynamic-reload', 'true')
+      localStorage.setItem('vuetify:dynamic-reload', String(now))
       location.assign(to.fullPath)
+    } else {
+      console.error('Dynamic import error persists after reload', err)
     }
   } else {
     console.error(err)

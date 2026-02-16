@@ -1,16 +1,7 @@
 <template>
   <v-container class="pa-4" fluid>
     <v-alert
-      v-if="loading"
-      density="comfortable"
-      type="info"
-      variant="tonal"
-    >
-      Loading batch...
-    </v-alert>
-
-    <v-alert
-      v-else-if="error"
+      v-if="error"
       density="comfortable"
       type="error"
       variant="tonal"
@@ -30,49 +21,18 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Batch } from '@/types'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed } from 'vue'
   import { useRouter } from 'vue-router'
   import BatchDetails from '@/components/BatchDetails.vue'
-  import { useProductionApi } from '@/composables/useProductionApi'
   import { useRouteUuid } from '@/composables/useRouteUuid'
 
   const router = useRouter()
-
-  const { getBatch } = useProductionApi()
   const { uuid: routeUuid } = useRouteUuid()
 
-  const loading = ref(true)
-  const error = ref<string | null>(null)
-  const batch = ref<Batch | null>(null)
-
-  const batchUuid = computed(() => batch.value?.uuid ?? null)
-
-  async function loadBatch () {
-    const uuid = routeUuid.value
-    if (!uuid) {
-      error.value = 'Invalid batch UUID'
-      loading.value = false
-      return
-    }
-
-    try {
-      loading.value = true
-      error.value = null
-
-      batch.value = await getBatch(uuid)
-    } catch (error_) {
-      error.value = error_ instanceof Error && error_.message.includes('404') ? 'Batch not found' : 'Failed to load batch. Please try again.'
-    } finally {
-      loading.value = false
-    }
-  }
+  const error = computed(() => routeUuid.value ? null : 'Invalid batch UUID')
+  const batchUuid = computed(() => routeUuid.value ?? null)
 
   function handleBack () {
     router.push('/batches/all')
   }
-
-  onMounted(() => {
-    loadBatch()
-  })
 </script>

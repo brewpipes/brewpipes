@@ -116,7 +116,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch } from 'vue'
+  import { nextTick, onMounted, ref, watch } from 'vue'
+  import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
   import { useUserSettings } from '@/composables/useUserSettings'
 
@@ -137,6 +138,28 @@
     resetToDefaults: resetBrewerySettings,
   } = useUserSettings()
 
+  const { showNotice } = useSnackbar()
+
+  // Track whether initial load is complete to avoid showing notification on mount
+  const initialized = ref(false)
+
+  onMounted(() => {
+    nextTick(() => {
+      initialized.value = true
+    })
+  })
+
+  // Show save confirmation when unit preferences change (user-initiated only)
+  watch(
+    preferences,
+    () => {
+      if (initialized.value) {
+        showNotice('Settings saved')
+      }
+    },
+    { deep: true },
+  )
+
   // Local ref for text field editing; syncs on blur to allow validation
   const breweryNameInput = ref(breweryName.value)
 
@@ -149,6 +172,9 @@
     const trimmed = breweryNameInput.value.trim()
     if (trimmed) {
       setBreweryName(trimmed)
+      if (initialized.value) {
+        showNotice('Settings saved')
+      }
     } else {
       // Revert to current valid value if input is empty
       breweryNameInput.value = breweryName.value

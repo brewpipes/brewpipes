@@ -61,10 +61,15 @@ Usage
 Adjustment
 - Adjustments capture corrections, shrink, spoilage, or cycle count deltas.
 - They are always explicit movements with a reason and optional notes.
+- `POST /inventory-adjustments` atomically creates the adjustment record and a corresponding inventory movement in a single transaction.
+- The request accepts `ingredient_lot_uuid` or `beer_lot_uuid` (exactly one), `stock_location_uuid`, `amount` (positive for increase, negative for decrease), `amount_unit`, `reason`, and optional `notes` and `adjusted_at`.
+- The movement uses `reason='adjust'`, `direction='in'` for positive amounts or `'out'` for negative, and `amount=abs(amount)`.
 
 Transfer
 - Transfers move inventory between locations without changing the total on-hand.
 - The transfer is represented by paired movements (out from source, in to destination).
+- `POST /inventory-transfers` atomically creates the transfer record and two inventory movements (out from source, in to destination) in a single transaction.
+- The request accepts `ingredient_lot_uuid` or `beer_lot_uuid` (exactly one), `source_location_uuid`, `dest_location_uuid`, `amount` (positive), `amount_unit`, and optional `notes` and `transferred_at`.
 
 Beer Lot
 - A beer lot tracks finished product inventory and ties back to a production batch UUID.
@@ -98,8 +103,8 @@ In short:
 - Lots support both a brewery-assigned lot number and an originator's lot number.
 - Lots store a supplier reference UUID (Procurement) and originator details for traceability.
 - The system can record usage against a specific lot with amount, unit, time, and an optional production reference UUID.
-- Transfers between locations are captured with source, destination, amount, and time, and do not change total on-hand.
-- Adjustments can be recorded with a reason and notes, and they update on-hand balances.
+- Transfers between locations are captured with source, destination, amount, and time, and atomically create paired movements (out/in) without changing total on-hand.
+- Adjustments can be recorded with a reason and notes, and they atomically create a corresponding inventory movement to update on-hand balances.
 - Inventory balances can be derived from movements and reconciled by location and by lot.
 - Inventory records retain traceability to production and procurement via opaque UUIDs, without shared tables or foreign keys.
 - Beer lots can be created for finished product inventory and related back to production batch UUIDs.

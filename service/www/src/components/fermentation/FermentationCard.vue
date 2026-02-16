@@ -229,14 +229,14 @@
   const gravityMeasurements = computed(() =>
     props.measurements
       .filter(m => m.kind === 'gravity')
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime()),
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime()),
   )
 
   // Temperature measurements sorted by observed_at
   const temperatureMeasurements = computed(() =>
     props.measurements
       .filter(m => m.kind === 'temperature')
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime()),
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime()),
   )
 
   // Sparkline values (raw numbers for the chart)
@@ -295,7 +295,7 @@
 
   const isStaleGravity = computed(() => {
     if (!latestGravity.value) return true // No readings at all is stale
-    const lastAt = new Date(latestGravity.value.observed_at)
+    const lastAt = new Date(latestGravity.value.observed_at || latestGravity.value.created_at || 0)
     const now = new Date()
     const diffHours = (now.getTime() - lastAt.getTime()) / (1000 * 60 * 60)
     return diffHours >= STALE_HOURS

@@ -162,7 +162,13 @@
 
   // Rotate hint (show once, dismiss via localStorage)
   const ROTATE_HINT_KEY = 'brewpipes:fermentationRotateHintDismissed'
-  const showRotateHint = ref(!localStorage.getItem(ROTATE_HINT_KEY))
+  let rotateHintDismissed = false
+  try {
+    rotateHintDismissed = !!localStorage.getItem(ROTATE_HINT_KEY)
+  } catch {
+    // localStorage unavailable in restricted contexts
+  }
+  const showRotateHint = ref(!rotateHintDismissed)
 
   function dismissRotateHint () {
     showRotateHint.value = false
@@ -178,13 +184,13 @@
   const gravityMeasurements = computed(() =>
     props.measurements
       .filter(m => m.kind === 'gravity')
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime()),
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime()),
   )
 
   const temperatureMeasurements = computed(() =>
     props.measurements
       .filter(m => m.kind === 'temperature')
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime()),
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime()),
   )
 
   // ==================== Time Helpers ====================
@@ -192,9 +198,9 @@
   /** Earliest measurement timestamp across gravity and temperature */
   const firstTimestamp = computed(() => {
     const allSorted = [...gravityMeasurements.value, ...temperatureMeasurements.value]
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime())
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime())
     if (allSorted.length === 0) return Date.now()
-    return new Date(allSorted[0]!.observed_at).getTime()
+    return new Date(allSorted[0]!.observed_at || allSorted[0]!.created_at || 0).getTime()
   })
 
   /** Convert a timestamp to relative days from the first measurement */

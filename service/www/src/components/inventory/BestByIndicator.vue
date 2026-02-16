@@ -19,6 +19,7 @@
       {{ formattedDate }}
     </v-chip>
     <span v-else-if="bestBy" class="text-body-2">{{ formattedDate }}</span>
+    <span v-else class="text-body-2 text-medium-emphasis">—</span>
   </template>
   <template v-else>
     <span v-if="isExpired" class="d-inline-flex align-center">

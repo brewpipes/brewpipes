@@ -70,6 +70,11 @@ export function useInventoryApi () {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  const updateIngredientLotMaltDetail = (uuid: string, data: Record<string, unknown>) =>
+    request<IngredientLotMaltDetail>(`/ingredient-lot-malt-details/${uuid}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
   const getIngredientLotHopDetail = (ingredientLotUuid: string) =>
     request<IngredientLotHopDetail>(`/ingredient-lot-hop-details?ingredient_lot_uuid=${ingredientLotUuid}`)
   const createIngredientLotHopDetail = (data: Record<string, unknown>) =>
@@ -77,11 +82,21 @@ export function useInventoryApi () {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  const updateIngredientLotHopDetail = (uuid: string, data: Record<string, unknown>) =>
+    request<IngredientLotHopDetail>(`/ingredient-lot-hop-details/${uuid}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
   const getIngredientLotYeastDetail = (ingredientLotUuid: string) =>
     request<IngredientLotYeastDetail>(`/ingredient-lot-yeast-details?ingredient_lot_uuid=${ingredientLotUuid}`)
   const createIngredientLotYeastDetail = (data: Record<string, unknown>) =>
     request<IngredientLotYeastDetail>('/ingredient-lot-yeast-details', {
       method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const updateIngredientLotYeastDetail = (uuid: string, data: Record<string, unknown>) =>
+    request<IngredientLotYeastDetail>(`/ingredient-lot-yeast-details/${uuid}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     })
 
@@ -182,10 +197,13 @@ export function useInventoryApi () {
     // Ingredient Lot Details
     getIngredientLotMaltDetail,
     createIngredientLotMaltDetail,
+    updateIngredientLotMaltDetail,
     getIngredientLotHopDetail,
     createIngredientLotHopDetail,
+    updateIngredientLotHopDetail,
     getIngredientLotYeastDetail,
     createIngredientLotYeastDetail,
+    updateIngredientLotYeastDetail,
     // Stock Locations
     getStockLocations,
     createStockLocation,

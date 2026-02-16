@@ -9,13 +9,30 @@ import (
 )
 
 type CreateInventoryTransferRequest struct {
+	IngredientLotUUID  *string    `json:"ingredient_lot_uuid"`
+	BeerLotUUID        *string    `json:"beer_lot_uuid"`
 	SourceLocationUUID string     `json:"source_location_uuid"`
 	DestLocationUUID   string     `json:"dest_location_uuid"`
+	Amount             int64      `json:"amount"`
+	AmountUnit         string     `json:"amount_unit"`
 	TransferredAt      *time.Time `json:"transferred_at"`
 	Notes              *string    `json:"notes"`
 }
 
 func (r CreateInventoryTransferRequest) Validate() error {
+	if (r.IngredientLotUUID == nil && r.BeerLotUUID == nil) || (r.IngredientLotUUID != nil && r.BeerLotUUID != nil) {
+		return fmt.Errorf("exactly one of ingredient_lot_uuid or beer_lot_uuid is required")
+	}
+	if r.IngredientLotUUID != nil {
+		if err := validate.Required(*r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
+			return err
+		}
+	}
+	if r.BeerLotUUID != nil {
+		if err := validate.Required(*r.BeerLotUUID, "beer_lot_uuid"); err != nil {
+			return err
+		}
+	}
 	if err := validate.Required(r.SourceLocationUUID, "source_location_uuid"); err != nil {
 		return err
 	}
@@ -24,6 +41,12 @@ func (r CreateInventoryTransferRequest) Validate() error {
 	}
 	if r.SourceLocationUUID == r.DestLocationUUID {
 		return fmt.Errorf("source_location_uuid and dest_location_uuid must differ")
+	}
+	if r.Amount <= 0 {
+		return fmt.Errorf("amount must be greater than zero")
+	}
+	if err := validate.Required(r.AmountUnit, "amount_unit"); err != nil {
+		return err
 	}
 
 	return nil

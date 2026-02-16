@@ -34,9 +34,18 @@
           </v-container>
         </template>
 
+        <!-- Load error state -->
+        <template v-else-if="loadError">
+          <v-container class="pa-6">
+            <v-alert density="compact" type="error" variant="tonal">
+              {{ loadError }}
+            </v-alert>
+          </v-container>
+        </template>
+
         <!-- Stepper -->
         <v-stepper
-          v-if="!loadingData"
+          v-if="!loadingData && !loadError"
           v-model="currentStep"
           alt-labels
           flat
@@ -973,6 +982,7 @@
   const loadingData = ref(false)
   const saving = ref(false)
   const saveError = ref('')
+  const loadError = ref('')
   const showTimePicker = ref(false)
 
   // Reference data
@@ -1442,17 +1452,19 @@
 
   const canProceedTransfer = computed(() => {
     const hasSource = !!effectiveSourceOccupancy.value
+    const hasSourceVolume = !!effectiveSourceVolume.value
     const hasDest = !!form.value.destVesselUuid
     const amount = Number.parseFloat(form.value.transferAmount)
     const hasValidAmount = !isNaN(amount) && amount > 0
     const loss = Number.parseFloat(form.value.lossAmount || '0')
     const hasValidLoss = !isNaN(loss) && loss >= 0
     const hasStatus = !!form.value.destStatus
-    return hasSource && hasDest && hasValidAmount && hasValidLoss && hasStatus
+    return hasSource && hasSourceVolume && hasDest && hasValidAmount && hasValidLoss && hasStatus
   })
 
   const canProceedSplit = computed(() => {
     const hasSource = !!effectiveSourceOccupancy.value
+    const hasSourceVolume = !!effectiveSourceVolume.value
     const loss = Number.parseFloat(form.value.lossAmount || '0')
     const hasValidLoss = !isNaN(loss) && loss >= 0
 
@@ -1463,7 +1475,7 @@
         return !!d.vesselUuid && !isNaN(amt) && amt > 0 && !!d.status
       })
 
-    return hasSource && hasValidLoss && allDestsValid
+    return hasSource && hasSourceVolume && hasValidLoss && allDestsValid
   })
 
   const canProceedBlend = computed(() => {
@@ -1611,6 +1623,7 @@
     currentStep.value = 1
     saving.value = false
     saveError.value = ''
+    loadError.value = ''
     showTimePicker.value = false
     resolvedSourceOccupancy.value = null
     resolvedSourceVessel.value = null
@@ -1707,7 +1720,7 @@
       allOccupancies.value = occupancyData
       allVessels.value = vesselData
     } catch {
-      saveError.value = 'Failed to load vessel data'
+      loadError.value = 'Failed to load vessel data. Please close and try again.'
     } finally {
       loadingData.value = false
     }

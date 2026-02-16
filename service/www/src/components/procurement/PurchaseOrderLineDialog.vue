@@ -36,12 +36,31 @@
             />
           </v-col>
           <v-col cols="12">
-            <v-text-field
+            <v-autocomplete
               v-model="form.inventory_item_uuid"
-              hint="Optional - link to inventory item"
-              label="Inventory item UUID"
+              clearable
+              hint="Optional - link to inventory ingredient"
+              item-title="title"
+              item-value="value"
+              :items="ingredientSelectItems"
+              label="Inventory ingredient"
+              :loading="ingredientsLoading"
               persistent-hint
-            />
+            >
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps">
+                  <template #subtitle>
+                    <span>{{ item.raw.category }}</span>
+                  </template>
+                </v-list-item>
+              </template>
+              <template #no-data>
+                <v-list-item>
+                  <v-list-item-title>No ingredients found</v-list-item-title>
+                  <v-list-item-subtitle>Create ingredients in the Inventory section first</v-list-item-subtitle>
+                </v-list-item>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col cols="6" sm="4">
             <v-text-field
@@ -95,7 +114,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { PurchaseOrderLine } from '@/types'
+  import type { Ingredient, PurchaseOrderLine } from '@/types'
   import { computed, reactive, watch } from 'vue'
   import { useLineItemTypeFormatters } from '@/composables/useFormatters'
 
@@ -103,6 +122,8 @@
     modelValue: boolean
     line?: PurchaseOrderLine | null
     saving?: boolean
+    ingredients: Ingredient[]
+    ingredientsLoading?: boolean
   }>()
 
   const emit = defineEmits<{
@@ -115,7 +136,7 @@
     line_number: number | null
     item_type: string
     item_name: string
-    inventory_item_uuid: string
+    inventory_item_uuid: string | null
     quantity: number | null
     quantity_unit: string
     unit_cost_cents: number | null
@@ -126,11 +147,19 @@
   const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
+  const ingredientSelectItems = computed(() =>
+    props.ingredients.map(ingredient => ({
+      title: ingredient.name,
+      value: ingredient.uuid,
+      category: ingredient.category.charAt(0).toUpperCase() + ingredient.category.slice(1).replace(/_/g, ' '),
+    })),
+  )
+
   const form = reactive<LineForm>({
     line_number: null,
     item_type: '',
     item_name: '',
-    inventory_item_uuid: '',
+    inventory_item_uuid: null,
     quantity: null,
     quantity_unit: '',
     unit_cost_cents: null,
@@ -160,7 +189,7 @@
         form.line_number = props.line.line_number
         form.item_type = props.line.item_type
         form.item_name = props.line.item_name
-        form.inventory_item_uuid = props.line.inventory_item_uuid ?? ''
+        form.inventory_item_uuid = props.line.inventory_item_uuid ?? null
         form.quantity = props.line.quantity
         form.quantity_unit = props.line.quantity_unit
         form.unit_cost_cents = props.line.unit_cost_cents
@@ -175,7 +204,7 @@
     form.line_number = null
     form.item_type = ''
     form.item_name = ''
-    form.inventory_item_uuid = ''
+    form.inventory_item_uuid = null
     form.quantity = null
     form.quantity_unit = ''
     form.unit_cost_cents = null

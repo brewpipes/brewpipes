@@ -26,11 +26,31 @@
           :model-value="form.stage"
           @update:model-value="updateForm('stage', $event)"
         />
-        <v-text-field
-          label="Inventory lot UUID"
-          :model-value="form.inventory_lot_uuid"
-          @update:model-value="updateForm('inventory_lot_uuid', $event)"
-        />
+        <v-autocomplete
+          clearable
+          item-title="title"
+          item-value="value"
+          :items="lotSelectItems"
+          label="Inventory lot"
+          :loading="ingredientLotsLoading"
+          :model-value="form.inventory_lot_uuid || null"
+          placeholder="Search by ingredient or lot code"
+          @update:model-value="updateForm('inventory_lot_uuid', $event ?? '')"
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps">
+              <template #subtitle>
+                <span>{{ item.raw.subtitle }}</span>
+              </template>
+            </v-list-item>
+          </template>
+          <template #no-data>
+            <v-list-item>
+              <v-list-item-title>No lots available</v-list-item-title>
+              <v-list-item-subtitle>No ingredient lots found in inventory</v-list-item-subtitle>
+            </v-list-item>
+          </template>
+        </v-autocomplete>
         <v-text-field
           label="Amount"
           :model-value="form.amount"
@@ -72,6 +92,7 @@
 </template>
 
 <script lang="ts" setup>
+  import type { Ingredient, IngredientLot } from '@/types'
   import type { AdditionType, Unit } from './types'
   import { computed } from 'vue'
 
@@ -87,10 +108,17 @@
     notes: string
   }
 
-  const props = defineProps<{
+  const props = withDefaults(defineProps<{
     modelValue: boolean
     form: AdditionForm
-  }>()
+    ingredientLots?: IngredientLot[]
+    ingredients?: Ingredient[]
+    ingredientLotsLoading?: boolean
+  }>(), {
+    ingredientLots: () => [],
+    ingredients: () => [],
+    ingredientLotsLoading: false,
+  })
 
   const emit = defineEmits<{
     'update:modelValue': [value: boolean]
@@ -112,6 +140,28 @@
     { title: 'Batch', value: 'batch' },
     { title: 'Occupancy', value: 'occupancy' },
   ]
+
+  const ingredientMap = computed(() => {
+    const map = new Map<string, Ingredient>()
+    for (const ingredient of props.ingredients) {
+      map.set(ingredient.uuid, ingredient)
+    }
+    return map
+  })
+
+  const lotSelectItems = computed(() =>
+    props.ingredientLots.map(lot => {
+      const ingredient = ingredientMap.value.get(lot.ingredient_uuid)
+      const ingredientName = ingredient?.name ?? 'Unknown ingredient'
+      const lotCode = lot.brewery_lot_code || lot.originator_lot_code || lot.uuid.slice(0, 8)
+      const stock = `${lot.current_amount} ${lot.current_unit}`
+      return {
+        title: `${ingredientName} — Lot #${lotCode}`,
+        value: lot.uuid,
+        subtitle: `${stock} available`,
+      }
+    }),
+  )
 
   const isValid = computed(() => {
     if (!props.form.amount) return false

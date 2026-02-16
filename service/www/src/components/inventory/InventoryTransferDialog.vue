@@ -37,7 +37,7 @@
           v-model="form.quantity"
           class="mt-2"
           density="comfortable"
-          :hint="lot ? `Max: ${lot.quantity} ${lot.unit}` : ''"
+          :hint="lot ? `Max: ${formatAmountPreferred(lot.quantity, lot.unit)}` : ''"
           label="Quantity to transfer"
           persistent-hint
           :rules="[rules.required, rules.positiveNumber]"
@@ -77,7 +77,8 @@
 <script lang="ts" setup>
   import type { CreateInventoryTransferRequest, StockLocation } from '@/types'
   import { computed, reactive, watch } from 'vue'
-  import { useUnitPreferences } from '@/composables/useUnitPreferences'
+  import { convertMass, convertVolume } from '@/composables/useUnitConversion'
+  import { isMassUnit, isVolumeUnit, normalizeMassUnit, normalizeVolumeUnit, useUnitPreferences } from '@/composables/useUnitPreferences'
   import { normalizeDateTime, normalizeText, nowInputValue } from '@/utils/normalize'
 
   import type { InventoryLotInfo } from './InventoryAdjustmentDialog.vue'
@@ -94,7 +95,7 @@
     'submit': [data: CreateInventoryTransferRequest]
   }>()
 
-  const { formatAmountPreferred } = useUnitPreferences()
+  const { formatAmountPreferred, preferences } = useUnitPreferences()
 
   const form = reactive({
     from_location: '',
@@ -113,6 +114,52 @@
     },
   }
 
+  /**
+   * Convert a value from the lot's backend unit to the user's preferred display unit.
+   * Returns null if the unit type is unrecognized.
+   */
+  function toPreferredUnit (value: number, backendUnit: string): { value: number, unit: string } | null {
+    const lower = backendUnit.toLowerCase()
+    if (isMassUnit(lower)) {
+      const from = normalizeMassUnit(lower)
+      const to = preferences.value.mass
+      const converted = convertMass(value, from, to)
+      return converted !== null ? { value: converted, unit: to } : null
+    }
+    if (isVolumeUnit(lower)) {
+      const from = normalizeVolumeUnit(lower)
+      const to = preferences.value.volume
+      const converted = convertVolume(value, from, to)
+      return converted !== null ? { value: converted, unit: to } : null
+    }
+    return null
+  }
+
+  /**
+   * Convert a value from the user's preferred display unit back to the lot's backend unit.
+   * Returns the value unchanged if the unit type is unrecognized.
+   */
+  function toBackendUnit (value: number, backendUnit: string): number {
+    const lower = backendUnit.toLowerCase()
+    if (isMassUnit(lower)) {
+      const from = preferences.value.mass
+      const to = normalizeMassUnit(lower)
+      return convertMass(value, from, to) ?? value
+    }
+    if (isVolumeUnit(lower)) {
+      const from = preferences.value.volume
+      const to = normalizeVolumeUnit(lower)
+      return convertVolume(value, from, to) ?? value
+    }
+    return value
+  }
+
+  /** The lot's available quantity converted to the user's preferred unit. */
+  const maxQuantityPreferred = computed(() => {
+    if (!props.lot) return null
+    return toPreferredUnit(props.lot.quantity, props.lot.unit)
+  })
+
   const destinationItems = computed(() => {
     if (!props.lot) {
       return props.locations.map(loc => ({ title: loc.name, value: loc.uuid }))
@@ -130,8 +177,8 @@
     if (!Number.isFinite(qty) || qty <= 0) {
       return false
     }
-    // Ensure transfer quantity doesn't exceed available
-    if (props.lot && qty > props.lot.quantity) {
+    // Ensure transfer quantity doesn't exceed available (compared in preferred units)
+    if (maxQuantityPreferred.value && qty > maxQuantityPreferred.value.value) {
       return false
     }
     return true
@@ -157,12 +204,15 @@
   function handleSubmit () {
     if (!isFormValid.value || !props.lot) return
 
+    // Convert user input (in preferred display unit) back to backend unit
+    const amountInBackendUnit = toBackendUnit(Number(form.quantity), props.lot.unit)
+
     const payload: CreateInventoryTransferRequest = {
       ingredient_lot_uuid: props.lot.type === 'ingredient' ? props.lot.lotUuid : null,
       beer_lot_uuid: props.lot.type === 'beer' ? props.lot.lotUuid : null,
       source_location_uuid: props.lot.locationUuid,
       dest_location_uuid: form.to_location_uuid,
-      amount: Number(form.quantity),
+      amount: amountInBackendUnit,
       amount_unit: props.lot.unit,
       notes: normalizeText(form.notes),
       transferred_at: normalizeDateTime(form.transferred_at),

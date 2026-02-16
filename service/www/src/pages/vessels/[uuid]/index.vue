@@ -20,48 +20,47 @@
 
     <template v-else-if="vessel">
       <!-- Header with back button -->
-      <div class="d-flex align-center mb-4">
+      <div class="d-flex align-center flex-wrap ga-2 mb-4">
         <v-btn
-          class="mr-3"
+          class="mr-1"
           icon="mdi-arrow-left"
           size="small"
           variant="text"
           @click="goBack"
         />
-        <div>
+        <div class="mr-auto">
           <div class="text-h5 font-weight-semibold">{{ vessel.name }}</div>
           <div class="text-body-2 text-medium-emphasis">
             {{ formatVesselType(vessel.type) }}
           </div>
         </div>
-        <v-spacer />
-        <v-btn
-          class="mr-2"
-          size="small"
-          variant="text"
-          @click="openEditDialog"
-        >
-          <v-icon class="mr-1" icon="mdi-pencil" size="small" />
-          Edit
-        </v-btn>
-        <v-btn
-          v-if="vessel.status !== 'retired'"
-          color="warning"
-          size="small"
-          variant="text"
-          @click="openRetireDialog"
-        >
-          <v-icon class="mr-1" icon="mdi-archive" size="small" />
-          Retire
-        </v-btn>
-        <v-chip
-          class="ml-2"
-          :color="getVesselStatusColor(vessel.status)"
-          size="small"
-          variant="tonal"
-        >
-          {{ formatVesselStatus(vessel.status) }}
-        </v-chip>
+        <div class="d-flex align-center ga-1">
+          <v-btn
+            size="small"
+            variant="text"
+            @click="openEditDialog"
+          >
+            <v-icon class="mr-1" icon="mdi-pencil" size="small" />
+            Edit
+          </v-btn>
+          <v-btn
+            v-if="vessel.status !== 'retired'"
+            color="warning"
+            size="small"
+            variant="text"
+            @click="openRetireDialog"
+          >
+            <v-icon class="mr-1" icon="mdi-archive" size="small" />
+            Retire
+          </v-btn>
+          <v-chip
+            :color="getVesselStatusColor(vessel.status)"
+            size="small"
+            variant="tonal"
+          >
+            {{ formatVesselStatus(vessel.status) }}
+          </v-chip>
+        </div>
       </div>
 
       <v-row>

@@ -5,7 +5,7 @@
       <v-card-text>
         <v-select
           density="comfortable"
-          :items="measurementKinds"
+          :items="hotSideMeasurementKinds"
           label="Kind"
           :model-value="form.kind"
           @update:model-value="updateForm('kind', $event)"
@@ -62,6 +62,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { getDefaultUnitForKind, hotSideMeasurementKinds } from './types'
+
   export type HotSideMeasurementForm = {
     kind: string
     value: string
@@ -81,38 +83,6 @@
     'update:form': [form: HotSideMeasurementForm]
     'submit': []
   }>()
-
-  const measurementKinds = [
-    { title: 'Mash Temperature', value: 'mash_temp' },
-    { title: 'Mash pH', value: 'mash_ph' },
-    { title: 'Pre-Boil Gravity', value: 'pre_boil_gravity' },
-    { title: 'Original Gravity', value: 'original_gravity' },
-    { title: 'Boil Temperature', value: 'boil_temp' },
-    { title: 'Post-Boil Volume', value: 'post_boil_volume' },
-    { title: 'Other', value: 'other' },
-  ]
-
-  function getDefaultUnitForKind (kind: string): string {
-    switch (kind) {
-      case 'mash_temp':
-      case 'boil_temp': {
-        return 'F'
-      }
-      case 'mash_ph': {
-        return 'pH'
-      }
-      case 'pre_boil_gravity':
-      case 'original_gravity': {
-        return 'SG'
-      }
-      case 'post_boil_volume': {
-        return 'bbl'
-      }
-      default: {
-        return ''
-      }
-    }
-  }
 
   function updateForm<K extends keyof HotSideMeasurementForm> (key: K, value: HotSideMeasurementForm[K]) {
     emit('update:form', { ...props.form, [key]: value })

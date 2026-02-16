@@ -17,13 +17,32 @@
           placeholder="60 min, 15 min, whirlpool"
           @update:model-value="updateForm('stage', $event)"
         />
-        <v-text-field
+        <v-autocomplete
+          clearable
           density="comfortable"
-          label="Inventory lot UUID"
-          :model-value="form.inventory_lot_uuid"
-          placeholder="Optional"
-          @update:model-value="updateForm('inventory_lot_uuid', $event)"
-        />
+          item-title="title"
+          item-value="value"
+          :items="lotSelectItems"
+          label="Inventory lot"
+          :loading="ingredientLotsLoading"
+          :model-value="form.inventory_lot_uuid || null"
+          placeholder="Search by ingredient or lot code"
+          @update:model-value="updateForm('inventory_lot_uuid', $event ?? '')"
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps">
+              <template #subtitle>
+                <span>{{ item.raw.subtitle }}</span>
+              </template>
+            </v-list-item>
+          </template>
+          <template #no-data>
+            <v-list-item>
+              <v-list-item-title>No lots available</v-list-item-title>
+              <v-list-item-subtitle>No ingredient lots found in inventory</v-list-item-subtitle>
+            </v-list-item>
+          </template>
+        </v-autocomplete>
         <v-row>
           <v-col cols="8">
             <v-text-field
@@ -76,7 +95,8 @@
 </template>
 
 <script lang="ts" setup>
-  import type { AdditionType as ProductionAdditionType, MassUnit, VolumeUnit } from '@/types'
+  import type { AdditionType as ProductionAdditionType, Ingredient, IngredientLot, MassUnit, VolumeUnit } from '@/types'
+  import { computed } from 'vue'
 
   export type HotSideAdditionForm = {
     addition_type: ProductionAdditionType
@@ -88,11 +108,18 @@
     notes: string
   }
 
-  const props = defineProps<{
+  const props = withDefaults(defineProps<{
     modelValue: boolean
     form: HotSideAdditionForm
     saving: boolean
-  }>()
+    ingredientLots?: IngredientLot[]
+    ingredients?: Ingredient[]
+    ingredientLotsLoading?: boolean
+  }>(), {
+    ingredientLots: () => [],
+    ingredients: () => [],
+    ingredientLotsLoading: false,
+  })
 
   const emit = defineEmits<{
     'update:modelValue': [value: boolean]
@@ -110,6 +137,28 @@
     'gas',
     'other',
   ]
+
+  const ingredientMap = computed(() => {
+    const map = new Map<string, Ingredient>()
+    for (const ingredient of props.ingredients) {
+      map.set(ingredient.uuid, ingredient)
+    }
+    return map
+  })
+
+  const lotSelectItems = computed(() =>
+    props.ingredientLots.map(lot => {
+      const ingredient = ingredientMap.value.get(lot.ingredient_uuid)
+      const ingredientName = ingredient?.name ?? 'Unknown ingredient'
+      const lotCode = lot.brewery_lot_code || lot.originator_lot_code || lot.uuid.slice(0, 8)
+      const stock = `${lot.current_amount} ${lot.current_unit}`
+      return {
+        title: `${ingredientName} — Lot #${lotCode}`,
+        value: lot.uuid,
+        subtitle: `${stock} available`,
+      }
+    }),
+  )
 
   function updateForm<K extends keyof HotSideAdditionForm> (key: K, value: HotSideAdditionForm[K]) {
     emit('update:form', { ...props.form, [key]: value })

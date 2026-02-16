@@ -51,42 +51,98 @@
                   :items="supplierSelectItems"
                   label="Filter by supplier"
                 />
-                <v-data-table
-                  class="data-table clickable-rows"
-                  density="compact"
-                  :headers="orderHeaders"
-                  item-value="uuid"
-                  :items="orders"
-                  :loading="loading"
-                  @click:row="handleRowClick"
-                >
-                  <template #item.supplier_uuid="{ item }">
-                    {{ supplierName(item.supplier_uuid) }}
-                  </template>
-                  <template #item.status="{ item }">
-                    <v-chip
-                      :color="getPurchaseOrderStatusColor(item.status)"
-                      size="x-small"
-                      variant="flat"
-                    >
-                      {{ formatPurchaseOrderStatus(item.status) }}
-                    </v-chip>
-                  </template>
-                  <template #item.expected_at="{ item }">
-                    {{ formatDate(item.expected_at) }}
-                  </template>
-                  <template #item.actions="{ item }">
-                    <v-btn
-                      icon="mdi-pencil"
-                      size="x-small"
-                      variant="text"
-                      @click.stop="openEditDialog(item)"
-                    />
-                  </template>
-                  <template #no-data>
-                    <div class="text-center py-4 text-medium-emphasis">No purchase orders yet.</div>
-                  </template>
-                </v-data-table>
+                <!-- Desktop table view -->
+                <div class="d-none d-md-block">
+                  <v-data-table
+                    class="data-table clickable-rows"
+                    density="compact"
+                    :headers="orderHeaders"
+                    item-value="uuid"
+                    :items="orders"
+                    :loading="loading"
+                    @click:row="handleRowClick"
+                  >
+                    <template #item.supplier_uuid="{ item }">
+                      {{ supplierName(item.supplier_uuid) }}
+                    </template>
+                    <template #item.status="{ item }">
+                      <v-chip
+                        :color="getPurchaseOrderStatusColor(item.status)"
+                        size="x-small"
+                        variant="flat"
+                      >
+                        {{ formatPurchaseOrderStatus(item.status) }}
+                      </v-chip>
+                    </template>
+                    <template #item.expected_at="{ item }">
+                      {{ formatDate(item.expected_at) }}
+                    </template>
+                    <template #item.actions="{ item }">
+                      <v-btn
+                        icon="mdi-pencil"
+                        size="x-small"
+                        variant="text"
+                        @click.stop="openEditDialog(item)"
+                      />
+                    </template>
+                    <template #no-data>
+                      <div class="text-center py-4 text-medium-emphasis">No purchase orders yet.</div>
+                    </template>
+                  </v-data-table>
+                </div>
+
+                <!-- Mobile card view -->
+                <div class="d-md-none">
+                  <v-progress-linear v-if="loading" color="primary" indeterminate />
+
+                  <div
+                    v-if="!loading && orders.length === 0"
+                    class="text-center py-4 text-medium-emphasis"
+                  >
+                    No purchase orders yet.
+                  </div>
+
+                  <v-card
+                    v-for="order in orders"
+                    :key="order.uuid"
+                    class="mb-3"
+                    variant="outlined"
+                    @click="router.push(`/procurement/purchase-orders/${order.uuid}`)"
+                  >
+                    <v-card-title class="d-flex align-center py-2 text-body-1">
+                      <span class="font-weight-medium">{{ order.order_number }}</span>
+                      <v-spacer />
+                      <v-chip
+                        :color="getPurchaseOrderStatusColor(order.status)"
+                        size="x-small"
+                        variant="flat"
+                      >
+                        {{ formatPurchaseOrderStatus(order.status) }}
+                      </v-chip>
+                    </v-card-title>
+
+                    <v-card-text class="pt-0">
+                      <div class="d-flex justify-space-between text-body-2 mb-1">
+                        <span class="text-medium-emphasis">Supplier</span>
+                        <span>{{ supplierName(order.supplier_uuid) }}</span>
+                      </div>
+                      <div class="d-flex justify-space-between text-body-2 mb-1">
+                        <span class="text-medium-emphasis">Expected</span>
+                        <span>{{ formatDate(order.expected_at) }}</span>
+                      </div>
+                    </v-card-text>
+
+                    <v-card-actions class="pt-0 justify-end">
+                      <v-btn
+                        aria-label="Edit order"
+                        icon="mdi-pencil"
+                        size="x-small"
+                        variant="text"
+                        @click.stop="openEditDialog(order)"
+                      />
+                    </v-card-actions>
+                  </v-card>
+                </div>
               </v-card-text>
             </v-card>
           </v-col>

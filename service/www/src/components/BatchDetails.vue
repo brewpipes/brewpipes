@@ -273,6 +273,9 @@
   <BatchAdditionDialog
     v-model="createAdditionDialog"
     :form="additionForm"
+    :ingredient-lots="ingredientLots"
+    :ingredient-lots-loading="ingredientLotsLoading"
+    :ingredients="ingredients"
     @submit="recordAddition"
     @update:form="Object.assign(additionForm, $event)"
   />
@@ -316,6 +319,9 @@
   <BatchHotSideAdditionDialog
     v-model="hotSideAdditionDialog"
     :form="hotSideAdditionForm"
+    :ingredient-lots="ingredientLots"
+    :ingredient-lots-loading="ingredientLotsLoading"
+    :ingredients="ingredients"
     :saving="savingHotSideAddition"
     @submit="recordHotSideAddition"
     @update:form="Object.assign(hotSideAdditionForm, $event)"
@@ -421,6 +427,7 @@
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { formatDate, formatDateTime, useAdditionTypeFormatters, useOccupancyStatusFormatters } from '@/composables/useFormatters'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import {
@@ -526,6 +533,11 @@
     formatGravityPreferred,
   } = useUnitPreferences()
 
+  const {
+    getIngredientLots: fetchIngredientLots,
+    getIngredients: fetchIngredients,
+  } = useInventoryApi()
+
   const { formatOccupancyStatus } = useOccupancyStatusFormatters()
   const { formatAdditionType } = useAdditionTypeFormatters()
 
@@ -545,6 +557,11 @@
   const activeTab = ref('summary')
   const createAdditionDialog = ref(false)
   const createMeasurementDialog = ref(false)
+
+  // Inventory lot data for addition dialogs
+  const ingredientLots = ref<import('@/types').IngredientLot[]>([])
+  const ingredients = ref<import('@/types').Ingredient[]>([])
+  const ingredientLotsLoading = ref(false)
 
   const { showNotice } = useSnackbar()
 
@@ -912,6 +929,13 @@
     }
   })
 
+  // Load ingredient lots when an addition dialog opens
+  watch([createAdditionDialog, hotSideAdditionDialog], async ([additionOpen, hotSideOpen]) => {
+    if (additionOpen || hotSideOpen) {
+      await loadIngredientLotData()
+    }
+  })
+
   onMounted(async () => {
     await loadReferenceData()
   })
@@ -977,6 +1001,20 @@
       volumes.value = volumesData
     } catch (error) {
       console.error('Failed to load volumes:', error)
+    }
+  }
+
+  async function loadIngredientLotData () {
+    ingredientLotsLoading.value = true
+    try {
+      const [lotsResult, ingredientsResult] = await Promise.allSettled([
+        fetchIngredientLots(),
+        fetchIngredients(),
+      ])
+      ingredientLots.value = lotsResult.status === 'fulfilled' ? lotsResult.value : []
+      ingredients.value = ingredientsResult.status === 'fulfilled' ? ingredientsResult.value : []
+    } finally {
+      ingredientLotsLoading.value = false
     }
   }
 
@@ -1958,7 +1996,32 @@
       return measurement.notes ? `Note: ${measurement.notes}` : 'Note'
     }
     const label = formatMeasurementKind(measurement.kind)
-    return `${label} ${formatValue(measurement.value, measurement.unit)}`
+    return `${label} ${formatMeasurementValuePreferred(measurement)}`
+  }
+
+  /**
+   * Format a measurement value with unit conversion for temperature and gravity,
+   * matching the sparkline behavior.
+   */
+  function formatMeasurementValuePreferred (measurement: Measurement): string {
+    if (measurement.value === null || measurement.value === undefined) {
+      return 'Unknown'
+    }
+
+    const kind = normalizeMeasurementKind(measurement.kind)
+
+    if (kind === 'temperature' || kind === 'temp') {
+      const sourceUnit = normalizeTemperatureUnit(measurement.unit)
+      return formatTemperaturePreferred(measurement.value, sourceUnit)
+    }
+
+    if (kind === 'gravity' || kind === 'grav' || kind === 'sg') {
+      const sourceUnit = normalizeGravityUnit(measurement.unit)
+      return formatGravityPreferred(measurement.value, sourceUnit)
+    }
+
+    // For other measurement kinds (pH, etc.), display as-is
+    return formatValue(measurement.value, measurement.unit)
   }
 
   function formatMeasurementKind (kind: string) {

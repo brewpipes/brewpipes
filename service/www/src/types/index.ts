@@ -41,6 +41,7 @@ export type {
   Ingredient,
   IngredientLot,
   IngredientLotHopDetail,
+  IngredientLotStockLevel,
   IngredientLotMaltDetail,
   IngredientLotYeastDetail,
   InventoryAdjustment,

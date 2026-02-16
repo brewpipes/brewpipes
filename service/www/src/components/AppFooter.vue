@@ -1,5 +1,5 @@
 <template>
-  <v-footer app class="app-footer" height="56">
+  <v-footer class="app-footer" height="56">
     <v-container class="footer-content">
       <div class="text-caption text-medium-emphasis d-none d-sm-block">
         BrewPipes Production UI

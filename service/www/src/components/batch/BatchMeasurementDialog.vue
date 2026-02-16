@@ -15,23 +15,30 @@
           :model-value="form.occupancy_uuid"
           @update:model-value="updateForm('occupancy_uuid', $event)"
         />
-        <v-text-field
+        <v-select
+          :items="measurementKinds"
           label="Kind"
           :model-value="form.kind"
-          placeholder="gravity"
           @update:model-value="updateForm('kind', $event)"
         />
-        <v-text-field
-          label="Value"
-          :model-value="form.value"
-          type="number"
-          @update:model-value="updateForm('value', $event)"
-        />
-        <v-text-field
-          label="Unit"
-          :model-value="form.unit"
-          @update:model-value="updateForm('unit', $event)"
-        />
+        <v-row>
+          <v-col cols="8">
+            <v-text-field
+              label="Value"
+              :model-value="form.value"
+              type="number"
+              @update:model-value="updateForm('value', $event)"
+            />
+          </v-col>
+          <v-col cols="4">
+            <v-text-field
+              label="Unit"
+              :model-value="form.unit"
+              :placeholder="getDefaultUnitForKind(form.kind)"
+              @update:model-value="updateForm('unit', $event)"
+            />
+          </v-col>
+        </v-row>
         <v-text-field
           label="Observed at"
           :model-value="form.observed_at"
@@ -62,6 +69,7 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
+  import { getDefaultUnitForKind, measurementKinds } from './types'
 
   export type MeasurementForm = {
     target: 'batch' | 'occupancy'

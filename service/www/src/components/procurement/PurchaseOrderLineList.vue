@@ -127,6 +127,8 @@
   <!-- Line Dialog -->
   <PurchaseOrderLineDialog
     v-model="lineDialogOpen"
+    :ingredients="ingredients"
+    :ingredients-loading="ingredientsLoading"
     :line="editingLine"
     :saving="saving"
     @cancel="closeLineDialog"
@@ -156,12 +158,12 @@
 </template>
 
 <script lang="ts" setup>
-  import type { PurchaseOrderLine } from '@/types'
-  import { ref } from 'vue'
+  import type { Ingredient, PurchaseOrderLine } from '@/types'
+  import { onMounted, ref } from 'vue'
   import { useLineItemTypeFormatters } from '@/composables/useFormatters'
+  import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { normalizeText } from '@/utils/normalize'
   import PurchaseOrderLineDialog, { type LineForm } from './PurchaseOrderLineDialog.vue'
 
   const props = defineProps<{
@@ -180,8 +182,24 @@
     deletePurchaseOrderLine,
     formatCurrency,
   } = useProcurementApi()
+  const { getIngredients } = useInventoryApi()
   const { showNotice } = useSnackbar()
   const { formatLineItemType } = useLineItemTypeFormatters()
+
+  // Ingredients for the line item dialog autocomplete
+  const ingredients = ref<Ingredient[]>([])
+  const ingredientsLoading = ref(false)
+
+  onMounted(async () => {
+    ingredientsLoading.value = true
+    try {
+      ingredients.value = await getIngredients()
+    } catch {
+      // Non-critical: dialog will show empty list with helpful message
+    } finally {
+      ingredientsLoading.value = false
+    }
+  })
 
   const headers = [
     { title: 'Line #', key: 'line_number', sortable: true, width: '80px' },
@@ -229,7 +247,7 @@
           line_number: form.line_number ?? undefined,
           item_type: form.item_type,
           item_name: form.item_name.trim(),
-          inventory_item_uuid: normalizeText(form.inventory_item_uuid),
+          inventory_item_uuid: form.inventory_item_uuid || null,
           quantity: form.quantity ?? undefined,
           quantity_unit: form.quantity_unit,
           unit_cost_cents: form.unit_cost_cents ?? undefined,
@@ -242,7 +260,7 @@
           line_number: form.line_number,
           item_type: form.item_type,
           item_name: form.item_name.trim(),
-          inventory_item_uuid: normalizeText(form.inventory_item_uuid),
+          inventory_item_uuid: form.inventory_item_uuid || null,
           quantity: form.quantity,
           quantity_unit: form.quantity_unit,
           unit_cost_cents: form.unit_cost_cents,

@@ -134,6 +134,7 @@ In short:
 - Beer lots support packaging metadata: packaging run UUID, best-by date, package format name, container type, volume per unit, and quantity.
 - Beer lots can be created with an initial inventory movement atomically when a stock location is provided (`POST /beer-lots` with `stock_location_uuid`).
 - Beer lot stock levels can be queried via `GET /beer-lot-stock-levels`, showing current volume and derived quantity per lot per location.
+- Ingredient lot stock levels can be queried via `GET /ingredient-lot-stock-levels`, showing current amount per lot per location, computed from the movement ledger. Only lots with positive stock are included. Each row includes ingredient name, category, brewery lot code, received amount/unit, and the stock location name.
 - A brewer can atomically deduct inventory for a batch's ingredient picks via `POST /inventory-usage/batch`, with per-pick stock validation and descriptive error messages on insufficient stock.
 - The system can return all ingredient lots consumed by a production batch via `GET /ingredient-lots/batch?production_ref_uuid={uuid}`, joining through usage records and movements to resolve lot and ingredient details.
 - Removals can be created, listed, retrieved, updated, and soft-deleted via `/removals` endpoints.

@@ -22,7 +22,7 @@
         </v-row>
       </v-card-text>
       <v-card-actions>
-        <v-btn variant="text" @click="resetBrewerySettings">Reset to Default</v-btn>
+        <v-btn variant="text" @click="resetBrewerySettings">Reset to Defaults</v-btn>
       </v-card-actions>
     </v-card>
 
@@ -181,3 +181,11 @@
     }
   }
 </script>
+
+<style scoped>
+  :deep(.v-card-subtitle) {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+</style>

@@ -30,7 +30,7 @@
                   {{
                     isNoteMeasurement(measurement)
                       ? measurement.notes ?? 'Note'
-                      : formatValue(measurement.value, measurement.unit)
+                      : formatMeasurementValue(measurement)
                   }}
                 </td>
                 <td>{{ measurement.occupancy_uuid ? 'Occupancy' : 'Batch' }}</td>
@@ -48,9 +48,11 @@
 </template>
 
 <script lang="ts" setup>
+  import type { GravityUnit, TemperatureUnit } from '@/types'
   import type { Measurement } from './types'
   import { computed } from 'vue'
   import { useFormatters } from '@/composables/useFormatters'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   const props = defineProps<{
     measurements: Measurement[]
@@ -61,21 +63,61 @@
   }>()
 
   const { formatDateTime } = useFormatters()
+  const { formatTemperaturePreferred, formatGravityPreferred } = useUnitPreferences()
 
   const measurementsSorted = computed(() =>
     sortByTime(props.measurements, item => item.observed_at),
   )
 
-  function formatValue (value: number | null, unit: string | null | undefined) {
-    if (value === null || value === undefined) {
+  /**
+   * Format a measurement value with unit conversion for temperature and gravity,
+   * matching the sparkline behavior in FermentationCard and BatchDetails.
+   */
+  function formatMeasurementValue (measurement: Measurement): string {
+    if (measurement.value === null || measurement.value === undefined) {
       return 'Unknown'
     }
-    return `${value}${unit ? ` ${unit}` : ''}`
+
+    const kind = normalizeMeasurementKind(measurement.kind)
+
+    if (kind === 'temperature' || kind === 'temp') {
+      const sourceUnit = normalizeTemperatureUnit(measurement.unit)
+      return formatTemperaturePreferred(measurement.value, sourceUnit)
+    }
+
+    if (kind === 'gravity' || kind === 'grav' || kind === 'sg') {
+      const sourceUnit = normalizeGravityUnit(measurement.unit)
+      return formatGravityPreferred(measurement.value, sourceUnit)
+    }
+
+    // For other measurement kinds (pH, etc.), display as-is
+    return `${measurement.value}${measurement.unit ? ` ${measurement.unit}` : ''}`
+  }
+
+  function normalizeMeasurementKind (kind: string): string {
+    return kind.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  }
+
+  function normalizeTemperatureUnit (unit: string | null | undefined): TemperatureUnit {
+    if (!unit) return 'c'
+    const normalized = unit.trim().toLowerCase()
+    if (normalized === 'f' || normalized === 'fahrenheit' || normalized === '°f') {
+      return 'f'
+    }
+    return 'c'
+  }
+
+  function normalizeGravityUnit (unit: string | null | undefined): GravityUnit {
+    if (!unit) return 'sg'
+    const normalized = unit.trim().toLowerCase()
+    if (normalized === 'plato' || normalized === '°p' || normalized === 'p') {
+      return 'plato'
+    }
+    return 'sg'
   }
 
   function isNoteMeasurement (measurement: Measurement) {
-    const normalized = measurement.kind.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-    return normalized === 'note'
+    return normalizeMeasurementKind(measurement.kind) === 'note'
   }
 
   function toTimestamp (value: string | null | undefined) {

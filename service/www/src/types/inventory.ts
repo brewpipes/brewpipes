@@ -113,6 +113,22 @@ export interface BeerLotStockLevel {
   current_quantity?: number
 }
 
+/** Current stock level for an ingredient lot at a specific location */
+export interface IngredientLotStockLevel {
+  ingredient_lot_uuid: string
+  ingredient_uuid: string
+  ingredient_name: string
+  ingredient_category: string
+  brewery_lot_code?: string
+  received_at: string
+  received_amount: number
+  received_unit: string
+  stock_location_uuid: string
+  stock_location_name: string
+  current_amount: number
+  current_unit: string
+}
+
 // ============================================================================
 // Stock Location Types
 // ============================================================================

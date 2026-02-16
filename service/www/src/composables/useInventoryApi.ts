@@ -19,6 +19,7 @@ import type {
   Ingredient,
   IngredientLot,
   IngredientLotHopDetail,
+  IngredientLotStockLevel,
   IngredientLotMaltDetail,
   IngredientLotYeastDetail,
   InventoryAdjustment,
@@ -193,6 +194,9 @@ export function useInventoryApi () {
   // Beer Lot Stock Levels API
   const getBeerLotStockLevels = () => request<BeerLotStockLevel[]>('/beer-lot-stock-levels')
 
+  // Ingredient Lot Stock Levels API
+  const getIngredientLotStockLevels = () => request<IngredientLotStockLevel[]>('/ingredient-lot-stock-levels')
+
   // Removals API
   const listRemovals = (params?: { batch_uuid?: string; beer_lot_uuid?: string; category?: string; from?: string; to?: string }) => {
     const query = new URLSearchParams()
@@ -275,6 +279,8 @@ export function useInventoryApi () {
     getStockLevels,
     // Beer Lot Stock Levels
     getBeerLotStockLevels,
+    // Ingredient Lot Stock Levels
+    getIngredientLotStockLevels,
     // Removals
     listRemovals,
     getRemoval,

@@ -36,11 +36,11 @@
             <div class="metric-card">
               <div class="metric-label">Cost per BBL</div>
               <div class="metric-value">
-                {{ costs.totals.cost_per_bbl_cents !== null
+                {{ costs.totals.cost_per_bbl_cents != null
                   ? `${formatCents(costs.totals.cost_per_bbl_cents)}/bbl`
                   : 'N/A' }}
               </div>
-              <div v-if="costs.totals.batch_volume_bbl !== null" class="text-caption text-medium-emphasis mt-1">
+              <div v-if="costs.totals.batch_volume_bbl != null" class="text-caption text-medium-emphasis mt-1">
                 {{ formatVolumePreferred(costs.totals.batch_volume_bbl, 'bbl') }} batch
               </div>
             </div>
@@ -50,8 +50,8 @@
               <div class="metric-label">Costing Status</div>
               <div class="metric-value d-flex align-center justify-center ga-2">
                 <v-icon
-                  :color="costs.totals.cost_complete ? 'success' : 'warning'"
-                  :icon="costs.totals.cost_complete ? 'mdi-check-circle' : 'mdi-alert-circle'"
+                  :color="hasNoCostData ? 'grey' : costs.totals.cost_complete ? 'success' : 'warning'"
+                  :icon="hasNoCostData ? 'mdi-minus-circle' : costs.totals.cost_complete ? 'mdi-check-circle' : 'mdi-alert-circle'"
                   size="20"
                 />
                 {{ costStatusLabel }}
@@ -423,9 +423,18 @@
     })
   })
 
+  // Whether the batch has zero cost data (no additions at all)
+  const hasNoCostData = computed(() => {
+    if (!costs.value) return true
+    const { costed_line_count, uncosted_line_count } = costs.value.totals
+    const total = costed_line_count + uncosted_line_count
+    return total === 0 && costs.value.uncosted_additions.length === 0
+  })
+
   // Costing status label
   const costStatusLabel = computed(() => {
     if (!costs.value) return '—'
+    if (hasNoCostData.value) return 'No data'
     if (costs.value.totals.cost_complete) return 'Complete'
     const { costed_line_count, uncosted_line_count } = costs.value.totals
     const total = costed_line_count + uncosted_line_count
@@ -435,6 +444,7 @@
   // Costing status card class
   const costStatusClass = computed(() => {
     if (!costs.value) return ''
+    if (hasNoCostData.value) return ''
     return costs.value.totals.cost_complete
       ? 'metric-card--success'
       : 'metric-card--warning'
@@ -512,7 +522,7 @@
     actual: number | null,
   ): ComparisonRow {
     const targetStr = formatGravityTarget(target, min, max)
-    const actualStr = actual !== null ? formatGravityPreferred(actual, 'sg') : '—'
+    const actualStr = actual != null ? formatGravityPreferred(actual, 'sg') : '—'
     const status = evaluateStatus(actual, target, min, max)
     return { metric, target: targetStr, actual: actualStr, status, statusLabel: formatStatusLabel(status) }
   }
@@ -524,8 +534,8 @@
     max: number | null,
     actual: number | null,
   ): ComparisonRow {
-    const targetStr = target !== null ? `${target.toFixed(1)}%` : '—'
-    const actualStr = actual !== null ? `${actual.toFixed(1)}%` : '—'
+    const targetStr = target != null ? `${target.toFixed(1)}%` : '—'
+    const actualStr = actual != null ? `${actual.toFixed(1)}%` : '—'
     const status = evaluateStatus(actual, target, min, max)
     return { metric, target: targetStr, actual: actualStr, status, statusLabel: formatStatusLabel(status) }
   }
@@ -538,7 +548,7 @@
     actual: number | null,
   ): ComparisonRow {
     const targetStr = formatNumericTarget(target, min, max)
-    const actualStr = actual !== null ? String(Math.round(actual)) : '—'
+    const actualStr = actual != null ? String(Math.round(actual)) : '—'
     const status = evaluateStatus(actual, target, min, max)
     return { metric, target: targetStr, actual: actualStr, status, statusLabel: formatStatusLabel(status) }
   }
@@ -550,18 +560,18 @@
     actualBbl: number | null,
   ): ComparisonRow {
     const resolvedTargetUnit = targetUnit ?? 'bbl'
-    const targetStr = targetSize !== null
+    const targetStr = targetSize != null
       ? formatVolumePreferred(targetSize, normalizeVolumeUnit(resolvedTargetUnit))
       : '—'
-    const actualStr = actualBbl !== null
+    const actualStr = actualBbl != null
       ? formatVolumePreferred(actualBbl, 'bbl')
       : '—'
 
     // Convert target to bbl for apples-to-apples comparison with actualBbl
     let status: ComparisonRow['status'] = 'unavailable'
-    if (targetSize !== null && actualBbl !== null) {
+    if (targetSize != null && actualBbl != null) {
       const targetBbl = convertVolume(targetSize, normalizeVolumeUnit(resolvedTargetUnit), 'bbl')
-      if (targetBbl !== null) {
+      if (targetBbl != null) {
         const tolerance = targetBbl * 0.05
         if (actualBbl >= targetBbl - tolerance && actualBbl <= targetBbl + tolerance) {
           status = 'in_range'
@@ -582,10 +592,10 @@
     min: number | null,
     max: number | null,
   ): ComparisonRow['status'] {
-    if (actual === null || target === null) return 'unavailable'
+    if (actual == null || target == null) return 'unavailable'
 
     // If we have a range, use it
-    if (min !== null && max !== null) {
+    if (min != null && max != null) {
       if (actual >= min && actual <= max) return 'in_range'
       if (actual < min) return 'below'
       return 'above'
@@ -608,18 +618,18 @@
   }
 
   function formatGravityTarget (target: number | null, min: number | null, max: number | null): string {
-    if (target === null) return '—'
+    if (target == null) return '—'
     const base = formatGravityPreferred(target, 'sg')
-    if (min !== null && max !== null) {
+    if (min != null && max != null) {
       return `${base} (${formatGravityPreferred(min, 'sg')}–${formatGravityPreferred(max, 'sg')})`
     }
     return base
   }
 
   function formatNumericTarget (target: number | null, min: number | null, max: number | null): string {
-    if (target === null) return '—'
+    if (target == null) return '—'
     const base = String(Math.round(target))
-    if (min !== null && max !== null) {
+    if (min != null && max != null) {
       return `${base} (${Math.round(min)}–${Math.round(max)})`
     }
     return base
@@ -628,7 +638,7 @@
   // ==================== Currency Formatting ====================
 
   function formatCents (cents: number | null): string {
-    if (cents === null) return '—'
+    if (cents == null) return '—'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -638,7 +648,7 @@
   }
 
   function formatUnitCost (cents: number | null, unit: string | null): string {
-    if (cents === null) return '—'
+    if (cents == null) return '—'
     const formatted = formatCents(cents)
     return unit ? `${formatted}/${unit}` : formatted
   }

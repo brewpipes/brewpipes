@@ -26,9 +26,25 @@ type Service struct {
 
 // New creates and initializes a new production service instance.
 func New(cfg Config) *Service {
+	// Initialize inter-service clients at construction time so they are
+	// available when HTTPRoutes() is called (which happens before Start()).
+	inventoryURL := os.Getenv("INVENTORY_API_URL")
+	if inventoryURL == "" {
+		inventoryURL = "http://localhost:8080/api"
+	}
+	slog.Info("inventory client configured", "inventory_api_url", inventoryURL)
+
+	procurementURL := os.Getenv("PROCUREMENT_API_URL")
+	if procurementURL == "" {
+		procurementURL = "http://localhost:8080/api"
+	}
+	slog.Info("procurement client configured", "procurement_api_url", procurementURL)
+
 	return &Service{
-		storage:   storage.New(cfg.PostgresDSN),
-		secretKey: cfg.SecretKey,
+		storage:           storage.New(cfg.PostgresDSN),
+		secretKey:         cfg.SecretKey,
+		inventoryClient:   handler.NewInventoryClient(inventoryURL),
+		procurementClient: handler.NewProcurementClient(procurementURL),
 	}
 }
 
@@ -115,22 +131,6 @@ func (s *Service) Start(ctx context.Context) error {
 	if err := s.storage.Start(ctx); err != nil {
 		return fmt.Errorf("starting storage: %w", err)
 	}
-
-	// Initialize inventory client for inter-service beer lot creation.
-	inventoryURL := os.Getenv("INVENTORY_API_URL")
-	if inventoryURL == "" {
-		inventoryURL = "http://localhost:8080/api"
-	}
-	s.inventoryClient = handler.NewInventoryClient(inventoryURL)
-	slog.Info("inventory client configured", "inventory_api_url", inventoryURL)
-
-	// Initialize procurement client for inter-service cost lookups.
-	procurementURL := os.Getenv("PROCUREMENT_API_URL")
-	if procurementURL == "" {
-		procurementURL = "http://localhost:8080/api"
-	}
-	s.procurementClient = handler.NewProcurementClient(procurementURL)
-	slog.Info("procurement client configured", "procurement_api_url", procurementURL)
 
 	return nil
 }

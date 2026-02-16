@@ -257,8 +257,18 @@
     return formatTemperaturePreferred(latestTemperature.value.value, 'c')
   })
 
-  // OG from batch summary
-  const og = computed(() => props.batchSummary?.original_gravity ?? null)
+  // OG from batch summary, falling back to first gravity reading
+  const og = computed(() => {
+    if (props.batchSummary?.original_gravity != null) {
+      return props.batchSummary.original_gravity
+    }
+    // Fall back to first gravity reading (same approach as FermentationCurve)
+    const first = gravityMeasurements.value[0]
+    if (first) {
+      return first.value
+    }
+    return null
+  })
 
   // Attenuation: (OG - currentGravity) / (OG - 1.0) * 100
   const attenuation = computed(() => {

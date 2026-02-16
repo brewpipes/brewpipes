@@ -17,6 +17,13 @@ The big picture: the system tracks your beer as it moves through tanks, gets spl
 - All HTTP routes require `Authorization: Bearer <access token>`.
 - Service startup fails if `BREWPIPES_SECRET_KEY` is missing.
 
+## Inter-Service Clients
+
+- `InventoryClient` and `ProcurementClient` are initialized in `New()` (construction time), not `Start()`.
+- This is required because `HTTPRoutes()` is called before `Start()` in the service lifecycle, and handlers capture client pointers at route registration time.
+- `INVENTORY_API_URL` env var configures the inventory service base URL (default `http://localhost:8080/api`).
+- `PROCUREMENT_API_URL` env var configures the procurement service base URL (default `http://localhost:8080/api`).
+
 Batch
 - A batch is the overall production run you care about (e.g., "IPA 24‑07").
 - It's the top‑level record you plan, brew, ferment, and eventually package.

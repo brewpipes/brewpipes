@@ -499,7 +499,11 @@
       items = items.filter(item => item.stock_location_uuid === locationFilter.value)
     }
 
-    return items
+    // Add batch_name for Vuetify search (slot-rendered fields aren't searchable)
+    return items.map(item => ({
+      ...item,
+      batch_name: batchName(item.production_batch_uuid),
+    }))
   })
 
   // Mobile uses the same filtered list (search handled by v-data-table on desktop,

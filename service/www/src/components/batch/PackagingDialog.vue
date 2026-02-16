@@ -375,7 +375,10 @@
                   Beer lots will be created in inventory at {{ reviewStockLocationName }}
                 </li>
                 <li v-if="form.lossAmount">
-                  {{ form.lossAmount }} {{ lossUnitLabel }} recorded as loss
+                  {{ form.lossAmount }} {{ lossUnitLabel }} recorded as loss (manual override)
+                </li>
+                <li v-else-if="estimatedLossLabel !== '—'">
+                  {{ estimatedLossLabel }} estimated loss
                 </li>
               </ul>
 
@@ -546,11 +549,22 @@
     new Map(packageFormats.value.map(f => [f.uuid, f])),
   )
 
+  /** Format volume for package format display, using higher precision for small values */
+  function formatFormatVolume (amount: number, unit: VolumeUnit): string {
+    const label = formatVolumePreferred(amount, unit)
+    // If the formatted value shows "0.00", use "< 0.01" prefix instead
+    if (/^0\.0+\s/.test(label)) {
+      const unitLabel = label.replace(/^[\d.]+\s*/, '')
+      return `< 0.01 ${unitLabel}`
+    }
+    return label
+  }
+
   const activeFormatOptions = computed(() =>
     packageFormats.value
       .filter(f => f.is_active)
       .map(f => {
-        const volLabel = formatVolumePreferred(f.volume_per_unit, f.volume_per_unit_unit as VolumeUnit)
+        const volLabel = formatFormatVolume(f.volume_per_unit, f.volume_per_unit_unit as VolumeUnit)
         return {
           title: f.name,
           value: f.uuid,

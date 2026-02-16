@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/brewpipes/brewpipes/service"
 	"github.com/brewpipes/brewpipes/service/production/handler"
@@ -17,8 +18,9 @@ type Config struct {
 }
 
 type Service struct {
-	storage   *storage.Client
-	secretKey string
+	storage         *storage.Client
+	secretKey       string
+	inventoryClient *handler.InventoryClient
 }
 
 // New creates and initializes a new production service instance.
@@ -91,6 +93,15 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/measurements", Handler: auth(handler.HandleMeasurements(s.storage))},
 		{Method: http.MethodPost, Path: "/measurements", Handler: auth(handler.HandleMeasurements(s.storage))},
 		{Method: http.MethodGet, Path: "/measurements/{uuid}", Handler: auth(handler.HandleMeasurementByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/package-formats", Handler: auth(handler.HandlePackageFormats(s.storage))},
+		{Method: http.MethodPost, Path: "/package-formats", Handler: auth(handler.HandlePackageFormats(s.storage))},
+		{Method: http.MethodGet, Path: "/package-formats/{uuid}", Handler: auth(handler.HandlePackageFormatByUUID(s.storage))},
+		{Method: http.MethodPatch, Path: "/package-formats/{uuid}", Handler: auth(handler.HandlePackageFormatByUUID(s.storage))},
+		{Method: http.MethodDelete, Path: "/package-formats/{uuid}", Handler: auth(handler.HandlePackageFormatByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/packaging-runs", Handler: auth(handler.HandlePackagingRuns(s.storage, s.inventoryClient))},
+		{Method: http.MethodPost, Path: "/packaging-runs", Handler: auth(handler.HandlePackagingRuns(s.storage, s.inventoryClient))},
+		{Method: http.MethodGet, Path: "/packaging-runs/{uuid}", Handler: auth(handler.HandlePackagingRunByUUID(s.storage))},
+		{Method: http.MethodDelete, Path: "/packaging-runs/{uuid}", Handler: auth(handler.HandlePackagingRunByUUID(s.storage))},
 	}
 }
 
@@ -102,6 +113,14 @@ func (s *Service) Start(ctx context.Context) error {
 	if err := s.storage.Start(ctx); err != nil {
 		return fmt.Errorf("starting storage: %w", err)
 	}
+
+	// Initialize inventory client for inter-service beer lot creation.
+	inventoryURL := os.Getenv("INVENTORY_API_URL")
+	if inventoryURL == "" {
+		inventoryURL = "http://localhost:8080/api"
+	}
+	s.inventoryClient = handler.NewInventoryClient(inventoryURL)
+	slog.Info("inventory client configured", "inventory_api_url", inventoryURL)
 
 	return nil
 }

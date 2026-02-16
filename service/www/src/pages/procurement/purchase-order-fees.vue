@@ -83,7 +83,8 @@
                 <v-btn
                   block
                   color="primary"
-                  :disabled="!feeForm.purchase_order_uuid || !feeForm.fee_type.trim() || !feeForm.amount_cents || !feeForm.currency"
+                  :disabled="saving || !feeForm.purchase_order_uuid || !feeForm.fee_type.trim() || !feeForm.amount_cents || !feeForm.currency"
+                  :loading="saving"
                   @click="createFee"
                 >
                   Add fee
@@ -132,6 +133,7 @@
   const orders = ref<PurchaseOrder[]>([])
   const fees = ref<PurchaseOrderFee[]>([])
   const loading = ref(false)
+  const saving = ref(false)
   const errorMessage = ref('')
 
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
@@ -185,6 +187,7 @@
   }
 
   async function createFee () {
+    saving.value = true
     try {
       const payload = {
         purchase_order_uuid: feeForm.purchase_order_uuid,
@@ -203,6 +206,8 @@
       const message = error instanceof Error ? error.message : 'Unable to create fee'
       errorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      saving.value = false
     }
   }
 

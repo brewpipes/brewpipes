@@ -231,6 +231,42 @@ describe('useInventoryApi', () => {
     })
   })
 
+  describe('beer lot stock levels API', () => {
+    it('getBeerLotStockLevels fetches beer lot stock levels', async () => {
+      const mockLevels = [
+        {
+          beer_lot_uuid: 'bl-1',
+          production_batch_uuid: 'batch-1',
+          lot_code: 'LOT-001',
+          package_format_name: '1/2 BBL Keg',
+          container: 'keg',
+          stock_location_uuid: 'loc-1',
+          stock_location_name: 'Cold Room',
+          current_volume: 58674,
+          current_volume_unit: 'ml',
+          current_quantity: 4,
+        },
+      ]
+      mockRequest.mockResolvedValue(mockLevels)
+
+      const { getBeerLotStockLevels } = useInventoryApi()
+      const result = await getBeerLotStockLevels()
+
+      expect(mockRequest).toHaveBeenCalledWith('/beer-lot-stock-levels')
+      expect(result).toEqual(mockLevels)
+    })
+
+    it('getBeerLotStockLevels returns empty array when no stock', async () => {
+      mockRequest.mockResolvedValue([])
+
+      const { getBeerLotStockLevels } = useInventoryApi()
+      const result = await getBeerLotStockLevels()
+
+      expect(mockRequest).toHaveBeenCalledWith('/beer-lot-stock-levels')
+      expect(result).toEqual([])
+    })
+  })
+
   describe('ingredient lots API', () => {
     it('getIngredientLots fetches all lots without filters', async () => {
       const mockLots = [{ uuid: 'lot-1', ingredient_uuid: 'ing-1' }]

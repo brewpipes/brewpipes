@@ -30,11 +30,11 @@
     <!-- Loading skeleton -->
     <v-row v-if="!dataReady && loading" class="mt-4">
       <v-col cols="12" lg="7">
-        <v-skeleton-loader type="card" class="mb-4" />
+        <v-skeleton-loader class="mb-4" type="card" />
         <v-skeleton-loader type="card" />
       </v-col>
       <v-col cols="12" lg="5">
-        <v-skeleton-loader type="card" class="mb-4" />
+        <v-skeleton-loader class="mb-4" type="card" />
         <v-skeleton-loader type="card" />
       </v-col>
     </v-row>
@@ -186,7 +186,7 @@
             </div>
 
             <v-list class="vessel-list" lines="two">
-              <v-list-item v-for="item in vesselCards" :key="item.vessel.uuid">
+              <v-list-item v-for="item in vesselCards" :key="item.vessel.uuid" :to="`/vessels/${item.vessel.uuid}`">
                 <v-list-item-title class="d-flex align-center flex-wrap ga-1">
                   {{ item.vessel.name }}
                   <v-chip class="ml-2" :color="item.occupancyTone" size="x-small" variant="tonal">
@@ -413,16 +413,24 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      const [batchData, vesselData, volumeData, stockData] = await Promise.all([
+      const [batchResult, vesselResult, volumeResult, stockResult] = await Promise.allSettled([
         getBatches(),
         getVessels(),
         getVolumes(),
         getStockLevels(),
       ])
-      batches.value = batchData
-      vessels.value = vesselData
-      volumes.value = volumeData
-      stockLevels.value = stockData
+      batches.value = batchResult.status === 'fulfilled' ? batchResult.value : []
+      vessels.value = vesselResult.status === 'fulfilled' ? vesselResult.value : []
+      volumes.value = volumeResult.status === 'fulfilled' ? volumeResult.value : []
+      stockLevels.value = stockResult.status === 'fulfilled' ? stockResult.value : []
+
+      const failures = [batchResult, vesselResult, volumeResult, stockResult].filter(r => r.status === 'rejected')
+      if (failures.length > 0) {
+        console.warn(`Dashboard: ${failures.length} data source(s) failed to load`)
+        if (failures.length === 4) {
+          errorMessage.value = 'Unable to load dashboard data'
+        }
+      }
 
       await Promise.all([loadProcessPhases(), loadOccupancies()])
       dataReady.value = true
@@ -443,14 +451,12 @@
       batches.value.map(batch => request<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batch.uuid}`)),
     )
     const phases: BatchProcessPhase[] = []
-    const errors = results.filter(result => result.status === 'rejected') as PromiseRejectedResult[]
     for (const result of results) {
       if (result.status === 'fulfilled') {
         phases.push(...result.value)
+      } else {
+        console.warn('Dashboard: failed to load process phases for a batch', result.reason)
       }
-    }
-    if (errors.length > 0) {
-      throw errors[0]!.reason
     }
     processPhases.value = phases
   }

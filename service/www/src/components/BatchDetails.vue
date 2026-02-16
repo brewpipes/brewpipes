@@ -71,7 +71,7 @@
                   <v-col cols="12" md="6">
                     <div class="text-caption text-medium-emphasis">Brew date</div>
                     <div class="text-body-2 font-weight-medium">
-                      {{ formatDate(selectedBatch.brew_date) }}
+                      {{ selectedBatch.brew_date ? formatDate(selectedBatch.brew_date) : 'Not set' }}
                     </div>
                   </v-col>
                   <v-col cols="12" md="6">
@@ -171,6 +171,7 @@
               @assign-fermenter="openAssignFermenterDialog"
               @mark-empty="openMarkEmptyDialog"
               @occupancy-status-change="changeOccupancyStatus"
+              @package="openPackagingDialog"
               @transfer="openTransferDialog"
             />
           </v-window-item>
@@ -369,6 +370,15 @@
     :source-volume="transferVolume"
     @transferred="handleTransferCompleted"
   />
+
+  <PackagingDialog
+    v-model="packagingDialog"
+    :source-batch="selectedBatch"
+    :source-occupancy="packagingOccupancy"
+    :source-vessel="packagingVessel"
+    :source-volume="packagingVolume"
+    @packaged="handlePackagingCompleted"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -407,13 +417,13 @@
     BatchBrewDayTab,
     BatchBrewSessionDialog,
     BatchBrewSessionsTab,
-    BatchMarkEmptyDialog,
     BatchDeleteDialog,
     BatchEditDialog,
     type BatchEditForm,
     BatchFlowTab,
     BatchHotSideAdditionDialog,
     BatchHotSideMeasurementDialog,
+    BatchMarkEmptyDialog,
     BatchMeasurementDialog,
     BatchMeasurementsTab,
     type BatchProcessPhase,
@@ -427,6 +437,7 @@
     type FlowLink,
     type FlowNode,
     type Measurement,
+    PackagingDialog,
     type TimelineEvent,
     type Unit,
     type Volume,
@@ -459,6 +470,7 @@
   const {
     getVessels,
     getVolumes: getProductionVolumes,
+    getVolume,
     createVolume: createProductionVolume,
     getBrewSessions,
     createBrewSession,
@@ -598,7 +610,7 @@
     stage: '',
     inventory_lot_uuid: '',
     amount: '',
-    amount_unit: 'ml' as VolumeUnit,
+    amount_unit: preferences.value.mass as string,
     added_at: '',
     notes: '',
   })
@@ -642,6 +654,12 @@
   const transferOccupancy = ref<Occupancy | null>(null)
   const transferVessel = ref<Vessel | null>(null)
   const transferVolume = ref<ProductionVolume | null>(null)
+
+  // Packaging dialog state
+  const packagingDialog = ref(false)
+  const packagingOccupancy = ref<Occupancy | null>(null)
+  const packagingVessel = ref<Vessel | null>(null)
+  const packagingVolume = ref<ProductionVolume | null>(null)
 
   // Computed properties
   const latestProcessPhase = computed(() => getLatest(processPhases.value, item => item.phase_at))
@@ -872,9 +890,9 @@
   })
 
   // Exposed methods
-  function refresh () {
+  async function refresh () {
     if (props.batchUuid) {
-      loadBatchData(props.batchUuid)
+      await loadBatchData(props.batchUuid)
     }
   }
 
@@ -911,14 +929,10 @@
 
   async function loadReferenceData () {
     try {
-      await Promise.all([loadVolumes(), loadVesselsData(), loadAllVolumesData()])
+      await Promise.all([loadAllVolumesData(), loadVesselsData()])
     } catch (error) {
       console.error('Failed to load reference data:', error)
     }
-  }
-
-  async function loadVolumes () {
-    volumes.value = await getProductionVolumes()
   }
 
   async function loadVesselsData () {
@@ -931,7 +945,9 @@
 
   async function loadAllVolumesData () {
     try {
-      allVolumes.value = await getProductionVolumes()
+      const volumesData = await getProductionVolumes()
+      allVolumes.value = volumesData
+      volumes.value = volumesData
     } catch (error) {
       console.error('Failed to load volumes:', error)
     }
@@ -1433,7 +1449,7 @@
     hotSideAdditionForm.stage = ''
     hotSideAdditionForm.inventory_lot_uuid = ''
     hotSideAdditionForm.amount = ''
-    hotSideAdditionForm.amount_unit = 'ml'
+    hotSideAdditionForm.amount_unit = preferences.value.mass
     hotSideAdditionForm.added_at = nowInputValue()
     hotSideAdditionForm.notes = ''
     hotSideAdditionDialog.value = true
@@ -1445,6 +1461,12 @@
       return
     }
 
+    const amount = Number(hotSideAdditionForm.amount)
+    if (!Number.isFinite(amount)) {
+      showNotice('Invalid amount value', 'error')
+      return
+    }
+
     savingHotSideAddition.value = true
 
     try {
@@ -1453,7 +1475,7 @@
         addition_type: hotSideAdditionForm.addition_type,
         stage: normalizeText(hotSideAdditionForm.stage),
         inventory_lot_uuid: normalizeText(hotSideAdditionForm.inventory_lot_uuid),
-        amount: Number(hotSideAdditionForm.amount),
+        amount,
         amount_unit: hotSideAdditionForm.amount_unit,
         added_at: hotSideAdditionForm.added_at ? new Date(hotSideAdditionForm.added_at).toISOString() : null,
         notes: normalizeText(hotSideAdditionForm.notes),
@@ -1486,13 +1508,19 @@
       return
     }
 
+    const measurementValue = Number(hotSideMeasurementForm.value)
+    if (!Number.isFinite(measurementValue)) {
+      showNotice('Invalid measurement value', 'error')
+      return
+    }
+
     savingHotSideMeasurement.value = true
 
     try {
       const payload = {
         volume_uuid: session.wort_volume_uuid,
         kind: hotSideMeasurementForm.kind,
-        value: Number(hotSideMeasurementForm.value),
+        value: measurementValue,
         unit: normalizeText(hotSideMeasurementForm.unit) ?? getDefaultUnitForKind(hotSideMeasurementForm.kind),
         observed_at: hotSideMeasurementForm.observed_at ? new Date(hotSideMeasurementForm.observed_at).toISOString() : null,
         notes: normalizeText(hotSideMeasurementForm.notes),
@@ -1619,9 +1647,7 @@
 
       if (occupancy.volume_uuid) {
         try {
-          transferVolume.value = await getProductionVolumes().then(
-            vols => vols.find(v => v.uuid === occupancy.volume_uuid) ?? null,
-          )
+          transferVolume.value = await getVolume(occupancy.volume_uuid)
         } catch {
           transferVolume.value = null
         }
@@ -1637,6 +1663,41 @@
 
   async function handleTransferCompleted () {
     showNotice('Transfer complete')
+    if (props.batchUuid) {
+      await loadBatchData(props.batchUuid)
+    }
+  }
+
+  // ==================== Packaging Functions ====================
+
+  async function openPackagingDialog () {
+    if (!batchSummary.value?.current_occupancy_uuid) return
+
+    try {
+      const occupancy = await getOccupancy(batchSummary.value.current_occupancy_uuid)
+      packagingOccupancy.value = occupancy
+
+      // Resolve vessel and volume
+      const vessel = vessels.value.find(v => v.uuid === occupancy.vessel_uuid) ?? null
+      packagingVessel.value = vessel
+
+      if (occupancy.volume_uuid) {
+        try {
+          packagingVolume.value = await getVolume(occupancy.volume_uuid)
+        } catch {
+          packagingVolume.value = null
+        }
+      } else {
+        packagingVolume.value = null
+      }
+
+      packagingDialog.value = true
+    } catch (error) {
+      handleError(error)
+    }
+  }
+
+  async function handlePackagingCompleted () {
     if (props.batchUuid) {
       await loadBatchData(props.batchUuid)
     }

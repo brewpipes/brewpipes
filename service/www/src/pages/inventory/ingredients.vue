@@ -79,6 +79,9 @@
                   :loading="lotLoading"
                   @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
+                  <template #item.brewery_lot_code="{ item }">
+                    {{ item.brewery_lot_code || '—' }}
+                  </template>
                   <template #item.ingredient_uuid="{ item }">
                     {{ ingredientName(item.ingredient_uuid) }}
                   </template>
@@ -89,10 +92,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No malt lots yet.</div>
@@ -142,6 +145,9 @@
                   :loading="lotLoading"
                   @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
+                  <template #item.brewery_lot_code="{ item }">
+                    {{ item.brewery_lot_code || '—' }}
+                  </template>
                   <template #item.ingredient_uuid="{ item }">
                     {{ ingredientName(item.ingredient_uuid) }}
                   </template>
@@ -152,10 +158,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No hop lots yet.</div>
@@ -205,6 +211,9 @@
                   :loading="lotLoading"
                   @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
+                  <template #item.brewery_lot_code="{ item }">
+                    {{ item.brewery_lot_code || '—' }}
+                  </template>
                   <template #item.ingredient_uuid="{ item }">
                     {{ ingredientName(item.ingredient_uuid) }}
                   </template>
@@ -215,10 +224,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No yeast lots yet.</div>
@@ -268,6 +277,9 @@
                   :loading="lotLoading"
                   @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
                 >
+                  <template #item.brewery_lot_code="{ item }">
+                    {{ item.brewery_lot_code || '—' }}
+                  </template>
                   <template #item.ingredient_uuid="{ item }">
                     {{ ingredientName(item.ingredient_uuid) }}
                   </template>
@@ -283,10 +295,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No other lots yet.</div>
@@ -432,10 +444,12 @@
           :items="receiptSelectItems"
           label="Receipt (optional)"
         />
-        <v-text-field
+        <v-select
           v-model="lotForm.supplier_uuid"
+          clearable
           density="comfortable"
-          label="Supplier UUID"
+          :items="supplierSelectItems"
+          label="Supplier"
         />
         <v-text-field
           v-model="lotForm.brewery_lot_code"
@@ -742,7 +756,7 @@
   const lotForm = reactive({
     ingredient_uuid: null as string | null,
     receipt_uuid: null as string | null,
-    supplier_uuid: '',
+    supplier_uuid: null as string | null,
     brewery_lot_code: '',
     originator_lot_code: '',
     originator_name: '',
@@ -862,6 +876,13 @@
     })),
   )
 
+  const supplierSelectItems = computed(() =>
+    suppliers.value.map(supplier => ({
+      title: supplier.name,
+      value: supplier.uuid,
+    })),
+  )
+
   // Computed: Form validation
   const isLotFormValid = computed(() => {
     return lotForm.ingredient_uuid && lotForm.received_amount && lotForm.received_unit
@@ -957,14 +978,6 @@
     ingredientDialog.value = false
   }
 
-  function _openReceiptDialog () {
-    receiptForm.supplier_uuid = ''
-    receiptForm.reference_code = ''
-    receiptForm.received_at = ''
-    receiptForm.notes = ''
-    receiptDialog.value = true
-  }
-
   function closeReceiptDialog () {
     receiptDialog.value = false
   }
@@ -973,7 +986,7 @@
     lotDialogCategory.value = category
     lotForm.ingredient_uuid = null
     lotForm.receipt_uuid = null
-    lotForm.supplier_uuid = ''
+    lotForm.supplier_uuid = null
     lotForm.brewery_lot_code = ''
     lotForm.originator_lot_code = ''
     lotForm.originator_name = ''
@@ -1067,7 +1080,7 @@
       const payload = {
         ingredient_uuid: lotForm.ingredient_uuid,
         receipt_uuid: lotForm.receipt_uuid,
-        supplier_uuid: normalizeText(lotForm.supplier_uuid),
+        supplier_uuid: lotForm.supplier_uuid,
         brewery_lot_code: normalizeText(lotForm.brewery_lot_code),
         originator_lot_code: normalizeText(lotForm.originator_lot_code),
         originator_name: normalizeText(lotForm.originator_name),

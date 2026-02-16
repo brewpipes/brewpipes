@@ -54,7 +54,10 @@
         :to="item.to"
       />
 
-      <v-list-group class="nav-group" value="production">
+      <template v-if="rail">
+        <v-list-item prepend-icon="mdi-factory" title="Production" to="/batches/all" />
+      </template>
+      <v-list-group v-else class="nav-group" value="production">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
         </template>
@@ -69,7 +72,10 @@
         to="/fermentation"
       />
 
-      <v-list-group class="nav-group" value="vessels">
+      <template v-if="rail">
+        <v-list-item prepend-icon="mdi-silo" title="Vessels" to="/vessels/all" />
+      </template>
+      <v-list-group v-else class="nav-group" value="vessels">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-silo" title="Vessels" />
         </template>
@@ -77,7 +83,18 @@
         <v-list-item title="All Vessels" to="/vessels/all" />
       </v-list-group>
 
-      <v-list-group class="nav-group" value="inventory">
+      <template v-if="rail">
+        <v-list-item prepend-icon="mdi-warehouse" title="Inventory" to="/inventory/stock-levels">
+          <template v-if="lowStockCount > 0" #append>
+            <v-badge
+              color="warning"
+              :content="lowStockCount"
+              inline
+            />
+          </template>
+        </v-list-item>
+      </template>
+      <v-list-group v-else class="nav-group" value="inventory">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-warehouse" title="Inventory">
             <template v-if="lowStockCount > 0" #append>
@@ -99,7 +116,10 @@
         <v-list-item title="Locations" to="/inventory/locations" />
       </v-list-group>
 
-      <v-list-group class="nav-group" value="procurement">
+      <template v-if="rail">
+        <v-list-item prepend-icon="mdi-clipboard-text" title="Procurement" to="/procurement/purchase-orders" />
+      </template>
+      <v-list-group v-else class="nav-group" value="procurement">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-clipboard-text" title="Procurement" />
         </template>
@@ -117,7 +137,7 @@
 
   <AppFooter />
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+  <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="snackbar.timeout">
     {{ snackbar.text }}
   </v-snackbar>
 

@@ -20,7 +20,7 @@
         </v-alert>
 
         <!-- Context info (read-only) -->
-        <v-list density="compact" class="mb-4">
+        <v-list class="mb-4" density="compact">
           <v-list-item>
             <template #prepend>
               <v-icon icon="mdi-flask-round-bottom" size="small" />

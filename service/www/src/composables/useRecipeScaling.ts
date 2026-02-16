@@ -1,6 +1,6 @@
+import type { Ref } from 'vue'
 import type { VolumeUnit } from '@/types'
 import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
 import { convertVolume } from '@/composables/useUnitConversion'
 
 /**
@@ -22,7 +22,9 @@ const BATCH_SIZE_UNIT_MAP: Record<string, VolumeUnit> = {
  * to the canonical VolumeUnit used by convertVolume.
  */
 function resolveVolumeUnit (unit: string | null): VolumeUnit | null {
-  if (!unit) return null
+  if (!unit) {
+    return null
+  }
   return BATCH_SIZE_UNIT_MAP[unit.toLowerCase()] ?? null
 }
 
@@ -51,17 +53,25 @@ export function useRecipeScaling (
    * Returns 1 when scaling is not active or inputs are invalid (null, zero, negative).
    */
   const scaleFactor = computed(() => {
-    if (!recipeBatchSize.value || recipeBatchSize.value <= 0) return 1
-    if (!targetBatchSize.value || targetBatchSize.value <= 0) return 1
+    if (!recipeBatchSize.value || recipeBatchSize.value <= 0) {
+      return 1
+    }
+    if (!targetBatchSize.value || targetBatchSize.value <= 0) {
+      return 1
+    }
 
     const recipeUnit = resolveVolumeUnit(recipeBatchSizeUnit.value ?? 'bbl')
     const targetUnit = resolveVolumeUnit(targetBatchSizeUnit.value)
 
-    if (!recipeUnit || !targetUnit) return 1
+    if (!recipeUnit || !targetUnit) {
+      return 1
+    }
 
     // Convert target batch size to recipe's unit for comparison
     const targetInRecipeUnits = convertVolume(targetBatchSize.value, targetUnit, recipeUnit)
-    if (targetInRecipeUnits === null || targetInRecipeUnits <= 0) return 1
+    if (targetInRecipeUnits === null || targetInRecipeUnits <= 0) {
+      return 1
+    }
 
     return targetInRecipeUnits / recipeBatchSize.value
   })
@@ -71,7 +81,9 @@ export function useRecipeScaling (
    * Uses a tolerance of 0.01% to account for floating-point rounding in unit conversion.
    */
   const isScaling = computed(() => {
-    if (targetBatchSize.value === null || recipeBatchSize.value === null) return false
+    if (targetBatchSize.value === null || recipeBatchSize.value === null) {
+      return false
+    }
     return Math.abs(scaleFactor.value - 1) > 1e-4
   })
 
@@ -91,8 +103,10 @@ export function useRecipeScaling (
    *   A value of 0.5 means the ingredient scales at half the rate.
    *   A value of 0 means the ingredient amount is fixed regardless of batch size.
    */
-  function scaleAmount (amount: number, ingredientScalingFactor: number = 1.0): number {
-    if (ingredientScalingFactor === 0) return amount
+  function scaleAmount (amount: number, ingredientScalingFactor = 1): number {
+    if (ingredientScalingFactor === 0) {
+      return amount
+    }
     // Blend between unscaled and fully-scaled based on ingredientScalingFactor
     const fullyScaled = amount * scaleFactor.value
     return amount + (fullyScaled - amount) * ingredientScalingFactor
@@ -107,7 +121,9 @@ export function useRecipeScaling (
   /** Set the target batch size and optionally the unit. */
   function setTargetBatchSize (size: number, unit?: string) {
     targetBatchSize.value = size
-    if (unit) targetBatchSizeUnit.value = unit
+    if (unit) {
+      targetBatchSizeUnit.value = unit
+    }
   }
 
   return {

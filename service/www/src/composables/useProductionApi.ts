@@ -13,6 +13,8 @@ import type {
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
   CreateOccupancyRequest,
+  CreatePackageFormatRequest,
+  CreatePackagingRunRequest,
   CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   CreateStyleRequest,
@@ -22,6 +24,8 @@ import type {
   Measurement,
   Occupancy,
   OccupancyStatus,
+  PackageFormat,
+  PackagingRun,
   Recipe,
   RecipeIngredient,
   Style,
@@ -29,6 +33,7 @@ import type {
   TransferRecordResponse,
   UpdateBatchRequest,
   UpdateBrewSessionRequest,
+  UpdatePackageFormatRequest,
   UpdateRecipeIngredientRequest,
   UpdateRecipeRequest,
   UpdateVesselRequest,
@@ -250,6 +255,38 @@ export function useProductionApi () {
       body: JSON.stringify(data),
     })
 
+  // Package Formats API
+  const getPackageFormats = () => request<PackageFormat[]>('/package-formats')
+  const getPackageFormat = (uuid: string) => request<PackageFormat>(`/package-formats/${uuid}`)
+  const createPackageFormat = (data: CreatePackageFormatRequest) =>
+    request<PackageFormat>('/package-formats', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const updatePackageFormat = (uuid: string, data: UpdatePackageFormatRequest) =>
+    request<PackageFormat>(`/package-formats/${uuid}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deletePackageFormat = (uuid: string) =>
+    request<void>(`/package-formats/${uuid}`, {
+      method: 'DELETE',
+    })
+
+  // Packaging Runs API
+  const getPackagingRuns = (batchUuid?: string) =>
+    request<PackagingRun[]>(`/packaging-runs${batchUuid ? `?batch_uuid=${batchUuid}` : ''}`)
+  const getPackagingRun = (uuid: string) => request<PackagingRun>(`/packaging-runs/${uuid}`)
+  const createPackagingRun = (data: CreatePackagingRunRequest) =>
+    request<PackagingRun>('/packaging-runs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  const deletePackagingRun = (uuid: string) =>
+    request<void>(`/packaging-runs/${uuid}`, {
+      method: 'DELETE',
+    })
+
   return {
     apiBase: productionApiBase,
     request,
@@ -328,5 +365,16 @@ export function useProductionApi () {
     // Batch Relations
     getBatchRelations,
     createBatchRelation,
+    // Package Formats
+    getPackageFormats,
+    getPackageFormat,
+    createPackageFormat,
+    updatePackageFormat,
+    deletePackageFormat,
+    // Packaging Runs
+    getPackagingRuns,
+    getPackagingRun,
+    createPackagingRun,
+    deletePackagingRun,
   }
 }

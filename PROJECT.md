@@ -495,3 +495,46 @@ Phase 5 enables fermentation monitoring and complex vessel-to-vessel transfers. 
 - Chart.js + vue-chartjs + chartjs-plugin-annotation for fermentation curve
 - `BatchDetails.vue` refactored to use typed composable functions
 - 83 new frontend tests (468 total across 15 test files)
+
+## Implemented: Phase 6 — Packaging & Finished Goods
+
+### Overview
+
+Phase 6 enables packaging run recording and finished goods inventory tracking. Brewers can record packaging events from a brite tank, specifying container formats and quantities. Beer lots are automatically created in the inventory service via an inter-service HTTP call, with initial stock movements.
+
+### New entities
+
+**Package Format** (Production) — User-extensible reference table for container types (1/2 BBL Keg, 16oz Can, etc.) with standard fill volumes.
+
+**Packaging Run** (Production) — Records a packaging event for a batch from a specific brite tank occupancy. Has line items per container format with quantities.
+
+**Beer Lot Item** (Inventory) — Structural placeholder for future per-unit tracking (individual keg codes, barcodes). Table created but not populated by the packaging workflow.
+
+### Beer lot enhancements
+
+The `beer_lot` table gained: `packaging_run_uuid`, `best_by`, `package_format_name`, `container`, `volume_per_unit`, `volume_per_unit_unit`, `quantity`. One beer lot per format per packaging run.
+
+### Inter-service communication
+
+First backend-to-backend HTTP call in the system. Production service calls Inventory service's `POST /api/beer-lots` endpoint with JWT pass-through from the original request. Beer lot creation is best-effort — the packaging run is committed even if the inventory call fails.
+
+### New API endpoints
+
+| Method | Path | Service | Description |
+|--------|------|---------|-------------|
+| `GET` | `/api/package-formats` | Production | List package formats |
+| `POST` | `/api/package-formats` | Production | Create package format |
+| `GET` | `/api/package-formats/{uuid}` | Production | Get package format |
+| `PATCH` | `/api/package-formats/{uuid}` | Production | Update package format |
+| `DELETE` | `/api/package-formats/{uuid}` | Production | Delete package format (blocked if in use) |
+| `GET` | `/api/packaging-runs` | Production | List packaging runs (optional `?batch_uuid=` filter) |
+| `POST` | `/api/packaging-runs` | Production | Create packaging run with lines |
+| `GET` | `/api/packaging-runs/{uuid}` | Production | Get packaging run with lines |
+| `DELETE` | `/api/packaging-runs/{uuid}` | Production | Soft-delete packaging run |
+| `GET` | `/api/beer-lot-stock-levels` | Inventory | Finished goods stock levels |
+
+### Frontend components
+
+- **PackagingDialog** — 3-step wizard for recording packaging runs (details → format lines → review)
+- **BestByIndicator** — Reusable component for best-by date display with expiry indicators
+- **Product page** — Redesigned with Stock Levels and All Lots tabs, container filtering, best-by indicators

@@ -10,13 +10,52 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (c *Client) CreateInventoryTransfer(ctx context.Context, transfer InventoryTransfer) (InventoryTransfer, error) {
-	transferredAt := transfer.TransferredAt
+// TransferWithMovementsRequest describes the parameters for creating a
+// transfer record and its two corresponding inventory movements atomically.
+type TransferWithMovementsRequest struct {
+	IngredientLotID  *int64
+	BeerLotID        *int64
+	SourceLocationID int64
+	DestLocationID   int64
+	Amount           int64
+	AmountUnit       string
+	TransferredAt    time.Time
+	Notes            *string
+
+	// UUID fields for populating the response without extra lookups.
+	IngredientLotUUID  *string
+	BeerLotUUID        *string
+	SourceLocationUUID string
+	DestLocationUUID   string
+}
+
+// TransferWithMovementsResult holds the created transfer and its two movements.
+type TransferWithMovementsResult struct {
+	Transfer    InventoryTransfer
+	MovementOut InventoryMovement
+	MovementIn  InventoryMovement
+}
+
+// CreateInventoryTransferWithMovements atomically creates an inventory transfer
+// record and two corresponding inventory movements (out from source, in to
+// destination) within a single transaction.
+func (c *Client) CreateInventoryTransferWithMovements(ctx context.Context, req TransferWithMovementsRequest) (TransferWithMovementsResult, error) {
+	tx, err := c.DB().Begin(ctx)
+	if err != nil {
+		return TransferWithMovementsResult{}, fmt.Errorf("starting transfer transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	transferredAt := req.TransferredAt
 	if transferredAt.IsZero() {
 		transferredAt = time.Now().UTC()
 	}
 
-	err := c.DB().QueryRow(ctx, `
+	// Create the transfer record.
+	var transfer InventoryTransfer
+	err = tx.QueryRow(ctx, `
 		INSERT INTO inventory_transfer (
 			source_location_id,
 			dest_location_id,
@@ -24,10 +63,10 @@ func (c *Client) CreateInventoryTransfer(ctx context.Context, transfer Inventory
 			notes
 		) VALUES ($1, $2, $3, $4)
 		RETURNING id, uuid, source_location_id, dest_location_id, transferred_at, notes, created_at, updated_at, deleted_at`,
-		transfer.SourceLocationID,
-		transfer.DestLocationID,
+		req.SourceLocationID,
+		req.DestLocationID,
 		transferredAt,
-		transfer.Notes,
+		req.Notes,
 	).Scan(
 		&transfer.ID,
 		&transfer.UUID,
@@ -40,12 +79,127 @@ func (c *Client) CreateInventoryTransfer(ctx context.Context, transfer Inventory
 		&transfer.DeletedAt,
 	)
 	if err != nil {
-		return InventoryTransfer{}, fmt.Errorf("creating inventory transfer: %w", err)
+		return TransferWithMovementsResult{}, fmt.Errorf("creating inventory transfer in transaction: %w", err)
 	}
 
-	// Resolve location UUIDs
-	c.resolveTransferLocationUUIDs(ctx, &transfer)
-	return transfer, nil
+	// Create the OUT movement from the source location.
+	var movementOut InventoryMovement
+	err = tx.QueryRow(ctx, `
+		INSERT INTO inventory_movement (
+			ingredient_lot_id,
+			beer_lot_id,
+			stock_location_id,
+			direction,
+			reason,
+			amount,
+			amount_unit,
+			occurred_at,
+			transfer_id,
+			notes
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, uuid, ingredient_lot_id, beer_lot_id, stock_location_id, direction, reason, amount, amount_unit, occurred_at, transfer_id, notes, created_at, updated_at, deleted_at`,
+		req.IngredientLotID,
+		req.BeerLotID,
+		req.SourceLocationID,
+		MovementDirectionOut,
+		MovementReasonTransfer,
+		req.Amount,
+		req.AmountUnit,
+		transferredAt,
+		transfer.ID,
+		req.Notes,
+	).Scan(
+		&movementOut.ID,
+		&movementOut.UUID,
+		&movementOut.IngredientLotID,
+		&movementOut.BeerLotID,
+		&movementOut.StockLocationID,
+		&movementOut.Direction,
+		&movementOut.Reason,
+		&movementOut.Amount,
+		&movementOut.AmountUnit,
+		&movementOut.OccurredAt,
+		&movementOut.TransferID,
+		&movementOut.Notes,
+		&movementOut.CreatedAt,
+		&movementOut.UpdatedAt,
+		&movementOut.DeletedAt,
+	)
+	if err != nil {
+		return TransferWithMovementsResult{}, fmt.Errorf("creating transfer out-movement in transaction: %w", err)
+	}
+
+	// Create the IN movement to the destination location.
+	var movementIn InventoryMovement
+	err = tx.QueryRow(ctx, `
+		INSERT INTO inventory_movement (
+			ingredient_lot_id,
+			beer_lot_id,
+			stock_location_id,
+			direction,
+			reason,
+			amount,
+			amount_unit,
+			occurred_at,
+			transfer_id,
+			notes
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, uuid, ingredient_lot_id, beer_lot_id, stock_location_id, direction, reason, amount, amount_unit, occurred_at, transfer_id, notes, created_at, updated_at, deleted_at`,
+		req.IngredientLotID,
+		req.BeerLotID,
+		req.DestLocationID,
+		MovementDirectionIn,
+		MovementReasonTransfer,
+		req.Amount,
+		req.AmountUnit,
+		transferredAt,
+		transfer.ID,
+		req.Notes,
+	).Scan(
+		&movementIn.ID,
+		&movementIn.UUID,
+		&movementIn.IngredientLotID,
+		&movementIn.BeerLotID,
+		&movementIn.StockLocationID,
+		&movementIn.Direction,
+		&movementIn.Reason,
+		&movementIn.Amount,
+		&movementIn.AmountUnit,
+		&movementIn.OccurredAt,
+		&movementIn.TransferID,
+		&movementIn.Notes,
+		&movementIn.CreatedAt,
+		&movementIn.UpdatedAt,
+		&movementIn.DeletedAt,
+	)
+	if err != nil {
+		return TransferWithMovementsResult{}, fmt.Errorf("creating transfer in-movement in transaction: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return TransferWithMovementsResult{}, fmt.Errorf("committing transfer transaction: %w", err)
+	}
+
+	// Populate UUID fields for the response without extra lookups.
+	transfer.SourceLocationUUID = req.SourceLocationUUID
+	transfer.DestLocationUUID = req.DestLocationUUID
+
+	trUUID := transfer.UUID.String()
+	movementOut.IngredientLotUUID = req.IngredientLotUUID
+	movementOut.BeerLotUUID = req.BeerLotUUID
+	movementOut.StockLocationUUID = req.SourceLocationUUID
+	movementOut.TransferUUID = &trUUID
+
+	movementIn.IngredientLotUUID = req.IngredientLotUUID
+	movementIn.BeerLotUUID = req.BeerLotUUID
+	movementIn.StockLocationUUID = req.DestLocationUUID
+	movementIn.TransferUUID = &trUUID
+
+	return TransferWithMovementsResult{
+		Transfer:    transfer,
+		MovementOut: movementOut,
+		MovementIn:  movementIn,
+	}, nil
 }
 
 func (c *Client) GetInventoryTransfer(ctx context.Context, id int64) (InventoryTransfer, error) {
@@ -154,17 +308,4 @@ func (c *Client) ListInventoryTransfers(ctx context.Context) ([]InventoryTransfe
 	}
 
 	return transfers, nil
-}
-
-// resolveTransferLocationUUIDs resolves source and dest location UUIDs after INSERT.
-func (c *Client) resolveTransferLocationUUIDs(ctx context.Context, transfer *InventoryTransfer) {
-	var srcUUID, dstUUID string
-	err := c.DB().QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.SourceLocationID).Scan(&srcUUID)
-	if err == nil {
-		transfer.SourceLocationUUID = srcUUID
-	}
-	err = c.DB().QueryRow(ctx, `SELECT uuid FROM stock_location WHERE id = $1`, transfer.DestLocationID).Scan(&dstUUID)
-	if err == nil {
-		transfer.DestLocationUUID = dstUUID
-	}
 }

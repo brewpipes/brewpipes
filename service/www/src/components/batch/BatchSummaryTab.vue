@@ -53,6 +53,15 @@
                   Transfer
                 </v-btn>
                 <v-btn
+                  color="teal"
+                  prepend-icon="mdi-package-variant"
+                  size="small"
+                  variant="text"
+                  @click="emit('package')"
+                >
+                  Package
+                </v-btn>
+                <v-btn
                   prepend-icon="mdi-flask-empty-outline"
                   size="small"
                   variant="text"
@@ -300,6 +309,7 @@
     'occupancy-status-change': [occupancyUuid: string, status: OccupancyStatus]
     'assign-fermenter': []
     'mark-empty': []
+    'package': []
     'transfer': []
   }>()
 

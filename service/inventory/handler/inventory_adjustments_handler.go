@@ -13,9 +13,12 @@ import (
 )
 
 type InventoryAdjustmentStore interface {
-	CreateInventoryAdjustment(context.Context, storage.InventoryAdjustment) (storage.InventoryAdjustment, error)
+	CreateInventoryAdjustmentWithMovement(context.Context, storage.AdjustmentWithMovementRequest) (storage.AdjustmentWithMovementResult, error)
 	GetInventoryAdjustmentByUUID(context.Context, string) (storage.InventoryAdjustment, error)
 	ListInventoryAdjustments(context.Context) ([]storage.InventoryAdjustment, error)
+	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
+	GetBeerLotByUUID(context.Context, string) (storage.BeerLot, error)
+	GetStockLocationByUUID(context.Context, string) (storage.StockLocation, error)
 }
 
 // HandleInventoryAdjustments handles [GET /inventory-adjustments] and [POST /inventory-adjustments].
@@ -46,19 +49,47 @@ func HandleInventoryAdjustments(db InventoryAdjustmentStore) http.HandlerFunc {
 				adjustedAt = *req.AdjustedAt
 			}
 
-			adjustment := storage.InventoryAdjustment{
-				Reason:     req.Reason,
-				AdjustedAt: adjustedAt,
-				Notes:      req.Notes,
+			// Resolve stock location UUID to internal ID.
+			stockLocation, ok := service.ResolveFK(r.Context(), w, req.StockLocationUUID, "stock location", db.GetStockLocationByUUID)
+			if !ok {
+				return
 			}
 
-			created, err := db.CreateInventoryAdjustment(r.Context(), adjustment)
+			// Resolve ingredient lot UUID to internal ID if provided.
+			var ingredientLotID *int64
+			if lot, ok := service.ResolveFKOptional(r.Context(), w, req.IngredientLotUUID, "ingredient lot", db.GetIngredientLotByUUID); !ok {
+				return
+			} else if req.IngredientLotUUID != nil {
+				ingredientLotID = &lot.ID
+			}
+
+			// Resolve beer lot UUID to internal ID if provided.
+			var beerLotID *int64
+			if lot, ok := service.ResolveFKOptional(r.Context(), w, req.BeerLotUUID, "beer lot", db.GetBeerLotByUUID); !ok {
+				return
+			} else if req.BeerLotUUID != nil {
+				beerLotID = &lot.ID
+			}
+
+			result, err := db.CreateInventoryAdjustmentWithMovement(r.Context(), storage.AdjustmentWithMovementRequest{
+				IngredientLotID:   ingredientLotID,
+				BeerLotID:         beerLotID,
+				StockLocationID:   stockLocation.ID,
+				Amount:            req.Amount,
+				AmountUnit:        req.AmountUnit,
+				Reason:            req.Reason,
+				AdjustedAt:        adjustedAt,
+				Notes:             req.Notes,
+				IngredientLotUUID: req.IngredientLotUUID,
+				BeerLotUUID:       req.BeerLotUUID,
+				StockLocationUUID: req.StockLocationUUID,
+			})
 			if err != nil {
 				service.InternalError(w, "error creating inventory adjustment", "error", err)
 				return
 			}
 
-			service.JSONCreated(w, dto.NewInventoryAdjustmentResponse(created))
+			service.JSONCreated(w, dto.NewInventoryAdjustmentResponse(result.Adjustment))
 		default:
 			service.MethodNotAllowed(w)
 		}

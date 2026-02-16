@@ -8,7 +8,7 @@ import * as directives from 'vuetify/directives'
 import TransferDialog from '../TransferDialog.vue'
 
 // Polyfill visualViewport for happy-dom (used by Vuetify overlay positioning)
-if (typeof globalThis.visualViewport === 'undefined') {
+if (globalThis.visualViewport === undefined) {
   Object.defineProperty(globalThis, 'visualViewport', {
     value: {
       width: 1024,
@@ -141,7 +141,7 @@ function mountDialog (props: {
 } = {}) {
   const div = document.createElement('div')
   div.id = 'app'
-  document.body.appendChild(div)
+  document.body.append(div)
 
   // Mock API responses for loading reference data
   mockRequest.mockImplementation((url: string) => {

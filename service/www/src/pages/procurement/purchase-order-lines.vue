@@ -90,7 +90,8 @@
                   block
                   color="primary"
                   :disabled="
-                    !lineForm.purchase_order_uuid ||
+                    saving ||
+                      !lineForm.purchase_order_uuid ||
                       !lineForm.line_number ||
                       !lineForm.item_type ||
                       !lineForm.item_name.trim() ||
@@ -99,6 +100,7 @@
                       !lineForm.unit_cost_cents ||
                       !lineForm.currency
                   "
+                  :loading="saving"
                   @click="createLine"
                 >
                   Add line
@@ -144,6 +146,7 @@
   const orders = ref<PurchaseOrder[]>([])
   const lines = ref<PurchaseOrderLine[]>([])
   const loading = ref(false)
+  const saving = ref(false)
   const errorMessage = ref('')
 
   const { lineItemTypeOptions: itemTypeOptions } = useLineItemTypeFormatters()
@@ -204,6 +207,7 @@
   }
 
   async function createLine () {
+    saving.value = true
     try {
       const payload = {
         purchase_order_uuid: lineForm.purchase_order_uuid,
@@ -232,6 +236,8 @@
       const message = error instanceof Error ? error.message : 'Unable to create order line'
       errorMessage.value = message
       showNotice(message, 'error')
+    } finally {
+      saving.value = false
     }
   }
 

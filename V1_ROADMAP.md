@@ -1,7 +1,7 @@
 # BrewPipes V1 Product Roadmap
 
 **Last Updated:** 2026-02-15  
-**Status:** Phase 5 Complete
+**Status:** Phase 6 Complete
 
 ---
 
@@ -355,12 +355,12 @@ Enable packaging recording and finished goods inventory.
 
 | ID | Feature | Size | Journey | Status |
 |----|---------|------|---------|--------|
-| PKG-01 | Design packaging run data model | M | 4 | Not Started |
-| PKG-02 | Backend: Packaging run CRUD endpoints | M | 4 | Not Started |
-| PKG-03 | Frontend: Packaging run recording UI | L | 4 | Not Started |
-| PKG-04 | Backend: Beer lot creation from packaging | M | 4 | Not Started |
-| PKG-05 | Frontend: Beer lot / finished goods inventory view | M | 4, 6 | Not Started |
-| PKG-06 | Packaging loss calculation | S | 4 | Not Started |
+| PKG-01 | Design packaging run data model | M | 4 | **Complete** |
+| PKG-02 | Backend: Packaging run CRUD endpoints | M | 4 | **Complete** |
+| PKG-03 | Frontend: Packaging run recording UI | L | 4 | **Complete** |
+| PKG-04 | Backend: Beer lot creation from packaging | M | 4 | **Complete** |
+| PKG-05 | Frontend: Beer lot / finished goods inventory view | M | 4, 6 | **Complete** |
+| PKG-06 | Packaging loss calculation | S | 4 | **Complete** |
 
 ---
 
@@ -404,7 +404,7 @@ Track brewhouse removals for future TTB compliance.
 | **M3: Procurement Flow** | Phase 3 complete (PO → inventory) | **Complete** |
 | **M4: Brew Day Flow** | Phase 4 complete (brew day recording) | **Complete** |
 | **M5: Fermentation Flow** | Phase 5 complete (monitoring, transfers) | **Complete** |
-| **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | Not Started |
+| **M6: Packaging Flow** | Phase 6 complete (packaging, finished goods) | **Complete** |
 | **M7: Costing Complete** | Phase 7 complete (batch costing) | Not Started |
 | **M8: V1 Alpha** | All phases complete, internal testing | Not Started |
 | **M9: V1 Beta** | External testing, bug fixes | Not Started |
@@ -451,6 +451,12 @@ Track brewhouse removals for future TTB compliance.
 | FERM-04 | Frontend: Volume split UI | 2026-02-15 |
 | FERM-05 | Frontend: Volume blend UI | 2026-02-15 |
 | FERM-06 | Frontend: Quick measurement entry (mobile-friendly) | 2026-02-15 |
+| PKG-01 | Design packaging run data model | 2026-02-15 |
+| PKG-02 | Backend: Packaging run CRUD endpoints | 2026-02-15 |
+| PKG-03 | Frontend: Packaging run recording UI | 2026-02-15 |
+| PKG-04 | Backend: Beer lot creation from packaging | 2026-02-15 |
+| PKG-05 | Frontend: Beer lot / finished goods inventory view | 2026-02-15 |
+| PKG-06 | Packaging loss calculation | 2026-02-15 |
 
 **TD-01 Details:** Refactored 3,227-line component into 15 smaller components in `service/www/src/components/batch/`. Main component reduced to 1,677 lines (~48% reduction). Created 6 tab components, 7 dialog components, 1 reusable card component, shared types file, and barrel export.
 
@@ -504,6 +510,15 @@ Track brewhouse removals for future TTB compliance.
 - **Backend Enhancements:** Transfer endpoint enhanced with `close_source` (boolean, default true) and `dest_status` parameters. Batch summary now includes `current_occupancy_uuid`. New composite index on measurement(occupancy_id, kind, observed_at DESC) for dashboard performance.
 - **Frontend Infrastructure:** 17 new API wrapper functions in useProductionApi. 18 new TypeScript types. Chart.js + vue-chartjs + chartjs-plugin-annotation added. BatchDetails.vue refactored to use typed composable functions instead of raw request() calls. 83 new frontend tests (468 total).
 
+**Phase 6 Details:** Implemented packaging run recording and finished goods inventory:
+- **Data Model (PKG-01):** 3 new production tables (package_format, packaging_run, packaging_run_line), beer_lot enhanced with 7 new columns, beer_lot_item structural seam table, new 'package' movement reason. First inter-service HTTP call (production → inventory).
+- **Backend CRUD (PKG-02):** Full CRUD for package formats and packaging runs. Packaging runs created atomically with lines in a transaction. Soft-delete cascades to lines.
+- **Packaging Run UI (PKG-03):** 3-step wizard (details → format lines → review/confirm). Integrated into batch summary tab and fermentation dashboard. Mobile-optimized with fullscreen on small screens. Real-time loss estimation.
+- **Beer Lot Creation (PKG-04):** Enhanced POST /api/beer-lots with packaging fields and auto-movement creation. Inter-service HTTP call with JWT pass-through. Best-effort beer lot creation (packaging run committed even if inventory call fails).
+- **Finished Goods View (PKG-05):** Redesigned product page with Stock Levels and All Lots tabs. Container type filtering, location filtering, text search. Best-by date indicators (expired/approaching). Cross-service batch name resolution.
+- **Loss Calculation (PKG-06):** Real-time loss estimation in packaging wizard (source volume - total packaged). Loss recorded on packaging run with amount + unit pair. Remaining volume treated as loss when source vessel is closed.
+- **Infrastructure:** 7 seeded package formats, 470 frontend tests (2 new), beer lot stock levels endpoint, package format reference table.
+
 ### Deferred QA Items
 
 Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
@@ -554,8 +569,8 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 
 ### Backend Services
 - **Identity:** Authentication, JWT tokens, session management
-- **Production:** Batches, recipes, styles, vessels, occupancies, brew sessions, volumes, transfers, additions, measurements, process phases
-- **Inventory:** Ingredients, lots, receipts, usage, adjustments, transfers, movements, stock locations, beer lots
+- **Production:** Batches, recipes, styles, vessels, occupancies, brew sessions, volumes, transfers, additions, measurements, process phases, package formats, packaging runs
+- **Inventory:** Ingredients, lots, receipts, usage, adjustments, transfers, movements, stock locations, beer lots, beer lot stock levels
 - **Procurement:** Suppliers, purchase orders, line items, fees
 
 ### Frontend Screens
@@ -564,8 +579,9 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - Batch management (all, in-progress, detail with 8 tabs including fermentation curve)
 - Vessel management (active, all, detail)
 - Recipe management (list, detail with ingredient bills and specs)
-- Inventory hub (ingredients by category, activity, locations, adjustments/transfers, product, stock levels)
+- Inventory hub (ingredients by category, activity, locations, adjustments/transfers, product with stock levels and lot tabs, stock levels)
 - Procurement (purchase orders with receiving workflow, suppliers)
+- Packaging run recording (3-step wizard from batch summary or fermentation dashboard)
 - Settings (brewery name, display units)
 
 ### Key Strengths
@@ -576,10 +592,16 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - Polished UI with consistent design patterns
 - User display preferences (units)
 
-### Key Gaps (to be addressed in Phases 6-8)
-- No packaging workflow
+### Key Gaps (to be addressed in Phases 7-8)
 - No cost tracking
 - No removal tracking
+
+### Recently Addressed (Phase 6)
+- ✅ Packaging workflow - complete packaging run recording with format lines and loss tracking
+- ✅ Finished goods inventory - beer lot stock levels with container filtering and best-by indicators
+- ✅ Inter-service communication - first backend-to-backend HTTP call (production → inventory)
+- ✅ Package format management - user-extensible container type reference table
+- ✅ Beer lot enhancement - packaging run linkage, format info, best-by dates
 
 ### Recently Addressed (Phase 5)
 - ✅ Fermentation dashboard - daily monitoring with tank cards, sparklines, attention indicators

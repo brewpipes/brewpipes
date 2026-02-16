@@ -166,6 +166,7 @@
 </template>
 
 <script lang="ts" setup>
+  import type { WizardCompletionData, WizardStep, WizardStepId } from './types'
   import type { Batch, BrewSession, Occupancy, Vessel, Volume } from '@/types'
   import { computed, ref, watch } from 'vue'
   import { useDisplay } from 'vuetify'
@@ -174,7 +175,6 @@
   import BrewDayWizardStepHeader from './BrewDayWizardStepHeader.vue'
   import BrewDayWizardStepPick from './BrewDayWizardStepPick.vue'
   import BrewDayWizardStepSession from './BrewDayWizardStepSession.vue'
-  import type { WizardCompletionData, WizardStep, WizardStepId } from './types'
 
   const props = defineProps<{
     modelValue: boolean
@@ -251,7 +251,7 @@
   )
 
   // Reset wizard when dialog opens
-  watch(() => props.modelValue, (isOpen) => {
+  watch(() => props.modelValue, isOpen => {
     if (isOpen) {
       resetWizard()
     }
@@ -283,12 +283,12 @@
       setStepStatus('pick', 'skipped')
       setStepStatus('session', 'skipped')
       currentStep.value = 'fermenter'
-    } else if (!props.batch.recipe_uuid) {
+    } else if (props.batch.recipe_uuid) {
+      currentStep.value = 'pick'
+    } else {
       // No recipe — skip pick
       setStepStatus('pick', 'skipped')
       currentStep.value = 'session'
-    } else {
-      currentStep.value = 'pick'
     }
 
     // Mark current step as in progress

@@ -24,6 +24,18 @@ func (r CreateIngredientLotMaltDetailRequest) Validate() error {
 	return nil
 }
 
+type UpdateIngredientLotMaltDetailRequest struct {
+	MoisturePercent *float64 `json:"moisture_percent"`
+}
+
+func (r UpdateIngredientLotMaltDetailRequest) Validate() error {
+	if r.MoisturePercent != nil && (*r.MoisturePercent < 0 || *r.MoisturePercent > 100) {
+		return fmt.Errorf("moisture_percent must be between 0 and 100")
+	}
+
+	return nil
+}
+
 type IngredientLotMaltDetailResponse struct {
 	UUID              string     `json:"uuid"`
 	IngredientLotUUID string     `json:"ingredient_lot_uuid"`
@@ -54,6 +66,22 @@ func (r CreateIngredientLotHopDetailRequest) Validate() error {
 	if err := validate.Required(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
 		return err
 	}
+	if r.AlphaAcid != nil && (*r.AlphaAcid < 0 || *r.AlphaAcid > 100) {
+		return fmt.Errorf("alpha_acid must be between 0 and 100")
+	}
+	if r.BetaAcid != nil && (*r.BetaAcid < 0 || *r.BetaAcid > 100) {
+		return fmt.Errorf("beta_acid must be between 0 and 100")
+	}
+
+	return nil
+}
+
+type UpdateIngredientLotHopDetailRequest struct {
+	AlphaAcid *float64 `json:"alpha_acid"`
+	BetaAcid  *float64 `json:"beta_acid"`
+}
+
+func (r UpdateIngredientLotHopDetailRequest) Validate() error {
 	if r.AlphaAcid != nil && (*r.AlphaAcid < 0 || *r.AlphaAcid > 100) {
 		return fmt.Errorf("alpha_acid must be between 0 and 100")
 	}
@@ -96,6 +124,22 @@ func (r CreateIngredientLotYeastDetailRequest) Validate() error {
 	if err := validate.Required(r.IngredientLotUUID, "ingredient_lot_uuid"); err != nil {
 		return err
 	}
+	if r.Viability != nil && (*r.Viability < 0 || *r.Viability > 100) {
+		return fmt.Errorf("viability_percent must be between 0 and 100")
+	}
+	if r.Generation != nil && *r.Generation < 0 {
+		return fmt.Errorf("generation must be greater than or equal to zero")
+	}
+
+	return nil
+}
+
+type UpdateIngredientLotYeastDetailRequest struct {
+	Viability  *float64 `json:"viability_percent"`
+	Generation *int     `json:"generation"`
+}
+
+func (r UpdateIngredientLotYeastDetailRequest) Validate() error {
 	if r.Viability != nil && (*r.Viability < 0 || *r.Viability > 100) {
 		return fmt.Errorf("viability_percent must be between 0 and 100")
 	}

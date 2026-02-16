@@ -301,9 +301,8 @@
       const lotsMap = new Map<string, IngredientLot[]>()
       let anyFailed = false
 
-      for (let i = 0; i < entries.length; i++) {
+      for (const [i, entryUuid] of entries.entries()) {
         const result = results[i]
-        const entryUuid = entries[i]
         if (!result || !entryUuid) continue
         if (result.status === 'fulfilled') {
           const availableLots = result.value.filter((lot: IngredientLot) => lot.current_amount > 0)
@@ -468,8 +467,8 @@
       })
 
       return true
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to pick ingredients'
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to pick ingredients'
       showNotice(message, 'error')
       return false
     } finally {

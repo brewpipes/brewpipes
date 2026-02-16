@@ -62,6 +62,27 @@ const (
 	MovementReasonTransfer = "transfer"
 	MovementReasonAdjust   = "adjust"
 	MovementReasonWaste    = "waste"
+	MovementReasonPackage  = "package"
+)
+
+// Beer lot container types.
+const (
+	BeerLotContainerKeg     = "keg"
+	BeerLotContainerCan     = "can"
+	BeerLotContainerBottle  = "bottle"
+	BeerLotContainerCask    = "cask"
+	BeerLotContainerGrowler = "growler"
+	BeerLotContainerOther   = "other"
+)
+
+// Beer lot item statuses.
+const (
+	BeerLotItemStatusAvailable = "available"
+	BeerLotItemStatusReserved  = "reserved"
+	BeerLotItemStatusSold      = "sold"
+	BeerLotItemStatusReturned  = "returned"
+	BeerLotItemStatusDamaged   = "damaged"
+	BeerLotItemStatusDestroyed = "destroyed"
 )
 
 const (
@@ -213,9 +234,27 @@ type InventoryTransfer struct {
 type BeerLot struct {
 	entity.Identifiers
 	ProductionBatchUUID uuid.UUID
+	PackagingRunUUID    *uuid.UUID
 	LotCode             *string
+	BestBy              *time.Time
+	PackageFormatName   *string
+	Container           *string
+	VolumePerUnit       *int64
+	VolumePerUnitUnit   *string
+	Quantity            *int
 	PackagedAt          time.Time
 	Notes               *string
+	entity.Timestamps
+}
+
+// BeerLotItem represents a single trackable unit within a beer lot.
+type BeerLotItem struct {
+	entity.Identifiers
+	BeerLotID   int64
+	BeerLotUUID string // Joined from beer_lot table
+	Status      string
+	Identifier  *string
+	Notes       *string
 	entity.Timestamps
 }
 

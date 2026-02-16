@@ -82,8 +82,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue'
   import type { WizardCompletionData, WizardStep } from './types'
+  import { computed } from 'vue'
 
   const props = defineProps<{
     steps: WizardStep[]

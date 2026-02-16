@@ -60,7 +60,7 @@
           :items="sortedVessels"
           :loading="loading"
           :search="search"
-          @click:row="onRowDoubleClick"
+          @click:row="onRowClick"
         >
           <template #item.name="{ item }">
             <span class="font-weight-medium">{{ item.name }}</span>
@@ -156,9 +156,9 @@
           <v-col cols="12" md="6">
             <v-select
               v-model="newVessel.type"
-              :items="vesselTypeOptions"
               item-title="title"
               item-value="value"
+              :items="vesselTypeOptions"
               label="Type"
             />
           </v-col>
@@ -166,7 +166,7 @@
             <v-text-field v-model="newVessel.name" label="Name" placeholder="FV-01" />
           </v-col>
           <v-col cols="12" md="4">
-            <v-text-field v-model="newVessel.capacity" label="Capacity" type="number" />
+            <v-text-field v-model="newVessel.capacity" label="Capacity" :min="0" type="number" />
           </v-col>
           <v-col cols="12" md="4">
             <v-select
@@ -178,9 +178,9 @@
           <v-col cols="12" md="4">
             <v-select
               v-model="newVessel.status"
-              :items="vesselStatusOptions"
               item-title="title"
               item-value="value"
+              :items="vesselStatusOptions"
               label="Status"
             />
           </v-col>
@@ -209,7 +209,6 @@
 
 <script lang="ts" setup>
   import type { Batch, Occupancy, UpdateVesselRequest, Vessel, VesselStatus, VolumeUnit } from '@/types'
-  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
@@ -222,6 +221,7 @@
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences, volumeOptions } from '@/composables/useUnitPreferences'
   import { useVesselActions } from '@/composables/useVesselActions'
+  import { VESSEL_STATUS_VALUES, VESSEL_TYPE_VALUES } from '@/types'
   import { normalizeText, toNumber } from '@/utils/normalize'
 
   type BatchInfo = {
@@ -231,7 +231,7 @@
 
   const router = useRouter()
   const { getVessels, getBatches, createVessel: createVesselApi, getActiveOccupancies } = useProductionApi()
-  const { formatVolumePreferred } = useUnitPreferences()
+  const { preferences, formatVolumePreferred } = useUnitPreferences()
   const { formatRelativeTime } = useFormatters()
   const { formatVesselStatus, getVesselStatusColor } = useVesselStatusFormatters()
   const { formatVesselType } = useVesselTypeFormatters()
@@ -272,7 +272,7 @@
     type: '',
     name: '',
     capacity: '',
-    capacity_unit: 'ml' as VolumeUnit,
+    capacity_unit: preferences.value.volume as VolumeUnit,
     status: 'active',
     make: '',
     model: '',
@@ -294,9 +294,12 @@
 
   // Computed
   const isFormValid = computed(() => {
+    const capacity = Number(newVessel.capacity)
     return newVessel.type.trim().length > 0
       && newVessel.name.trim().length > 0
       && newVessel.capacity !== ''
+      && Number.isFinite(capacity)
+      && capacity > 0
   })
 
   // Map vessel_uuid -> occupancy for quick lookup
@@ -385,7 +388,7 @@
     newVessel.type = ''
     newVessel.name = ''
     newVessel.capacity = ''
-    newVessel.capacity_unit = 'ml'
+    newVessel.capacity_unit = preferences.value.volume
     newVessel.status = 'active'
     newVessel.make = ''
     newVessel.model = ''
@@ -427,7 +430,7 @@
     }
   }
 
-  function onRowDoubleClick (_event: Event, { item }: { item: Vessel }) {
+  function onRowClick (_event: Event, { item }: { item: Vessel }) {
     router.push(`/vessels/${item.uuid}`)
   }
 
@@ -472,5 +475,14 @@
 
 .vessels-table :deep(tr:hover td) {
   background: rgba(var(--v-theme-primary), 0.04);
+}
+
+.batch-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.batch-link:hover {
+  text-decoration: underline;
 }
 </style>

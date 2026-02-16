@@ -55,11 +55,11 @@
         multiple
         variant="outlined"
       >
-        <v-btn value="gravity" min-height="44">
+        <v-btn min-height="44" value="gravity">
           <v-icon icon="mdi-flask" start />
           <span class="d-none d-sm-inline">Gravity</span>
         </v-btn>
-        <v-btn value="temperature" min-height="44">
+        <v-btn min-height="44" value="temperature">
           <v-icon icon="mdi-thermometer" start />
           <span class="d-none d-sm-inline">Temperature</span>
         </v-btn>
@@ -122,6 +122,7 @@
   } from 'chart.js'
   import annotationPlugin from 'chartjs-plugin-annotation'
   import { computed, ref } from 'vue'
+  import { Line } from 'vue-chartjs'
   import { useDisplay } from 'vuetify'
   import {
     convertGravity,
@@ -132,7 +133,6 @@
     temperaturePrecision,
   } from '@/composables/useUnitConversion'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
-  import { Line } from 'vue-chartjs'
 
   ChartJS.register(
     Legend,
@@ -162,7 +162,13 @@
 
   // Rotate hint (show once, dismiss via localStorage)
   const ROTATE_HINT_KEY = 'brewpipes:fermentationRotateHintDismissed'
-  const showRotateHint = ref(!localStorage.getItem(ROTATE_HINT_KEY))
+  let rotateHintDismissed = false
+  try {
+    rotateHintDismissed = !!localStorage.getItem(ROTATE_HINT_KEY)
+  } catch {
+    // localStorage unavailable in restricted contexts
+  }
+  const showRotateHint = ref(!rotateHintDismissed)
 
   function dismissRotateHint () {
     showRotateHint.value = false
@@ -178,13 +184,13 @@
   const gravityMeasurements = computed(() =>
     props.measurements
       .filter(m => m.kind === 'gravity')
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime()),
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime()),
   )
 
   const temperatureMeasurements = computed(() =>
     props.measurements
       .filter(m => m.kind === 'temperature')
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime()),
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime()),
   )
 
   // ==================== Time Helpers ====================
@@ -192,9 +198,9 @@
   /** Earliest measurement timestamp across gravity and temperature */
   const firstTimestamp = computed(() => {
     const allSorted = [...gravityMeasurements.value, ...temperatureMeasurements.value]
-      .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime())
+      .sort((a, b) => new Date(a.observed_at || a.created_at || 0).getTime() - new Date(b.observed_at || b.created_at || 0).getTime())
     if (allSorted.length === 0) return Date.now()
-    return new Date(allSorted[0]!.observed_at).getTime()
+    return new Date(allSorted[0]!.observed_at || allSorted[0]!.created_at || 0).getTime()
   })
 
   /** Convert a timestamp to relative days from the first measurement */
@@ -379,13 +385,13 @@
       },
       tooltip: {
         callbacks: {
-          title: (items) => {
+          title: items => {
             if (items.length === 0) return ''
             const item = items[0]!
             const dates = item.datasetIndex === 0 ? gravityTooltipDates.value : temperatureTooltipDates.value
             return dates[item.dataIndex] ?? `Day ${(item.parsed.x ?? 0).toFixed(1)}`
           },
-          label: (item) => {
+          label: item => {
             const precision = item.datasetIndex === 0
               ? gravityPrecision[gravityUnit.value]
               : temperaturePrecision[tempUnit.value]
@@ -409,7 +415,7 @@
           text: 'Days',
         },
         ticks: {
-          callback: (value) => `Day ${Math.round(Number(value))}`,
+          callback: value => `Day ${Math.round(Number(value))}`,
           stepSize: 1,
         },
         min: 0,
@@ -423,7 +429,7 @@
           text: gravityLabels[gravityUnit.value],
         },
         ticks: {
-          callback: (value) => Number(value).toFixed(gravityPrecision[gravityUnit.value]),
+          callback: value => Number(value).toFixed(gravityPrecision[gravityUnit.value]),
         },
         grace: '5%',
       },
@@ -475,14 +481,14 @@
 
   const attenuationDisplay = computed(() => {
     if (ogRaw.value === null || currentGravityRaw.value === null) return '—'
-    const denominator = ogRaw.value - 1.0
+    const denominator = ogRaw.value - 1
     if (denominator <= 0) return '—'
     const att = ((ogRaw.value - currentGravityRaw.value) / denominator) * 100
     return `${att.toFixed(1)}%`
   })
 
   const daysDisplay = computed(() => {
-    if (gravityMeasurements.value.length < 1) return '—'
+    if (gravityMeasurements.value.length === 0) return '—'
     const first = new Date(gravityMeasurements.value[0]!.observed_at).getTime()
     const last = new Date(gravityMeasurements.value.at(-1)!.observed_at).getTime()
     const days = Math.round((last - first) / (1000 * 60 * 60 * 24))

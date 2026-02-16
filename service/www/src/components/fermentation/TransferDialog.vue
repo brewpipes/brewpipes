@@ -34,9 +34,18 @@
           </v-container>
         </template>
 
+        <!-- Load error state -->
+        <template v-else-if="loadError">
+          <v-container class="pa-6">
+            <v-alert density="compact" type="error" variant="tonal">
+              {{ loadError }}
+            </v-alert>
+          </v-container>
+        </template>
+
         <!-- Stepper -->
         <v-stepper
-          v-if="!loadingData"
+          v-if="!loadingData && !loadError"
           v-model="currentStep"
           alt-labels
           flat
@@ -125,9 +134,9 @@
                   v-model="form.sourceOccupancyUuid"
                   class="mb-2"
                   density="comfortable"
-                  :items="occupiedVesselOptions"
                   item-title="title"
                   item-value="value"
+                  :items="occupiedVesselOptions"
                   label="Source vessel"
                   :rules="[rules.required]"
                 >
@@ -155,9 +164,9 @@
                   v-model="form.destVesselUuid"
                   class="mb-2"
                   density="comfortable"
-                  :items="availableVesselOptions"
                   item-title="title"
                   item-value="value"
+                  :items="availableVesselOptions"
                   label="Destination vessel"
                   :rules="[rules.required]"
                 >
@@ -205,9 +214,9 @@
                     <v-select
                       v-model="form.volumeUnit"
                       density="comfortable"
-                      :items="volumeUnitOptions"
                       item-title="label"
                       item-value="value"
+                      :items="volumeUnitOptions"
                       label="Unit"
                     />
                   </v-col>
@@ -230,9 +239,9 @@
                     <v-select
                       v-model="form.volumeUnit"
                       density="comfortable"
-                      :items="volumeUnitOptions"
                       item-title="label"
                       item-value="value"
+                      :items="volumeUnitOptions"
                       label="Unit"
                     />
                   </v-col>
@@ -245,9 +254,9 @@
                   v-model="form.destStatus"
                   class="mb-2"
                   density="comfortable"
-                  :items="statusOptions"
                   item-title="title"
                   item-value="value"
+                  :items="statusOptions"
                   label="Destination status"
                 />
 
@@ -324,9 +333,9 @@
                   v-model="form.sourceOccupancyUuid"
                   class="mb-2"
                   density="comfortable"
-                  :items="occupiedVesselOptions"
                   item-title="title"
                   item-value="value"
+                  :items="occupiedVesselOptions"
                   label="Source vessel"
                   :rules="[rules.required]"
                 >
@@ -369,9 +378,9 @@
                     v-model="dest.vesselUuid"
                     class="mb-1"
                     density="comfortable"
-                    :items="splitAvailableVesselsFor(index)"
                     item-title="title"
                     item-value="value"
+                    :items="splitAvailableVesselsFor(index)"
                     label="Vessel"
                     :rules="[rules.required]"
                   >
@@ -398,9 +407,9 @@
                       <v-select
                         v-model="form.volumeUnit"
                         density="comfortable"
-                        :items="volumeUnitOptions"
                         item-title="label"
                         item-value="value"
+                        :items="volumeUnitOptions"
                         label="Unit"
                       />
                     </v-col>
@@ -409,9 +418,9 @@
                   <v-select
                     v-model="dest.status"
                     density="comfortable"
-                    :items="statusOptions"
                     item-title="title"
                     item-value="value"
+                    :items="statusOptions"
                     label="Status"
                   />
 
@@ -450,9 +459,9 @@
                     <v-select
                       v-model="form.volumeUnit"
                       density="comfortable"
-                      :items="volumeUnitOptions"
                       item-title="label"
                       item-value="value"
+                      :items="volumeUnitOptions"
                       label="Unit"
                     />
                   </v-col>
@@ -530,9 +539,9 @@
                     v-model="src.occupancyUuid"
                     class="mb-1"
                     density="comfortable"
-                    :items="blendOccupiedVesselsFor(index)"
                     item-title="title"
                     item-value="value"
+                    :items="blendOccupiedVesselsFor(index)"
                     label="Vessel"
                     :rules="[rules.required]"
                   >
@@ -559,9 +568,9 @@
                       <v-select
                         v-model="form.volumeUnit"
                         density="comfortable"
-                        :items="volumeUnitOptions"
                         item-title="label"
                         item-value="value"
+                        :items="volumeUnitOptions"
                         label="Unit"
                       />
                     </v-col>
@@ -596,9 +605,9 @@
                   v-model="form.destVesselUuid"
                   class="mb-2"
                   density="comfortable"
-                  :items="blendAvailableVesselOptions"
                   item-title="title"
                   item-value="value"
+                  :items="blendAvailableVesselOptions"
                   label="Destination vessel"
                   :rules="[rules.required]"
                 >
@@ -621,9 +630,9 @@
                   v-model="form.destStatus"
                   class="mb-2"
                   density="comfortable"
-                  :items="statusOptions"
                   item-title="title"
                   item-value="value"
+                  :items="statusOptions"
                   label="Destination status"
                 />
 
@@ -648,9 +657,9 @@
                     <v-select
                       v-model="form.volumeUnit"
                       density="comfortable"
-                      :items="volumeUnitOptions"
                       item-title="label"
                       item-value="value"
+                      :items="volumeUnitOptions"
                       label="Unit"
                     />
                   </v-col>
@@ -910,10 +919,10 @@
   import { useOccupancyStatusFormatters, useVesselTypeFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { useUnitPreferences, volumeOptions as allVolumeOptions } from '@/composables/useUnitPreferences'
   import { convertVolume, volumeLabels } from '@/composables/useUnitConversion'
-  import { nowInputValue } from '@/utils/normalize'
+  import { volumeOptions as allVolumeOptions, useUnitPreferences } from '@/composables/useUnitPreferences'
   import { OCCUPANCY_STATUS_VALUES } from '@/types'
+  import { nowInputValue } from '@/utils/normalize'
 
   /** Transfer dialog mode */
   type TransferMode = 'transfer' | 'split' | 'blend'
@@ -973,6 +982,7 @@
   const loadingData = ref(false)
   const saving = ref(false)
   const saveError = ref('')
+  const loadError = ref('')
   const showTimePicker = ref(false)
 
   // Reference data
@@ -1012,13 +1022,13 @@
   const rules = {
     required: (v: string) => !!v || 'Required',
     positiveNumber: (v: string) => {
-      const num = parseFloat(v)
+      const num = Number.parseFloat(v)
       if (isNaN(num)) return 'Enter a valid number'
       if (num <= 0) return 'Must be greater than 0'
       return true
     },
     nonNegativeNumber: (v: string) => {
-      const num = parseFloat(v)
+      const num = Number.parseFloat(v)
       if (isNaN(num)) return 'Enter a valid number'
       if (num < 0) return 'Cannot be negative'
       return true
@@ -1040,17 +1050,23 @@
 
   const dialogTitle = computed(() => {
     switch (activeMode.value) {
-      case 'split': return 'Split Beer'
-      case 'blend': return 'Blend Beer'
-      default: return 'Transfer Beer'
+      case 'split': { return 'Split Beer'
+      }
+      case 'blend': { return 'Blend Beer'
+      }
+      default: { return 'Transfer Beer'
+      }
     }
   })
 
   const confirmButtonLabel = computed(() => {
     switch (activeMode.value) {
-      case 'split': return 'Confirm Split'
-      case 'blend': return 'Confirm Blend'
-      default: return 'Confirm Transfer'
+      case 'split': { return 'Confirm Split'
+      }
+      case 'blend': { return 'Confirm Blend'
+      }
+      default: { return 'Confirm Transfer'
+      }
     }
   })
 
@@ -1166,7 +1182,7 @@
   // ==================== Split mode: volume math ====================
 
   function parseSplitDestAmount (amount: string): number {
-    const num = parseFloat(amount)
+    const num = Number.parseFloat(amount)
     return isNaN(num) ? 0 : num
   }
 
@@ -1267,7 +1283,7 @@
   // ==================== Blend mode: volume math ====================
 
   function parseBlendSourceAmount (amount: string): number {
-    const num = parseFloat(amount)
+    const num = Number.parseFloat(amount)
     return isNaN(num) ? 0 : num
   }
 
@@ -1379,12 +1395,12 @@
   })
 
   const transferAmountNum = computed(() => {
-    const num = parseFloat(form.value.transferAmount)
+    const num = Number.parseFloat(form.value.transferAmount)
     return isNaN(num) ? 0 : num
   })
 
   const lossAmountNum = computed(() => {
-    const num = parseFloat(form.value.lossAmount)
+    const num = Number.parseFloat(form.value.lossAmount)
     return isNaN(num) ? 0 : num
   })
 
@@ -1436,40 +1452,42 @@
 
   const canProceedTransfer = computed(() => {
     const hasSource = !!effectiveSourceOccupancy.value
+    const hasSourceVolume = !!effectiveSourceVolume.value
     const hasDest = !!form.value.destVesselUuid
-    const amount = parseFloat(form.value.transferAmount)
+    const amount = Number.parseFloat(form.value.transferAmount)
     const hasValidAmount = !isNaN(amount) && amount > 0
-    const loss = parseFloat(form.value.lossAmount || '0')
+    const loss = Number.parseFloat(form.value.lossAmount || '0')
     const hasValidLoss = !isNaN(loss) && loss >= 0
     const hasStatus = !!form.value.destStatus
-    return hasSource && hasDest && hasValidAmount && hasValidLoss && hasStatus
+    return hasSource && hasSourceVolume && hasDest && hasValidAmount && hasValidLoss && hasStatus
   })
 
   const canProceedSplit = computed(() => {
     const hasSource = !!effectiveSourceOccupancy.value
-    const loss = parseFloat(form.value.lossAmount || '0')
+    const hasSourceVolume = !!effectiveSourceVolume.value
+    const loss = Number.parseFloat(form.value.lossAmount || '0')
     const hasValidLoss = !isNaN(loss) && loss >= 0
 
     // All destinations must have vessel, valid amount, and status
     const allDestsValid = splitDestinations.value.length >= 2
       && splitDestinations.value.every(d => {
-        const amt = parseFloat(d.amount)
+        const amt = Number.parseFloat(d.amount)
         return !!d.vesselUuid && !isNaN(amt) && amt > 0 && !!d.status
       })
 
-    return hasSource && hasValidLoss && allDestsValid
+    return hasSource && hasSourceVolume && hasValidLoss && allDestsValid
   })
 
   const canProceedBlend = computed(() => {
     const hasDest = !!form.value.destVesselUuid
     const hasStatus = !!form.value.destStatus
-    const loss = parseFloat(form.value.lossAmount || '0')
+    const loss = Number.parseFloat(form.value.lossAmount || '0')
     const hasValidLoss = !isNaN(loss) && loss >= 0
 
     // All sources must have occupancy and valid amount
     const allSourcesValid = blendSources.value.length >= 2
       && blendSources.value.every(s => {
-        const amt = parseFloat(s.amount)
+        const amt = Number.parseFloat(s.amount)
         return !!s.occupancyUuid && !isNaN(amt) && amt > 0
       })
 
@@ -1483,11 +1501,16 @@
 
   function getDefaultDestStatus (sourceStatus: OccupancyStatus | string | null): OccupancyStatus {
     switch (sourceStatus) {
-      case 'fermenting': return 'conditioning'
-      case 'conditioning': return 'carbonating'
-      case 'cold_crashing': return 'conditioning'
-      case 'dry_hopping': return 'conditioning'
-      default: return 'holding'
+      case 'fermenting': { return 'conditioning'
+      }
+      case 'conditioning': { return 'carbonating'
+      }
+      case 'cold_crashing': { return 'conditioning'
+      }
+      case 'dry_hopping': { return 'conditioning'
+      }
+      default: { return 'holding'
+      }
     }
   }
 
@@ -1495,7 +1518,7 @@
 
   watch(
     () => form.value.sourceOccupancyUuid,
-    async (newUuid) => {
+    async newUuid => {
       if (!newUuid || props.sourceOccupancy) return
 
       // Find the occupancy from loaded data
@@ -1536,7 +1559,7 @@
 
   watch(
     () => blendSources.value.map(s => s.occupancyUuid),
-    async (uuids) => {
+    async uuids => {
       for (const uuid of uuids) {
         if (!uuid) continue
         const occ = allOccupancies.value.find(o => o.uuid === uuid)
@@ -1588,7 +1611,7 @@
 
   watch(
     () => props.modelValue,
-    async (isOpen) => {
+    async isOpen => {
       if (isOpen) {
         await resetAndLoad()
       }
@@ -1600,6 +1623,7 @@
     currentStep.value = 1
     saving.value = false
     saveError.value = ''
+    loadError.value = ''
     showTimePicker.value = false
     resolvedSourceOccupancy.value = null
     resolvedSourceVessel.value = null
@@ -1696,7 +1720,7 @@
       allOccupancies.value = occupancyData
       allVessels.value = vesselData
     } catch {
-      saveError.value = 'Failed to load vessel data'
+      loadError.value = 'Failed to load vessel data. Please close and try again.'
     } finally {
       loadingData.value = false
     }
@@ -1709,12 +1733,23 @@
   }
 
   async function handleConfirm () {
-    if (activeMode.value === 'transfer') {
-      await handleConfirmTransfer()
-    } else if (activeMode.value === 'split') {
-      await handleConfirmSplit()
-    } else if (activeMode.value === 'blend') {
-      await handleConfirmBlend()
+    switch (activeMode.value) {
+      case 'transfer': {
+        await handleConfirmTransfer()
+
+        break
+      }
+      case 'split': {
+        await handleConfirmSplit()
+
+        break
+      }
+      case 'blend': {
+        await handleConfirmBlend()
+
+        break
+      }
+    // No default
     }
   }
 
@@ -1731,8 +1766,8 @@
     saveError.value = ''
 
     try {
-      const transferAmount = parseFloat(form.value.transferAmount)
-      const lossAmount = parseFloat(form.value.lossAmount || '0')
+      const transferAmount = Number.parseFloat(form.value.transferAmount)
+      const lossAmount = Number.parseFloat(form.value.lossAmount || '0')
       const transferDate = form.value.transferDate
         ? new Date(form.value.transferDate).toISOString()
         : new Date().toISOString()
@@ -1795,7 +1830,7 @@
         const dest = splitDestinations.value[i]!
         const childVol = childVolumes[i]!
         const isLast = i === splitDestinations.value.length - 1
-        const lossAmount = parseFloat(form.value.lossAmount || '0')
+        const lossAmount = Number.parseFloat(form.value.lossAmount || '0')
 
         try {
           await createTransfer({
@@ -1820,8 +1855,8 @@
       }
 
       // Step 3: Create volume relations
-      for (let i = 0; i < childVolumes.length; i++) {
-        const childVol = childVolumes[i]!
+      for (const [i, childVolume] of childVolumes.entries()) {
+        const childVol = childVolume!
         const dest = splitDestinations.value[i]!
         try {
           await createVolumeRelation({
@@ -1888,7 +1923,7 @@
       // Step 2: Create transfers from each source to the destination
       for (let i = 0; i < blendSources.value.length; i++) {
         const src = blendSources.value[i]!
-        const lossAmount = parseFloat(form.value.lossAmount || '0')
+        const lossAmount = Number.parseFloat(form.value.lossAmount || '0')
         const isFirst = i === 0
 
         try {

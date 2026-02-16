@@ -1,6 +1,9 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+// Module-level flag to prevent multiple concurrent 401 redirects
+let redirecting = false
+
 function isJsonResponse (response: Response) {
   const contentType = response.headers.get('content-type') ?? ''
   return contentType.includes('application/json')
@@ -59,10 +62,13 @@ export function useApiClient (baseUrl: string) {
         return parseResponse<T>(retry)
       }
 
-      if (router.currentRoute.value.path !== '/login') {
+      if (!redirecting && router.currentRoute.value.path !== '/login') {
+        redirecting = true
         router.push({
           path: '/login',
           query: { redirect: router.currentRoute.value.fullPath },
+        }).catch(() => {}).finally(() => {
+          redirecting = false
         })
       }
       throw new Error(await readErrorMessage(response))

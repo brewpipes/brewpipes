@@ -13,6 +13,7 @@ import (
 
 type IngredientLotMaltDetailStore interface {
 	CreateIngredientLotMaltDetail(context.Context, storage.IngredientLotMaltDetail) (storage.IngredientLotMaltDetail, error)
+	UpdateIngredientLotMaltDetail(context.Context, string, storage.IngredientLotMaltDetail) (storage.IngredientLotMaltDetail, error)
 	GetIngredientLotMaltDetailByUUID(context.Context, string) (storage.IngredientLotMaltDetail, error)
 	GetIngredientLotMaltDetailByLot(context.Context, string) (storage.IngredientLotMaltDetail, error)
 	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
@@ -74,7 +75,7 @@ func HandleIngredientLotMaltDetails(db IngredientLotMaltDetailStore) http.Handle
 	}
 }
 
-// HandleIngredientLotMaltDetailByUUID handles [GET /ingredient-lot-malt-details/{uuid}].
+// HandleIngredientLotMaltDetailByUUID handles [GET /ingredient-lot-malt-details/{uuid}] and [PUT /ingredient-lot-malt-details/{uuid}].
 func HandleIngredientLotMaltDetailByUUID(db IngredientLotMaltDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		detailUUID := r.PathValue("uuid")
@@ -83,21 +84,52 @@ func HandleIngredientLotMaltDetailByUUID(db IngredientLotMaltDetailStore) http.H
 			return
 		}
 
-		detail, err := db.GetIngredientLotMaltDetailByUUID(r.Context(), detailUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "ingredient lot malt detail not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			service.InternalError(w, "error getting ingredient lot malt detail", "error", err)
-			return
-		}
+		switch r.Method {
+		case http.MethodGet:
+			detail, err := db.GetIngredientLotMaltDetailByUUID(r.Context(), detailUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient lot malt detail not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				service.InternalError(w, "error getting ingredient lot malt detail", "error", err)
+				return
+			}
 
-		service.JSON(w, dto.NewIngredientLotMaltDetailResponse(detail))
+			service.JSON(w, dto.NewIngredientLotMaltDetailResponse(detail))
+		case http.MethodPut:
+			var req dto.UpdateIngredientLotMaltDetailRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+			if err := req.Validate(); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			detail := storage.IngredientLotMaltDetail{
+				MoisturePercent: req.MoisturePercent,
+			}
+
+			updated, err := db.UpdateIngredientLotMaltDetail(r.Context(), detailUUID, detail)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient lot malt detail not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				service.InternalError(w, "error updating ingredient lot malt detail", "error", err)
+				return
+			}
+
+			service.JSON(w, dto.NewIngredientLotMaltDetailResponse(updated))
+		default:
+			service.MethodNotAllowed(w)
+		}
 	}
 }
 
 type IngredientLotHopDetailStore interface {
 	CreateIngredientLotHopDetail(context.Context, storage.IngredientLotHopDetail) (storage.IngredientLotHopDetail, error)
+	UpdateIngredientLotHopDetail(context.Context, string, storage.IngredientLotHopDetail) (storage.IngredientLotHopDetail, error)
 	GetIngredientLotHopDetailByUUID(context.Context, string) (storage.IngredientLotHopDetail, error)
 	GetIngredientLotHopDetailByLot(context.Context, string) (storage.IngredientLotHopDetail, error)
 	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
@@ -160,7 +192,7 @@ func HandleIngredientLotHopDetails(db IngredientLotHopDetailStore) http.HandlerF
 	}
 }
 
-// HandleIngredientLotHopDetailByUUID handles [GET /ingredient-lot-hop-details/{uuid}].
+// HandleIngredientLotHopDetailByUUID handles [GET /ingredient-lot-hop-details/{uuid}] and [PUT /ingredient-lot-hop-details/{uuid}].
 func HandleIngredientLotHopDetailByUUID(db IngredientLotHopDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		detailUUID := r.PathValue("uuid")
@@ -169,21 +201,53 @@ func HandleIngredientLotHopDetailByUUID(db IngredientLotHopDetailStore) http.Han
 			return
 		}
 
-		detail, err := db.GetIngredientLotHopDetailByUUID(r.Context(), detailUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "ingredient lot hop detail not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			service.InternalError(w, "error getting ingredient lot hop detail", "error", err)
-			return
-		}
+		switch r.Method {
+		case http.MethodGet:
+			detail, err := db.GetIngredientLotHopDetailByUUID(r.Context(), detailUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient lot hop detail not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				service.InternalError(w, "error getting ingredient lot hop detail", "error", err)
+				return
+			}
 
-		service.JSON(w, dto.NewIngredientLotHopDetailResponse(detail))
+			service.JSON(w, dto.NewIngredientLotHopDetailResponse(detail))
+		case http.MethodPut:
+			var req dto.UpdateIngredientLotHopDetailRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+			if err := req.Validate(); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			detail := storage.IngredientLotHopDetail{
+				AlphaAcid: req.AlphaAcid,
+				BetaAcid:  req.BetaAcid,
+			}
+
+			updated, err := db.UpdateIngredientLotHopDetail(r.Context(), detailUUID, detail)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient lot hop detail not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				service.InternalError(w, "error updating ingredient lot hop detail", "error", err)
+				return
+			}
+
+			service.JSON(w, dto.NewIngredientLotHopDetailResponse(updated))
+		default:
+			service.MethodNotAllowed(w)
+		}
 	}
 }
 
 type IngredientLotYeastDetailStore interface {
 	CreateIngredientLotYeastDetail(context.Context, storage.IngredientLotYeastDetail) (storage.IngredientLotYeastDetail, error)
+	UpdateIngredientLotYeastDetail(context.Context, string, storage.IngredientLotYeastDetail) (storage.IngredientLotYeastDetail, error)
 	GetIngredientLotYeastDetailByUUID(context.Context, string) (storage.IngredientLotYeastDetail, error)
 	GetIngredientLotYeastDetailByLot(context.Context, string) (storage.IngredientLotYeastDetail, error)
 	GetIngredientLotByUUID(context.Context, string) (storage.IngredientLot, error)
@@ -246,7 +310,7 @@ func HandleIngredientLotYeastDetails(db IngredientLotYeastDetailStore) http.Hand
 	}
 }
 
-// HandleIngredientLotYeastDetailByUUID handles [GET /ingredient-lot-yeast-details/{uuid}].
+// HandleIngredientLotYeastDetailByUUID handles [GET /ingredient-lot-yeast-details/{uuid}] and [PUT /ingredient-lot-yeast-details/{uuid}].
 func HandleIngredientLotYeastDetailByUUID(db IngredientLotYeastDetailStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		detailUUID := r.PathValue("uuid")
@@ -255,15 +319,46 @@ func HandleIngredientLotYeastDetailByUUID(db IngredientLotYeastDetailStore) http
 			return
 		}
 
-		detail, err := db.GetIngredientLotYeastDetailByUUID(r.Context(), detailUUID)
-		if errors.Is(err, service.ErrNotFound) {
-			http.Error(w, "ingredient lot yeast detail not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			service.InternalError(w, "error getting ingredient lot yeast detail", "error", err)
-			return
-		}
+		switch r.Method {
+		case http.MethodGet:
+			detail, err := db.GetIngredientLotYeastDetailByUUID(r.Context(), detailUUID)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient lot yeast detail not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				service.InternalError(w, "error getting ingredient lot yeast detail", "error", err)
+				return
+			}
 
-		service.JSON(w, dto.NewIngredientLotYeastDetailResponse(detail))
+			service.JSON(w, dto.NewIngredientLotYeastDetailResponse(detail))
+		case http.MethodPut:
+			var req dto.UpdateIngredientLotYeastDetailRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+			if err := req.Validate(); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			detail := storage.IngredientLotYeastDetail{
+				ViabilityPercent: req.Viability,
+				Generation:       req.Generation,
+			}
+
+			updated, err := db.UpdateIngredientLotYeastDetail(r.Context(), detailUUID, detail)
+			if errors.Is(err, service.ErrNotFound) {
+				http.Error(w, "ingredient lot yeast detail not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				service.InternalError(w, "error updating ingredient lot yeast detail", "error", err)
+				return
+			}
+
+			service.JSON(w, dto.NewIngredientLotYeastDetailResponse(updated))
+		default:
+			service.MethodNotAllowed(w)
+		}
 	}
 }

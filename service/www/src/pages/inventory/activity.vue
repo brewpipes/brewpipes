@@ -275,8 +275,8 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      // Load core inventory data in parallel
-      await Promise.all([
+      // Load core inventory data in parallel (allSettled so one failure doesn't kill all data)
+      const results = await Promise.allSettled([
         loadIngredients(),
         loadLots(),
         loadLocations(),
@@ -288,11 +288,15 @@
         loadTransfers(),
       ])
 
+      const failures = results.filter(r => r.status === 'rejected')
+      if (failures.length > 0 && failures.length < results.length) {
+        errorMessage.value = `Some data failed to load (${failures.length} of ${results.length} requests). Displayed data may be incomplete.`
+      } else if (failures.length === results.length) {
+        errorMessage.value = 'Unable to load activity'
+      }
+
       // Load cross-service data (non-blocking, graceful failure)
       await loadCrossServiceData()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load activity'
-      errorMessage.value = message
     } finally {
       loading.value = false
     }

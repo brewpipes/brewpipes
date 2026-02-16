@@ -169,11 +169,11 @@ describe('BatchList', () => {
   })
 
   describe('date formatting', () => {
-    it('shows "Unknown" for null brew date', () => {
+    it('shows "Not set" for null brew date', () => {
       const batches = [createBatch({ brew_date: null })]
       const wrapper = mountBatchList({ batches })
 
-      expect(wrapper.text()).toContain('Unknown')
+      expect(wrapper.text()).toContain('Not set')
     })
 
     it('formats updated_at timestamp', () => {

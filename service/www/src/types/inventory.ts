@@ -26,20 +26,22 @@ export interface IngredientLot {
   uuid: string
   ingredient_uuid: string
   receipt_uuid: string | null
+  supplier_uuid: string | null
+  purchase_order_line_uuid: string | null
+  brewery_lot_code: string | null
+  originator_lot_code: string | null
+  originator_name: string | null
+  originator_type: string | null
+  received_at: string
   received_amount: number
   received_unit: string
-  best_by_at: string
-  expires_at: string
-  supplier_uuid: string
-  brewery_lot_code: string | null
-  originator_lot_code: string
-  originator_name: string
-  originator_type: string
-  received_at: string
-  notes: string
-  stock_location_uuid: string
   current_amount: number
   current_unit: string
+  best_by_at: string | null
+  expires_at: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================================
@@ -77,14 +79,38 @@ export interface IngredientLotYeastDetail {
 export interface BeerLot {
   uuid: string
   production_batch_uuid: string
+  packaging_run_uuid?: string
   lot_code: string | null
+  best_by?: string
+  package_format_name?: string
+  container?: string
+  volume_per_unit?: number
+  volume_per_unit_unit?: string
+  quantity?: number
   packaged_at: string
-  notes: string
+  notes: string | null
   created_at: string
   updated_at: string
+}
+
+/** Current stock level for a beer lot at a specific location */
+export interface BeerLotStockLevel {
+  beer_lot_uuid: string
+  production_batch_uuid: string
+  packaging_run_uuid?: string
+  lot_code?: string
+  best_by?: string
+  package_format_name?: string
+  container?: string
+  volume_per_unit?: number
+  volume_per_unit_unit?: string
+  initial_quantity?: number
+  packaged_at: string
   stock_location_uuid: string
-  volume: number
-  volume_unit: string
+  stock_location_name: string
+  current_volume: number
+  current_volume_unit: string
+  current_quantity?: number
 }
 
 // ============================================================================

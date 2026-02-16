@@ -75,6 +75,7 @@
             <v-btn
               class="mr-1"
               color="primary"
+              :disabled="!item.locationUuid"
               size="x-small"
               variant="tonal"
               @click="openAdjustDialog(item)"
@@ -83,6 +84,7 @@
             </v-btn>
             <v-btn
               color="secondary"
+              :disabled="!item.locationUuid"
               size="x-small"
               variant="tonal"
               @click="openTransferDialog(item)"
@@ -104,7 +106,7 @@
   </v-container>
 
   <!-- Adjustment Modal -->
-  <v-dialog v-model="adjustDialog" max-width="500" persistent>
+  <v-dialog v-model="adjustDialog" :fullscreen="$vuetify.display.xs" :max-width="$vuetify.display.xs ? undefined : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Adjust inventory</v-card-title>
       <v-card-text>
@@ -128,12 +130,12 @@
           persistent-hint
           type="number"
         />
-        <v-text-field
+        <v-select
           v-model="adjustForm.reason"
           class="mt-2"
           density="comfortable"
+          :items="adjustmentReasonOptions"
           label="Reason"
-          placeholder="Damaged, expired, count correction, etc."
           :rules="[rules.required]"
         />
         <v-textarea
@@ -167,7 +169,7 @@
   </v-dialog>
 
   <!-- Transfer Modal -->
-  <v-dialog v-model="transferDialog" max-width="500" persistent>
+  <v-dialog v-model="transferDialog" :fullscreen="$vuetify.display.xs" :max-width="$vuetify.display.xs ? undefined : 500" persistent>
     <v-card>
       <v-card-title class="text-h6">Transfer inventory</v-card-title>
       <v-card-text>
@@ -237,7 +239,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { BeerLot, Ingredient, IngredientLot, StockLocation } from '@/types'
+  import type { BeerLotStockLevel, Ingredient, IngredientLot, InventoryMovement, StockLocation } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
@@ -259,7 +261,8 @@
     getStockLocations,
     getIngredients: fetchIngredients,
     getIngredientLots: fetchIngredientLots,
-    getBeerLots: fetchBeerLots,
+    getInventoryMovements: fetchInventoryMovements,
+    getBeerLotStockLevels: fetchBeerLotStockLevels,
     createInventoryAdjustment,
     createInventoryTransfer,
   } = useInventoryApi()
@@ -270,7 +273,8 @@
   const locations = ref<StockLocation[]>([])
   const ingredients = ref<Ingredient[]>([])
   const ingredientLots = ref<IngredientLot[]>([])
-  const beerLots = ref<BeerLot[]>([])
+  const ingredientMovements = ref<InventoryMovement[]>([])
+  const beerLotStockLevels = ref<BeerLotStockLevel[]>([])
 
   // UI state
   const loading = ref(false)
@@ -299,6 +303,15 @@
     notes: '',
     transferred_at: '',
   })
+
+  const adjustmentReasonOptions = [
+    { title: 'Cycle Count', value: 'cycle_count' },
+    { title: 'Spoilage', value: 'spoilage' },
+    { title: 'Shrink', value: 'shrink' },
+    { title: 'Damage', value: 'damage' },
+    { title: 'Correction', value: 'correction' },
+    { title: 'Other', value: 'other' },
+  ]
 
   const rules = {
     required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
@@ -336,37 +349,74 @@
       }))
   })
 
+  /** Build a map of ingredient lot UUID → location UUID → net quantity from movements */
+  const ingredientLotLocationMap = computed(() => {
+    const map = new Map<string, Map<string, { quantity: number, unit: string }>>()
+    for (const movement of ingredientMovements.value) {
+      if (!movement.ingredient_lot_uuid) continue
+      let lotMap = map.get(movement.ingredient_lot_uuid)
+      if (!lotMap) {
+        lotMap = new Map()
+        map.set(movement.ingredient_lot_uuid, lotMap)
+      }
+      const existing = lotMap.get(movement.stock_location_uuid) ?? { quantity: 0, unit: movement.amount_unit }
+      const delta = movement.direction === 'in' ? movement.amount : -movement.amount
+      existing.quantity += delta
+      lotMap.set(movement.stock_location_uuid, existing)
+    }
+    return map
+  })
+
   const allInventory = computed<InventoryItem[]>(() => {
     const items: InventoryItem[] = []
+    const locationMap = new Map(locations.value.map(l => [l.uuid, l]))
 
-    // Add ingredient lots
+    // Add ingredient lots — one row per lot per location with positive stock
     for (const lot of ingredientLots.value) {
       const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
-      const location = locations.value.find(l => l.uuid === lot.stock_location_uuid)
-      items.push({
-        key: `ingredient-${lot.uuid}`,
-        type: 'ingredient',
-        lotUuid: lot.uuid,
-        name: ingredient?.name ?? 'Unknown Ingredient',
-        quantity: lot.current_amount ?? lot.received_amount,
-        unit: lot.current_unit ?? lot.received_unit,
-        locationUuid: lot.stock_location_uuid,
-        locationName: location?.name ?? 'Unknown Location',
-      })
+      const lotLocations = ingredientLotLocationMap.value.get(lot.uuid)
+
+      if (lotLocations && lotLocations.size > 0) {
+        for (const [locUuid, stock] of lotLocations) {
+          if (stock.quantity <= 0) continue
+          const location = locationMap.get(locUuid)
+          items.push({
+            key: `ingredient-${lot.uuid}-${locUuid}`,
+            type: 'ingredient',
+            lotUuid: lot.uuid,
+            name: ingredient?.name ?? 'Unknown Ingredient',
+            quantity: stock.quantity,
+            unit: stock.unit,
+            locationUuid: locUuid,
+            locationName: location?.name ?? 'Unknown Location',
+          })
+        }
+      } else {
+        // No movements found — show lot with unknown location
+        items.push({
+          key: `ingredient-${lot.uuid}`,
+          type: 'ingredient',
+          lotUuid: lot.uuid,
+          name: ingredient?.name ?? 'Unknown Ingredient',
+          quantity: lot.current_amount ?? lot.received_amount,
+          unit: lot.current_unit ?? lot.received_unit,
+          locationUuid: '',
+          locationName: '—',
+        })
+      }
     }
 
-    // Add beer lots
-    for (const lot of beerLots.value) {
-      const location = locations.value.find(l => l.uuid === lot.stock_location_uuid)
+    // Add beer lot stock levels
+    for (const level of beerLotStockLevels.value) {
       items.push({
-        key: `beer-${lot.uuid}`,
+        key: `beer-${level.beer_lot_uuid}-${level.stock_location_uuid}`,
         type: 'beer',
-        lotUuid: lot.uuid,
-        name: lot.lot_code || 'Unknown Beer Lot',
-        quantity: lot.volume,
-        unit: lot.volume_unit,
-        locationUuid: lot.stock_location_uuid,
-        locationName: location?.name ?? 'Unknown Location',
+        lotUuid: level.beer_lot_uuid,
+        name: level.lot_code || 'Unknown Beer Lot',
+        quantity: level.current_volume,
+        unit: level.current_volume_unit,
+        locationUuid: level.stock_location_uuid,
+        locationName: level.stock_location_name,
       })
     }
 
@@ -432,7 +482,8 @@
         loadLocations(),
         loadIngredients(),
         loadIngredientLots(),
-        loadBeerLots(),
+        loadIngredientMovements(),
+        loadBeerLotStockLevels(),
       ])
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load data'
@@ -454,8 +505,12 @@
     ingredientLots.value = await fetchIngredientLots()
   }
 
-  async function loadBeerLots () {
-    beerLots.value = await fetchBeerLots()
+  async function loadIngredientMovements () {
+    ingredientMovements.value = await fetchInventoryMovements()
+  }
+
+  async function loadBeerLotStockLevels () {
+    beerLotStockLevels.value = await fetchBeerLotStockLevels()
   }
 
   // Adjust dialog
@@ -534,8 +589,8 @@
         beer_lot_uuid: selectedItem.value.type === 'beer' ? selectedItem.value.lotUuid : null,
         source_location_uuid: selectedItem.value.locationUuid,
         dest_location_uuid: transferForm.to_location_uuid,
-        quantity: Number(transferForm.quantity),
-        quantity_unit: selectedItem.value.unit,
+        amount: Number(transferForm.quantity),
+        amount_unit: selectedItem.value.unit,
         notes: normalizeText(transferForm.notes),
         transferred_at: normalizeDateTime(transferForm.transferred_at),
       }

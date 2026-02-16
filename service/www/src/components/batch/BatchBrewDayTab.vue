@@ -618,7 +618,7 @@
   )
 
   /** Scale an ingredient amount for the batch. */
-  function scaleBatchAmount (amount: number, ingredientScalingFactor: number = 1.0): number {
+  function scaleBatchAmount (amount: number, ingredientScalingFactor = 1): number {
     if (ingredientScalingFactor === 0) return amount
     const fullyScaled = amount * batchScaleFactor.value
     return amount + (fullyScaled - amount) * ingredientScalingFactor
@@ -686,7 +686,7 @@
   )
 
   // Watch recipe UUID changes
-  watch(() => props.recipeUuid, async (newUuid) => {
+  watch(() => props.recipeUuid, async newUuid => {
     if (newUuid) {
       await loadPickList(newUuid)
     } else {
@@ -776,9 +776,8 @@
       const lotsMap = new Map<string, IngredientLot[]>()
       let anyFailed = false
 
-      for (let i = 0; i < entries.length; i++) {
+      for (const [i, entryUuid] of entries.entries()) {
         const result = results[i]
-        const entryUuid = entries[i]
         if (!result || !entryUuid) continue
         if (result.status === 'fulfilled') {
           // Filter to lots with stock remaining
@@ -980,8 +979,8 @@
       } catch {
         // Non-critical — stock display may be stale
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
       confirmError.value = message
     } finally {
       confirming.value = false

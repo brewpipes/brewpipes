@@ -13,7 +13,7 @@
     <!-- Vessel picker -->
     <div class="text-overline text-medium-emphasis mb-2">Select Fermenter</div>
 
-    <div v-if="fermenterOptions.length > 0" role="radiogroup" aria-label="Select fermenter">
+    <div v-if="fermenterOptions.length > 0" aria-label="Select fermenter" role="radiogroup">
       <v-row dense>
         <v-col
           v-for="vessel in fermenterOptions"
@@ -35,42 +35,42 @@
             variant="outlined"
             @click="!vessel.occupied && selectVessel(vessel.uuid)"
           >
-          <v-card-text class="pa-3 text-center">
-            <v-icon
-              v-if="form.vesselUuid === vessel.uuid"
-              class="mb-1"
-              color="primary"
-              icon="mdi-check-circle"
-              size="24"
-            />
-            <v-icon
-              v-else-if="vessel.occupied"
-              class="mb-1"
-              color="grey"
-              icon="mdi-flask-round-bottom"
-              size="24"
-            />
-            <v-icon
-              v-else
-              class="mb-1"
-              icon="mdi-flask-round-bottom-empty-outline"
-              size="24"
-            />
-            <div class="text-body-2 font-weight-medium">{{ vessel.name }}</div>
-            <div class="text-caption text-medium-emphasis">
-              {{ vessel.capacity }} {{ vessel.capacityUnit }}
-            </div>
-            <v-chip
-              v-if="vessel.occupied"
-              class="mt-1"
-              color="grey"
-              size="x-small"
-              variant="tonal"
-            >
-              In use
-            </v-chip>
-          </v-card-text>
-        </v-card>
+            <v-card-text class="pa-3 text-center">
+              <v-icon
+                v-if="form.vesselUuid === vessel.uuid"
+                class="mb-1"
+                color="primary"
+                icon="mdi-check-circle"
+                size="24"
+              />
+              <v-icon
+                v-else-if="vessel.occupied"
+                class="mb-1"
+                color="grey"
+                icon="mdi-flask-round-bottom"
+                size="24"
+              />
+              <v-icon
+                v-else
+                class="mb-1"
+                icon="mdi-flask-round-bottom-empty-outline"
+                size="24"
+              />
+              <div class="text-body-2 font-weight-medium">{{ vessel.name }}</div>
+              <div class="text-caption text-medium-emphasis">
+                {{ vessel.capacity }} {{ vessel.capacityUnit }}
+              </div>
+              <v-chip
+                v-if="vessel.occupied"
+                class="mt-1"
+                color="grey"
+                size="x-small"
+                variant="tonal"
+              >
+                In use
+              </v-chip>
+            </v-card-text>
+          </v-card>
         </v-col>
       </v-row>
     </div>
@@ -92,9 +92,9 @@
         v-model="form.volumeUuid"
         density="comfortable"
         hide-details
-        :items="volumeOptions"
         item-title="title"
         item-value="value"
+        :items="volumeOptions"
         placeholder="Select volume"
       />
     </template>
@@ -243,8 +243,8 @@
       })
 
       return true
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to assign fermenter'
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to assign fermenter'
       errorMessage.value = message
       showNotice(message, 'error')
       return false

@@ -647,6 +647,105 @@ export interface CreateBatchRelationRequest {
 }
 
 // ============================================================================
+// Package Format Types
+// ============================================================================
+
+/** Container type for package formats */
+export type ContainerType = 'keg' | 'can' | 'bottle' | 'cask' | 'growler' | 'other'
+
+/** All valid container type values */
+export const CONTAINER_TYPE_VALUES: ContainerType[] = [
+  'keg',
+  'can',
+  'bottle',
+  'cask',
+  'growler',
+  'other',
+]
+
+/** A package format definition (container type for packaged beer) */
+export interface PackageFormat {
+  uuid: string
+  name: string
+  container: ContainerType
+  volume_per_unit: number
+  volume_per_unit_unit: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a new package format */
+export interface CreatePackageFormatRequest {
+  name: string
+  container: ContainerType
+  volume_per_unit: number
+  volume_per_unit_unit: string
+}
+
+/** Request payload for updating an existing package format */
+export interface UpdatePackageFormatRequest {
+  name?: string
+  container?: ContainerType
+  volume_per_unit?: number
+  volume_per_unit_unit?: string
+  is_active?: boolean
+}
+
+// ============================================================================
+// Packaging Run Types
+// ============================================================================
+
+/** A line item within a packaging run */
+export interface PackagingRunLine {
+  uuid: string
+  packaging_run_uuid: string
+  package_format_uuid: string
+  package_format_name: string
+  package_format_volume_per_unit: number
+  package_format_volume_per_unit_unit: string
+  quantity: number
+  created_at: string
+  updated_at: string
+}
+
+/** A packaging run recording a packaging event for a batch */
+export interface PackagingRun {
+  uuid: string
+  batch_uuid: string
+  occupancy_uuid: string
+  started_at: string
+  ended_at: string | null
+  loss_amount: number | null
+  loss_unit: string | null
+  notes: string | null
+  lines: PackagingRunLine[]
+  created_at: string
+  updated_at: string
+}
+
+/** Request payload for creating a packaging run line */
+export interface CreatePackagingRunLineRequest {
+  package_format_uuid: string
+  quantity: number
+}
+
+/** Request payload for creating a new packaging run */
+export interface CreatePackagingRunRequest {
+  batch_uuid: string
+  occupancy_uuid: string
+  started_at?: string
+  ended_at?: string
+  loss_amount?: number
+  loss_unit?: string
+  notes?: string
+  lines: CreatePackagingRunLineRequest[]
+  close_source?: boolean
+  stock_location_uuid?: string
+  lot_code_prefix?: string
+}
+
+// ============================================================================
 // Batch Summary Types
 // ============================================================================
 

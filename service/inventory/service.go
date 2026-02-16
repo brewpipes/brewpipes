@@ -61,6 +61,19 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodPost, Path: "/beer-lots", Handler: auth(handler.HandleBeerLots(s.storage))},
 		{Method: http.MethodGet, Path: "/beer-lots/{uuid}", Handler: auth(handler.HandleBeerLotByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/stock-levels", Handler: auth(handler.HandleStockLevels(s.storage))},
+		{Method: http.MethodGet, Path: "/beer-lot-stock-levels", Handler: auth(handler.HandleBeerLotStockLevels(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lot-malt-details", Handler: auth(handler.HandleIngredientLotMaltDetails(s.storage))},
+		{Method: http.MethodPost, Path: "/ingredient-lot-malt-details", Handler: auth(handler.HandleIngredientLotMaltDetails(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lot-malt-details/{uuid}", Handler: auth(handler.HandleIngredientLotMaltDetailByUUID(s.storage))},
+		{Method: http.MethodPut, Path: "/ingredient-lot-malt-details/{uuid}", Handler: auth(handler.HandleIngredientLotMaltDetailByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lot-hop-details", Handler: auth(handler.HandleIngredientLotHopDetails(s.storage))},
+		{Method: http.MethodPost, Path: "/ingredient-lot-hop-details", Handler: auth(handler.HandleIngredientLotHopDetails(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lot-hop-details/{uuid}", Handler: auth(handler.HandleIngredientLotHopDetailByUUID(s.storage))},
+		{Method: http.MethodPut, Path: "/ingredient-lot-hop-details/{uuid}", Handler: auth(handler.HandleIngredientLotHopDetailByUUID(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lot-yeast-details", Handler: auth(handler.HandleIngredientLotYeastDetails(s.storage))},
+		{Method: http.MethodPost, Path: "/ingredient-lot-yeast-details", Handler: auth(handler.HandleIngredientLotYeastDetails(s.storage))},
+		{Method: http.MethodGet, Path: "/ingredient-lot-yeast-details/{uuid}", Handler: auth(handler.HandleIngredientLotYeastDetailByUUID(s.storage))},
+		{Method: http.MethodPut, Path: "/ingredient-lot-yeast-details/{uuid}", Handler: auth(handler.HandleIngredientLotYeastDetailByUUID(s.storage))},
 	}
 }
 

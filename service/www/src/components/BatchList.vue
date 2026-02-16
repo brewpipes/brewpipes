@@ -27,7 +27,7 @@
             {{ batch.short_name }}
           </v-list-item-title>
           <v-list-item-subtitle>
-            {{ formatDate(batch.brew_date) }}
+            {{ batch.brew_date ? formatDate(batch.brew_date) : 'Not set' }}
           </v-list-item-subtitle>
           <template #append>
             <v-chip size="x-small" variant="tonal">

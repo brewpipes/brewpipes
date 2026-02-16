@@ -36,7 +36,8 @@
           </v-col>
           <v-col cols="12" md="8">
             <v-row>
-              <v-col cols="12" md="6">
+              <!-- Malt detail form: only shown for fermentable category -->
+              <v-col v-if="selectedLotCategory === 'fermentable'" cols="12" md="6">
                 <v-card class="sub-card" variant="outlined">
                   <v-card-title>Malt lot detail</v-card-title>
                   <v-card-text>
@@ -52,14 +53,16 @@
                       block
                       color="primary"
                       :disabled="!detailLotUuid"
-                      @click="createLotMaltDetail"
+                      @click="saveLotMaltDetail"
                     >
                       Save malt lot detail
                     </v-btn>
                   </v-card-text>
                 </v-card>
               </v-col>
-              <v-col cols="12" md="6">
+
+              <!-- Hop detail form: only shown for hop category -->
+              <v-col v-if="selectedLotCategory === 'hop'" cols="12" md="6">
                 <v-card class="sub-card" variant="outlined">
                   <v-card-title>Hop lot detail</v-card-title>
                   <v-card-text>
@@ -76,14 +79,16 @@
                       block
                       color="primary"
                       :disabled="!detailLotUuid"
-                      @click="createLotHopDetail"
+                      @click="saveLotHopDetail"
                     >
                       Save hop lot detail
                     </v-btn>
                   </v-card-text>
                 </v-card>
               </v-col>
-              <v-col cols="12">
+
+              <!-- Yeast detail form: only shown for yeast category -->
+              <v-col v-if="selectedLotCategory === 'yeast'" cols="12">
                 <v-card class="sub-card" variant="outlined">
                   <v-card-title>Yeast lot detail</v-card-title>
                   <v-card-text>
@@ -100,12 +105,24 @@
                       block
                       color="primary"
                       :disabled="!detailLotUuid"
-                      @click="createLotYeastDetail"
+                      @click="saveLotYeastDetail"
                     >
                       Save yeast lot detail
                     </v-btn>
                   </v-card-text>
                 </v-card>
+              </v-col>
+
+              <!-- Message when no lot is selected or category has no specialized form -->
+              <v-col v-if="!detailLotUuid" cols="12">
+                <div class="text-body-2 text-medium-emphasis">
+                  Select a lot and click "Load details" to view category-specific details.
+                </div>
+              </v-col>
+              <v-col v-else-if="selectedLotCategory && !['fermentable', 'hop', 'yeast'].includes(selectedLotCategory)" cols="12">
+                <div class="text-body-2 text-medium-emphasis">
+                  No specialized detail form for category "{{ selectedLotCategory }}".
+                </div>
               </v-col>
             </v-row>
           </v-col>
@@ -130,10 +147,13 @@
     getIngredientLots,
     getIngredientLotMaltDetail,
     createIngredientLotMaltDetail,
+    updateIngredientLotMaltDetail,
     getIngredientLotHopDetail,
     createIngredientLotHopDetail,
+    updateIngredientLotHopDetail,
     getIngredientLotYeastDetail,
     createIngredientLotYeastDetail,
+    updateIngredientLotYeastDetail,
   } = useInventoryApi()
   const { showNotice } = useSnackbar()
   const { formatAmountPreferred } = useUnitPreferences()
@@ -162,6 +182,15 @@
     generation: '',
   })
 
+  /** Resolve the ingredient category for the currently selected lot */
+  const selectedLotCategory = computed<string | null>(() => {
+    if (!detailLotUuid.value) return null
+    const lot = lots.value.find(l => l.uuid === detailLotUuid.value)
+    if (!lot) return null
+    const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
+    return ingredient?.category ?? null
+  })
+
   const lotSelectItems = computed(() =>
     lots.value.map(lot => ({
       title: `${ingredientName(lot.ingredient_uuid)} (${formatAmountPreferred(lot.received_amount, lot.received_unit)})`,
@@ -173,6 +202,7 @@
     lotMaltDetail.value = null
     lotHopDetail.value = null
     lotYeastDetail.value = null
+    resetForms()
   })
 
   onMounted(async () => {
@@ -205,20 +235,34 @@
     if (!detailLotUuid.value) {
       return
     }
-    try {
-      lotMaltDetail.value = await getIngredientLotMaltDetail(detailLotUuid.value)
-    } catch {
-      lotMaltDetail.value = null
-    }
-    try {
-      lotHopDetail.value = await getIngredientLotHopDetail(detailLotUuid.value)
-    } catch {
-      lotHopDetail.value = null
-    }
-    try {
-      lotYeastDetail.value = await getIngredientLotYeastDetail(detailLotUuid.value)
-    } catch {
-      lotYeastDetail.value = null
+
+    const category = selectedLotCategory.value
+
+    // Only fetch the detail relevant to this lot's ingredient category
+    if (category === 'fermentable') {
+      try {
+        lotMaltDetail.value = await getIngredientLotMaltDetail(detailLotUuid.value)
+        populateMaltForm(lotMaltDetail.value)
+      } catch {
+        lotMaltDetail.value = null
+        resetMaltForm()
+      }
+    } else if (category === 'hop') {
+      try {
+        lotHopDetail.value = await getIngredientLotHopDetail(detailLotUuid.value)
+        populateHopForm(lotHopDetail.value)
+      } catch {
+        lotHopDetail.value = null
+        resetHopForm()
+      }
+    } else if (category === 'yeast') {
+      try {
+        lotYeastDetail.value = await getIngredientLotYeastDetail(detailLotUuid.value)
+        populateYeastForm(lotYeastDetail.value)
+      } catch {
+        lotYeastDetail.value = null
+        resetYeastForm()
+      }
     }
   }
 
@@ -227,9 +271,48 @@
     lotMaltDetail.value = null
     lotHopDetail.value = null
     lotYeastDetail.value = null
+    resetForms()
   }
 
-  async function createLotMaltDetail () {
+  // --- Form population helpers ---
+
+  function populateMaltForm (detail: IngredientLotMaltDetail) {
+    lotMaltDetailForm.moisture_percent = detail.moisture_percent != null ? String(detail.moisture_percent) : ''
+  }
+
+  function populateHopForm (detail: IngredientLotHopDetail) {
+    lotHopDetailForm.alpha_acid = detail.alpha_acid != null ? String(detail.alpha_acid) : ''
+    lotHopDetailForm.beta_acid = detail.beta_acid != null ? String(detail.beta_acid) : ''
+  }
+
+  function populateYeastForm (detail: IngredientLotYeastDetail) {
+    lotYeastDetailForm.viability_percent = detail.viability_percent != null ? String(detail.viability_percent) : ''
+    lotYeastDetailForm.generation = detail.generation != null ? String(detail.generation) : ''
+  }
+
+  function resetMaltForm () {
+    lotMaltDetailForm.moisture_percent = ''
+  }
+
+  function resetHopForm () {
+    lotHopDetailForm.alpha_acid = ''
+    lotHopDetailForm.beta_acid = ''
+  }
+
+  function resetYeastForm () {
+    lotYeastDetailForm.viability_percent = ''
+    lotYeastDetailForm.generation = ''
+  }
+
+  function resetForms () {
+    resetMaltForm()
+    resetHopForm()
+    resetYeastForm()
+  }
+
+  // --- Save handlers (create or update based on existing detail) ---
+
+  async function saveLotMaltDetail () {
     if (!detailLotUuid.value) {
       return
     }
@@ -238,7 +321,11 @@
         ingredient_lot_uuid: detailLotUuid.value,
         moisture_percent: toNumber(lotMaltDetailForm.moisture_percent),
       }
-      await createIngredientLotMaltDetail(payload)
+      if (lotMaltDetail.value) {
+        await updateIngredientLotMaltDetail(lotMaltDetail.value.uuid, payload)
+      } else {
+        await createIngredientLotMaltDetail(payload)
+      }
       showNotice('Malt lot detail saved')
       await loadLotDetails()
     } catch (error) {
@@ -247,7 +334,7 @@
     }
   }
 
-  async function createLotHopDetail () {
+  async function saveLotHopDetail () {
     if (!detailLotUuid.value) {
       return
     }
@@ -257,7 +344,11 @@
         alpha_acid: toNumber(lotHopDetailForm.alpha_acid),
         beta_acid: toNumber(lotHopDetailForm.beta_acid),
       }
-      await createIngredientLotHopDetail(payload)
+      if (lotHopDetail.value) {
+        await updateIngredientLotHopDetail(lotHopDetail.value.uuid, payload)
+      } else {
+        await createIngredientLotHopDetail(payload)
+      }
       showNotice('Hop lot detail saved')
       await loadLotDetails()
     } catch (error) {
@@ -266,7 +357,7 @@
     }
   }
 
-  async function createLotYeastDetail () {
+  async function saveLotYeastDetail () {
     if (!detailLotUuid.value) {
       return
     }
@@ -276,7 +367,11 @@
         viability_percent: toNumber(lotYeastDetailForm.viability_percent),
         generation: toNumber(lotYeastDetailForm.generation),
       }
-      await createIngredientLotYeastDetail(payload)
+      if (lotYeastDetail.value) {
+        await updateIngredientLotYeastDetail(lotYeastDetail.value.uuid, payload)
+      } else {
+        await createIngredientLotYeastDetail(payload)
+      }
       showNotice('Yeast lot detail saved')
       await loadLotDetails()
     } catch (error) {

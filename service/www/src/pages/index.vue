@@ -50,7 +50,7 @@
               {{ inProgressCount }}
             </v-chip>
             <v-spacer />
-            <v-btn size="small" to="/batches" variant="text">
+            <v-btn size="small" to="/batches/all" variant="text">
               <span class="d-none d-sm-inline">View all</span>
               <span class="d-sm-none">All</span>
             </v-btn>
@@ -88,7 +88,7 @@
               {{ plannedCount }}
             </v-chip>
             <v-spacer />
-            <v-btn size="small" to="/batches" variant="text">Plan schedule</v-btn>
+            <v-btn size="small" to="/batches/all" variant="text">Plan schedule</v-btn>
           </v-card-title>
           <v-card-text>
             <v-list class="batch-list" lines="two">

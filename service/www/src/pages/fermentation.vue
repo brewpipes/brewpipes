@@ -6,7 +6,7 @@
         <div class="page-hero">
           <div>
             <div class="text-overline text-medium-emphasis">Production</div>
-            <div class="text-h4 font-weight-semibold">Fermentation</div>
+            <div class="text-h4 font-weight-semibold">Cellar</div>
             <div class="text-body-2 text-medium-emphasis">
               {{ subtitleText }}
             </div>

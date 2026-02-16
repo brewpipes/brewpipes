@@ -45,7 +45,7 @@
         </template>
         <template v-if="showCategoryColumn" #item.category="{ item }">
           <v-chip density="compact" size="small" variant="tonal">
-            {{ ingredientCategory(item.ingredient_uuid) }}
+            {{ ingredientCategory?.(item.ingredient_uuid) }}
           </v-chip>
         </template>
         <template #item.received_amount="{ item }">

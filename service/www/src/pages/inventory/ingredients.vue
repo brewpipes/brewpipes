@@ -92,10 +92,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No malt lots yet.</div>
@@ -158,10 +158,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No hop lots yet.</div>
@@ -224,10 +224,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No yeast lots yet.</div>
@@ -295,10 +295,10 @@
                     {{ formatDateTime(item.received_at) }}
                   </template>
                   <template #item.best_by_at="{ item }">
-                    {{ formatDateTime(item.best_by_at) }}
+                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
                   </template>
                   <template #item.expires_at="{ item }">
-                    {{ formatDateTime(item.expires_at) }}
+                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
                   </template>
                   <template #no-data>
                     <div class="text-center py-4 text-medium-emphasis">No other lots yet.</div>

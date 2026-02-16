@@ -71,7 +71,7 @@
                   <v-col cols="12" md="6">
                     <div class="text-caption text-medium-emphasis">Brew date</div>
                     <div class="text-body-2 font-weight-medium">
-                      {{ formatDate(selectedBatch.brew_date) }}
+                      {{ selectedBatch.brew_date ? formatDate(selectedBatch.brew_date) : 'Not set' }}
                     </div>
                   </v-col>
                   <v-col cols="12" md="6">

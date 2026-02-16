@@ -26,20 +26,22 @@ export interface IngredientLot {
   uuid: string
   ingredient_uuid: string
   receipt_uuid: string | null
+  supplier_uuid: string | null
+  purchase_order_line_uuid: string | null
+  brewery_lot_code: string | null
+  originator_lot_code: string | null
+  originator_name: string | null
+  originator_type: string | null
+  received_at: string
   received_amount: number
   received_unit: string
-  best_by_at: string
-  expires_at: string
-  supplier_uuid: string
-  brewery_lot_code: string | null
-  originator_lot_code: string
-  originator_name: string
-  originator_type: string
-  received_at: string
-  notes: string
-  stock_location_uuid: string
   current_amount: number
   current_unit: string
+  best_by_at: string | null
+  expires_at: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================================

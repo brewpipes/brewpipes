@@ -188,7 +188,7 @@
   }
 
   function toggleTheme () {
-    theme.global.name.value = isDark.value ? 'brewLight' : 'brewDark'
+    theme.change(isDark.value ? 'brewLight' : 'brewDark')
   }
 
   async function handleLogout () {
@@ -218,10 +218,10 @@
   onMounted(() => {
     const storedTheme = localStorage.getItem(themeStorageKey)
     if (storedTheme === 'brewLight' || storedTheme === 'brewDark') {
-      theme.global.name.value = storedTheme
+      theme.change(storedTheme)
     } else {
       const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
-      theme.global.name.value = prefersDark ? 'brewDark' : 'brewLight'
+      theme.change(prefersDark ? 'brewDark' : 'brewLight')
     }
 
     // Load low stock count for navigation badge

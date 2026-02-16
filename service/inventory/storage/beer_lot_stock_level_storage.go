@@ -10,6 +10,7 @@ import (
 type BeerLotStockLevel struct {
 	BeerLotUUID         string
 	ProductionBatchUUID string
+	PackagingRunUUID    *string
 	LotCode             *string
 	PackagedAt          *time.Time
 	BestBy              *time.Time
@@ -33,6 +34,7 @@ func (c *Client) GetBeerLotStockLevels(ctx context.Context) ([]BeerLotStockLevel
 		SELECT
 			bl.uuid AS beer_lot_uuid,
 			bl.production_batch_uuid,
+			bl.packaging_run_uuid,
 			bl.lot_code,
 			bl.packaged_at,
 			bl.best_by,
@@ -54,7 +56,8 @@ func (c *Client) GetBeerLotStockLevels(ctx context.Context) ([]BeerLotStockLevel
 		WHERE m.deleted_at IS NULL
 		  AND bl.deleted_at IS NULL
 		  AND sl.deleted_at IS NULL
-		GROUP BY bl.id, bl.uuid, bl.production_batch_uuid, bl.lot_code, bl.packaged_at, bl.best_by,
+		GROUP BY bl.id, bl.uuid, bl.production_batch_uuid, bl.packaging_run_uuid,
+			bl.lot_code, bl.packaged_at, bl.best_by,
 			bl.package_format_name, bl.container, bl.volume_per_unit, bl.volume_per_unit_unit,
 			bl.quantity, sl.id, sl.uuid, sl.name, m.amount_unit
 		HAVING SUM(CASE m.direction
@@ -74,6 +77,7 @@ func (c *Client) GetBeerLotStockLevels(ctx context.Context) ([]BeerLotStockLevel
 		if err := rows.Scan(
 			&level.BeerLotUUID,
 			&level.ProductionBatchUUID,
+			&level.PackagingRunUUID,
 			&level.LotCode,
 			&level.PackagedAt,
 			&level.BestBy,

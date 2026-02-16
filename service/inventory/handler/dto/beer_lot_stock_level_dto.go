@@ -10,6 +10,7 @@ import (
 type BeerLotStockLevelResponse struct {
 	BeerLotUUID         string     `json:"beer_lot_uuid"`
 	ProductionBatchUUID string     `json:"production_batch_uuid"`
+	PackagingRunUUID    *string    `json:"packaging_run_uuid,omitempty"`
 	LotCode             *string    `json:"lot_code,omitempty"`
 	PackagedAt          *time.Time `json:"packaged_at,omitempty"`
 	BestBy              *string    `json:"best_by,omitempty"`
@@ -30,6 +31,7 @@ func NewBeerLotStockLevelResponse(level storage.BeerLotStockLevel) BeerLotStockL
 	resp := BeerLotStockLevelResponse{
 		BeerLotUUID:         level.BeerLotUUID,
 		ProductionBatchUUID: level.ProductionBatchUUID,
+		PackagingRunUUID:    level.PackagingRunUUID,
 		LotCode:             level.LotCode,
 		PackagedAt:          level.PackagedAt,
 		PackageFormatName:   level.PackageFormatName,

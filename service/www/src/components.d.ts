@@ -52,6 +52,7 @@ declare module 'vue' {
     InventoryTransferDialog: typeof import('./components/inventory/InventoryTransferDialog.vue')['default']
     LineDetailForm: typeof import('./components/procurement/LineDetailForm.vue')['default']
     LocationCreateDialog: typeof import('./components/inventory/LocationCreateDialog.vue')['default']
+    LotDetailDialog: typeof import('./components/inventory/LotDetailDialog.vue')['default']
     LotTable: typeof import('./components/inventory/LotTable.vue')['default']
     PackagingDialog: typeof import('./components/batch/PackagingDialog.vue')['default']
     PurchaseOrderCreateEditDialog: typeof import('./components/procurement/PurchaseOrderCreateEditDialog.vue')['default']

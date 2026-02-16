@@ -263,16 +263,24 @@
     v-model="receiveWithoutPODialogOpen"
     @received="handleReceiveWithoutPO"
   />
+
+  <!-- Lot Detail Dialog -->
+  <LotDetailDialog
+    v-model="lotDetailDialogOpen"
+    :ingredients="ingredients"
+    :lot="selectedLot"
+    @saved="handleLotDetailSaved"
+  />
 </template>
 
 <script lang="ts" setup>
   import type { Batch, CreateIngredientLotRequest, CreateIngredientRequest, CreateInventoryReceiptRequest, CreateInventoryUsageRequest, Ingredient, IngredientLot, InventoryReceipt, InventoryUsage, Supplier } from '@/types'
   import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
   import IngredientCreateDialog from '@/components/inventory/IngredientCreateDialog.vue'
   import IngredientLotCreateDialog from '@/components/inventory/IngredientLotCreateDialog.vue'
   import IngredientReceiptDialog from '@/components/inventory/IngredientReceiptDialog.vue'
   import IngredientUsageDialog from '@/components/inventory/IngredientUsageDialog.vue'
+  import LotDetailDialog from '@/components/inventory/LotDetailDialog.vue'
   import LotTable from '@/components/inventory/LotTable.vue'
   import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
@@ -297,7 +305,6 @@
   const { getSuppliers } = useProcurementApi()
   const { showNotice } = useSnackbar()
   const { formatAmountPreferred } = useUnitPreferences()
-  const router = useRouter()
 
   const activeTab = ref('malt')
 
@@ -327,6 +334,8 @@
   const lotDialog = ref(false)
   const usageDialog = ref(false)
   const receiveWithoutPODialogOpen = ref(false)
+  const lotDetailDialogOpen = ref(false)
+  const selectedLot = ref<IngredientLot | null>(null)
 
   // Category filter for lot creation
   const lotDialogCategory = ref<string>('fermentable')
@@ -515,10 +524,14 @@
   }
 
   function openLotDetails (lotUuid: string) {
-    router.push({
-      path: '/inventory/lot-details',
-      query: { lot_uuid: lotUuid },
-    })
+    const lot = lots.value.find(l => l.uuid === lotUuid)
+    if (lot == null) return
+    selectedLot.value = lot
+    lotDetailDialogOpen.value = true
+  }
+
+  async function handleLotDetailSaved () {
+    await loadLots()
   }
 
   async function handleReceiveWithoutPO () {

@@ -15,49 +15,6 @@ describe('useProductionApi', () => {
     vi.clearAllMocks()
   })
 
-  describe('utility functions', () => {
-    it('normalizeText trims whitespace and returns null for empty strings', () => {
-      const { normalizeText } = useProductionApi()
-
-      expect(normalizeText('  hello  ')).toBe('hello')
-      expect(normalizeText('test')).toBe('test')
-      expect(normalizeText('   ')).toBeNull()
-      expect(normalizeText('')).toBeNull()
-    })
-
-    it('normalizeDateTime converts to ISO string', () => {
-      const { normalizeDateTime } = useProductionApi()
-
-      const result = normalizeDateTime('2024-01-15T10:30:00')
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-
-      expect(normalizeDateTime('')).toBeNull()
-    })
-
-    it('toNumber parses numeric values correctly', () => {
-      const { toNumber } = useProductionApi()
-
-      expect(toNumber('42')).toBe(42)
-      expect(toNumber(42)).toBe(42)
-      expect(toNumber('3.14')).toBe(3.14)
-      expect(toNumber('')).toBeNull()
-      expect(toNumber(null)).toBeNull()
-      expect(toNumber('not a number')).toBeNull()
-    })
-
-    it('formatDateTime formats dates correctly', () => {
-      const { formatDateTime } = useProductionApi()
-
-      // Test with a valid date
-      const result = formatDateTime('2024-01-15T10:30:00Z')
-      expect(result).toContain('2024')
-
-      expect(formatDateTime(null)).toBe('Unknown')
-      expect(formatDateTime(undefined)).toBe('Unknown')
-      expect(formatDateTime('')).toBe('Unknown')
-    })
-  })
-
   describe('Styles API', () => {
     it('getStyles calls correct endpoint', async () => {
       mockRequest.mockResolvedValue([{ uuid: 'style-uuid-1', name: 'IPA' }])

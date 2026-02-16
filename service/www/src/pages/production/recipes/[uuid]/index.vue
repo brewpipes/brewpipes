@@ -33,6 +33,7 @@
   import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import RecipeDetails from '@/components/recipe/RecipeDetails.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useRouteUuid } from '@/composables/useRouteUuid'
 
@@ -40,8 +41,14 @@
   const { getRecipe } = useProductionApi()
   const { uuid: routeUuid } = useRouteUuid()
 
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const error = ref('')
+  const { execute: executeLoad, loading } = useAsyncAction({
+    onError: (message) => {
+      error.value = message.includes('404') ? 'Recipe not found' : 'Failed to load recipe. Please try again.'
+    },
+  })
+  loading.value = true
+
   const recipe = ref<Recipe | null>(null)
 
   async function loadRecipe () {
@@ -52,17 +59,9 @@
       return
     }
 
-    try {
-      loading.value = true
-      error.value = null
-
+    await executeLoad(async () => {
       recipe.value = await getRecipe(uuid)
-    } catch (error_) {
-      console.error('Failed to load recipe:', error_)
-      error.value = error_ instanceof Error && error_.message.includes('404') ? 'Recipe not found' : 'Failed to load recipe. Please try again.'
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   function handleBack () {

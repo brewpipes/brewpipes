@@ -70,6 +70,7 @@ meta:
 <script lang="ts" setup>
   import { computed, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useAuthStore } from '@/stores/auth'
 
   const authStore = useAuthStore()
@@ -79,8 +80,8 @@ meta:
   const username = ref('')
   const password = ref('')
   const showPassword = ref(false)
-  const submitting = ref(false)
-  const errorMessage = ref('')
+
+  const { execute, loading: submitting, error: errorMessage } = useAsyncAction()
 
   const redirectPath = computed(() => {
     const redirect = route.query.redirect
@@ -97,17 +98,11 @@ meta:
       return
     }
 
-    submitting.value = true
-    errorMessage.value = ''
-    try {
+    await execute(async () => {
       await authStore.login(user, password.value)
       password.value = ''
       await router.replace(redirectPath.value)
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : 'Unable to sign in.'
-    } finally {
-      submitting.value = false
-    }
+    })
   }
 </script>
 

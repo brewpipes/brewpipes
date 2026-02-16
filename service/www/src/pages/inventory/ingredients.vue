@@ -41,271 +41,72 @@
         <v-window v-model="activeTab" class="mt-4">
           <!-- Malt Tab -->
           <v-window-item value="malt">
-            <v-card variant="outlined">
-              <v-card-title class="d-flex align-center">
-                Malt lots
-                <v-spacer />
-                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
-                  Refresh
-                </v-btn>
-                <v-btn
-                  class="ml-2"
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  size="small"
-                  variant="text"
-                  @click="openLotDialog('fermentable')"
-                >
-                  Create lot
-                </v-btn>
-              </v-card-title>
-              <v-card-text>
-                <v-alert
-                  v-if="lotErrorMessage"
-                  class="mb-3"
-                  density="compact"
-                  type="error"
-                  variant="tonal"
-                >
-                  {{ lotErrorMessage }}
-                </v-alert>
-                <v-data-table
-                  class="data-table lot-table"
-                  density="compact"
-                  :headers="lotHeaders"
-                  hover
-                  item-value="uuid"
-                  :items="maltLots"
-                  :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
-                >
-                  <template #item.brewery_lot_code="{ item }">
-                    {{ item.brewery_lot_code || '—' }}
-                  </template>
-                  <template #item.ingredient_uuid="{ item }">
-                    {{ ingredientName(item.ingredient_uuid) }}
-                  </template>
-                  <template #item.received_amount="{ item }">
-                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
-                  </template>
-                  <template #item.received_at="{ item }">
-                    {{ formatDateTime(item.received_at) }}
-                  </template>
-                  <template #item.best_by_at="{ item }">
-                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
-                  </template>
-                  <template #item.expires_at="{ item }">
-                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
-                  </template>
-                  <template #no-data>
-                    <div class="text-center py-4 text-medium-emphasis">No malt lots yet.</div>
-                  </template>
-                </v-data-table>
-              </v-card-text>
-            </v-card>
+            <LotTable
+              empty-text="No malt lots yet."
+              :error-message="lotErrorMessage"
+              :format-amount-preferred="formatAmountPreferred"
+              :format-date-time="formatDateTime"
+              :ingredient-name="ingredientName"
+              :loading="lotLoading"
+              :lots="maltLots"
+              title="Malt lots"
+              @click:create="openLotDialog('fermentable')"
+              @click:refresh="loadLots"
+              @click:row="openLotDetails"
+            />
           </v-window-item>
 
           <!-- Hops Tab -->
           <v-window-item value="hops">
-            <v-card variant="outlined">
-              <v-card-title class="d-flex align-center">
-                Hop lots
-                <v-spacer />
-                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
-                  Refresh
-                </v-btn>
-                <v-btn
-                  class="ml-2"
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  size="small"
-                  variant="text"
-                  @click="openLotDialog('hop')"
-                >
-                  Create lot
-                </v-btn>
-              </v-card-title>
-              <v-card-text>
-                <v-alert
-                  v-if="lotErrorMessage"
-                  class="mb-3"
-                  density="compact"
-                  type="error"
-                  variant="tonal"
-                >
-                  {{ lotErrorMessage }}
-                </v-alert>
-                <v-data-table
-                  class="data-table lot-table"
-                  density="compact"
-                  :headers="lotHeaders"
-                  hover
-                  item-value="uuid"
-                  :items="hopLots"
-                  :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
-                >
-                  <template #item.brewery_lot_code="{ item }">
-                    {{ item.brewery_lot_code || '—' }}
-                  </template>
-                  <template #item.ingredient_uuid="{ item }">
-                    {{ ingredientName(item.ingredient_uuid) }}
-                  </template>
-                  <template #item.received_amount="{ item }">
-                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
-                  </template>
-                  <template #item.received_at="{ item }">
-                    {{ formatDateTime(item.received_at) }}
-                  </template>
-                  <template #item.best_by_at="{ item }">
-                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
-                  </template>
-                  <template #item.expires_at="{ item }">
-                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
-                  </template>
-                  <template #no-data>
-                    <div class="text-center py-4 text-medium-emphasis">No hop lots yet.</div>
-                  </template>
-                </v-data-table>
-              </v-card-text>
-            </v-card>
+            <LotTable
+              empty-text="No hop lots yet."
+              :error-message="lotErrorMessage"
+              :format-amount-preferred="formatAmountPreferred"
+              :format-date-time="formatDateTime"
+              :ingredient-name="ingredientName"
+              :loading="lotLoading"
+              :lots="hopLots"
+              title="Hop lots"
+              @click:create="openLotDialog('hop')"
+              @click:refresh="loadLots"
+              @click:row="openLotDetails"
+            />
           </v-window-item>
 
           <!-- Yeast Tab -->
           <v-window-item value="yeast">
-            <v-card variant="outlined">
-              <v-card-title class="d-flex align-center">
-                Yeast lots
-                <v-spacer />
-                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
-                  Refresh
-                </v-btn>
-                <v-btn
-                  class="ml-2"
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  size="small"
-                  variant="text"
-                  @click="openLotDialog('yeast')"
-                >
-                  Create lot
-                </v-btn>
-              </v-card-title>
-              <v-card-text>
-                <v-alert
-                  v-if="lotErrorMessage"
-                  class="mb-3"
-                  density="compact"
-                  type="error"
-                  variant="tonal"
-                >
-                  {{ lotErrorMessage }}
-                </v-alert>
-                <v-data-table
-                  class="data-table lot-table"
-                  density="compact"
-                  :headers="lotHeaders"
-                  hover
-                  item-value="uuid"
-                  :items="yeastLots"
-                  :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
-                >
-                  <template #item.brewery_lot_code="{ item }">
-                    {{ item.brewery_lot_code || '—' }}
-                  </template>
-                  <template #item.ingredient_uuid="{ item }">
-                    {{ ingredientName(item.ingredient_uuid) }}
-                  </template>
-                  <template #item.received_amount="{ item }">
-                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
-                  </template>
-                  <template #item.received_at="{ item }">
-                    {{ formatDateTime(item.received_at) }}
-                  </template>
-                  <template #item.best_by_at="{ item }">
-                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
-                  </template>
-                  <template #item.expires_at="{ item }">
-                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
-                  </template>
-                  <template #no-data>
-                    <div class="text-center py-4 text-medium-emphasis">No yeast lots yet.</div>
-                  </template>
-                </v-data-table>
-              </v-card-text>
-            </v-card>
+            <LotTable
+              empty-text="No yeast lots yet."
+              :error-message="lotErrorMessage"
+              :format-amount-preferred="formatAmountPreferred"
+              :format-date-time="formatDateTime"
+              :ingredient-name="ingredientName"
+              :loading="lotLoading"
+              :lots="yeastLots"
+              title="Yeast lots"
+              @click:create="openLotDialog('yeast')"
+              @click:refresh="loadLots"
+              @click:row="openLotDetails"
+            />
           </v-window-item>
 
           <!-- Other Tab -->
           <v-window-item value="other">
-            <v-card variant="outlined">
-              <v-card-title class="d-flex align-center">
-                Other lots
-                <v-spacer />
-                <v-btn :loading="lotLoading" size="small" variant="text" @click="loadLots">
-                  Refresh
-                </v-btn>
-                <v-btn
-                  class="ml-2"
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  size="small"
-                  variant="text"
-                  @click="openLotDialog('other')"
-                >
-                  Create lot
-                </v-btn>
-              </v-card-title>
-              <v-card-text>
-                <v-alert
-                  v-if="lotErrorMessage"
-                  class="mb-3"
-                  density="compact"
-                  type="error"
-                  variant="tonal"
-                >
-                  {{ lotErrorMessage }}
-                </v-alert>
-                <v-data-table
-                  class="data-table lot-table"
-                  density="compact"
-                  :headers="otherLotHeaders"
-                  hover
-                  item-value="uuid"
-                  :items="otherLots"
-                  :loading="lotLoading"
-                  @click:row="(_event: Event, row: any) => openLotDetails(row.item.uuid)"
-                >
-                  <template #item.brewery_lot_code="{ item }">
-                    {{ item.brewery_lot_code || '—' }}
-                  </template>
-                  <template #item.ingredient_uuid="{ item }">
-                    {{ ingredientName(item.ingredient_uuid) }}
-                  </template>
-                  <template #item.category="{ item }">
-                    <v-chip density="compact" size="small" variant="tonal">
-                      {{ ingredientCategory(item.ingredient_uuid) }}
-                    </v-chip>
-                  </template>
-                  <template #item.received_amount="{ item }">
-                    {{ formatAmountPreferred(item.received_amount, item.received_unit) }}
-                  </template>
-                  <template #item.received_at="{ item }">
-                    {{ formatDateTime(item.received_at) }}
-                  </template>
-                  <template #item.best_by_at="{ item }">
-                    {{ item.best_by_at ? formatDateTime(item.best_by_at) : '—' }}
-                  </template>
-                  <template #item.expires_at="{ item }">
-                    {{ item.expires_at ? formatDateTime(item.expires_at) : '—' }}
-                  </template>
-                  <template #no-data>
-                    <div class="text-center py-4 text-medium-emphasis">No other lots yet.</div>
-                  </template>
-                </v-data-table>
-              </v-card-text>
-            </v-card>
+            <LotTable
+              empty-text="No other lots yet."
+              :error-message="lotErrorMessage"
+              :format-amount-preferred="formatAmountPreferred"
+              :format-date-time="formatDateTime"
+              :ingredient-category="ingredientCategory"
+              :ingredient-name="ingredientName"
+              :loading="lotLoading"
+              :lots="otherLots"
+              show-category-column
+              title="Other lots"
+              @click:create="openLotDialog('other')"
+              @click:refresh="loadLots"
+              @click:row="openLotDetails"
+            />
           </v-window-item>
 
           <!-- Usage Tab -->
@@ -426,230 +227,36 @@
   </v-container>
 
   <!-- Create Lot Dialog -->
-  <v-dialog v-model="lotDialog" :max-width="$vuetify.display.xs ? '100%' : 600" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Create ingredient lot</v-card-title>
-      <v-card-text>
-        <v-select
-          v-model="lotForm.ingredient_uuid"
-          density="comfortable"
-          :items="filteredIngredientSelectItems"
-          label="Ingredient"
-          :rules="[rules.required]"
-        />
-        <v-select
-          v-model="lotForm.receipt_uuid"
-          clearable
-          density="comfortable"
-          :items="receiptSelectItems"
-          label="Receipt (optional)"
-        />
-        <v-select
-          v-model="lotForm.supplier_uuid"
-          clearable
-          density="comfortable"
-          :items="supplierSelectItems"
-          label="Supplier"
-        />
-        <v-text-field
-          v-model="lotForm.brewery_lot_code"
-          density="comfortable"
-          label="Brewery lot code"
-        />
-        <v-text-field
-          v-model="lotForm.originator_lot_code"
-          density="comfortable"
-          label="Originator lot code"
-        />
-        <v-text-field
-          v-model="lotForm.originator_name"
-          density="comfortable"
-          label="Originator name"
-        />
-        <v-text-field
-          v-model="lotForm.originator_type"
-          density="comfortable"
-          label="Originator type"
-        />
-        <v-text-field
-          v-model="lotForm.received_at"
-          density="comfortable"
-          label="Received at"
-          type="datetime-local"
-        />
-        <v-text-field
-          v-model="lotForm.received_amount"
-          density="comfortable"
-          label="Received amount"
-          :rules="[rules.required]"
-          type="number"
-        />
-        <v-combobox
-          v-model="lotForm.received_unit"
-          density="comfortable"
-          :items="unitOptions"
-          label="Received unit"
-          :rules="[rules.required]"
-        />
-        <v-text-field
-          v-model="lotForm.best_by_at"
-          density="comfortable"
-          label="Best by"
-          type="datetime-local"
-        />
-        <v-text-field
-          v-model="lotForm.expires_at"
-          density="comfortable"
-          label="Expires at"
-          type="datetime-local"
-        />
-        <v-textarea
-          v-model="lotForm.notes"
-          auto-grow
-          density="comfortable"
-          label="Notes"
-          rows="2"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="lotSaving" variant="text" @click="closeLotDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isLotFormValid"
-          :loading="lotSaving"
-          @click="createLot"
-        >
-          Create lot
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <IngredientLotCreateDialog
+    v-model="lotDialog"
+    :category="lotDialogCategory"
+    :ingredients="ingredients"
+    :receipts="receipts"
+    :saving="lotSaving"
+    :suppliers="suppliers"
+    @submit="handleLotSubmit"
+  />
 
   <!-- Create Usage Dialog -->
-  <v-dialog v-model="usageDialog" :max-width="$vuetify.display.xs ? '100%' : 500" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Log ingredient usage</v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="usageForm.production_ref_uuid"
-          density="comfortable"
-          label="Batch reference UUID"
-        />
-        <v-text-field
-          v-model="usageForm.used_at"
-          density="comfortable"
-          label="Used at"
-          type="datetime-local"
-        />
-        <v-textarea
-          v-model="usageForm.notes"
-          auto-grow
-          density="comfortable"
-          label="Notes"
-          rows="2"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="usageSaving" variant="text" @click="closeUsageDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :loading="usageSaving"
-          @click="createUsage"
-        >
-          Log usage
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <IngredientUsageDialog
+    v-model="usageDialog"
+    :saving="usageSaving"
+    @submit="handleUsageSubmit"
+  />
 
   <!-- Create Receipt Dialog -->
-  <v-dialog v-model="receiptDialog" :max-width="$vuetify.display.xs ? '100%' : 500" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Create receipt</v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="receiptForm.reference_code"
-          density="comfortable"
-          label="Reference code"
-        />
-        <v-text-field
-          v-model="receiptForm.supplier_uuid"
-          density="comfortable"
-          label="Supplier UUID"
-        />
-        <v-text-field
-          v-model="receiptForm.received_at"
-          density="comfortable"
-          label="Received at"
-          type="datetime-local"
-        />
-        <v-textarea
-          v-model="receiptForm.notes"
-          auto-grow
-          density="comfortable"
-          label="Notes"
-          rows="2"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="receiptSaving" variant="text" @click="closeReceiptDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :loading="receiptSaving"
-          @click="createReceipt"
-        >
-          Create receipt
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <IngredientReceiptDialog
+    v-model="receiptDialog"
+    :saving="receiptSaving"
+    @submit="handleReceiptSubmit"
+  />
 
   <!-- Create Ingredient Dialog -->
-  <v-dialog v-model="ingredientDialog" :max-width="$vuetify.display.xs ? '100%' : 500" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Create ingredient</v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="ingredientForm.name"
-          density="comfortable"
-          label="Name"
-          :rules="[rules.required]"
-        />
-        <v-select
-          v-model="ingredientForm.category"
-          density="comfortable"
-          :items="ingredientCategoryOptions"
-          label="Category"
-          :rules="[rules.required]"
-        />
-        <v-combobox
-          v-model="ingredientForm.default_unit"
-          density="comfortable"
-          :items="unitOptions"
-          label="Default unit"
-          :rules="[rules.required]"
-        />
-        <v-textarea
-          v-model="ingredientForm.description"
-          auto-grow
-          density="comfortable"
-          label="Description"
-          rows="2"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="ingredientSaving" variant="text" @click="closeIngredientDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isIngredientFormValid"
-          :loading="ingredientSaving"
-          @click="createIngredient"
-        >
-          Create ingredient
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <IngredientCreateDialog
+    v-model="ingredientDialog"
+    :saving="ingredientSaving"
+    @submit="handleIngredientSubmit"
+  />
 
   <!-- Receive Without PO Dialog -->
   <ReceiveWithoutPODialog
@@ -659,17 +266,22 @@
 </template>
 
 <script lang="ts" setup>
-  import type { Batch, Ingredient, IngredientLot, InventoryReceipt, InventoryUsage, Supplier } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import type { Batch, CreateIngredientLotRequest, CreateIngredientRequest, CreateInventoryReceiptRequest, CreateInventoryUsageRequest, Ingredient, IngredientLot, InventoryReceipt, InventoryUsage, Supplier } from '@/types'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import IngredientCreateDialog from '@/components/inventory/IngredientCreateDialog.vue'
+  import IngredientLotCreateDialog from '@/components/inventory/IngredientLotCreateDialog.vue'
+  import IngredientReceiptDialog from '@/components/inventory/IngredientReceiptDialog.vue'
+  import IngredientUsageDialog from '@/components/inventory/IngredientUsageDialog.vue'
+  import LotTable from '@/components/inventory/LotTable.vue'
   import ReceiveWithoutPODialog from '@/components/procurement/ReceiveWithoutPODialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { formatDateTime } from '@/composables/useFormatters'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
-  import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
   const {
     getIngredients,
@@ -697,23 +309,17 @@
   const batches = ref<Batch[]>([])
   const suppliers = ref<Supplier[]>([])
 
-  // Loading states
-  const ingredientLoading = ref(false)
-  const receiptLoading = ref(false)
-  const lotLoading = ref(false)
-  const usageLoading = ref(false)
+  // Async actions for loading
+  const { execute: executeIngredientLoad, loading: ingredientLoading, error: ingredientErrorMessage } = useAsyncAction()
+  const { execute: executeReceiptLoad, loading: receiptLoading, error: receiptErrorMessage } = useAsyncAction()
+  const { execute: executeLotLoad, loading: lotLoading, error: lotErrorMessage } = useAsyncAction()
+  const { execute: executeUsageLoad, loading: usageLoading, error: usageErrorMessage } = useAsyncAction()
 
-  // Saving states
-  const ingredientSaving = ref(false)
-  const receiptSaving = ref(false)
-  const lotSaving = ref(false)
-  const usageSaving = ref(false)
-
-  // Error messages
-  const ingredientErrorMessage = ref('')
-  const receiptErrorMessage = ref('')
-  const lotErrorMessage = ref('')
-  const usageErrorMessage = ref('')
+  // Async actions for saving
+  const { execute: executeIngredientSave, loading: ingredientSaving, error: ingredientSaveError } = useAsyncAction()
+  const { execute: executeReceiptSave, loading: receiptSaving, error: receiptSaveError } = useAsyncAction()
+  const { execute: executeLotSave, loading: lotSaving, error: lotSaveError } = useAsyncAction()
+  const { execute: executeUsageSave, loading: usageSaving, error: usageSaveError } = useAsyncAction()
 
   // Dialog states
   const ingredientDialog = ref(false)
@@ -725,82 +331,7 @@
   // Category filter for lot creation
   const lotDialogCategory = ref<string>('fermentable')
 
-  // Options
-  const ingredientCategoryOptions = [
-    { title: 'Fermentable', value: 'fermentable' },
-    { title: 'Hop', value: 'hop' },
-    { title: 'Yeast', value: 'yeast' },
-    { title: 'Adjunct', value: 'adjunct' },
-    { title: 'Salt', value: 'salt' },
-    { title: 'Chemical', value: 'chemical' },
-    { title: 'Gas', value: 'gas' },
-    { title: 'Other', value: 'other' },
-  ]
-  const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
-
-  // Forms
-  const ingredientForm = reactive({
-    name: '',
-    category: '',
-    default_unit: '',
-    description: '',
-  })
-
-  const receiptForm = reactive({
-    supplier_uuid: '',
-    reference_code: '',
-    received_at: '',
-    notes: '',
-  })
-
-  const lotForm = reactive({
-    ingredient_uuid: null as string | null,
-    receipt_uuid: null as string | null,
-    supplier_uuid: null as string | null,
-    brewery_lot_code: '',
-    originator_lot_code: '',
-    originator_name: '',
-    originator_type: '',
-    received_at: '',
-    received_amount: '',
-    received_unit: '',
-    best_by_at: '',
-    expires_at: '',
-    notes: '',
-  })
-
-  const usageForm = reactive({
-    production_ref_uuid: '',
-    used_at: '',
-    notes: '',
-  })
-
-  const rules = {
-    required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
-  }
-
   // Table headers
-  const lotHeaders = [
-    { title: 'Lot Code', key: 'brewery_lot_code', sortable: true },
-    { title: 'Ingredient', key: 'ingredient_uuid', sortable: true },
-    { title: 'Received Amount', key: 'received_amount', sortable: true },
-    { title: 'Received Date', key: 'received_at', sortable: true },
-    { title: 'Best By', key: 'best_by_at', sortable: true },
-    { title: 'Expires', key: 'expires_at', sortable: true },
-    { title: 'Notes', key: 'notes', sortable: false },
-  ]
-
-  const otherLotHeaders = [
-    { title: 'Lot Code', key: 'brewery_lot_code', sortable: true },
-    { title: 'Ingredient', key: 'ingredient_uuid', sortable: true },
-    { title: 'Category', key: 'category', sortable: true },
-    { title: 'Received Amount', key: 'received_amount', sortable: true },
-    { title: 'Received Date', key: 'received_at', sortable: true },
-    { title: 'Best By', key: 'best_by_at', sortable: true },
-    { title: 'Expires', key: 'expires_at', sortable: true },
-    { title: 'Notes', key: 'notes', sortable: false },
-  ]
-
   const usageHeaders = [
     { title: 'Batch', key: 'production_ref_uuid', sortable: true },
     { title: 'Used At', key: 'used_at', sortable: true },
@@ -854,44 +385,6 @@
     })
   })
 
-  // Computed: Select items
-  const filteredIngredientSelectItems = computed(() => {
-    // For "other" tab, include all non-core categories
-    const categoriesToInclude = lotDialogCategory.value === 'other'
-      ? otherCategories
-      : [lotDialogCategory.value]
-
-    return ingredients.value
-      .filter(ingredient => categoriesToInclude.includes(ingredient.category))
-      .map(ingredient => ({
-        title: ingredient.name,
-        value: ingredient.uuid,
-      }))
-  })
-
-  const receiptSelectItems = computed(() =>
-    receipts.value.map(receipt => ({
-      title: receipt.reference_code || 'Unknown Receipt',
-      value: receipt.uuid,
-    })),
-  )
-
-  const supplierSelectItems = computed(() =>
-    suppliers.value.map(supplier => ({
-      title: supplier.name,
-      value: supplier.uuid,
-    })),
-  )
-
-  // Computed: Form validation
-  const isLotFormValid = computed(() => {
-    return lotForm.ingredient_uuid && lotForm.received_amount && lotForm.received_unit
-  })
-
-  const isIngredientFormValid = computed(() => {
-    return ingredientForm.name.trim() && ingredientForm.category && ingredientForm.default_unit
-  })
-
   onMounted(async () => {
     await refreshAll()
   })
@@ -914,217 +407,93 @@
   }
 
   async function loadIngredients () {
-    ingredientLoading.value = true
-    ingredientErrorMessage.value = ''
-    try {
+    await executeIngredientLoad(async () => {
       ingredients.value = await getIngredients()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load ingredients'
-      ingredientErrorMessage.value = message
-    } finally {
-      ingredientLoading.value = false
-    }
+    })
   }
 
   async function loadReceipts () {
-    receiptLoading.value = true
-    receiptErrorMessage.value = ''
-    try {
+    await executeReceiptLoad(async () => {
       receipts.value = await getInventoryReceipts()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load receipts'
-      receiptErrorMessage.value = message
-    } finally {
-      receiptLoading.value = false
-    }
+    })
   }
 
   async function loadLots () {
-    lotLoading.value = true
-    lotErrorMessage.value = ''
-    try {
+    await executeLotLoad(async () => {
       lots.value = await getIngredientLots()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load lots'
-      lotErrorMessage.value = message
-    } finally {
-      lotLoading.value = false
-    }
+    })
   }
 
   async function loadUsage () {
-    usageLoading.value = true
-    usageErrorMessage.value = ''
-    try {
+    await executeUsageLoad(async () => {
       usages.value = await getInventoryUsages()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load usage'
-      usageErrorMessage.value = message
-    } finally {
-      usageLoading.value = false
-    }
+    })
   }
 
   // Dialog openers
   function openIngredientDialog () {
-    ingredientForm.name = ''
-    ingredientForm.category = ''
-    ingredientForm.default_unit = ''
-    ingredientForm.description = ''
     ingredientDialog.value = true
-  }
-
-  function closeIngredientDialog () {
-    ingredientDialog.value = false
-  }
-
-  function closeReceiptDialog () {
-    receiptDialog.value = false
   }
 
   function openLotDialog (category: string) {
     lotDialogCategory.value = category
-    lotForm.ingredient_uuid = null
-    lotForm.receipt_uuid = null
-    lotForm.supplier_uuid = null
-    lotForm.brewery_lot_code = ''
-    lotForm.originator_lot_code = ''
-    lotForm.originator_name = ''
-    lotForm.originator_type = ''
-    lotForm.received_at = ''
-    lotForm.received_amount = ''
-    lotForm.received_unit = ''
-    lotForm.best_by_at = ''
-    lotForm.expires_at = ''
-    lotForm.notes = ''
     lotDialog.value = true
   }
 
-  function closeLotDialog () {
-    lotDialog.value = false
-  }
-
   function openUsageDialog () {
-    usageForm.production_ref_uuid = ''
-    usageForm.used_at = ''
-    usageForm.notes = ''
     usageDialog.value = true
   }
 
-  function closeUsageDialog () {
-    usageDialog.value = false
-  }
-
-  // Create functions
-  async function createIngredient () {
-    if (!isIngredientFormValid.value) {
-      return
-    }
-
-    ingredientSaving.value = true
-    ingredientErrorMessage.value = ''
-
-    try {
-      const payload = {
-        name: ingredientForm.name.trim(),
-        category: ingredientForm.category,
-        default_unit: ingredientForm.default_unit,
-        description: normalizeText(ingredientForm.description),
-      }
+  // Dialog submit handlers
+  async function handleIngredientSubmit (payload: CreateIngredientRequest) {
+    await executeIngredientSave(async () => {
       await createIngredientApi(payload)
-      closeIngredientDialog()
+      ingredientDialog.value = false
       await loadIngredients()
       showNotice('Ingredient created')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create ingredient'
-      ingredientErrorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      ingredientSaving.value = false
+    })
+    if (ingredientSaveError.value) {
+      ingredientErrorMessage.value = ingredientSaveError.value
+      showNotice(ingredientSaveError.value, 'error')
     }
   }
 
-  async function createReceipt () {
-    receiptSaving.value = true
-    receiptErrorMessage.value = ''
-
-    try {
-      const payload = {
-        supplier_uuid: normalizeText(receiptForm.supplier_uuid),
-        reference_code: normalizeText(receiptForm.reference_code),
-        received_at: normalizeDateTime(receiptForm.received_at),
-        notes: normalizeText(receiptForm.notes),
-      }
+  async function handleReceiptSubmit (payload: CreateInventoryReceiptRequest) {
+    await executeReceiptSave(async () => {
       await createInventoryReceipt(payload)
-      closeReceiptDialog()
+      receiptDialog.value = false
       await loadReceipts()
       showNotice('Receipt created')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create receipt'
-      receiptErrorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      receiptSaving.value = false
+    })
+    if (receiptSaveError.value) {
+      receiptErrorMessage.value = receiptSaveError.value
+      showNotice(receiptSaveError.value, 'error')
     }
   }
 
-  async function createLot () {
-    if (!isLotFormValid.value) {
-      return
-    }
-
-    lotSaving.value = true
-    lotErrorMessage.value = ''
-
-    try {
-      const payload = {
-        ingredient_uuid: lotForm.ingredient_uuid,
-        receipt_uuid: lotForm.receipt_uuid,
-        supplier_uuid: lotForm.supplier_uuid,
-        brewery_lot_code: normalizeText(lotForm.brewery_lot_code),
-        originator_lot_code: normalizeText(lotForm.originator_lot_code),
-        originator_name: normalizeText(lotForm.originator_name),
-        originator_type: normalizeText(lotForm.originator_type),
-        received_at: normalizeDateTime(lotForm.received_at),
-        received_amount: toNumber(lotForm.received_amount),
-        received_unit: lotForm.received_unit,
-        best_by_at: normalizeDateTime(lotForm.best_by_at),
-        expires_at: normalizeDateTime(lotForm.expires_at),
-        notes: normalizeText(lotForm.notes),
-      }
+  async function handleLotSubmit (payload: CreateIngredientLotRequest) {
+    await executeLotSave(async () => {
       await createIngredientLot(payload)
-      closeLotDialog()
+      lotDialog.value = false
       await loadLots()
       showNotice('Lot created')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create lot'
-      lotErrorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      lotSaving.value = false
+    })
+    if (lotSaveError.value) {
+      lotErrorMessage.value = lotSaveError.value
+      showNotice(lotSaveError.value, 'error')
     }
   }
 
-  async function createUsage () {
-    usageSaving.value = true
-    usageErrorMessage.value = ''
-
-    try {
-      const payload = {
-        production_ref_uuid: normalizeText(usageForm.production_ref_uuid),
-        used_at: normalizeDateTime(usageForm.used_at),
-        notes: normalizeText(usageForm.notes),
-      }
+  async function handleUsageSubmit (payload: CreateInventoryUsageRequest) {
+    await executeUsageSave(async () => {
       await createInventoryUsage(payload)
-      closeUsageDialog()
+      usageDialog.value = false
       await loadUsage()
       showNotice('Usage logged')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to log usage'
-      usageErrorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      usageSaving.value = false
+    })
+    if (usageSaveError.value) {
+      usageErrorMessage.value = usageSaveError.value
+      showNotice(usageSaveError.value, 'error')
     }
   }
 
@@ -1161,9 +530,5 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.lot-table :deep(tr) {
-  cursor: pointer;
 }
 </style>

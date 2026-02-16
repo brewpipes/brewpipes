@@ -1,4 +1,5 @@
 // Recipe components
+export { default as RecipeCreateEditDialog } from './RecipeCreateEditDialog.vue'
 export { default as RecipeDeleteDialog } from './RecipeDeleteDialog.vue'
 export { default as RecipeDetails } from './RecipeDetails.vue'
 export { default as RecipeEditDialog } from './RecipeEditDialog.vue'

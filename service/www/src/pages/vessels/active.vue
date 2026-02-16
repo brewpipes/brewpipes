@@ -71,6 +71,7 @@
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
   import VesselDetails from '@/components/VesselDetails.vue'
   import VesselList from '@/components/VesselList.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useOccupancyStatusFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
@@ -80,7 +81,9 @@
   const occupancies = ref<Occupancy[]>([])
   const batches = ref<Batch[]>([])
   const selectedVesselUuid = ref<string | null>(null)
-  const loading = ref(false)
+
+  const { execute, loading, error: loadError } = useAsyncAction()
+  const { execute: executeLoadOccupancies } = useAsyncAction({ onError: () => {} })
 
   // Edit dialog state
   const editDialogOpen = ref(false)
@@ -138,8 +141,7 @@
   }
 
   async function refreshVessels () {
-    loading.value = true
-    try {
+    await execute(async () => {
       const [vesselData, , batchData] = await Promise.all([
         getVessels(),
         loadOccupancies(),
@@ -153,31 +155,29 @@
       if (!selectedVesselUuid.value && firstVessel) {
         selectedVesselUuid.value = firstVessel.uuid
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load vessels'
-      showNotice(message, 'error')
-    } finally {
-      loading.value = false
+    })
+    if (loadError.value) {
+      showNotice(loadError.value, 'error')
     }
   }
 
   async function loadOccupancies () {
-    try {
+    // Occupancy loading failure is non-critical
+    await executeLoadOccupancies(async () => {
       occupancies.value = await getActiveOccupancies()
-    } catch (error) {
-      console.error('Failed to load occupancies:', error)
-    }
+    })
   }
 
+  const { execute: executeStatusChange } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
+  })
+
   async function changeOccupancyStatus (occupancyUuid: string, status: OccupancyStatus) {
-    try {
+    await executeStatusChange(async () => {
       await updateOccupancyStatus(occupancyUuid, status)
       showNotice(`Status updated to ${formatOccupancyStatus(status)}`)
       await loadOccupancies()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update status'
-      showNotice(message, 'error')
-    }
+    })
   }
 
   function openEditDialog () {

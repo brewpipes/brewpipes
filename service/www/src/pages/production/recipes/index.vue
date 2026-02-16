@@ -126,107 +126,39 @@
   </v-container>
 
   <!-- Create/Edit Recipe Dialog -->
-  <v-dialog v-model="recipeDialog" max-width="600" persistent>
-    <v-card>
-      <v-card-title class="text-h6">
-        {{ isEditing ? 'Edit recipe' : 'Create recipe' }}
-      </v-card-title>
-      <v-card-text>
-        <v-form ref="formRef" @submit.prevent="saveRecipe">
-          <v-text-field
-            v-model="recipeForm.name"
-            density="comfortable"
-            label="Name"
-            placeholder="West Coast IPA"
-            :rules="[rules.required]"
-          />
-
-          <v-combobox
-            v-model="recipeForm.style"
-            density="comfortable"
-            hint="Select an existing style or type a new one"
-            item-title="name"
-            item-value="uuid"
-            :items="styleItems"
-            label="Style"
-            :loading="stylesLoading"
-            persistent-hint
-            return-object
-            @update:search="onStyleSearch"
-          >
-            <template #no-data>
-              <v-list-item v-if="styleSearchQuery">
-                <v-list-item-title>
-                  Press enter to create "{{ styleSearchQuery }}"
-                </v-list-item-title>
-              </v-list-item>
-              <v-list-item v-else>
-                <v-list-item-title>
-                  Type to search or create a new style
-                </v-list-item-title>
-              </v-list-item>
-            </template>
-          </v-combobox>
-
-          <v-textarea
-            v-model="recipeForm.notes"
-            auto-grow
-            density="comfortable"
-            label="Notes"
-            placeholder="Recipe description, ingredients, process notes..."
-            rows="3"
-          />
-        </v-form>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeRecipeDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isFormValid"
-          :loading="saving"
-          @click="saveRecipe"
-        >
-          {{ isEditing ? 'Save changes' : 'Create recipe' }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <RecipeCreateEditDialog
+    v-model="recipeDialog"
+    :edit-recipe="editingRecipe"
+    :saving="saving"
+    :styles="styles"
+    @submit="saveRecipe"
+  />
 
   <!-- Delete Confirmation Dialog -->
-  <v-dialog v-model="deleteDialog" max-width="400" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Delete recipe</v-card-title>
-      <v-card-text>
-        <p>
-          Are you sure you want to delete <strong>{{ recipeToDelete?.name }}</strong>?
-        </p>
-        <p class="text-medium-emphasis mt-2">This action cannot be undone.</p>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="deleting" variant="text" @click="closeDeleteDialog">Cancel</v-btn>
-        <v-btn
-          color="error"
-          :loading="deleting"
-          variant="flat"
-          @click="confirmDelete"
-        >
-          Delete
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <RecipeDeleteDialog
+    v-if="recipeToDelete"
+    v-model="deleteDialog"
+    :deleting="deleting"
+    :recipe="recipeToDelete"
+    @confirm="confirmDelete"
+  />
 </template>
 
 <script lang="ts" setup>
   import type { Recipe, Style } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { formatDateTime } from '@/composables/useFormatters'
+  import RecipeCreateEditDialog from '@/components/recipe/RecipeCreateEditDialog.vue'
+  import type { RecipeCreateEditSubmitData } from '@/components/recipe/RecipeCreateEditDialog.vue'
+  import { RecipeDeleteDialog } from '@/components/recipe'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
+  import { formatDateTime, useBrewingFormatters } from '@/composables/useFormatters'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { normalizeText } from '@/utils/normalize'
 
   const router = useRouter()
+
+  const { formatGravity, formatPercent: formatAbv, formatWholeNumber: formatIbu } = useBrewingFormatters()
 
   const {
     getRecipes,
@@ -240,31 +172,18 @@
   // State
   const recipes = ref<Recipe[]>([])
   const styles = ref<Style[]>([])
-  const loading = ref(false)
-  const stylesLoading = ref(false)
-  const saving = ref(false)
-  const deleting = ref(false)
-  const errorMessage = ref('')
   const search = ref('')
+
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving, error: saveError } = useAsyncAction()
+  const { execute: executeDelete, loading: deleting, error: deleteError } = useAsyncAction()
+  const { execute: executeLoadStyles } = useAsyncAction({ onError: () => {} })
 
   // Dialogs
   const recipeDialog = ref(false)
   const deleteDialog = ref(false)
-  const editingRecipeUuid = ref<string | null>(null)
+  const editingRecipe = ref<Recipe | null>(null)
   const recipeToDelete = ref<Recipe | null>(null)
-
-  // Form
-  const formRef = ref()
-  const styleSearchQuery = ref('')
-  const recipeForm = reactive({
-    name: '',
-    style: null as Style | string | null,
-    notes: '',
-  })
-
-  const rules = {
-    required: (v: string) => !!v?.trim() || 'Required',
-  }
 
   // Table configuration
   const headers = [
@@ -276,12 +195,6 @@
   ]
 
   // Computed
-  const isEditing = computed(() => editingRecipeUuid.value !== null)
-
-  const isFormValid = computed(() => {
-    return recipeForm.name.trim().length > 0
-  })
-
   const filteredRecipes = computed(() => {
     if (!search.value) {
       return recipes.value
@@ -295,8 +208,6 @@
     )
   })
 
-  const styleItems = computed(() => styles.value)
-
   // Lifecycle
   onMounted(async () => {
     await Promise.all([loadRecipes(), loadStyles()])
@@ -304,41 +215,23 @@
 
   // Methods
   async function loadRecipes () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       recipes.value = await getRecipes()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load recipes'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      loading.value = false
+    })
+    if (errorMessage.value) {
+      showNotice(errorMessage.value, 'error')
     }
   }
 
   async function loadStyles () {
-    stylesLoading.value = true
-    try {
+    // Styles loading failure is non-critical, user can still type new styles
+    await executeLoadStyles(async () => {
       styles.value = await getStyles()
-    } catch (error) {
-      // Styles loading failure is non-critical, user can still type new styles
-      console.error('Failed to load styles:', error)
-    } finally {
-      stylesLoading.value = false
-    }
-  }
-
-  function onStyleSearch (query: string) {
-    styleSearchQuery.value = query
+    })
   }
 
   function openCreateDialog () {
-    editingRecipeUuid.value = null
-    recipeForm.name = ''
-    recipeForm.style = null
-    recipeForm.notes = ''
-    styleSearchQuery.value = ''
+    editingRecipe.value = null
     recipeDialog.value = true
   }
 
@@ -346,79 +239,24 @@
     router.push(`/production/recipes/${item.uuid}`)
   }
 
-  function formatGravity (value: number | null | undefined): string {
-    if (value === null || value === undefined) return ''
-    return value.toFixed(3)
-  }
-
-  function formatAbv (value: number | null | undefined): string {
-    if (value === null || value === undefined) return ''
-    return `${value.toFixed(1)}%`
-  }
-
-  function formatIbu (value: number | null | undefined): string {
-    if (value === null || value === undefined) return ''
-    return String(Math.round(value))
-  }
-
-  function closeRecipeDialog () {
-    recipeDialog.value = false
-    editingRecipeUuid.value = null
-  }
-
-  async function saveRecipe () {
-    if (!isFormValid.value) {
-      return
-    }
-
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
-      // Determine style_uuid and style_name from the form value
-      let styleUuid: string | null = null
-      let styleName: string | null = null
-
-      if (recipeForm.style) {
-        if (typeof recipeForm.style === 'object' && recipeForm.style.uuid) {
-          // User selected an existing style
-          styleUuid = recipeForm.style.uuid
-          styleName = recipeForm.style.name
-        } else if (typeof recipeForm.style === 'string') {
-          // User typed a new style name
-          styleName = recipeForm.style.trim() || null
-        }
-      }
-
-      const payload = {
-        name: recipeForm.name.trim(),
-        style_uuid: styleUuid,
-        style_name: styleName,
-        notes: normalizeText(recipeForm.notes),
-      }
-
-      if (isEditing.value && editingRecipeUuid.value) {
-        await updateRecipe(editingRecipeUuid.value, payload)
+  async function saveRecipe (data: RecipeCreateEditSubmitData) {
+    await executeSave(async () => {
+      if (editingRecipe.value) {
+        await updateRecipe(editingRecipe.value.uuid, data)
         showNotice('Recipe updated')
       } else {
-        await createRecipe(payload)
+        await createRecipe(data)
         showNotice('Recipe created')
       }
 
-      closeRecipeDialog()
+      recipeDialog.value = false
+      editingRecipe.value = null
       await Promise.all([loadRecipes(), loadStyles()])
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save recipe'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
+    })
+    if (saveError.value) {
+      errorMessage.value = saveError.value
+      showNotice(saveError.value, 'error')
     }
-  }
-
-  function closeDeleteDialog () {
-    deleteDialog.value = false
-    recipeToDelete.value = null
   }
 
   async function confirmDelete () {
@@ -426,20 +264,16 @@
       return
     }
 
-    deleting.value = true
-    errorMessage.value = ''
-
-    try {
-      await deleteRecipe(recipeToDelete.value.uuid)
+    await executeDelete(async () => {
+      await deleteRecipe(recipeToDelete.value!.uuid)
       showNotice('Recipe deleted')
-      closeDeleteDialog()
+      deleteDialog.value = false
+      recipeToDelete.value = null
       await loadRecipes()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to delete recipe'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      deleting.value = false
+    })
+    if (deleteError.value) {
+      errorMessage.value = deleteError.value
+      showNotice(deleteError.value, 'error')
     }
   }
 </script>

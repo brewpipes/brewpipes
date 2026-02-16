@@ -157,6 +157,7 @@
     Supplier,
   } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useProductionApi } from '@/composables/useProductionApi'
@@ -196,8 +197,7 @@
   const suppliers = ref<Supplier[]>([])
 
   // UI state
-  const loading = ref(false)
-  const errorMessage = ref('')
+  const { execute, loading, error: errorMessage } = useAsyncAction()
 
   const filters = reactive({
     ingredient_lot_uuid: null as string | null,
@@ -272,9 +272,7 @@
 
   // Data loading
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await execute(async () => {
       // Load core inventory data in parallel (allSettled so one failure doesn't kill all data)
       const results = await Promise.allSettled([
         loadIngredients(),
@@ -290,16 +288,14 @@
 
       const failures = results.filter(r => r.status === 'rejected')
       if (failures.length > 0 && failures.length < results.length) {
-        errorMessage.value = `Some data failed to load (${failures.length} of ${results.length} requests). Displayed data may be incomplete.`
+        throw new Error(`Some data failed to load (${failures.length} of ${results.length} requests). Displayed data may be incomplete.`)
       } else if (failures.length === results.length) {
-        errorMessage.value = 'Unable to load activity'
+        throw new Error('Unable to load activity')
       }
 
       // Load cross-service data (non-blocking, graceful failure)
       await loadCrossServiceData()
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   async function loadIngredients () {

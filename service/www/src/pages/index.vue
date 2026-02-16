@@ -227,9 +227,9 @@
 </template>
 
 <script lang="ts" setup>
-  import type { BatchProcessPhase, ProcessPhase } from '@/components/batch/types'
   import type { Batch, Occupancy, StockLevel, Vessel, Volume } from '@/types'
   import { computed, onMounted, ref } from 'vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import {
     formatDate,
     formatDateTime,
@@ -245,7 +245,7 @@
 
   type BatchPhaseItem = {
     batch: Batch
-    phase: BatchProcessPhase | null
+    phase: string | null
     route: string
     phaseLabel: string
     phaseTone: string
@@ -268,14 +268,13 @@
   const batches = ref<Batch[]>([])
   const vessels = ref<Vessel[]>([])
   const volumes = ref<Volume[]>([])
-  const processPhases = ref<BatchProcessPhase[]>([])
   const occupancies = ref<Occupancy[]>([])
   const stockLevels = ref<StockLevel[]>([])
-  const errorMessage = ref('')
-  const loading = ref(false)
   const dataReady = ref(false)
 
-  const { getBatches, getVessels, getVolumes, getActiveOccupancies, request } = useProductionApi()
+  const { execute, loading, error: errorMessage } = useAsyncAction()
+
+  const { getBatches, getVessels, getVolumes, getActiveOccupancies } = useProductionApi()
   const { getStockLevels } = useInventoryApi()
   const { formatVolumePreferred } = useUnitPreferences()
   const { breweryName } = useUserSettings()
@@ -288,30 +287,16 @@
     () => new Map(volumes.value.map(volume => [volume.uuid, volume.name ?? `Volume ${volume.uuid.slice(0, 8)}`])),
   )
 
-  const latestPhaseByBatch = computed(() => {
-    const map = new Map<string, BatchProcessPhase>()
-    for (const phase of processPhases.value) {
-      const current = map.get(phase.batch_uuid)
-      if (!current || toTimestamp(phase.phase_at || phase.created_at) > toTimestamp(current.phase_at || current.created_at)) {
-        map.set(phase.batch_uuid, phase)
-      }
-    }
-    return map
-  })
-
   const batchPhaseItems = computed<BatchPhaseItem[]>(() =>
     batches.value.map(batch => {
-      const phase = latestPhaseByBatch.value.get(batch.uuid) ?? null
-      const phaseAt = phase
-        ? normalizeTimestamp(phase.phase_at, phase.created_at || batch.updated_at)
-        : batch.updated_at
+      const phase = batch.current_phase
       return {
         batch,
         phase,
         route: `/batches/${batch.uuid}`,
-        phaseLabel: phase ? formatPhase(phase.process_phase) : 'No phase',
-        phaseTone: phase ? getPhaseColor(phase.process_phase) : 'secondary',
-        phaseAt,
+        phaseLabel: phase ? formatPhase(phase) : 'No phase',
+        phaseTone: phase ? getPhaseColor(phase) : 'secondary',
+        phaseAt: batch.updated_at,
       }
     }),
   )
@@ -410,9 +395,7 @@
   })
 
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await execute(async () => {
       const [batchResult, vesselResult, volumeResult, stockResult] = await Promise.allSettled([
         getBatches(),
         getVessels(),
@@ -428,37 +411,13 @@
       if (failures.length > 0) {
         console.warn(`Dashboard: ${failures.length} data source(s) failed to load`)
         if (failures.length === 4) {
-          errorMessage.value = 'Unable to load dashboard data'
+          throw new Error('Unable to load dashboard data')
         }
       }
 
-      await Promise.all([loadProcessPhases(), loadOccupancies()])
+      await loadOccupancies()
       dataReady.value = true
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load dashboard'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function loadProcessPhases () {
-    if (batches.value.length === 0) {
-      processPhases.value = []
-      return
-    }
-    const results = await Promise.allSettled(
-      batches.value.map(batch => request<BatchProcessPhase[]>(`/batch-process-phases?batch_uuid=${batch.uuid}`)),
-    )
-    const phases: BatchProcessPhase[] = []
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        phases.push(...result.value)
-      } else {
-        console.warn('Dashboard: failed to load process phases for a batch', result.reason)
-      }
-    }
-    processPhases.value = phases
+    })
   }
 
   async function loadOccupancies () {
@@ -469,9 +428,9 @@
     occupancies.value = await getActiveOccupancies()
   }
 
-  function isBatchInProgress (batch: Batch, phase: BatchProcessPhase | null) {
+  function isBatchInProgress (batch: Batch, phase: string | null) {
     if (phase) {
-      return phase.process_phase !== 'planning' && phase.process_phase !== 'finished'
+      return phase !== 'planning' && phase !== 'finished'
     }
     if (!batch.brew_date) {
       return false
@@ -479,9 +438,9 @@
     return !isFutureDate(batch.brew_date)
   }
 
-  function isBatchPlanned (batch: Batch, phase: BatchProcessPhase | null) {
+  function isBatchPlanned (batch: Batch, phase: string | null) {
     if (phase) {
-      return phase.process_phase === 'planning'
+      return phase === 'planning'
     }
     if (!batch.brew_date) {
       return true
@@ -509,7 +468,7 @@
   }
 
   function plannedSubtitle (item: BatchPhaseItem) {
-    if (item.phase?.process_phase === 'planning') {
+    if (item.phase === 'planning') {
       return 'In planning'
     }
     if (!item.batch.brew_date) {
@@ -524,7 +483,7 @@
   }
 
   function plannedBadge (item: BatchPhaseItem) {
-    if (item.phase?.process_phase === 'planning') {
+    if (item.phase === 'planning') {
       return 'Planning'
     }
     return formatRelativeDate(item.batch.brew_date)

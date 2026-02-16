@@ -204,7 +204,137 @@ export interface InventoryTransfer {
 }
 
 // ============================================================================
-// Request Types
+// Ingredient Request Types
+// ============================================================================
+
+/** Request payload for creating a new ingredient */
+export interface CreateIngredientRequest {
+  name: string
+  category: string
+  default_unit: string
+  description?: string | null
+}
+
+// ============================================================================
+// Ingredient Lot Detail Request Types
+// ============================================================================
+
+/** Request payload for creating malt-specific lot details */
+export interface CreateIngredientLotMaltDetailRequest {
+  ingredient_lot_uuid: string
+  moisture_percent?: number | null
+}
+
+/** Request payload for updating malt-specific lot details */
+export interface UpdateIngredientLotMaltDetailRequest {
+  ingredient_lot_uuid: string
+  moisture_percent?: number | null
+}
+
+/** Request payload for creating hop-specific lot details */
+export interface CreateIngredientLotHopDetailRequest {
+  ingredient_lot_uuid: string
+  alpha_acid?: number | null
+  beta_acid?: number | null
+}
+
+/** Request payload for updating hop-specific lot details */
+export interface UpdateIngredientLotHopDetailRequest {
+  ingredient_lot_uuid: string
+  alpha_acid?: number | null
+  beta_acid?: number | null
+}
+
+/** Request payload for creating yeast-specific lot details */
+export interface CreateIngredientLotYeastDetailRequest {
+  ingredient_lot_uuid: string
+  viability_percent?: number | null
+  generation?: number | null
+}
+
+/** Request payload for updating yeast-specific lot details */
+export interface UpdateIngredientLotYeastDetailRequest {
+  ingredient_lot_uuid: string
+  viability_percent?: number | null
+  generation?: number | null
+}
+
+// ============================================================================
+// Stock Location Request Types
+// ============================================================================
+
+/** Request payload for creating a new stock location */
+export interface CreateStockLocationRequest {
+  name: string
+  location_type?: string | null
+  description?: string | null
+}
+
+// ============================================================================
+// Inventory Usage Request Types
+// ============================================================================
+
+/** Request payload for creating an inventory usage record */
+export interface CreateInventoryUsageRequest {
+  production_ref_uuid?: string | null
+  used_at?: string | null
+  notes?: string | null
+}
+
+// ============================================================================
+// Inventory Adjustment Request Types
+// ============================================================================
+
+/** Request payload for creating an inventory adjustment */
+export interface CreateInventoryAdjustmentRequest {
+  ingredient_lot_uuid?: string | null
+  beer_lot_uuid?: string | null
+  stock_location_uuid: string
+  amount: number
+  amount_unit: string
+  reason: string
+  adjusted_at?: string | null
+  notes?: string | null
+}
+
+// ============================================================================
+// Inventory Transfer Request Types
+// ============================================================================
+
+/** Request payload for creating an inventory transfer */
+export interface CreateInventoryTransferRequest {
+  ingredient_lot_uuid?: string | null
+  beer_lot_uuid?: string | null
+  source_location_uuid: string
+  dest_location_uuid: string | null
+  amount: number
+  amount_unit: string
+  transferred_at?: string | null
+  notes?: string | null
+}
+
+// ============================================================================
+// Beer Lot Request Types
+// ============================================================================
+
+/** Request payload for creating a beer lot */
+export interface CreateBeerLotRequest {
+  production_batch_uuid: string
+  lot_code?: string | null
+  packaged_at?: string | null
+  notes?: string | null
+  packaging_run_uuid?: string | null
+  best_by?: string | null
+  package_format_name?: string | null
+  container?: string | null
+  volume_per_unit?: number | null
+  volume_per_unit_unit?: string | null
+  quantity?: number | null
+  stock_location_uuid?: string | null
+}
+
+// ============================================================================
+// Receipt Request Types
 // ============================================================================
 
 /** Request payload for creating an inventory receipt */

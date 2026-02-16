@@ -137,6 +137,7 @@
   import type { Ingredient, IngredientLot, IngredientLotHopDetail, IngredientLotMaltDetail, IngredientLotYeastDetail } from '@/types'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
@@ -162,7 +163,13 @@
   const ingredients = ref<Ingredient[]>([])
   const lots = ref<IngredientLot[]>([])
   const detailLotUuid = ref<string | null>(null)
-  const loading = ref(false)
+
+  const { execute, loading } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
+  })
+  const { execute: executeSave } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
+  })
 
   const lotMaltDetail = ref<IngredientLotMaltDetail | null>(null)
   const lotHopDetail = ref<IngredientLotHopDetail | null>(null)
@@ -215,20 +222,14 @@
   })
 
   async function loadLots () {
-    loading.value = true
-    try {
+    await execute(async () => {
       const [ingredientData, lotData] = await Promise.all([
         getIngredients(),
         getIngredientLots(),
       ])
       ingredients.value = ingredientData
       lots.value = lotData
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load lots'
-      showNotice(message, 'error')
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   async function loadLotDetails () {
@@ -316,9 +317,9 @@
     if (!detailLotUuid.value) {
       return
     }
-    try {
+    await executeSave(async () => {
       const payload = {
-        ingredient_lot_uuid: detailLotUuid.value,
+        ingredient_lot_uuid: detailLotUuid.value!,
         moisture_percent: toNumber(lotMaltDetailForm.moisture_percent),
       }
       if (lotMaltDetail.value) {
@@ -328,19 +329,16 @@
       }
       showNotice('Malt lot detail saved')
       await loadLotDetails()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save malt lot detail'
-      showNotice(message, 'error')
-    }
+    })
   }
 
   async function saveLotHopDetail () {
     if (!detailLotUuid.value) {
       return
     }
-    try {
+    await executeSave(async () => {
       const payload = {
-        ingredient_lot_uuid: detailLotUuid.value,
+        ingredient_lot_uuid: detailLotUuid.value!,
         alpha_acid: toNumber(lotHopDetailForm.alpha_acid),
         beta_acid: toNumber(lotHopDetailForm.beta_acid),
       }
@@ -351,19 +349,16 @@
       }
       showNotice('Hop lot detail saved')
       await loadLotDetails()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save hop lot detail'
-      showNotice(message, 'error')
-    }
+    })
   }
 
   async function saveLotYeastDetail () {
     if (!detailLotUuid.value) {
       return
     }
-    try {
+    await executeSave(async () => {
       const payload = {
-        ingredient_lot_uuid: detailLotUuid.value,
+        ingredient_lot_uuid: detailLotUuid.value!,
         viability_percent: toNumber(lotYeastDetailForm.viability_percent),
         generation: toNumber(lotYeastDetailForm.generation),
       }
@@ -374,10 +369,7 @@
       }
       showNotice('Yeast lot detail saved')
       await loadLotDetails()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save yeast lot detail'
-      showNotice(message, 'error')
-    }
+    })
   }
 
   function ingredientName (ingredientUuid: string) {

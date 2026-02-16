@@ -103,16 +103,16 @@
   import type { PurchaseOrder, PurchaseOrderFee } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
-  import { useFeeTypeFormatters } from '@/composables/useFormatters'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
+  import { formatDateTime, useFeeTypeFormatters } from '@/composables/useFormatters'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
+  import { toNumber } from '@/utils/normalize'
 
   const {
     getPurchaseOrders,
     getPurchaseOrderFees,
     createPurchaseOrderFee,
-    toNumber,
-    formatDateTime,
     formatCurrency,
   } = useProcurementApi()
   const route = useRoute()
@@ -132,9 +132,9 @@
 
   const orders = ref<PurchaseOrder[]>([])
   const fees = ref<PurchaseOrderFee[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
-  const errorMessage = ref('')
+
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving, error: saveError } = useAsyncAction()
 
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
@@ -166,16 +166,9 @@
   })
 
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       await Promise.all([loadOrders(), loadFees()])
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load fees'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   async function loadOrders () {
@@ -187,8 +180,7 @@
   }
 
   async function createFee () {
-    saving.value = true
-    try {
+    await executeSave(async () => {
       const payload = {
         purchase_order_uuid: feeForm.purchase_order_uuid,
         fee_type: feeForm.fee_type.trim(),
@@ -202,12 +194,10 @@
       feeForm.currency = 'USD'
       await loadFees()
       showNotice('Fee created')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create fee'
-      errorMessage.value = message
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
+    })
+    if (saveError.value) {
+      errorMessage.value = saveError.value
+      showNotice(saveError.value, 'error')
     }
   }
 

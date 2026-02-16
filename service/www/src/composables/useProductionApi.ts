@@ -9,6 +9,7 @@ import type {
   CreateAdditionRequest,
   CreateBatchProcessPhaseRequest,
   CreateBatchRelationRequest,
+  CreateBatchRequest,
   CreateBatchVolumeRequest,
   CreateBrewSessionRequest,
   CreateMeasurementRequest,
@@ -19,6 +20,7 @@ import type {
   CreateRecipeRequest,
   CreateStyleRequest,
   CreateTransferRequest,
+  CreateVesselRequest,
   CreateVolumeRelationRequest,
   CreateVolumeRequest,
   Measurement,
@@ -42,8 +44,6 @@ import type {
   VolumeRelation,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
-import { formatDateTime } from '@/composables/useFormatters'
-import { normalizeDateTime, normalizeText, toNumber } from '@/utils/normalize'
 
 const productionApiBase = import.meta.env.VITE_PRODUCTION_API_URL ?? '/api'
 
@@ -100,7 +100,7 @@ export function useProductionApi () {
   // Vessels API
   const getVessels = () => request<Vessel[]>('/vessels')
   const getVessel = (uuid: string) => request<Vessel>(`/vessels/${uuid}`)
-  const createVessel = (data: Record<string, unknown>) =>
+  const createVessel = (data: CreateVesselRequest) =>
     request<Vessel>('/vessels', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -166,7 +166,7 @@ export function useProductionApi () {
   const getBatches = () => request<Batch[]>('/batches')
   const getBatch = (uuid: string) =>
     request<Batch>(`/batches/${uuid}`)
-  const createBatch = (data: Record<string, unknown>) =>
+  const createBatch = (data: CreateBatchRequest) =>
     request<Batch>('/batches', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -290,10 +290,6 @@ export function useProductionApi () {
   return {
     apiBase: productionApiBase,
     request,
-    normalizeText,
-    normalizeDateTime,
-    toNumber,
-    formatDateTime,
     // Styles
     getStyles,
     getStyle,

@@ -106,145 +106,33 @@
   </v-container>
 
   <!-- Adjustment Modal -->
-  <v-dialog v-model="adjustDialog" :fullscreen="$vuetify.display.xs" :max-width="$vuetify.display.xs ? undefined : 500" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Adjust inventory</v-card-title>
-      <v-card-text>
-        <div v-if="selectedItem" class="mb-4 pa-3 selected-item-summary rounded">
-          <div class="text-subtitle-2 font-weight-bold">{{ selectedItem.name }}</div>
-          <div class="text-caption text-medium-emphasis">
-            {{ selectedItem.type === 'ingredient' ? 'Ingredient lot' : 'Beer lot' }}
-            <span class="mx-1">|</span>
-            {{ selectedItem.locationName }}
-          </div>
-          <div class="text-body-2 mt-1">
-            Current quantity: <strong>{{ formatAmountPreferred(selectedItem.quantity, selectedItem.unit) }}</strong>
-          </div>
-        </div>
-
-        <v-text-field
-          v-model="adjustForm.amount"
-          density="comfortable"
-          hint="Use negative values to decrease inventory"
-          label="Adjustment amount"
-          persistent-hint
-          type="number"
-        />
-        <v-select
-          v-model="adjustForm.reason"
-          class="mt-2"
-          density="comfortable"
-          :items="adjustmentReasonOptions"
-          label="Reason"
-          :rules="[rules.required]"
-        />
-        <v-textarea
-          v-model="adjustForm.notes"
-          auto-grow
-          class="mt-2"
-          density="comfortable"
-          label="Notes (optional)"
-          rows="2"
-        />
-        <v-text-field
-          v-model="adjustForm.adjusted_at"
-          class="mt-2"
-          density="comfortable"
-          label="Adjusted at"
-          type="datetime-local"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeAdjustDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isAdjustFormValid"
-          :loading="saving"
-          @click="saveAdjustment"
-        >
-          Save Adjustment
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <InventoryAdjustmentDialog
+    v-model="adjustDialog"
+    :lot="selectedLotInfo"
+    :saving="saving"
+    @submit="saveAdjustment"
+  />
 
   <!-- Transfer Modal -->
-  <v-dialog v-model="transferDialog" :fullscreen="$vuetify.display.xs" :max-width="$vuetify.display.xs ? undefined : 500" persistent>
-    <v-card>
-      <v-card-title class="text-h6">Transfer inventory</v-card-title>
-      <v-card-text>
-        <div v-if="selectedItem" class="mb-4 pa-3 selected-item-summary rounded">
-          <div class="text-subtitle-2 font-weight-bold">{{ selectedItem.name }}</div>
-          <div class="text-caption text-medium-emphasis">
-            {{ selectedItem.type === 'ingredient' ? 'Ingredient lot' : 'Beer lot' }}
-          </div>
-          <div class="text-body-2 mt-1">
-            Available: <strong>{{ formatAmountPreferred(selectedItem.quantity, selectedItem.unit) }}</strong>
-          </div>
-        </div>
-
-        <v-text-field
-          v-model="transferForm.from_location"
-          density="comfortable"
-          disabled
-          label="From location"
-        />
-        <v-select
-          v-model="transferForm.to_location_uuid"
-          class="mt-2"
-          density="comfortable"
-          :items="transferDestinationItems"
-          label="To location"
-          :rules="[rules.required]"
-        />
-        <v-text-field
-          v-model="transferForm.quantity"
-          class="mt-2"
-          density="comfortable"
-          :hint="selectedItem ? `Max: ${selectedItem.quantity} ${selectedItem.unit}` : ''"
-          label="Quantity to transfer"
-          persistent-hint
-          :rules="[rules.required, rules.positiveNumber]"
-          type="number"
-        />
-        <v-textarea
-          v-model="transferForm.notes"
-          auto-grow
-          class="mt-2"
-          density="comfortable"
-          label="Notes (optional)"
-          rows="2"
-        />
-        <v-text-field
-          v-model="transferForm.transferred_at"
-          class="mt-2"
-          density="comfortable"
-          label="Transferred at"
-          type="datetime-local"
-        />
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="saving" variant="text" @click="closeTransferDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!isTransferFormValid"
-          :loading="saving"
-          @click="saveTransfer"
-        >
-          Transfer
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <InventoryTransferDialog
+    v-model="transferDialog"
+    :locations="locations"
+    :lot="selectedLotInfo"
+    :saving="saving"
+    @submit="saveTransfer"
+  />
 </template>
 
 <script lang="ts" setup>
-  import type { BeerLotStockLevel, Ingredient, IngredientLot, InventoryMovement, StockLocation } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import type { BeerLotStockLevel, CreateInventoryAdjustmentRequest, CreateInventoryTransferRequest, Ingredient, IngredientLot, InventoryMovement, StockLocation } from '@/types'
+  import { computed, onMounted, ref } from 'vue'
+  import InventoryAdjustmentDialog from '@/components/inventory/InventoryAdjustmentDialog.vue'
+  import type { InventoryLotInfo } from '@/components/inventory/InventoryAdjustmentDialog.vue'
+  import InventoryTransferDialog from '@/components/inventory/InventoryTransferDialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useSnackbar } from '@/composables/useSnackbar'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
-  import { normalizeDateTime, normalizeText } from '@/utils/normalize'
 
   type InventoryItem = {
     key: string
@@ -277,9 +165,10 @@
   const beerLotStockLevels = ref<BeerLotStockLevel[]>([])
 
   // UI state
-  const loading = ref(false)
-  const saving = ref(false)
-  const errorMessage = ref('')
+  const { execute: executeLoad, loading, error: errorMessage } = useAsyncAction()
+  const { execute: executeSave, loading: saving } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
+  })
   const search = ref('')
   const selectedLocationUuid = ref<string | null>(null)
 
@@ -287,40 +176,6 @@
   const adjustDialog = ref(false)
   const transferDialog = ref(false)
   const selectedItem = ref<InventoryItem | null>(null)
-
-  // Forms
-  const adjustForm = reactive({
-    amount: '',
-    reason: '',
-    notes: '',
-    adjusted_at: '',
-  })
-
-  const transferForm = reactive({
-    from_location: '',
-    to_location_uuid: null as string | null,
-    quantity: '',
-    notes: '',
-    transferred_at: '',
-  })
-
-  const adjustmentReasonOptions = [
-    { title: 'Cycle Count', value: 'cycle_count' },
-    { title: 'Spoilage', value: 'spoilage' },
-    { title: 'Shrink', value: 'shrink' },
-    { title: 'Damage', value: 'damage' },
-    { title: 'Correction', value: 'correction' },
-    { title: 'Other', value: 'other' },
-  ]
-
-  const rules = {
-    required: (v: string | null) => (v !== null && v !== '' && String(v).trim() !== '') || 'Required',
-    positiveNumber: (v: string | null) => {
-      if (v === null || v === '') return true // Let required handle empty
-      const num = Number(v)
-      return (Number.isFinite(num) && num > 0) || 'Must be a positive number'
-    },
-  }
 
   // Table headers
   const headers = [
@@ -338,16 +193,6 @@
       value: loc.uuid,
     })),
   )
-
-  const transferDestinationItems = computed(() => {
-    if (!selectedItem.value) return locationSelectItems.value
-    return locations.value
-      .filter(loc => loc.uuid !== selectedItem.value?.locationUuid)
-      .map(loc => ({
-        title: loc.name,
-        value: loc.uuid,
-      }))
-  })
 
   /** Build a map of ingredient lot UUID → location UUID → net quantity from movements */
   const ingredientLotLocationMap = computed(() => {
@@ -442,23 +287,17 @@
     return items
   })
 
-  const isAdjustFormValid = computed(() => {
-    return adjustForm.amount !== '' && adjustForm.reason.trim().length > 0
-  })
-
-  const isTransferFormValid = computed(() => {
-    if (transferForm.to_location_uuid === null || transferForm.quantity === '') {
-      return false
+  const selectedLotInfo = computed<InventoryLotInfo | null>(() => {
+    if (!selectedItem.value) return null
+    return {
+      type: selectedItem.value.type,
+      lotUuid: selectedItem.value.lotUuid,
+      name: selectedItem.value.name,
+      quantity: selectedItem.value.quantity,
+      unit: selectedItem.value.unit,
+      locationUuid: selectedItem.value.locationUuid,
+      locationName: selectedItem.value.locationName,
     }
-    const qty = Number(transferForm.quantity)
-    if (!Number.isFinite(qty) || qty <= 0) {
-      return false
-    }
-    // Ensure transfer quantity doesn't exceed available
-    if (selectedItem.value && qty > selectedItem.value.quantity) {
-      return false
-    }
-    return true
   })
 
   // Lifecycle
@@ -467,17 +306,8 @@
   })
 
   // Methods
-  function getDefaultDateTime () {
-    const now = new Date()
-    const offset = now.getTimezoneOffset()
-    const local = new Date(now.getTime() - offset * 60 * 1000)
-    return local.toISOString().slice(0, 16)
-  }
-
   async function refreshAll () {
-    loading.value = true
-    errorMessage.value = ''
-    try {
+    await executeLoad(async () => {
       await Promise.all([
         loadLocations(),
         loadIngredients(),
@@ -485,12 +315,7 @@
         loadIngredientMovements(),
         loadBeerLotStockLevels(),
       ])
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to load data'
-      errorMessage.value = message
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   async function loadLocations () {
@@ -516,104 +341,38 @@
   // Adjust dialog
   function openAdjustDialog (item: InventoryItem) {
     selectedItem.value = item
-    adjustForm.amount = ''
-    adjustForm.reason = ''
-    adjustForm.notes = ''
-    adjustForm.adjusted_at = getDefaultDateTime()
     adjustDialog.value = true
   }
 
-  function closeAdjustDialog () {
-    adjustDialog.value = false
-    selectedItem.value = null
-  }
-
-  async function saveAdjustment () {
-    if (!isAdjustFormValid.value || !selectedItem.value) {
-      return
-    }
-
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
-      const payload = {
-        ingredient_lot_uuid: selectedItem.value.type === 'ingredient' ? selectedItem.value.lotUuid : null,
-        beer_lot_uuid: selectedItem.value.type === 'beer' ? selectedItem.value.lotUuid : null,
-        stock_location_uuid: selectedItem.value.locationUuid,
-        amount: Number(adjustForm.amount),
-        amount_unit: selectedItem.value.unit,
-        reason: adjustForm.reason.trim(),
-        notes: normalizeText(adjustForm.notes),
-        adjusted_at: normalizeDateTime(adjustForm.adjusted_at),
-      }
+  async function saveAdjustment (payload: CreateInventoryAdjustmentRequest) {
+    await executeSave(async () => {
       await createInventoryAdjustment(payload)
-      closeAdjustDialog()
+      adjustDialog.value = false
+      selectedItem.value = null
       await refreshAll()
       showNotice('Adjustment saved')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save adjustment'
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
-    }
+    })
   }
 
   // Transfer dialog
   function openTransferDialog (item: InventoryItem) {
     selectedItem.value = item
-    transferForm.from_location = item.locationName
-    transferForm.to_location_uuid = null
-    transferForm.quantity = ''
-    transferForm.notes = ''
-    transferForm.transferred_at = getDefaultDateTime()
     transferDialog.value = true
   }
 
-  function closeTransferDialog () {
-    transferDialog.value = false
-    selectedItem.value = null
-  }
-
-  async function saveTransfer () {
-    if (!isTransferFormValid.value || !selectedItem.value) {
-      return
-    }
-
-    saving.value = true
-    errorMessage.value = ''
-
-    try {
-      const payload = {
-        ingredient_lot_uuid: selectedItem.value.type === 'ingredient' ? selectedItem.value.lotUuid : null,
-        beer_lot_uuid: selectedItem.value.type === 'beer' ? selectedItem.value.lotUuid : null,
-        source_location_uuid: selectedItem.value.locationUuid,
-        dest_location_uuid: transferForm.to_location_uuid,
-        amount: Number(transferForm.quantity),
-        amount_unit: selectedItem.value.unit,
-        notes: normalizeText(transferForm.notes),
-        transferred_at: normalizeDateTime(transferForm.transferred_at),
-      }
+  async function saveTransfer (payload: CreateInventoryTransferRequest) {
+    await executeSave(async () => {
       await createInventoryTransfer(payload)
-      closeTransferDialog()
+      transferDialog.value = false
+      selectedItem.value = null
       await refreshAll()
       showNotice('Transfer completed')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to complete transfer'
-      showNotice(message, 'error')
-    } finally {
-      saving.value = false
-    }
+    })
   }
 </script>
 
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.selected-item-summary {
-  background: rgba(var(--v-theme-on-surface), 0.05);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 </style>

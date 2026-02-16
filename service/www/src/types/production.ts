@@ -236,6 +236,14 @@ export interface Batch {
   updated_at: string
 }
 
+/** Request payload for creating a new batch */
+export interface CreateBatchRequest {
+  short_name: string
+  brew_date?: string | null
+  notes?: string | null
+  recipe_uuid?: string | null
+}
+
 /** Request payload for updating an existing batch */
 export interface UpdateBatchRequest {
   short_name: string
@@ -294,6 +302,17 @@ export interface Vessel {
   created_at: string
   updated_at: string
   deleted_at: string | null
+}
+
+/** Request payload for creating a new vessel */
+export interface CreateVesselRequest {
+  type: VesselType
+  name: string
+  capacity: number
+  capacity_unit: VolumeUnit
+  make?: string | null
+  model?: string | null
+  status?: VesselStatus | null
 }
 
 /** Request payload for updating an existing vessel */

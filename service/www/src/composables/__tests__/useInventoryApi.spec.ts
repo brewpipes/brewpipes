@@ -15,53 +15,8 @@ describe('useInventoryApi', () => {
     vi.clearAllMocks()
   })
 
-  describe('utility functions', () => {
-    it('normalizeText trims whitespace and returns null for empty strings', () => {
-      const { normalizeText } = useInventoryApi()
-
-      expect(normalizeText('  hello  ')).toBe('hello')
-      expect(normalizeText('test')).toBe('test')
-      expect(normalizeText('   ')).toBeNull()
-      expect(normalizeText('')).toBeNull()
-    })
-
-    it('normalizeDateTime converts to ISO string', () => {
-      const { normalizeDateTime } = useInventoryApi()
-
-      const result = normalizeDateTime('2024-01-15T10:30:00')
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-
-      expect(normalizeDateTime('')).toBeNull()
-    })
-
-    it('toNumber parses numeric values correctly', () => {
-      const { toNumber } = useInventoryApi()
-
-      expect(toNumber('42')).toBe(42)
-      expect(toNumber(42)).toBe(42)
-      expect(toNumber('3.14')).toBe(3.14)
-      expect(toNumber('0')).toBe(0)
-      expect(toNumber(0)).toBe(0)
-      expect(toNumber('')).toBeNull()
-      expect(toNumber(null)).toBeNull()
-      expect(toNumber('not a number')).toBeNull()
-      expect(toNumber('NaN')).toBeNull()
-      expect(toNumber('Infinity')).toBeNull()
-    })
-
-    it('formatDateTime formats dates correctly', () => {
-      const { formatDateTime } = useInventoryApi()
-
-      // Test with a valid date
-      const result = formatDateTime('2024-01-15T10:30:00Z')
-      expect(result).toContain('2024')
-
-      expect(formatDateTime(null)).toBe('Unknown')
-      expect(formatDateTime(undefined)).toBe('Unknown')
-      expect(formatDateTime('')).toBe('Unknown')
-    })
-
-    it('formatAmount formats amount with unit', () => {
+  describe('formatAmount', () => {
+    it('formats amount with unit', () => {
       const { formatAmount } = useInventoryApi()
 
       expect(formatAmount(10, 'kg')).toBe('10 kg')
@@ -72,10 +27,17 @@ describe('useInventoryApi', () => {
       expect(formatAmount(undefined, 'kg')).toBe('n/a')
     })
 
-    it('formatAmount handles zero correctly', () => {
+    it('handles zero correctly', () => {
       const { formatAmount } = useInventoryApi()
 
       expect(formatAmount(0, 'kg')).toBe('0 kg')
+    })
+
+    it('handles decimal amounts', () => {
+      const { formatAmount } = useInventoryApi()
+
+      expect(formatAmount(10.5, 'oz')).toBe('10.5 oz')
+      expect(formatAmount(0.25, 'lb')).toBe('0.25 lb')
     })
   })
 
@@ -91,13 +53,9 @@ describe('useInventoryApi', () => {
       expect(typeof api.request).toBe('function')
     })
 
-    it('exposes all utility functions', () => {
+    it('exposes formatAmount function', () => {
       const api = useInventoryApi()
 
-      expect(typeof api.normalizeText).toBe('function')
-      expect(typeof api.normalizeDateTime).toBe('function')
-      expect(typeof api.toNumber).toBe('function')
-      expect(typeof api.formatDateTime).toBe('function')
       expect(typeof api.formatAmount).toBe('function')
     })
   })
@@ -395,27 +353,5 @@ describe('useInventoryApi', () => {
     })
   })
 
-  describe('edge cases', () => {
-    it('normalizeText handles strings with only whitespace characters', () => {
-      const { normalizeText } = useInventoryApi()
 
-      expect(normalizeText('\t\n\r ')).toBeNull()
-      expect(normalizeText('  \t  ')).toBeNull()
-    })
-
-    it('toNumber handles edge numeric cases', () => {
-      const { toNumber } = useInventoryApi()
-
-      expect(toNumber('-5')).toBe(-5)
-      expect(toNumber('0.001')).toBe(0.001)
-      expect(toNumber('1e10')).toBe(1e10)
-    })
-
-    it('formatAmount handles decimal amounts', () => {
-      const { formatAmount } = useInventoryApi()
-
-      expect(formatAmount(10.5, 'oz')).toBe('10.5 oz')
-      expect(formatAmount(0.25, 'lb')).toBe('0.25 lb')
-    })
-  })
 })

@@ -206,6 +206,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import {
     useFormatters,
     useOccupancyStatusFormatters,
@@ -228,8 +229,14 @@
   const { formatOccupancyStatus, getOccupancyStatusColor } = useOccupancyStatusFormatters()
   const { uuid: routeUuid } = useRouteUuid()
 
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const error = ref('')
+  const { execute: executeLoad, loading } = useAsyncAction({
+    onError: (message) => {
+      error.value = message.includes('404') ? 'Vessel not found' : 'Failed to load vessel. Please try again.'
+    },
+  })
+  loading.value = true
+
   const vessel = ref<Vessel | null>(null)
   const occupancies = ref<Occupancy[]>([])
   const batches = ref<Batch[]>([])
@@ -259,10 +266,7 @@
       return
     }
 
-    try {
-      loading.value = true
-      error.value = null
-
+    await executeLoad(async () => {
       // Fetch vessel by UUID directly, then fetch related data
       const vesselData = await getVessel(uuid)
       vessel.value = vesselData
@@ -275,12 +279,7 @@
 
       occupancies.value = occupancyData
       batches.value = batchData
-    } catch (error_) {
-      console.error('Failed to load vessel:', error_)
-      error.value = error_ instanceof Error && error_.message.includes('404') ? 'Vessel not found' : 'Failed to load vessel. Please try again.'
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   function goBack () {

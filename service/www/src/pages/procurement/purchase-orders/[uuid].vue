@@ -132,66 +132,30 @@
   />
 
   <!-- Edit Order Dialog -->
-  <v-dialog
+  <PurchaseOrderEditDialog
+    v-if="order"
     v-model="editDialogOpen"
-    :fullscreen="$vuetify.display.xs"
-    :max-width="$vuetify.display.xs ? '100%' : 640"
-    persistent
-  >
-    <v-card>
-      <v-card-title class="text-h6">Edit purchase order</v-card-title>
-      <v-card-text>
-        <v-alert
-          v-if="editError"
-          class="mb-3"
-          density="compact"
-          type="error"
-          variant="tonal"
-        >
-          {{ editError }}
-        </v-alert>
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="editForm.order_number" label="Order number" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="editForm.ordered_at" label="Ordered at" type="datetime-local" />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field v-model="editForm.expected_at" label="Expected at" type="datetime-local" />
-          </v-col>
-          <v-col cols="12">
-            <v-textarea v-model="editForm.notes" auto-grow label="Notes" rows="3" />
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn :disabled="editSaving" variant="text" @click="closeEditDialog">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          :disabled="!editForm.order_number.trim()"
-          :loading="editSaving"
-          @click="saveEdit"
-        >
-          Save changes
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    :error-message="editError"
+    :purchase-order="order"
+    :saving="editSaving"
+    @submit="saveEdit"
+  />
 </template>
 
 <script lang="ts" setup>
   import type { PurchaseOrder, PurchaseOrderFee, PurchaseOrderLine, Supplier } from '@/types'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import PurchaseOrderEditDialog from '@/components/procurement/PurchaseOrderEditDialog.vue'
+  import type { PurchaseOrderEditFormData } from '@/components/procurement/PurchaseOrderEditDialog.vue'
   import PurchaseOrderFeeList from '@/components/procurement/PurchaseOrderFeeList.vue'
   import PurchaseOrderHeader from '@/components/procurement/PurchaseOrderHeader.vue'
   import PurchaseOrderLineList from '@/components/procurement/PurchaseOrderLineList.vue'
   import ReceiveShipmentWizard from '@/components/procurement/ReceiveShipmentWizard.vue'
+  import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useRouteUuid } from '@/composables/useRouteUuid'
   import { useSnackbar } from '@/composables/useSnackbar'
-  import { normalizeDateTime, normalizeText, toLocalDateTimeInput } from '@/utils/normalize'
 
   const router = useRouter()
   const { uuid: routeUuid } = useRouteUuid()
@@ -207,25 +171,27 @@
   } = useProcurementApi()
 
   // State
-  const loading = ref(true)
-  const error = ref<string | null>(null)
   const order = ref<PurchaseOrder | null>(null)
   const supplier = ref<Supplier | null>(null)
   const lines = ref<PurchaseOrderLine[]>([])
   const fees = ref<PurchaseOrderFee[]>([])
-  const linesLoading = ref(false)
-  const feesLoading = ref(false)
+
+  const { execute: executeLoad, loading, error: loadError } = useAsyncAction()
+  // Start loading immediately to avoid flash of empty state before onMounted
+  loading.value = true
+  const { execute: executeLinesLoad, loading: linesLoading } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
+  })
+  const { execute: executeFeesLoad, loading: feesLoading } = useAsyncAction({
+    onError: (message) => showNotice(message, 'error'),
+  })
+  const { execute: executeEdit, loading: editSaving, error: editError } = useAsyncAction()
+
+  // The template uses `error` (not `loadError`) for the error display
+  const error = computed(() => loadError.value || null)
 
   // Edit dialog state
   const editDialogOpen = ref(false)
-  const editSaving = ref(false)
-  const editError = ref('')
-  const editForm = reactive({
-    order_number: '',
-    ordered_at: '',
-    expected_at: '',
-    notes: '',
-  })
 
   // Receive shipment wizard state
   const receiveWizardOpen = ref(false)
@@ -269,15 +235,11 @@
   async function loadOrder () {
     const uuid = routeUuid.value
     if (!uuid) {
-      error.value = 'Invalid purchase order UUID'
-      loading.value = false
+      loadError.value = 'Invalid purchase order UUID'
       return
     }
 
-    try {
-      loading.value = true
-      error.value = null
-
+    await executeLoad(async () => {
       order.value = await getPurchaseOrder(uuid)
 
       // Load supplier and lines/fees in parallel
@@ -286,10 +248,12 @@
         loadLines(),
         loadFees(),
       ])
-    } catch (error_) {
-      error.value = error_ instanceof Error && error_.message.includes('404') ? 'Purchase order not found' : 'Failed to load purchase order. Please try again.'
-    } finally {
-      loading.value = false
+    })
+    // Provide user-friendly error messages
+    if (loadError.value) {
+      loadError.value = loadError.value.includes('404')
+        ? 'Purchase order not found'
+        : 'Failed to load purchase order. Please try again.'
     }
   }
 
@@ -305,26 +269,16 @@
 
   async function loadLines () {
     if (!order.value) return
-    linesLoading.value = true
-    try {
-      lines.value = await getPurchaseOrderLines(order.value.uuid)
-    } catch {
-      showNotice('Failed to load line items', 'error')
-    } finally {
-      linesLoading.value = false
-    }
+    await executeLinesLoad(async () => {
+      lines.value = await getPurchaseOrderLines(order.value!.uuid)
+    })
   }
 
   async function loadFees () {
     if (!order.value) return
-    feesLoading.value = true
-    try {
-      fees.value = await getPurchaseOrderFees(order.value.uuid)
-    } catch {
-      showNotice('Failed to load fees', 'error')
-    } finally {
-      feesLoading.value = false
-    }
+    await executeFeesLoad(async () => {
+      fees.value = await getPurchaseOrderFees(order.value!.uuid)
+    })
   }
 
   function handleBack () {
@@ -346,40 +300,18 @@
 
   function openEditDialog () {
     if (!order.value) return
-    editForm.order_number = order.value.order_number
-    editForm.ordered_at = order.value.ordered_at ? toLocalDateTimeInput(order.value.ordered_at) : ''
-    editForm.expected_at = order.value.expected_at ? toLocalDateTimeInput(order.value.expected_at) : ''
-    editForm.notes = order.value.notes ?? ''
     editError.value = ''
     editDialogOpen.value = true
   }
 
-  function closeEditDialog () {
-    editDialogOpen.value = false
-    editError.value = ''
-  }
-
-  async function saveEdit () {
+  async function saveEdit (data: PurchaseOrderEditFormData) {
     if (!order.value) return
 
-    editSaving.value = true
-    editError.value = ''
-
-    try {
-      const payload = {
-        order_number: editForm.order_number.trim(),
-        ordered_at: normalizeDateTime(editForm.ordered_at),
-        expected_at: normalizeDateTime(editForm.expected_at),
-        notes: normalizeText(editForm.notes),
-      }
-      order.value = await updatePurchaseOrder(order.value.uuid, payload)
+    await executeEdit(async () => {
+      order.value = await updatePurchaseOrder(order.value!.uuid, data)
       showNotice('Purchase order updated')
-      closeEditDialog()
-    } catch (error_) {
-      const message = error_ instanceof Error ? error_.message : 'Failed to update purchase order'
-      editError.value = message
-    } finally {
-      editSaving.value = false
-    }
+      editDialogOpen.value = false
+      editError.value = ''
+    })
   }
 </script>

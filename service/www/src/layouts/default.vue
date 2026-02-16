@@ -55,22 +55,16 @@
       />
 
       <template v-if="rail">
-        <v-list-item prepend-icon="mdi-factory" title="Production" to="/batches/all" />
+        <v-list-item prepend-icon="mdi-factory" title="Production" to="/fermentation" />
       </template>
       <v-list-group v-else class="nav-group" value="production">
         <template #activator="{ props }">
           <v-list-item v-bind="props" prepend-icon="mdi-factory" title="Production" />
         </template>
-        <v-list-item title="Pipeline" to="/batches/in-progress" />
+        <v-list-item title="Cellar" to="/fermentation" />
         <v-list-item title="Batches" to="/batches/all" />
         <v-list-item title="Recipes" to="/production/recipes" />
       </v-list-group>
-
-      <v-list-item
-        prepend-icon="mdi-flask-round-bottom"
-        title="Fermentation"
-        to="/fermentation"
-      />
 
       <template v-if="rail">
         <v-list-item prepend-icon="mdi-silo" title="Vessels" to="/vessels/all" />

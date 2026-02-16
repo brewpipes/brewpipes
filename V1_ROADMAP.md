@@ -576,7 +576,7 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 ### Frontend Screens
 - Dashboard with operational overview
 - Fermentation dashboard with tank cards, sparklines, and quick measurement entry
-- Batch management (all, in-progress, detail with 8 tabs including fermentation curve)
+- Batch management (all batches list, detail with 8 tabs including fermentation curve)
 - Vessel management (active, all, detail)
 - Recipe management (list, detail with ingredient bills and specs)
 - Inventory hub (ingredients by category, activity, locations, adjustments/transfers, product with stock levels and lot tabs, stock levels)

@@ -25,7 +25,6 @@ declare module 'vue' {
     BatchFlowTab: typeof import('./components/batch/BatchFlowTab.vue')['default']
     BatchHotSideAdditionDialog: typeof import('./components/batch/BatchHotSideAdditionDialog.vue')['default']
     BatchHotSideMeasurementDialog: typeof import('./components/batch/BatchHotSideMeasurementDialog.vue')['default']
-    BatchList: typeof import('./components/BatchList.vue')['default']
     BatchMarkEmptyDialog: typeof import('./components/batch/BatchMarkEmptyDialog.vue')['default']
     BatchMeasurementDialog: typeof import('./components/batch/BatchMeasurementDialog.vue')['default']
     BatchMeasurementsTab: typeof import('./components/batch/BatchMeasurementsTab.vue')['default']

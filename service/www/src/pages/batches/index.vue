@@ -6,7 +6,7 @@
 
   // Use onBeforeMount instead of onMounted to redirect before render
   onBeforeMount(() => {
-    router.replace('/batches/in-progress')
+    router.replace('/batches/all')
   })
 </script>
 

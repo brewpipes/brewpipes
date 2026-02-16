@@ -406,6 +406,7 @@
   import type { BatchSummary,
                 BrewSession,
                 GravityUnit,
+                MassUnit,
                 Occupancy,
                 OccupancyStatus,
                 Addition as ProductionAddition,
@@ -633,7 +634,7 @@
     stage: '',
     inventory_lot_uuid: '',
     amount: '',
-    amount_unit: preferences.value.mass as string,
+    amount_unit: preferences.value.mass as VolumeUnit | MassUnit,
     added_at: '',
     notes: '',
   })
@@ -1502,7 +1503,7 @@
         stage: normalizeText(hotSideAdditionForm.stage),
         inventory_lot_uuid: normalizeText(hotSideAdditionForm.inventory_lot_uuid),
         amount,
-        amount_unit: hotSideAdditionForm.amount_unit,
+        amount_unit: hotSideAdditionForm.amount_unit as VolumeUnit,
         added_at: hotSideAdditionForm.added_at ? new Date(hotSideAdditionForm.added_at).toISOString() : null,
         notes: normalizeText(hotSideAdditionForm.notes),
       }

@@ -40,7 +40,7 @@
               :items="unitOptions"
               label="Unit"
               :model-value="form.amount_unit"
-              @update:model-value="updateForm('amount_unit', $event)"
+              @update:model-value="updateForm('amount_unit', $event as VolumeUnit | MassUnit)"
             />
           </v-col>
         </v-row>
@@ -83,7 +83,7 @@
     stage: string
     inventory_lot_uuid: string
     amount: string
-    amount_unit: string
+    amount_unit: VolumeUnit | MassUnit
     added_at: string
     notes: string
   }

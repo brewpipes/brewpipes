@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // IngredientLotStockLevel represents the current stock level for an ingredient
@@ -13,7 +14,7 @@ type IngredientLotStockLevel struct {
 	IngredientName     string
 	IngredientCategory string
 	BreweryLotCode     *string
-	ReceivedAt         string
+	ReceivedAt         time.Time
 	ReceivedAmount     int64
 	ReceivedUnit       string
 	LocationUUID       string

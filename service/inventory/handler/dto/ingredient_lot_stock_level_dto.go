@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"time"
+
 	"github.com/brewpipes/brewpipes/service/inventory/storage"
 )
 
@@ -29,7 +31,7 @@ func NewIngredientLotStockLevelResponse(level storage.IngredientLotStockLevel) I
 		IngredientName:     level.IngredientName,
 		IngredientCategory: level.IngredientCategory,
 		BreweryLotCode:     level.BreweryLotCode,
-		ReceivedAt:         level.ReceivedAt,
+		ReceivedAt:         level.ReceivedAt.Format(time.RFC3339),
 		ReceivedAmount:     level.ReceivedAmount,
 		ReceivedUnit:       level.ReceivedUnit,
 		StockLocationUUID:  level.LocationUUID,

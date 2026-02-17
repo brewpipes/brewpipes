@@ -31,9 +31,9 @@ describe('AppFooter', () => {
       expect(wrapper.find('.v-footer').exists()).toBe(true)
     })
 
-    it('displays the application name', () => {
+    it('does not display the application name text', () => {
       const wrapper = mountAppFooter()
-      expect(wrapper.text()).toContain('BrewPipes Production UI')
+      expect(wrapper.text()).not.toContain('BrewPipes Production UI')
     })
 
     it('renders the Repo link', () => {

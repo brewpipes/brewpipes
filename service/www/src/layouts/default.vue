@@ -8,7 +8,7 @@
       </v-avatar>
     </div>
 
-    <div class="brand-text d-none d-sm-flex">
+    <div class="brand-text">
       <div class="text-caption text-medium-emphasis">BrewPipes</div>
       <div class="text-subtitle-1">{{ breweryName }}</div>
     </div>

@@ -334,11 +334,11 @@
   }
 
   async function loadIngredients () {
-    ingredients.value = await fetchIngredients() ?? []
+    ingredients.value = await fetchIngredients({ include_deleted: true }) ?? []
   }
 
   async function loadLots () {
-    lots.value = await fetchIngredientLots() ?? []
+    lots.value = await fetchIngredientLots({ include_deleted: true }) ?? []
   }
 
   async function loadLocations () {
@@ -346,7 +346,7 @@
   }
 
   async function loadBeerLots () {
-    beerLots.value = await fetchBeerLots() ?? []
+    beerLots.value = await fetchBeerLots({ include_deleted: true }) ?? []
   }
 
   async function loadMovements () {

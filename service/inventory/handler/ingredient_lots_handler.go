@@ -19,6 +19,7 @@ type IngredientLotStore interface {
 	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
 	GetInventoryReceiptByUUID(context.Context, string) (storage.InventoryReceipt, error)
 	ListIngredientLots(context.Context) ([]storage.IngredientLot, error)
+	ListIngredientLotsIncludingDeleted(context.Context) ([]storage.IngredientLot, error)
 	ListIngredientLotsByIngredient(context.Context, string) ([]storage.IngredientLot, error)
 	ListIngredientLotsByReceipt(context.Context, string) ([]storage.IngredientLot, error)
 	ListIngredientLotsByPurchaseOrderLineUUID(context.Context, string) ([]storage.IngredientLot, error)
@@ -80,7 +81,14 @@ func HandleIngredientLots(db IngredientLotStore) http.HandlerFunc {
 				return
 			}
 
-			lots, err := db.ListIngredientLots(r.Context())
+			includeDeleted := r.URL.Query().Get("include_deleted") == "true"
+			var lots []storage.IngredientLot
+			var err error
+			if includeDeleted {
+				lots, err = db.ListIngredientLotsIncludingDeleted(r.Context())
+			} else {
+				lots, err = db.ListIngredientLots(r.Context())
+			}
 			if err != nil {
 				service.InternalError(w, "error listing ingredient lots", "error", err)
 				return

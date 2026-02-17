@@ -35,6 +35,7 @@ import type {
   UpdateIngredientLotMaltDetailRequest,
   UpdateIngredientLotYeastDetailRequest,
   UpdateRemovalRequest,
+  UpdateStockLocationRequest,
 } from '@/types'
 import { useApiClient } from '@/composables/useApiClient'
 
@@ -51,7 +52,14 @@ export function useInventoryApi () {
   }
 
   // Ingredients API
-  const getIngredients = () => request<Ingredient[]>('/ingredients')
+  const getIngredients = (filters?: { include_deleted?: boolean }) => {
+    const query = new URLSearchParams()
+    if (filters?.include_deleted) {
+      query.set('include_deleted', 'true')
+    }
+    const path = query.toString() ? `/ingredients?${query.toString()}` : '/ingredients'
+    return request<Ingredient[]>(path)
+  }
   const createIngredient = (data: CreateIngredientRequest) =>
     request<Ingredient>('/ingredients', {
       method: 'POST',
@@ -59,13 +67,16 @@ export function useInventoryApi () {
     })
 
   // Ingredient Lots API
-  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string, ingredient_uuid?: string }) => {
+  const getIngredientLots = (filters?: { purchase_order_line_uuid?: string, ingredient_uuid?: string, include_deleted?: boolean }) => {
     const query = new URLSearchParams()
     if (filters?.purchase_order_line_uuid) {
       query.set('purchase_order_line_uuid', filters.purchase_order_line_uuid)
     }
     if (filters?.ingredient_uuid) {
       query.set('ingredient_uuid', filters.ingredient_uuid)
+    }
+    if (filters?.include_deleted) {
+      query.set('include_deleted', 'true')
     }
     const path = query.toString() ? `/ingredient-lots?${query.toString()}` : '/ingredient-lots'
     return request<IngredientLot[]>(path)
@@ -121,6 +132,15 @@ export function useInventoryApi () {
     request<StockLocation>('/stock-locations', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  const updateStockLocation = (uuid: string, data: UpdateStockLocationRequest) =>
+    request<StockLocation>(`/stock-locations/${uuid}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  const deleteStockLocation = (uuid: string) =>
+    request<null>(`/stock-locations/${uuid}`, {
+      method: 'DELETE',
     })
 
   // Inventory Receipts API
@@ -181,7 +201,14 @@ export function useInventoryApi () {
     })
 
   // Beer Lots API
-  const getBeerLots = () => request<BeerLot[]>('/beer-lots')
+  const getBeerLots = (filters?: { include_deleted?: boolean }) => {
+    const query = new URLSearchParams()
+    if (filters?.include_deleted) {
+      query.set('include_deleted', 'true')
+    }
+    const path = query.toString() ? `/beer-lots?${query.toString()}` : '/beer-lots'
+    return request<BeerLot[]>(path)
+  }
   const createBeerLot = (data: CreateBeerLotRequest) =>
     request<BeerLot>('/beer-lots', {
       method: 'POST',
@@ -255,6 +282,8 @@ export function useInventoryApi () {
     // Stock Locations
     getStockLocations,
     createStockLocation,
+    updateStockLocation,
+    deleteStockLocation,
     // Inventory Receipts
     getInventoryReceipts,
     createInventoryReceipt,

@@ -49,6 +49,7 @@
           <v-window-item value="malt">
             <StockLevelTable
               category-label="Malt"
+              :highlight-ingredient-uuid="highlightIngredientUuid"
               :items="maltItems"
               :loading="loading"
             />
@@ -58,6 +59,7 @@
           <v-window-item value="hops">
             <StockLevelTable
               category-label="Hops"
+              :highlight-ingredient-uuid="highlightIngredientUuid"
               :items="hopItems"
               :loading="loading"
             />
@@ -67,6 +69,7 @@
           <v-window-item value="yeast">
             <StockLevelTable
               category-label="Yeast"
+              :highlight-ingredient-uuid="highlightIngredientUuid"
               :items="yeastItems"
               :loading="loading"
             />
@@ -76,6 +79,7 @@
           <v-window-item value="other">
             <StockLevelTable
               category-label="Other"
+              :highlight-ingredient-uuid="highlightIngredientUuid"
               :items="otherItems"
               :loading="loading"
               show-category
@@ -107,6 +111,10 @@
   const { showNotice } = useSnackbar()
 
   const receiveDialogOpen = ref(false)
+
+  const highlightIngredientUuid = computed(() =>
+    (route.query.ingredient as string | undefined) ?? undefined,
+  )
 
   const categoryToTab: Record<string, string> = {
     fermentable: 'malt',

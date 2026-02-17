@@ -81,7 +81,13 @@ meta:
   const password = ref('')
   const showPassword = ref(false)
 
-  const { execute, loading: submitting, error: errorMessage } = useAsyncAction()
+  const { execute, loading: submitting, error: rawError } = useAsyncAction()
+
+  const errorMessage = computed(() => {
+    const msg = rawError.value
+    if (!msg) return ''
+    return msg.charAt(0).toUpperCase() + msg.slice(1)
+  })
 
   const redirectPath = computed(() => {
     const redirect = route.query.redirect
@@ -94,7 +100,7 @@ meta:
   async function submit () {
     const user = username.value.trim()
     if (!user || !password.value) {
-      errorMessage.value = 'Enter both username and password to continue.'
+      rawError.value = 'Enter both username and password to continue.'
       return
     }
 

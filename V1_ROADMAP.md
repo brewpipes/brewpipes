@@ -552,7 +552,7 @@ Track brewhouse removals for future TTB compliance.
 Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
 
 #### Dashboard (Pass 1)
-- [ ] Low stock ingredient link auto-selects correct tab but doesn't highlight/scroll to the specific ingredient row
+- [x] Low stock ingredient link auto-selects correct tab but doesn't highlight/scroll to the specific ingredient row — **Fixed:** added `highlightIngredientUuid` prop to `StockLevelTable` with scroll-into-view and 2-second highlight animation for both desktop rows and mobile cards
 - [x] Footer overlaps content on mobile at 375px width — **Fixed:** removed `app` prop from `v-footer` so it participates in normal document flow
 
 #### Production — Batches (Pass 2)
@@ -565,28 +565,28 @@ Issues identified during domain-by-domain QA review passes that were deferred fo
 - [ ] Vue "Scroll target is not found" warnings when resizing to mobile width on recipe detail pages
 
 #### Vessels (Pass 4)
-- [ ] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — should pre-select "Retired" status or use a dedicated confirmation dialog
+- [x] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — **Fixed:** created dedicated `VesselRetireDialog` component with clear retirement explanation, warning-colored confirm button, and 409 conflict handling for occupied vessels (13 new tests)
 - [x] Vessel detail page header clips Active status chip on mobile at 375px width — **Fixed:** added `flex-wrap` and grouped action items so they wrap to second line on narrow screens
 
 #### Inventory (Pass 5)
 - [x] Adjustments & Transfers page shows "Unknown Location" for all items — **Fixed:** created new `GET /api/ingredient-lot-stock-levels` endpoint (mirrors beer lot pattern) and refactored frontend to use server-computed stock levels
-- [ ] Activity page "Unknown Lot" entry for soft-deleted lot — backend should include deleted lot info or show last-known name
+- [x] Activity page "Unknown Lot" entry for soft-deleted lot — **Fixed:** added `?include_deleted=true` query parameter support to ingredient lots, beer lots, and ingredients list endpoints; activity page now fetches with this flag to resolve all lot references
 - [x] Transfer dialog max quantity shows wrong unit and value — **Fixed:** added unit conversion for display, validation, and submission using `useUnitConversion` composable
 - [x] Activity page has no mobile-responsive layout at 375px — **Fixed:** added card-based mobile layout with `d-md-none`/`d-none d-md-block` pattern, extracted `MovementReason` component
 - [x] Product page create form requires raw batch UUID input — **Fixed:** created `BeerLotCreateDialog` component with `v-autocomplete` for batch selection by short_name (11 new tests)
-- [ ] Lot Details page shows all 3 detail sections (Malt, Hop, Yeast) for every lot type regardless of category
-- [ ] Locations page has no edit/delete actions on location rows — can create but not modify or remove
+- [x] Lot Details page shows all 3 detail sections (Malt, Hop, Yeast) for every lot type regardless of category — **Already correct:** `LotDetailDialog` already has proper `v-if`/`v-else-if`/`v-else` chain; added 13 tests to confirm
+- [x] Locations page has no edit/delete actions on location rows — **Fixed:** added backend PATCH/DELETE endpoints for stock locations with inventory reference check (409 conflict); frontend edit/delete actions with confirmation dialog (6 new API tests)
 - [ ] Vue "Scroll target is not found" warnings on mobile resize across multiple inventory pages
 
 #### Procurement (Pass 6)
 - [x] Mobile (375px): PO list and Suppliers list table columns are clipped/truncated — **Fixed:** added card-based mobile layouts for both pages using `d-md-none`/`d-none d-md-block` pattern
-- [ ] Line item and fee cost/amount fields accept values in cents but display in dollars — confusing UX; needs input format alignment or clear conversion UI
+- [x] Line item and fee cost/amount fields accept values in cents but display in dollars — **Fixed:** input fields now accept dollar values with `$` prefix and `step="0.01"`; automatic cents↔dollars conversion on load/save (12 new tests)
 - [x] Line item "Inventory item UUID" field is a raw text input — **Fixed:** replaced with `v-autocomplete` showing ingredient names with category subtitles
-- [ ] No supplier detail page — clicking a supplier row does nothing; consider adding a detail page with supplier info and associated POs
+- [x] No supplier detail page — **Fixed:** created supplier detail page at `/procurement/suppliers/:uuid` with supplier info cards, associated POs table, edit dialog, and mobile-responsive layout
 - [x] PO Fees standalone page create form uses plain text field for fee type — **Already fixed:** `PurchaseOrderFeeDialog.vue` already uses `v-combobox` with fee type suggestions; no standalone fees page exists
 
 #### Settings & Auth (Pass 7)
-- [ ] Login error message capitalization inconsistency — backend returns lowercase "invalid username or password" while client-side messages use sentence case
+- [x] Login error message capitalization inconsistency — **Fixed:** added computed property to capitalize first letter of backend error messages before display
 - [x] Settings page "Reset to Default" vs "Reset to Defaults" — **Already consistent:** both buttons already read "Reset to Defaults"
 - [x] Settings page card subtitles truncated on mobile (375px) — **Fixed:** added `overflow: visible` and `text-overflow: unset` CSS overrides to `v-card-subtitle`
 - [ ] Vue framework warnings on login page load (`onScopeDispose`, `Missing ref owner context`) — development-only, no user impact

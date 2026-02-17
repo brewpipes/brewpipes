@@ -44,12 +44,13 @@
                 <!-- Desktop table view -->
                 <div class="d-none d-md-block">
                   <v-data-table
-                    class="data-table"
+                    class="data-table clickable-rows"
                     density="compact"
                     :headers="headers"
                     item-value="uuid"
                     :items="suppliers"
                     :loading="loading"
+                    @click:row="handleRowClick"
                   >
                     <template #item.contact_name="{ item }">
                       {{ item.contact_name || 'n/a' }}
@@ -90,6 +91,7 @@
                     :key="supplier.uuid"
                     class="mb-3"
                     variant="outlined"
+                    @click="router.push(`/procurement/suppliers/${supplier.uuid}`)"
                   >
                     <v-card-title class="d-flex align-center py-2 text-body-1">
                       <span class="font-weight-medium">{{ supplier.name }}</span>
@@ -143,6 +145,7 @@
 <script lang="ts" setup>
   import type { Supplier } from '@/types'
   import { onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import SupplierCreateEditDialog from '@/components/procurement/SupplierCreateEditDialog.vue'
   import type { SupplierFormData } from '@/components/procurement/SupplierCreateEditDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
@@ -150,6 +153,7 @@
   import { useProcurementApi } from '@/composables/useProcurementApi'
   import { useSnackbar } from '@/composables/useSnackbar'
 
+  const router = useRouter()
   const {
     getSuppliers,
     createSupplier,
@@ -217,10 +221,22 @@
       showNotice(saveError.value, 'error')
     }
   }
+
+  function handleRowClick (_event: Event, row: { item: Supplier }) {
+    router.push(`/procurement/suppliers/${row.item.uuid}`)
+  }
 </script>
 
 <style scoped>
 .procurement-page {
   position: relative;
+}
+
+.clickable-rows :deep(tbody tr) {
+  cursor: pointer;
+}
+
+.clickable-rows :deep(tbody tr:hover) {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
 }
 </style>

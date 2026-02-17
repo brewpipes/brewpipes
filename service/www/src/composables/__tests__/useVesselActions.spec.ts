@@ -3,10 +3,12 @@ import { ref } from 'vue'
 import type { UpdateVesselRequest, Vessel } from '@/types'
 
 // Mock useProductionApi
+const mockGetVessel = vi.fn()
 const mockUpdateVessel = vi.fn()
 
 vi.mock('@/composables/useProductionApi', () => ({
   useProductionApi: () => ({
+    getVessel: mockGetVessel,
     updateVessel: mockUpdateVessel,
   }),
 }))
@@ -22,7 +24,7 @@ vi.mock('@/composables/useSnackbar', () => ({
 
 import { useVesselActions } from '../useVesselActions'
 
-// Helper to create a mock dialog ref
+// Helper to create a mock edit dialog ref
 function createMockDialogRef () {
   const setSaving = vi.fn()
   const clearError = vi.fn()
@@ -35,6 +37,19 @@ function createMockDialogRef () {
   })
 
   return { dialogRef, setSaving, clearError, setError }
+}
+
+// Helper to create a mock retire dialog ref
+function createMockRetireDialogRef () {
+  const setRetiring = vi.fn()
+  const setError = vi.fn()
+
+  const dialogRef = ref({
+    setRetiring,
+    setError,
+  })
+
+  return { dialogRef, setRetiring, setError }
 }
 
 const sampleVessel: Vessel = {
@@ -226,6 +241,204 @@ describe('useVesselActions', () => {
 
         const { saveVessel } = useVesselActions()
         const result = await saveVessel('vessel-uuid-1', sampleRequest, dialogRef)
+
+        expect(result).toBeNull()
+      })
+    })
+  })
+
+  describe('retireVessel', () => {
+    const retiredVessel: Vessel = {
+      ...sampleVessel,
+      status: 'retired',
+    }
+
+    describe('successful retirement', () => {
+      it('returns the updated vessel on success', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockResolvedValue(retiredVessel)
+        const { dialogRef } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toEqual(retiredVessel)
+      })
+
+      it('fetches current vessel data before updating', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockResolvedValue(retiredVessel)
+        const { dialogRef } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(mockGetVessel).toHaveBeenCalledWith('vessel-uuid-1')
+      })
+
+      it('calls updateVessel with status set to retired', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockResolvedValue(retiredVessel)
+        const { dialogRef } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(mockUpdateVessel).toHaveBeenCalledWith('vessel-uuid-1', {
+          name: sampleVessel.name,
+          type: sampleVessel.type,
+          capacity: sampleVessel.capacity,
+          capacity_unit: sampleVessel.capacity_unit,
+          make: sampleVessel.make,
+          model: sampleVessel.model,
+          status: 'retired',
+        })
+      })
+
+      it('shows success snackbar notification', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockResolvedValue(retiredVessel)
+        const { dialogRef } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(mockShowNotice).toHaveBeenCalledWith('Vessel retired successfully')
+      })
+
+      it('sets retiring to true then false', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockResolvedValue(retiredVessel)
+        const { dialogRef, setRetiring } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(setRetiring).toHaveBeenCalledWith(true)
+        expect(setRetiring).toHaveBeenCalledWith(false)
+        expect(setRetiring.mock.calls[0][0]).toBe(true)
+        expect(setRetiring.mock.calls[setRetiring.mock.calls.length - 1][0]).toBe(false)
+      })
+    })
+
+    describe('conflict detection (409)', () => {
+      it('sets conflict error message on 409 response', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('409 Conflict'))
+        const { dialogRef, setError } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toBeNull()
+        expect(setError).toHaveBeenCalledWith(
+          'Cannot retire vessel: it has an active occupancy. Remove the occupancy first.',
+        )
+      })
+
+      it('does not show success snackbar on 409', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('409 Conflict'))
+        const { dialogRef } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(mockShowNotice).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('general error handling', () => {
+      it('sets error message from Error instance', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('Network error'))
+        const { dialogRef, setError } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toBeNull()
+        expect(setError).toHaveBeenCalledWith('Network error')
+      })
+
+      it('sets fallback error message for non-Error throws', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue('string error')
+        const { dialogRef, setError } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toBeNull()
+        expect(setError).toHaveBeenCalledWith('Failed to retire vessel')
+      })
+
+      it('handles getVessel failure', async () => {
+        mockGetVessel.mockRejectedValue(new Error('Vessel not found'))
+        const { dialogRef, setError } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toBeNull()
+        expect(setError).toHaveBeenCalledWith('Vessel not found')
+        expect(mockUpdateVessel).not.toHaveBeenCalled()
+      })
+
+      it('sets retiring to false after error', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('Server error'))
+        const { dialogRef, setRetiring } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(setRetiring).toHaveBeenLastCalledWith(false)
+      })
+
+      it('does not show success snackbar on error', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('Server error'))
+        const { dialogRef } = createMockRetireDialogRef()
+
+        const { retireVessel } = useVesselActions()
+        await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(mockShowNotice).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('null dialog ref', () => {
+      it('handles null dialog ref gracefully on success', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockResolvedValue(retiredVessel)
+        const dialogRef = ref(null)
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toEqual(retiredVessel)
+        expect(mockShowNotice).toHaveBeenCalledWith('Vessel retired successfully')
+      })
+
+      it('handles null dialog ref gracefully on error', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('Server error'))
+        const dialogRef = ref(null)
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
+
+        expect(result).toBeNull()
+      })
+
+      it('handles null dialog ref gracefully on 409', async () => {
+        mockGetVessel.mockResolvedValue(sampleVessel)
+        mockUpdateVessel.mockRejectedValue(new Error('409 Conflict'))
+        const dialogRef = ref(null)
+
+        const { retireVessel } = useVesselActions()
+        const result = await retireVessel('vessel-uuid-1', dialogRef)
 
         expect(result).toBeNull()
       })

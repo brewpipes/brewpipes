@@ -22,11 +22,11 @@
           </v-col>
           <v-col cols="12" sm="6">
             <v-text-field
-              v-model.number="form.amount_cents"
-              hint="In cents (e.g., 1500 = $15.00)"
-              label="Amount (cents)"
-              persistent-hint
+              v-model.number="form.amount_dollars"
+              label="Amount"
+              prefix="$"
               :rules="[v => v >= 0 || 'Must be non-negative']"
+              step="0.01"
               type="number"
             />
           </v-col>
@@ -58,6 +58,7 @@
 <script lang="ts" setup>
   import type { PurchaseOrderFee } from '@/types'
   import { computed, reactive, watch } from 'vue'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
 
   const props = defineProps<{
     modelValue: boolean
@@ -77,6 +78,14 @@
     currency: string
   }
 
+  interface InternalForm {
+    fee_type: string
+    amount_dollars: number | null
+    currency: string
+  }
+
+  const { dollarsToCents, centsToDollars } = useProcurementApi()
+
   // v-combobox requires plain string items — {title,value} objects cause the
   // model to be set to the full object on selection, breaking .trim() calls
   // and API payloads. Use raw enum values as suggestions; display formatting
@@ -84,9 +93,9 @@
   const feeTypeOptions = ['shipping', 'handling', 'tax', 'insurance', 'customs', 'freight', 'hazmat', 'other']
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
-  const form = reactive<FeeForm>({
+  const form = reactive<InternalForm>({
     fee_type: '',
-    amount_cents: null,
+    amount_dollars: null,
     currency: 'USD',
   })
 
@@ -95,8 +104,8 @@
   const isValid = computed(() => {
     return (
       form.fee_type.trim().length > 0
-      && form.amount_cents !== null
-      && form.amount_cents >= 0
+      && form.amount_dollars !== null
+      && form.amount_dollars >= 0
       && form.currency.trim().length > 0
     )
   })
@@ -105,7 +114,7 @@
     if (open) {
       if (props.fee) {
         form.fee_type = props.fee.fee_type
-        form.amount_cents = props.fee.amount_cents
+        form.amount_dollars = centsToDollars(props.fee.amount_cents)
         form.currency = props.fee.currency
       } else {
         resetForm()
@@ -115,12 +124,16 @@
 
   function resetForm () {
     form.fee_type = ''
-    form.amount_cents = null
+    form.amount_dollars = null
     form.currency = 'USD'
   }
 
   function handleSave () {
-    emit('save', { ...form })
+    emit('save', {
+      fee_type: form.fee_type,
+      amount_cents: dollarsToCents(form.amount_dollars),
+      currency: form.currency,
+    })
   }
 
   function handleCancel () {

@@ -92,5 +92,6 @@ declare module 'vue' {
     VesselDetails: typeof import('./components/VesselDetails.vue')['default']
     VesselEditDialog: typeof import('./components/vessel/VesselEditDialog.vue')['default']
     VesselList: typeof import('./components/VesselList.vue')['default']
+    VesselRetireDialog: typeof import('./components/vessel/VesselRetireDialog.vue')['default']
   }
 }

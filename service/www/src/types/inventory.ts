@@ -286,6 +286,13 @@ export interface CreateStockLocationRequest {
   description?: string | null
 }
 
+/** Request payload for updating a stock location (PATCH) */
+export interface UpdateStockLocationRequest {
+  name?: string
+  location_type?: string | null
+  description?: string | null
+}
+
 // ============================================================================
 // Inventory Usage Request Types
 // ============================================================================

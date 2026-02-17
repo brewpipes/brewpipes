@@ -62,6 +62,7 @@ export type {
   UpdateIngredientLotMaltDetailRequest,
   UpdateIngredientLotYeastDetailRequest,
   UpdateRemovalRequest,
+  UpdateStockLocationRequest,
 } from './inventory'
 
 // Procurement types

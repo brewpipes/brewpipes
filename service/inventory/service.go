@@ -38,6 +38,8 @@ func (s *Service) HTTPRoutes() []service.HTTPRoute {
 		{Method: http.MethodGet, Path: "/stock-locations", Handler: auth(handler.HandleStockLocations(s.storage))},
 		{Method: http.MethodPost, Path: "/stock-locations", Handler: auth(handler.HandleStockLocations(s.storage))},
 		{Method: http.MethodGet, Path: "/stock-locations/{uuid}", Handler: auth(handler.HandleStockLocationByUUID(s.storage))},
+		{Method: http.MethodPatch, Path: "/stock-locations/{uuid}", Handler: auth(handler.HandleStockLocationByUUID(s.storage))},
+		{Method: http.MethodDelete, Path: "/stock-locations/{uuid}", Handler: auth(handler.HandleStockLocationByUUID(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-receipts", Handler: auth(handler.HandleInventoryReceipts(s.storage))},
 		{Method: http.MethodPost, Path: "/inventory-receipts", Handler: auth(handler.HandleInventoryReceipts(s.storage))},
 		{Method: http.MethodGet, Path: "/inventory-receipts/{uuid}", Handler: auth(handler.HandleInventoryReceiptByUUID(s.storage))},

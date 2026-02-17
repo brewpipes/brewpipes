@@ -197,6 +197,14 @@
       @save="handleSaveVessel"
     />
 
+    <!-- Retire Vessel Dialog -->
+    <VesselRetireDialog
+      ref="retireDialogRef"
+      v-model="retireDialogOpen"
+      :vessel="vessel"
+      @confirm="handleRetireVessel"
+    />
+
   </v-container>
 </template>
 
@@ -205,6 +213,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+  import VesselRetireDialog from '@/components/vessel/VesselRetireDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import {
     useFormatters,
@@ -244,8 +253,12 @@
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
 
+  // Retire dialog state
+  const retireDialogOpen = ref(false)
+  const retireDialogRef = ref<InstanceType<typeof VesselRetireDialog> | null>(null)
+
   const { showNotice } = useSnackbar()
-  const { saveVessel } = useVesselActions()
+  const { retireVessel, saveVessel } = useVesselActions()
 
   const currentOccupancy = computed(() => {
     if (!vessel.value) return null
@@ -290,10 +303,8 @@
   }
 
   function openRetireDialog () {
-    // Open edit dialog - user will change status to retired manually
-    // The dialog will show the retirement warning when status is changed
     if (vessel.value) {
-      editDialogOpen.value = true
+      retireDialogOpen.value = true
     }
   }
 
@@ -304,6 +315,16 @@
     if (updated) {
       vessel.value = updated
       editDialogOpen.value = false
+    }
+  }
+
+  async function handleRetireVessel () {
+    if (!vessel.value) return
+
+    const updated = await retireVessel(vessel.value.uuid, retireDialogRef)
+    if (updated) {
+      vessel.value = updated
+      retireDialogOpen.value = false
     }
   }
 

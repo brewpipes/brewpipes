@@ -122,6 +122,20 @@ func (c *Client) ListIngredientLots(ctx context.Context) ([]IngredientLot, error
 	return c.scanIngredientLotRows(rows)
 }
 
+// ListIngredientLotsIncludingDeleted returns all ingredient lots, including soft-deleted ones.
+// This is used by the activity page to resolve lot references for movements that may
+// reference lots that have since been deleted.
+func (c *Client) ListIngredientLotsIncludingDeleted(ctx context.Context) ([]IngredientLot, error) {
+	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
+		ORDER BY il.received_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("listing ingredient lots including deleted: %w", err)
+	}
+	defer rows.Close()
+
+	return c.scanIngredientLotRows(rows)
+}
+
 func (c *Client) ListIngredientLotsByIngredient(ctx context.Context, ingredientUUID string) ([]IngredientLot, error) {
 	rows, err := c.DB().Query(ctx, ingredientLotSelectSQL+`
 		WHERE i.uuid = $1 AND i.deleted_at IS NULL AND il.deleted_at IS NULL

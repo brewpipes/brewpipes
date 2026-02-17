@@ -147,6 +147,14 @@
     @save="handleSaveVessel"
   />
 
+  <!-- Retire Vessel Dialog -->
+  <VesselRetireDialog
+    ref="retireDialogRef"
+    v-model="retireDialogOpen"
+    :vessel="retiringVessel"
+    @confirm="handleRetireVessel"
+  />
+
   <!-- Create Vessel Dialog -->
   <VesselCreateDialog
     v-model="createVesselDialog"
@@ -161,6 +169,7 @@
   import { useRouter } from 'vue-router'
   import VesselCreateDialog from '@/components/vessel/VesselCreateDialog.vue'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+  import VesselRetireDialog from '@/components/vessel/VesselRetireDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import {
     useFormatters,
@@ -198,9 +207,12 @@
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
   const editingVessel = ref<Vessel | null>(null)
+  const retireDialogOpen = ref(false)
+  const retireDialogRef = ref<InstanceType<typeof VesselRetireDialog> | null>(null)
+  const retiringVessel = ref<Vessel | null>(null)
 
   const { showNotice } = useSnackbar()
-  const { saveVessel } = useVesselActions()
+  const { retireVessel, saveVessel } = useVesselActions()
 
   // Table configuration
   const headers = [
@@ -318,9 +330,8 @@
   }
 
   function openRetireDialog (vessel: Vessel) {
-    // Open edit dialog - the user will see the retirement warning when they change status
-    editingVessel.value = vessel
-    editDialogOpen.value = true
+    retiringVessel.value = vessel
+    retireDialogOpen.value = true
   }
 
   async function handleSaveVessel (data: UpdateVesselRequest) {
@@ -334,6 +345,20 @@
       }
       editDialogOpen.value = false
       editingVessel.value = null
+    }
+  }
+
+  async function handleRetireVessel () {
+    if (!retiringVessel.value) return
+
+    const updated = await retireVessel(retiringVessel.value.uuid, retireDialogRef)
+    if (updated) {
+      const index = vessels.value.findIndex(v => v.uuid === updated.uuid)
+      if (index !== -1) {
+        vessels.value[index] = updated
+      }
+      retireDialogOpen.value = false
+      retiringVessel.value = null
     }
   }
 </script>

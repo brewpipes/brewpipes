@@ -178,8 +178,9 @@ The `GET /batches/{uuid}/summary` endpoint provides an aggregated view of a batc
 - `current_occupancy_status` (fermenting, conditioning, etc.)
 
 ### Key measurements
-- `original_gravity` (first OG measurement)
-- `final_gravity` (most recent FG measurement)
+- `original_gravity` (first measurement of kind "og"; falls back to first "gravity" measurement)
+- `final_gravity` (most recent measurement of kind "fg"; falls back to most recent "gravity" measurement)
+- If OG and FG resolve to the same single measurement, FG is cleared (not enough data points)
 - `abv` (manual measurement or calculated from OG/FG)
 - `abv_calculated` (true if ABV was auto-calculated using `(OG - FG) × 131.25`)
 - `ibu` (most recent IBU measurement)

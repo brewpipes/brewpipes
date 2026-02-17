@@ -26,6 +26,27 @@ func (r CreateStockLocationRequest) Validate() error {
 	return nil
 }
 
+// UpdateStockLocationRequest is the request payload for PATCH /stock-locations/{uuid}.
+type UpdateStockLocationRequest struct {
+	Name         *string `json:"name"`
+	LocationType *string `json:"location_type"`
+	Description  *string `json:"description"`
+}
+
+func (r UpdateStockLocationRequest) Validate() error {
+	if r.Name != nil {
+		if err := validate.Required(*r.Name, "name"); err != nil {
+			return err
+		}
+	}
+	if r.LocationType != nil {
+		if err := validateStockLocationType(*r.LocationType); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type StockLocationResponse struct {
 	UUID         string     `json:"uuid"`
 	Name         string     `json:"name"`

@@ -18,6 +18,15 @@
             variant="outlined"
           />
           <v-btn
+            color="primary"
+            size="small"
+            variant="tonal"
+            @click="showCreateDialog = true"
+          >
+            <v-icon class="mr-1" icon="mdi-plus" size="small" />
+            <span class="d-none d-sm-inline">Add Lot</span>
+          </v-btn>
+          <v-btn
             :loading="loading"
             size="small"
             variant="text"
@@ -396,12 +405,19 @@
       :stock-location-uuid="removalStockLocationUuid"
       @created="handleRemovalCreated"
     />
+
+    <!-- Create beer lot dialog -->
+    <BeerLotCreateDialog
+      v-model="showCreateDialog"
+      @created="handleBeerLotCreated"
+    />
   </v-container>
 </template>
 
 <script lang="ts" setup>
   import type { Batch, BeerLot, BeerLotStockLevel } from '@/types'
   import { computed, onMounted, ref } from 'vue'
+  import BeerLotCreateDialog from '@/components/inventory/BeerLotCreateDialog.vue'
   import BestByIndicator from '@/components/inventory/BestByIndicator.vue'
   import RemovalDialog from '@/components/removal/RemovalDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
@@ -427,6 +443,9 @@
   const searchQuery = ref('')
   const containerFilter = ref('all')
   const locationFilter = ref<string | null>(null)
+
+  // Create dialog state
+  const showCreateDialog = ref(false)
 
   // Removal dialog state
   const showRemovalDialog = ref(false)
@@ -630,6 +649,10 @@
   }
 
   function handleRemovalCreated () {
+    refreshAll()
+  }
+
+  function handleBeerLotCreated () {
     refreshAll()
   }
 </script>

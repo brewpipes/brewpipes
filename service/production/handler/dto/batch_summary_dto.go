@@ -9,10 +9,11 @@ import (
 
 // Measurement kinds used for ABV calculation
 const (
-	MeasurementKindOG  = "og"
-	MeasurementKindFG  = "fg"
-	MeasurementKindABV = "abv"
-	MeasurementKindIBU = "ibu"
+	MeasurementKindGravity = "gravity"
+	MeasurementKindOG      = "og"
+	MeasurementKindFG      = "fg"
+	MeasurementKindABV     = "abv"
+	MeasurementKindIBU     = "ibu"
 )
 
 // BatchSummaryResponse provides an aggregated view of batch data with derived metrics.
@@ -121,16 +122,29 @@ func NewBatchSummaryResponse(summary storage.BatchSummary) BatchSummaryResponse 
 
 // populateMeasurements extracts OG, FG, ABV, and IBU from measurements.
 func populateMeasurements(resp *BatchSummaryResponse, summary *storage.BatchSummary) {
-	// Get OG (first measurement of kind "og")
+	// Get OG: prefer explicit "og" kind, fall back to first "gravity" measurement.
 	ogMeasurement := summary.GetFirstMeasurementByKind(MeasurementKindOG)
+	if ogMeasurement == nil {
+		ogMeasurement = summary.GetFirstMeasurementByKind(MeasurementKindGravity)
+	}
 	if ogMeasurement != nil {
 		resp.OriginalGravity = &ogMeasurement.Value
 	}
 
-	// Get FG (most recent measurement of kind "fg")
+	// Get FG: prefer explicit "fg" kind, fall back to most recent "gravity" measurement.
 	fgMeasurement := summary.GetMeasurementByKind(MeasurementKindFG)
+	if fgMeasurement == nil {
+		fgMeasurement = summary.GetMeasurementByKind(MeasurementKindGravity)
+	}
 	if fgMeasurement != nil {
 		resp.FinalGravity = &fgMeasurement.Value
+	}
+
+	// If OG and FG resolved to the same single measurement, clear FG since we
+	// don't have enough data points to distinguish original from final gravity.
+	if ogMeasurement != nil && fgMeasurement != nil && ogMeasurement.ID == fgMeasurement.ID {
+		resp.FinalGravity = nil
+		fgMeasurement = nil
 	}
 
 	// Get ABV - first check for manual measurement, then calculate

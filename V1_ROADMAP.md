@@ -552,43 +552,43 @@ Track brewhouse removals for future TTB compliance.
 Issues identified during domain-by-domain QA review passes that were deferred for future work. Items will be added here as QA passes continue.
 
 #### Dashboard (Pass 1)
-- [ ] Low stock ingredient link auto-selects correct tab but doesn't highlight/scroll to the specific ingredient row
-- [ ] Footer overlaps content on mobile at 375px width
+- [x] Low stock ingredient link auto-selects correct tab but doesn't highlight/scroll to the specific ingredient row — **Fixed:** added `highlightIngredientUuid` prop to `StockLevelTable` with scroll-into-view and 2-second highlight animation for both desktop rows and mobile cards
+- [x] Footer overlaps content on mobile at 375px width — **Fixed:** removed `app` prop from `v-footer` so it participates in normal document flow
 
 #### Production — Batches (Pass 2)
-- [ ] OG/FG show "—" in batch summary even when gravity measurements exist — backend `populateMeasurements` may not be extracting OG/FG from measurements correctly
-- [ ] Inventory lot UUID fields in addition/measurement dialogs require raw UUID input — should be searchable comboboxes with lot codes and ingredient names
-- [ ] Measurement "Kind" field inconsistency — hot-side dialog uses curated dropdown, batch-level dialog uses free text input
-- [ ] Temperature unit inconsistency — sparkline converts to user preference (°F), measurement table shows raw values (°C)
+- [x] OG/FG show "—" in batch summary even when gravity measurements exist — **Fixed:** `populateMeasurements` now falls back to first/last `kind="gravity"` measurements when no explicit `"og"`/`"fg"` measurements exist
+- [x] Inventory lot UUID fields in addition/measurement dialogs require raw UUID input — **Fixed:** replaced with `v-autocomplete` showing ingredient name, lot code, and available quantity
+- [x] Measurement "Kind" field inconsistency — **Fixed:** standardized to curated `v-select` dropdown in both hot-side and batch-level dialogs with shared constants
+- [x] Temperature unit inconsistency — **Fixed:** measurement tables now convert temperature and gravity values to user's preferred units, matching sparkline behavior
 
 #### Production — Recipes (Pass 3)
 - [ ] Vue "Scroll target is not found" warnings when resizing to mobile width on recipe detail pages
 
 #### Vessels (Pass 4)
-- [ ] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — should pre-select "Retired" status or use a dedicated confirmation dialog
-- [ ] Vessel detail page header clips Active status chip on mobile at 375px width
+- [x] Retire button opens generic Edit dialog instead of a dedicated retire confirmation — **Fixed:** created dedicated `VesselRetireDialog` component with clear retirement explanation, warning-colored confirm button, and 409 conflict handling for occupied vessels (13 new tests)
+- [x] Vessel detail page header clips Active status chip on mobile at 375px width — **Fixed:** added `flex-wrap` and grouped action items so they wrap to second line on narrow screens
 
 #### Inventory (Pass 5)
-- [ ] Adjustments & Transfers page shows "Unknown Location" for all items — backend `ingredient-lots` API doesn't return `stock_location_uuid`; needs backend change or frontend refactor to derive from stock-levels API
-- [ ] Activity page "Unknown Lot" entry for soft-deleted lot — backend should include deleted lot info or show last-known name
-- [ ] Transfer dialog max quantity shows wrong unit and value — uses raw `current_amount` (kg) before unit conversion instead of converted display value
-- [ ] Activity page has no mobile-responsive layout at 375px — table columns cut off with no horizontal scroll; needs card layout redesign
-- [ ] Product page create form requires raw batch UUID input — should be a searchable combobox listing available batches
-- [ ] Lot Details page shows all 3 detail sections (Malt, Hop, Yeast) for every lot type regardless of category
-- [ ] Locations page has no edit/delete actions on location rows — can create but not modify or remove
+- [x] Adjustments & Transfers page shows "Unknown Location" for all items — **Fixed:** created new `GET /api/ingredient-lot-stock-levels` endpoint (mirrors beer lot pattern) and refactored frontend to use server-computed stock levels
+- [x] Activity page "Unknown Lot" entry for soft-deleted lot — **Fixed:** added `?include_deleted=true` query parameter support to ingredient lots, beer lots, and ingredients list endpoints; activity page now fetches with this flag to resolve all lot references
+- [x] Transfer dialog max quantity shows wrong unit and value — **Fixed:** added unit conversion for display, validation, and submission using `useUnitConversion` composable
+- [x] Activity page has no mobile-responsive layout at 375px — **Fixed:** added card-based mobile layout with `d-md-none`/`d-none d-md-block` pattern, extracted `MovementReason` component
+- [x] Product page create form requires raw batch UUID input — **Fixed:** created `BeerLotCreateDialog` component with `v-autocomplete` for batch selection by short_name (11 new tests)
+- [x] Lot Details page shows all 3 detail sections (Malt, Hop, Yeast) for every lot type regardless of category — **Already correct:** `LotDetailDialog` already has proper `v-if`/`v-else-if`/`v-else` chain; added 13 tests to confirm
+- [x] Locations page has no edit/delete actions on location rows — **Fixed:** added backend PATCH/DELETE endpoints for stock locations with inventory reference check (409 conflict); frontend edit/delete actions with confirmation dialog (6 new API tests)
 - [ ] Vue "Scroll target is not found" warnings on mobile resize across multiple inventory pages
 
 #### Procurement (Pass 6)
-- [ ] Mobile (375px): PO list and Suppliers list table columns are clipped/truncated — needs broader mobile table strategy (card view or horizontal scroll)
-- [ ] Line item and fee cost/amount fields accept values in cents but display in dollars — confusing UX; needs input format alignment or clear conversion UI
-- [ ] Line item "Inventory item UUID" field is a raw text input — should be a searchable combobox listing inventory items by name
-- [ ] No supplier detail page — clicking a supplier row does nothing; consider adding a detail page with supplier info and associated POs
-- [ ] PO Fees standalone page create form uses plain text field for fee type — should use combobox with suggestions for consistency with PO detail page dialog
+- [x] Mobile (375px): PO list and Suppliers list table columns are clipped/truncated — **Fixed:** added card-based mobile layouts for both pages using `d-md-none`/`d-none d-md-block` pattern
+- [x] Line item and fee cost/amount fields accept values in cents but display in dollars — **Fixed:** input fields now accept dollar values with `$` prefix and `step="0.01"`; automatic cents↔dollars conversion on load/save (12 new tests)
+- [x] Line item "Inventory item UUID" field is a raw text input — **Fixed:** replaced with `v-autocomplete` showing ingredient names with category subtitles
+- [x] No supplier detail page — **Fixed:** created supplier detail page at `/procurement/suppliers/:uuid` with supplier info cards, associated POs table, edit dialog, and mobile-responsive layout
+- [x] PO Fees standalone page create form uses plain text field for fee type — **Already fixed:** `PurchaseOrderFeeDialog.vue` already uses `v-combobox` with fee type suggestions; no standalone fees page exists
 
 #### Settings & Auth (Pass 7)
-- [ ] Login error message capitalization inconsistency — backend returns lowercase "invalid username or password" while client-side messages use sentence case
-- [ ] Settings page "Reset to Default" vs "Reset to Defaults" — inconsistent singular/plural button text between Brewery Settings and Display Units sections
-- [ ] Settings page card subtitles truncated on mobile (375px) — default Vuetify `v-card-subtitle` ellipsis behavior hides useful context
+- [x] Login error message capitalization inconsistency — **Fixed:** added computed property to capitalize first letter of backend error messages before display
+- [x] Settings page "Reset to Default" vs "Reset to Defaults" — **Already consistent:** both buttons already read "Reset to Defaults"
+- [x] Settings page card subtitles truncated on mobile (375px) — **Fixed:** added `overflow: visible` and `text-overflow: unset` CSS overrides to `v-card-subtitle`
 - [ ] Vue framework warnings on login page load (`onScopeDispose`, `Missing ref owner context`) — development-only, no user impact
 
 ---

@@ -177,7 +177,7 @@
             <tbody>
               <tr v-for="measurement in measurementsSorted" :key="measurement.uuid">
                 <td>{{ formatMeasurementKind(measurement.kind) }}</td>
-                <td>{{ formatValue(measurement.value, measurement.unit) }}</td>
+                <td>{{ formatMeasurementValue(measurement) }}</td>
                 <td>{{ formatDateTime(measurement.observed_at) }}</td>
               </tr>
               <tr v-if="measurementsSorted.length === 0">
@@ -196,13 +196,16 @@
 <script lang="ts" setup>
   import type {
     BrewSession,
+    GravityUnit,
     Addition as ProductionAddition,
     Measurement as ProductionMeasurement,
     Volume as ProductionVolume,
+    TemperatureUnit,
     Vessel,
   } from '@/types'
   import { computed } from 'vue'
   import { useAdditionTypeFormatters, useFormatters } from '@/composables/useFormatters'
+  import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   const props = defineProps<{
     sessions: BrewSession[]
@@ -224,6 +227,7 @@
 
   const { formatDateTime } = useFormatters()
   const { formatAdditionType } = useAdditionTypeFormatters()
+  const { formatTemperaturePreferred, formatGravityPreferred } = useUnitPreferences()
 
   const sessionsSorted = computed(() => {
     // eslint-disable-next-line unicorn/no-array-sort -- toSorted requires ES2023+
@@ -276,15 +280,55 @@
     return `${amount} ${unit ?? ''}`.trim()
   }
 
-  function formatValue (value: number | null, unit: string | null | undefined) {
-    if (value === null || value === undefined) {
+  /**
+   * Format a measurement value with unit conversion for temperature and gravity,
+   * matching the sparkline behavior in FermentationCard and BatchDetails.
+   */
+  function formatMeasurementValue (measurement: ProductionMeasurement): string {
+    if (measurement.value === null || measurement.value === undefined) {
       return 'Unknown'
     }
-    return `${value}${unit ? ` ${unit}` : ''}`
+
+    const kind = normalizeMeasurementKind(measurement.kind)
+
+    if (kind === 'temperature' || kind === 'temp') {
+      const sourceUnit = normalizeTemperatureUnit(measurement.unit)
+      return formatTemperaturePreferred(measurement.value, sourceUnit)
+    }
+
+    if (kind === 'gravity' || kind === 'grav' || kind === 'sg') {
+      const sourceUnit = normalizeGravityUnit(measurement.unit)
+      return formatGravityPreferred(measurement.value, sourceUnit)
+    }
+
+    // For other measurement kinds (pH, etc.), display as-is
+    return `${measurement.value}${measurement.unit ? ` ${measurement.unit}` : ''}`
+  }
+
+  function normalizeMeasurementKind (kind: string): string {
+    return kind.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  }
+
+  function normalizeTemperatureUnit (unit: string | null | undefined): TemperatureUnit {
+    if (!unit) return 'c'
+    const normalized = unit.trim().toLowerCase()
+    if (normalized === 'f' || normalized === 'fahrenheit' || normalized === '°f') {
+      return 'f'
+    }
+    return 'c'
+  }
+
+  function normalizeGravityUnit (unit: string | null | undefined): GravityUnit {
+    if (!unit) return 'sg'
+    const normalized = unit.trim().toLowerCase()
+    if (normalized === 'plato' || normalized === '°p' || normalized === 'p') {
+      return 'plato'
+    }
+    return 'sg'
   }
 
   function formatMeasurementKind (kind: string) {
-    const normalized = kind.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    const normalized = normalizeMeasurementKind(kind)
     if (normalized === 'ph') {
       return 'pH'
     }

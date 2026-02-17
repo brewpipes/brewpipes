@@ -19,6 +19,7 @@ type BeerLotStore interface {
 	GetBeerLotByUUID(context.Context, string) (storage.BeerLot, error)
 	GetStockLocationByUUID(context.Context, string) (storage.StockLocation, error)
 	ListBeerLots(context.Context) ([]storage.BeerLot, error)
+	ListBeerLotsIncludingDeleted(context.Context) ([]storage.BeerLot, error)
 	ListBeerLotsByBatchUUID(context.Context, uuid.UUID) ([]storage.BeerLot, error)
 }
 
@@ -45,7 +46,14 @@ func HandleBeerLots(db BeerLotStore) http.HandlerFunc {
 				return
 			}
 
-			lots, err := db.ListBeerLots(r.Context())
+			includeDeleted := r.URL.Query().Get("include_deleted") == "true"
+			var lots []storage.BeerLot
+			var err error
+			if includeDeleted {
+				lots, err = db.ListBeerLotsIncludingDeleted(r.Context())
+			} else {
+				lots, err = db.ListBeerLots(r.Context())
+			}
 			if err != nil {
 				service.InternalError(w, "error listing beer lots", "error", err)
 				return

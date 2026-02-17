@@ -34,6 +34,7 @@ declare module 'vue' {
     BatchTimelineExtendedDialog: typeof import('./components/batch/BatchTimelineExtendedDialog.vue')['default']
     BatchTimelineTab: typeof import('./components/batch/BatchTimelineTab.vue')['default']
     BatchVolumeDialog: typeof import('./components/batch/BatchVolumeDialog.vue')['default']
+    BeerLotCreateDialog: typeof import('./components/inventory/BeerLotCreateDialog.vue')['default']
     BestByIndicator: typeof import('./components/inventory/BestByIndicator.vue')['default']
     BrewDayWizard: typeof import('./components/batch/brew-day-wizard/BrewDayWizard.vue')['default']
     BrewDayWizardComplete: typeof import('./components/batch/brew-day-wizard/BrewDayWizardComplete.vue')['default']
@@ -54,6 +55,7 @@ declare module 'vue' {
     LocationCreateDialog: typeof import('./components/inventory/LocationCreateDialog.vue')['default']
     LotDetailDialog: typeof import('./components/inventory/LotDetailDialog.vue')['default']
     LotTable: typeof import('./components/inventory/LotTable.vue')['default']
+    MovementReason: typeof import('./components/inventory/MovementReason.vue')['default']
     PackagingDialog: typeof import('./components/batch/PackagingDialog.vue')['default']
     PurchaseOrderCreateEditDialog: typeof import('./components/procurement/PurchaseOrderCreateEditDialog.vue')['default']
     PurchaseOrderEditDialog: typeof import('./components/procurement/PurchaseOrderEditDialog.vue')['default']
@@ -90,5 +92,6 @@ declare module 'vue' {
     VesselDetails: typeof import('./components/VesselDetails.vue')['default']
     VesselEditDialog: typeof import('./components/vessel/VesselEditDialog.vue')['default']
     VesselList: typeof import('./components/VesselList.vue')['default']
+    VesselRetireDialog: typeof import('./components/vessel/VesselRetireDialog.vue')['default']
   }
 }

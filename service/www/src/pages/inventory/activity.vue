@@ -1,12 +1,16 @@
 <template>
   <v-container class="inventory-page" fluid>
     <v-card class="section-card">
-      <v-card-title class="d-flex align-center">
-        Inventory activity
-        <v-spacer />
-        <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
-          Refresh
-        </v-btn>
+      <v-card-title class="card-title-responsive">
+        <div class="d-flex align-center">
+          Inventory activity
+        </div>
+        <div class="card-title-actions">
+          <v-btn :loading="loading" size="small" variant="text" @click="refreshAll">
+            <v-icon class="mr-1" icon="mdi-refresh" size="small" />
+            <span class="d-none d-sm-inline">Refresh</span>
+          </v-btn>
+        </div>
       </v-card-title>
       <v-card-text>
         <v-alert
@@ -47,96 +51,126 @@
             </v-btn>
           </v-col>
         </v-row>
-        <v-table class="data-table" density="compact">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Lot #</th>
-              <th class="text-center">Direction</th>
-              <th>Reason</th>
-              <th>Amount</th>
-              <th>Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading">
-              <td class="text-center text-medium-emphasis" colspan="6">
-                <v-progress-circular class="mr-2" indeterminate size="16" />
-                Loading...
-              </td>
-            </tr>
-            <tr v-else-if="movements.length === 0">
-              <td class="text-medium-emphasis" colspan="6">No activity yet.</td>
-            </tr>
-            <tr v-for="movement in movements" v-else :key="movement.uuid">
-              <td>{{ getItemName(movement) }}</td>
-              <td>{{ getLotCode(movement) }}</td>
-              <td class="text-center">
-                <v-tooltip location="top">
-                  <template #activator="{ props }">
-                    <v-icon
-                      v-bind="props"
-                      :color="movement.direction === 'in' ? 'success' : 'warning'"
-                      :icon="movement.direction === 'in' ? 'mdi-package-down' : 'mdi-package-up'"
-                      size="small"
-                    />
-                  </template>
-                  <span>{{ getDirectionTooltip(movement.direction) }}</span>
-                </v-tooltip>
-              </td>
-              <td>
-                <template v-if="movement.reason === 'use'">
-                  <router-link
-                    v-if="getUsageBatch(movement)"
-                    class="reason-link"
-                    :to="`/batches/${getUsageBatch(movement)!.uuid}`"
-                  >
-                    Used in {{ getUsageBatch(movement)!.short_name }}
-                    <span v-if="getUsagePhase(movement)" class="text-medium-emphasis">
-                      ({{ getUsagePhase(movement) }})
-                    </span>
-                  </router-link>
-                  <span v-else class="text-medium-emphasis">Used in production</span>
-                </template>
-                <template v-else-if="movement.reason === 'receive'">
-                  <span v-if="getReceiptSupplier(movement)">
-                    Received from {{ getReceiptSupplier(movement)!.name }}
-                  </span>
-                  <span v-else class="text-medium-emphasis">Received</span>
-                </template>
-                <template v-else-if="movement.reason === 'adjust' || movement.reason === 'waste'">
-                  <v-tooltip v-if="getAdjustmentNotes(movement)" location="top">
+
+        <!-- Desktop table view -->
+        <div class="d-none d-md-block">
+          <v-table class="data-table" density="compact">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Lot #</th>
+                <th class="text-center">Direction</th>
+                <th>Reason</th>
+                <th>Amount</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loading">
+                <td class="text-center text-medium-emphasis" colspan="6">
+                  <v-progress-circular class="mr-2" indeterminate size="16" />
+                  Loading...
+                </td>
+              </tr>
+              <tr v-else-if="movements.length === 0">
+                <td class="text-medium-emphasis" colspan="6">No activity yet.</td>
+              </tr>
+              <tr v-for="movement in movements" v-else :key="movement.uuid">
+                <td>{{ getItemName(movement) }}</td>
+                <td>{{ getLotCode(movement) }}</td>
+                <td class="text-center">
+                  <v-tooltip location="top">
                     <template #activator="{ props }">
-                      <span v-bind="props" class="adjustment-reason">
-                        {{ formatAdjustmentReason(movement) }}
-                        <v-icon class="ml-1" icon="mdi-information-outline" size="x-small" />
-                      </span>
+                      <v-icon
+                        v-bind="props"
+                        :color="movement.direction === 'in' ? 'success' : 'warning'"
+                        :icon="movement.direction === 'in' ? 'mdi-package-down' : 'mdi-package-up'"
+                        size="small"
+                      />
                     </template>
-                    <span>{{ getAdjustmentNotes(movement) }}</span>
+                    <span>{{ getDirectionTooltip(movement.direction) }}</span>
                   </v-tooltip>
-                  <span v-else>{{ formatAdjustmentReason(movement) }}</span>
-                </template>
-                <template v-else-if="movement.reason === 'transfer'">
-                  <v-tooltip v-if="getTransferNotes(movement)" location="top">
-                    <template #activator="{ props }">
-                      <span v-bind="props" class="transfer-reason">
-                        {{ formatTransferReason(movement) }}
-                        <v-icon class="ml-1" icon="mdi-information-outline" size="x-small" />
-                      </span>
-                    </template>
-                    <span>{{ getTransferNotes(movement) }}</span>
-                  </v-tooltip>
-                  <span v-else>{{ formatTransferReason(movement) }}</span>
-                </template>
-                <template v-else>
-                  <span class="text-medium-emphasis">{{ movement.reason }}</span>
-                </template>
-              </td>
-              <td>{{ formatAmountPreferred(movement.amount, movement.amount_unit) }}</td>
-              <td>{{ locationName(movement.stock_location_uuid) }}</td>
-            </tr>
-          </tbody>
-        </v-table>
+                </td>
+                <td>
+                  <MovementReason
+                    :adjustment-notes="getAdjustmentNotes(movement)"
+                    :adjustment-reason-label="formatAdjustmentReason(movement)"
+                    :movement="movement"
+                    :receipt-supplier="getReceiptSupplier(movement)"
+                    :transfer-notes="getTransferNotes(movement)"
+                    :transfer-reason-label="formatTransferReason(movement)"
+                    :usage-batch="getUsageBatch(movement)"
+                  />
+                </td>
+                <td>{{ formatAmountPreferred(movement.amount, movement.amount_unit) }}</td>
+                <td>{{ locationName(movement.stock_location_uuid) }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+        </div>
+
+        <!-- Mobile card view -->
+        <div class="d-md-none">
+          <v-progress-linear v-if="loading" color="primary" indeterminate />
+
+          <div
+            v-if="!loading && movements.length === 0"
+            class="text-center py-8 text-medium-emphasis"
+          >
+            <v-icon class="mb-2" icon="mdi-swap-horizontal" size="48" />
+            <div class="text-body-1">No activity yet.</div>
+          </div>
+
+          <v-card
+            v-for="movement in movements"
+            :key="movement.uuid"
+            class="mb-3"
+            variant="outlined"
+          >
+            <v-card-title class="d-flex align-center py-2 text-body-1">
+              <v-icon
+                class="mr-2"
+                :color="movement.direction === 'in' ? 'success' : 'warning'"
+                :icon="movement.direction === 'in' ? 'mdi-package-down' : 'mdi-package-up'"
+                size="small"
+              />
+              <span class="text-truncate">{{ getItemName(movement) }}</span>
+              <v-spacer />
+              <span class="text-body-2 font-weight-medium text-no-wrap">
+                {{ formatAmountPreferred(movement.amount, movement.amount_unit) }}
+              </span>
+            </v-card-title>
+
+            <v-card-text class="pt-0">
+              <div class="d-flex justify-space-between text-body-2 mb-1">
+                <span class="text-medium-emphasis">Direction</span>
+                <span>{{ movement.direction === 'in' ? 'In' : 'Out' }}</span>
+              </div>
+              <div class="d-flex justify-space-between text-body-2 mb-1">
+                <span class="text-medium-emphasis">Reason</span>
+                <span class="text-right" style="max-width: 65%;">
+                  <MovementReason
+                    :adjustment-notes="getAdjustmentNotes(movement)"
+                    :adjustment-reason-label="formatAdjustmentReason(movement)"
+                    :movement="movement"
+                    :receipt-supplier="getReceiptSupplier(movement)"
+                    :transfer-notes="getTransferNotes(movement)"
+                    :transfer-reason-label="formatTransferReason(movement)"
+                    :usage-batch="getUsageBatch(movement)"
+                  />
+                </span>
+              </div>
+              <div class="d-flex justify-space-between text-body-2 mb-1">
+                <span class="text-medium-emphasis">Lot #</span>
+                <span>{{ getLotCode(movement) }}</span>
+              </div>
+              <div class="d-flex justify-space-between text-body-2">
+                <span class="text-medium-emphasis">Location</span>
+                <span>{{ locationName(movement.stock_location_uuid) }}</span>
+              </div>
+            </v-card-text>
+          </v-card>
+        </div>
       </v-card-text>
     </v-card>
   </v-container>
@@ -157,6 +191,7 @@
     Supplier,
   } from '@/types'
   import { computed, onMounted, reactive, ref } from 'vue'
+  import MovementReason from '@/components/inventory/MovementReason.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProcurementApi } from '@/composables/useProcurementApi'
@@ -299,11 +334,11 @@
   }
 
   async function loadIngredients () {
-    ingredients.value = await fetchIngredients() ?? []
+    ingredients.value = await fetchIngredients({ include_deleted: true }) ?? []
   }
 
   async function loadLots () {
-    lots.value = await fetchIngredientLots() ?? []
+    lots.value = await fetchIngredientLots({ include_deleted: true }) ?? []
   }
 
   async function loadLocations () {
@@ -311,7 +346,7 @@
   }
 
   async function loadBeerLots () {
-    beerLots.value = await fetchBeerLots() ?? []
+    beerLots.value = await fetchBeerLots({ include_deleted: true }) ?? []
   }
 
   async function loadMovements () {
@@ -408,12 +443,6 @@
     return batchByUuidMap.value.get(usage.production_ref_uuid)
   }
 
-  function getUsagePhase (_movement: InventoryMovement): string | null {
-    // Phase information would need to be fetched from batch process phases
-    // For now, return null as we don't have this data readily available
-    return null
-  }
-
   function getReceiptSupplier (movement: InventoryMovement): Supplier | undefined {
     if (!movement.receipt_uuid) return undefined
 
@@ -484,19 +513,5 @@
 <style scoped>
 .inventory-page {
   position: relative;
-}
-
-.reason-link {
-  color: rgb(var(--v-theme-primary));
-  text-decoration: none;
-}
-
-.reason-link:hover {
-  text-decoration: underline;
-}
-
-.adjustment-reason,
-.transfer-reason {
-  cursor: help;
 }
 </style>

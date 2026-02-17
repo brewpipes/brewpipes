@@ -44,14 +44,14 @@ router.beforeEach(to => {
 router.onError((err, to) => {
   if (err?.message?.includes?.('Failed to fetch dynamically imported module') ||
       err?.message?.includes?.('Importing a module script failed')) {
-    const lastReload = localStorage.getItem('vuetify:dynamic-reload')
-    const now = Date.now()
-    if (!lastReload || (now - Number(lastReload)) > 10000) {
-      console.log('Reloading page to fix dynamic import error')
-      localStorage.setItem('vuetify:dynamic-reload', String(now))
+    // Only attempt one automatic reload per browser session
+    const reloadKey = 'brewpipes:chunk-reload'
+    if (!sessionStorage.getItem(reloadKey)) {
+      console.warn('[router] Reloading to resolve stale chunk', to.fullPath)
+      sessionStorage.setItem(reloadKey, '1')
       location.assign(to.fullPath)
     } else {
-      console.error('Dynamic import error persists after reload', err)
+      console.error('[router] Chunk load error persists after reload — not retrying', err)
     }
   } else {
     console.error(err)
@@ -59,7 +59,8 @@ router.onError((err, to) => {
 })
 
 router.isReady().then(() => {
-  localStorage.removeItem('vuetify:dynamic-reload')
+  // Clear the reload flag once the app boots successfully
+  sessionStorage.removeItem('brewpipes:chunk-reload')
 })
 
 export default router

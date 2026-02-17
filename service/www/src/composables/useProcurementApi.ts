@@ -26,6 +26,18 @@ export function useProcurementApi () {
     return `${amount} ${currency ?? ''}`.trim()
   }
 
+  /** Convert a dollar amount (e.g. 12.50) to integer cents (1250). */
+  const dollarsToCents = (dollars: number | null): number | null => {
+    if (dollars === null) return null
+    return Math.round(dollars * 100)
+  }
+
+  /** Convert integer cents (1250) to a dollar amount (12.50). */
+  const centsToDollars = (cents: number | null): number | null => {
+    if (cents === null) return null
+    return cents / 100
+  }
+
   // Suppliers API
   const getSuppliers = () => request<Supplier[]>('/suppliers')
   const getSupplier = (uuid: string) => request<Supplier>(`/suppliers/${uuid}`)
@@ -113,6 +125,8 @@ export function useProcurementApi () {
     apiBase: procurementApiBase,
     request,
     formatCurrency,
+    dollarsToCents,
+    centsToDollars,
     // Suppliers
     getSuppliers,
     getSupplier,

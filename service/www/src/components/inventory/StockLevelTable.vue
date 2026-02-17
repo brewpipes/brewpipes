@@ -10,6 +10,7 @@
       item-value="ingredient_uuid"
       :items="items"
       :loading="loading"
+      :row-props="getRowProps"
       show-expand
     >
       <template #item.ingredient_name="{ item }">
@@ -90,7 +91,8 @@
     <v-card
       v-for="item in items"
       :key="item.ingredient_uuid"
-      class="mb-3"
+      :class="['mb-3', { 'stock-card-highlight': highlightedUuid === item.ingredient_uuid }]"
+      :data-ingredient-card="item.ingredient_uuid"
       variant="outlined"
     >
       <v-card-title class="d-flex align-center py-2">
@@ -147,7 +149,7 @@
 
 <script lang="ts" setup>
   import type { StockLevel } from '@/types'
-  import { computed, ref } from 'vue'
+  import { computed, nextTick, ref, watch } from 'vue'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
 
   const props = defineProps<{
@@ -155,11 +157,58 @@
     loading: boolean
     categoryLabel: string
     showCategory?: boolean
+    highlightIngredientUuid?: string
   }>()
 
   const { formatAmountPreferred } = useUnitPreferences()
 
   const expanded = ref<string[]>([])
+  const highlightedUuid = ref<string | null>(null)
+
+  function getRowProps ({ item }: { item: StockLevel }) {
+    return {
+      'data-ingredient-uuid': item.ingredient_uuid,
+      class: highlightedUuid.value === item.ingredient_uuid ? 'stock-row-highlight' : undefined,
+    }
+  }
+
+  // Watch for items + highlightIngredientUuid to scroll and highlight
+  watch(
+    () => [props.items, props.highlightIngredientUuid] as const,
+    async ([items, uuid]) => {
+      if (!uuid || items.length === 0) return
+      const match = items.find(item => item.ingredient_uuid === uuid)
+      if (!match) return
+
+      highlightedUuid.value = uuid
+      await nextTick()
+
+      // Small delay to ensure Vuetify has rendered the table rows
+      setTimeout(() => {
+        // Try desktop table first
+        const desktopRow = document.querySelector(
+          `tr[data-ingredient-uuid="${uuid}"]`,
+        ) as HTMLElement | null
+        if (desktopRow) {
+          desktopRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+
+        // Try mobile card
+        const mobileCard = document.querySelector(
+          `[data-ingredient-card="${uuid}"]`,
+        ) as HTMLElement | null
+        if (mobileCard) {
+          mobileCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+
+        // Remove highlight after animation completes
+        setTimeout(() => {
+          highlightedUuid.value = null
+        }, 2000)
+      }, 100)
+    },
+    { immediate: true },
+  )
 
   const tableHeaders = computed(() => {
     const headers = [
@@ -218,5 +267,27 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+}
+
+/* Highlight animation for desktop table rows */
+.stock-level-table :deep(tr.stock-row-highlight) {
+  animation: row-highlight-pulse 2s ease-in-out;
+}
+
+/* Highlight animation for mobile cards */
+.stock-card-highlight {
+  animation: card-highlight-pulse 2s ease-in-out;
+}
+
+@keyframes row-highlight-pulse {
+  0% { background-color: rgba(var(--v-theme-warning), 0.3); }
+  50% { background-color: rgba(var(--v-theme-warning), 0.15); }
+  100% { background-color: transparent; }
+}
+
+@keyframes card-highlight-pulse {
+  0% { border-color: rgb(var(--v-theme-warning)); box-shadow: 0 0 8px rgba(var(--v-theme-warning), 0.4); }
+  50% { border-color: rgb(var(--v-theme-warning)); box-shadow: 0 0 4px rgba(var(--v-theme-warning), 0.2); }
+  100% { border-color: inherit; box-shadow: none; }
 }
 </style>

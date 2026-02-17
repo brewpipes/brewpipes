@@ -36,12 +36,31 @@
             />
           </v-col>
           <v-col cols="12">
-            <v-text-field
+            <v-autocomplete
               v-model="form.inventory_item_uuid"
-              hint="Optional - link to inventory item"
-              label="Inventory item UUID"
+              clearable
+              hint="Optional - link to inventory ingredient"
+              item-title="title"
+              item-value="value"
+              :items="ingredientSelectItems"
+              label="Inventory ingredient"
+              :loading="ingredientsLoading"
               persistent-hint
-            />
+            >
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps">
+                  <template #subtitle>
+                    <span>{{ item.raw.category }}</span>
+                  </template>
+                </v-list-item>
+              </template>
+              <template #no-data>
+                <v-list-item>
+                  <v-list-item-title>No ingredients found</v-list-item-title>
+                  <v-list-item-subtitle>Create ingredients in the Inventory section first</v-list-item-subtitle>
+                </v-list-item>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col cols="6" sm="4">
             <v-text-field
@@ -61,11 +80,11 @@
           </v-col>
           <v-col cols="6" sm="4">
             <v-text-field
-              v-model.number="form.unit_cost_cents"
-              hint="In cents (e.g., 1500 = $15.00)"
-              label="Unit cost (cents)"
-              persistent-hint
+              v-model.number="form.unit_cost_dollars"
+              label="Unit cost"
+              prefix="$"
               :rules="[v => v >= 0 || 'Must be non-negative']"
+              step="0.01"
               type="number"
             />
           </v-col>
@@ -95,14 +114,17 @@
 </template>
 
 <script lang="ts" setup>
-  import type { PurchaseOrderLine } from '@/types'
+  import type { Ingredient, PurchaseOrderLine } from '@/types'
   import { computed, reactive, watch } from 'vue'
   import { useLineItemTypeFormatters } from '@/composables/useFormatters'
+  import { useProcurementApi } from '@/composables/useProcurementApi'
 
   const props = defineProps<{
     modelValue: boolean
     line?: PurchaseOrderLine | null
     saving?: boolean
+    ingredients: Ingredient[]
+    ingredientsLoading?: boolean
   }>()
 
   const emit = defineEmits<{
@@ -115,25 +137,45 @@
     line_number: number | null
     item_type: string
     item_name: string
-    inventory_item_uuid: string
+    inventory_item_uuid: string | null
     quantity: number | null
     quantity_unit: string
     unit_cost_cents: number | null
     currency: string
   }
 
+  interface InternalForm {
+    line_number: number | null
+    item_type: string
+    item_name: string
+    inventory_item_uuid: string | null
+    quantity: number | null
+    quantity_unit: string
+    unit_cost_dollars: number | null
+    currency: string
+  }
+
   const { lineItemTypeOptions: itemTypeOptions } = useLineItemTypeFormatters()
+  const { dollarsToCents, centsToDollars } = useProcurementApi()
   const unitOptions = ['kg', 'g', 'lb', 'oz', 'l', 'ml', 'gal', 'bbl']
   const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP']
 
-  const form = reactive<LineForm>({
+  const ingredientSelectItems = computed(() =>
+    props.ingredients.map(ingredient => ({
+      title: ingredient.name,
+      value: ingredient.uuid,
+      category: ingredient.category.charAt(0).toUpperCase() + ingredient.category.slice(1).replace(/_/g, ' '),
+    })),
+  )
+
+  const form = reactive<InternalForm>({
     line_number: null,
     item_type: '',
     item_name: '',
-    inventory_item_uuid: '',
+    inventory_item_uuid: null,
     quantity: null,
     quantity_unit: '',
-    unit_cost_cents: null,
+    unit_cost_dollars: null,
     currency: 'USD',
   })
 
@@ -148,8 +190,8 @@
       && form.quantity !== null
       && form.quantity > 0
       && form.quantity_unit.trim().length > 0
-      && form.unit_cost_cents !== null
-      && form.unit_cost_cents >= 0
+      && form.unit_cost_dollars !== null
+      && form.unit_cost_dollars >= 0
       && form.currency.trim().length > 0
     )
   })
@@ -160,10 +202,10 @@
         form.line_number = props.line.line_number
         form.item_type = props.line.item_type
         form.item_name = props.line.item_name
-        form.inventory_item_uuid = props.line.inventory_item_uuid ?? ''
+        form.inventory_item_uuid = props.line.inventory_item_uuid ?? null
         form.quantity = props.line.quantity
         form.quantity_unit = props.line.quantity_unit
-        form.unit_cost_cents = props.line.unit_cost_cents
+        form.unit_cost_dollars = centsToDollars(props.line.unit_cost_cents)
         form.currency = props.line.currency
       } else {
         resetForm()
@@ -175,15 +217,24 @@
     form.line_number = null
     form.item_type = ''
     form.item_name = ''
-    form.inventory_item_uuid = ''
+    form.inventory_item_uuid = null
     form.quantity = null
     form.quantity_unit = ''
-    form.unit_cost_cents = null
+    form.unit_cost_dollars = null
     form.currency = 'USD'
   }
 
   function handleSave () {
-    emit('save', { ...form })
+    emit('save', {
+      line_number: form.line_number,
+      item_type: form.item_type,
+      item_name: form.item_name,
+      inventory_item_uuid: form.inventory_item_uuid,
+      quantity: form.quantity,
+      quantity_unit: form.quantity_unit,
+      unit_cost_cents: dollarsToCents(form.unit_cost_dollars),
+      currency: form.currency,
+    })
   }
 
   function handleCancel () {

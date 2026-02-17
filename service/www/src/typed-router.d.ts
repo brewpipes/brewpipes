@@ -34,7 +34,8 @@ declare module 'vue-router/auto-routes' {
     '/procurement/': RouteRecordInfo<'/procurement/', '/procurement', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-orders/': RouteRecordInfo<'/procurement/purchase-orders/', '/procurement/purchase-orders', Record<never, never>, Record<never, never>>,
     '/procurement/purchase-orders/[uuid]': RouteRecordInfo<'/procurement/purchase-orders/[uuid]', '/procurement/purchase-orders/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
-    '/procurement/suppliers': RouteRecordInfo<'/procurement/suppliers', '/procurement/suppliers', Record<never, never>, Record<never, never>>,
+    '/procurement/suppliers/': RouteRecordInfo<'/procurement/suppliers/', '/procurement/suppliers', Record<never, never>, Record<never, never>>,
+    '/procurement/suppliers/[uuid]': RouteRecordInfo<'/procurement/suppliers/[uuid]', '/procurement/suppliers/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     '/production/': RouteRecordInfo<'/production/', '/production', Record<never, never>, Record<never, never>>,
     '/production/recipes/': RouteRecordInfo<'/production/recipes/', '/production/recipes', Record<never, never>, Record<never, never>>,
     '/production/recipes/[uuid]/': RouteRecordInfo<'/production/recipes/[uuid]/', '/production/recipes/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
@@ -120,8 +121,12 @@ declare module 'vue-router/auto-routes' {
       routes: '/procurement/purchase-orders/[uuid]'
       views: never
     }
-    'src/pages/procurement/suppliers.vue': {
-      routes: '/procurement/suppliers'
+    'src/pages/procurement/suppliers/index.vue': {
+      routes: '/procurement/suppliers/'
+      views: never
+    }
+    'src/pages/procurement/suppliers/[uuid].vue': {
+      routes: '/procurement/suppliers/[uuid]'
       views: never
     }
     'src/pages/production/index.vue': {

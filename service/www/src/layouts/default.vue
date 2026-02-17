@@ -8,7 +8,7 @@
       </v-avatar>
     </div>
 
-    <div class="brand-text d-none d-sm-flex">
+    <div class="brand-text">
       <div class="text-caption text-medium-emphasis">BrewPipes</div>
       <div class="text-subtitle-1">{{ breweryName }}</div>
     </div>
@@ -100,12 +100,12 @@
             </template>
           </v-list-item>
         </template>
-        <v-list-item title="Stock Levels" to="/inventory/stock-levels" />
-        <v-list-item title="Activity" to="/inventory/activity" />
         <v-list-item title="Finished Goods" to="/inventory/product" />
         <v-list-item title="Ingredients" to="/inventory/ingredients" />
+        <v-list-item title="Stock Levels" to="/inventory/stock-levels" />
         <v-list-item title="Adjustments & Transfers" to="/inventory/adjustments-transfers" />
         <v-list-item title="Removals" to="/inventory/removals" />
+        <v-list-item title="Activity" to="/inventory/activity" />
         <v-list-item title="Locations" to="/inventory/locations" />
       </v-list-group>
 

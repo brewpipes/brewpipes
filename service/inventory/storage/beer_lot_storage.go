@@ -279,6 +279,28 @@ func (c *Client) ListBeerLots(ctx context.Context) ([]BeerLot, error) {
 	return lots, nil
 }
 
+// ListBeerLotsIncludingDeleted returns all beer lots, including soft-deleted ones.
+// This is used by the activity page to resolve lot references for movements that may
+// reference lots that have since been deleted.
+func (c *Client) ListBeerLotsIncludingDeleted(ctx context.Context) ([]BeerLot, error) {
+	rows, err := c.DB().Query(ctx, `
+		SELECT `+beerLotColumns+`
+		FROM beer_lot
+		ORDER BY packaged_at DESC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing beer lots including deleted: %w", err)
+	}
+	defer rows.Close()
+
+	lots, err := scanBeerLotRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("listing beer lots including deleted: %w", err)
+	}
+
+	return lots, nil
+}
+
 func (c *Client) ListBeerLotsByBatchUUID(ctx context.Context, batchUUID uuid.UUID) ([]BeerLot, error) {
 	rows, err := c.DB().Query(ctx, `
 		SELECT `+beerLotColumns+`

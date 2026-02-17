@@ -60,6 +60,84 @@ describe('useProcurementApi', () => {
     })
   })
 
+  describe('dollarsToCents', () => {
+    it('converts dollar amounts to cents', () => {
+      const { dollarsToCents } = useProcurementApi()
+
+      expect(dollarsToCents(12.50)).toBe(1250)
+      expect(dollarsToCents(15.00)).toBe(1500)
+      expect(dollarsToCents(0.99)).toBe(99)
+      expect(dollarsToCents(0)).toBe(0)
+    })
+
+    it('rounds to nearest cent', () => {
+      const { dollarsToCents } = useProcurementApi()
+
+      expect(dollarsToCents(12.555)).toBe(1256)
+      expect(dollarsToCents(12.554)).toBe(1255)
+    })
+
+    it('handles null', () => {
+      const { dollarsToCents } = useProcurementApi()
+
+      expect(dollarsToCents(null)).toBeNull()
+    })
+
+    it('handles whole dollar amounts', () => {
+      const { dollarsToCents } = useProcurementApi()
+
+      expect(dollarsToCents(100)).toBe(10000)
+      expect(dollarsToCents(1)).toBe(100)
+    })
+
+    it('handles small amounts', () => {
+      const { dollarsToCents } = useProcurementApi()
+
+      expect(dollarsToCents(0.01)).toBe(1)
+      expect(dollarsToCents(0.05)).toBe(5)
+    })
+  })
+
+  describe('centsToDollars', () => {
+    it('converts cents to dollar amounts', () => {
+      const { centsToDollars } = useProcurementApi()
+
+      expect(centsToDollars(1250)).toBe(12.50)
+      expect(centsToDollars(1500)).toBe(15.00)
+      expect(centsToDollars(99)).toBe(0.99)
+      expect(centsToDollars(0)).toBe(0)
+    })
+
+    it('handles null', () => {
+      const { centsToDollars } = useProcurementApi()
+
+      expect(centsToDollars(null)).toBeNull()
+    })
+
+    it('handles large amounts', () => {
+      const { centsToDollars } = useProcurementApi()
+
+      expect(centsToDollars(1_000_000)).toBe(10000)
+      expect(centsToDollars(123_456_789)).toBe(1234567.89)
+    })
+
+    it('handles small amounts', () => {
+      const { centsToDollars } = useProcurementApi()
+
+      expect(centsToDollars(1)).toBe(0.01)
+      expect(centsToDollars(5)).toBe(0.05)
+    })
+
+    it('round-trips with dollarsToCents', () => {
+      const { dollarsToCents, centsToDollars } = useProcurementApi()
+
+      expect(centsToDollars(dollarsToCents(12.50)!)).toBe(12.50)
+      expect(dollarsToCents(centsToDollars(1250)!)).toBe(1250)
+      expect(centsToDollars(dollarsToCents(0.01)!)).toBe(0.01)
+      expect(dollarsToCents(centsToDollars(1)!)).toBe(1)
+    })
+  })
+
   describe('exposed properties', () => {
     it('exposes apiBase', () => {
       const api = useProcurementApi()
@@ -76,6 +154,16 @@ describe('useProcurementApi', () => {
       const api = useProcurementApi()
 
       expect(typeof api.formatCurrency).toBe('function')
+    })
+
+    it('exposes dollarsToCents function', () => {
+      const api = useProcurementApi()
+      expect(typeof api.dollarsToCents).toBe('function')
+    })
+
+    it('exposes centsToDollars function', () => {
+      const api = useProcurementApi()
+      expect(typeof api.centsToDollars).toBe('function')
     })
   })
 

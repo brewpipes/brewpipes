@@ -1,31 +1,14 @@
 <template>
   <v-container class="dashboard-page" fluid>
-    <v-card class="section-card hero-card">
-      <v-card-text>
-        <div class="dashboard-hero">
-          <div>
-            <div class="text-overline text-medium-emphasis">Dashboard</div>
-            <div class="text-h4 font-weight-semibold">{{ breweryName }}</div>
-            <div class="text-body-2 text-medium-emphasis">
-              Track in-progress batches, upcoming brew days, and vessel readiness.
-            </div>
-          </div>
-          <div class="hero-actions">
-            <v-btn :loading="loading" variant="text" @click="refreshAll">Refresh</v-btn>
-          </div>
-        </div>
-
-        <v-alert
-          v-if="errorMessage"
-          class="mt-4"
-          density="compact"
-          type="error"
-          variant="tonal"
-        >
-          {{ errorMessage }}
-        </v-alert>
-      </v-card-text>
-    </v-card>
+    <v-alert
+      v-if="errorMessage"
+      class="mb-4"
+      density="compact"
+      type="error"
+      variant="tonal"
+    >
+      {{ errorMessage }}
+    </v-alert>
 
     <!-- Loading skeleton -->
     <v-row v-if="!dataReady && loading" class="mt-4">
@@ -41,7 +24,7 @@
 
     <!-- Data sections (only rendered when all data is loaded) -->
     <v-row v-if="dataReady" align="stretch" class="mt-4">
-      <v-col cols="12" lg="7">
+      <v-col class="order-2 order-lg-1" cols="12" lg="7">
         <v-card class="section-card">
           <v-card-title class="d-flex align-center">
             <v-icon class="mr-2" icon="mdi-progress-clock" />
@@ -121,7 +104,7 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" lg="5">
+      <v-col class="order-1 order-lg-2" cols="12" lg="5">
         <v-card class="section-card" :class="{ 'low-stock-alert': hasLowStock }">
           <v-card-title class="d-flex align-center">
             <v-icon
@@ -241,7 +224,6 @@
   import { useInventoryApi } from '@/composables/useInventoryApi'
   import { useProductionApi } from '@/composables/useProductionApi'
   import { useUnitPreferences } from '@/composables/useUnitPreferences'
-  import { useUserSettings } from '@/composables/useUserSettings'
 
   type BatchPhaseItem = {
     batch: Batch
@@ -277,7 +259,6 @@
   const { getBatches, getVessels, getVolumes, getActiveOccupancies } = useProductionApi()
   const { getStockLevels } = useInventoryApi()
   const { formatVolumePreferred } = useUnitPreferences()
-  const { breweryName } = useUserSettings()
   const { formatPhase, getPhaseColor } = usePhaseFormatters()
   const { formatVesselStatus } = useVesselStatusFormatters()
   const { formatVesselType } = useVesselTypeFormatters()
@@ -566,28 +547,6 @@
 <style scoped>
 .dashboard-page {
   position: relative;
-}
-
-.hero-card {
-  background: linear-gradient(
-    135deg,
-    rgba(var(--v-theme-primary), 0.14),
-    rgba(var(--v-theme-secondary), 0.08)
-  );
-}
-
-.dashboard-hero {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
 }
 
 .batch-list,

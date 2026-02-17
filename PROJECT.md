@@ -69,6 +69,10 @@ All API endpoints use UUIDs as the sole external identifier for entities. Intern
 
 ## Deployment
 
+### Live deployment
+
+BrewPipes has been deployed on [Railway.com](https://railway.com) since approximately Phase 2. Railway runs the single-container Docker image (`cmd/monolith/Dockerfile`), which serves both the API and the embedded Vue frontend. No separate infrastructure or reverse proxy is required.
+
 ### Single-container deployment
 
 BrewPipes supports a single-container deployment model where the Go monolith serves both the API and the Vue frontend. This is the simplest deployment option for getting started.

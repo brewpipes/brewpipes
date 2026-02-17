@@ -20,48 +20,47 @@
 
     <template v-else-if="vessel">
       <!-- Header with back button -->
-      <div class="d-flex align-center mb-4">
+      <div class="d-flex align-center flex-wrap ga-2 mb-4">
         <v-btn
-          class="mr-3"
+          class="mr-1"
           icon="mdi-arrow-left"
           size="small"
           variant="text"
           @click="goBack"
         />
-        <div>
+        <div class="mr-auto">
           <div class="text-h5 font-weight-semibold">{{ vessel.name }}</div>
           <div class="text-body-2 text-medium-emphasis">
             {{ formatVesselType(vessel.type) }}
           </div>
         </div>
-        <v-spacer />
-        <v-btn
-          class="mr-2"
-          size="small"
-          variant="text"
-          @click="openEditDialog"
-        >
-          <v-icon class="mr-1" icon="mdi-pencil" size="small" />
-          Edit
-        </v-btn>
-        <v-btn
-          v-if="vessel.status !== 'retired'"
-          color="warning"
-          size="small"
-          variant="text"
-          @click="openRetireDialog"
-        >
-          <v-icon class="mr-1" icon="mdi-archive" size="small" />
-          Retire
-        </v-btn>
-        <v-chip
-          class="ml-2"
-          :color="getVesselStatusColor(vessel.status)"
-          size="small"
-          variant="tonal"
-        >
-          {{ formatVesselStatus(vessel.status) }}
-        </v-chip>
+        <div class="d-flex align-center ga-1">
+          <v-btn
+            size="small"
+            variant="text"
+            @click="openEditDialog"
+          >
+            <v-icon class="mr-1" icon="mdi-pencil" size="small" />
+            Edit
+          </v-btn>
+          <v-btn
+            v-if="vessel.status !== 'retired'"
+            color="warning"
+            size="small"
+            variant="text"
+            @click="openRetireDialog"
+          >
+            <v-icon class="mr-1" icon="mdi-archive" size="small" />
+            Retire
+          </v-btn>
+          <v-chip
+            :color="getVesselStatusColor(vessel.status)"
+            size="small"
+            variant="tonal"
+          >
+            {{ formatVesselStatus(vessel.status) }}
+          </v-chip>
+        </div>
       </div>
 
       <v-row>
@@ -198,6 +197,14 @@
       @save="handleSaveVessel"
     />
 
+    <!-- Retire Vessel Dialog -->
+    <VesselRetireDialog
+      ref="retireDialogRef"
+      v-model="retireDialogOpen"
+      :vessel="vessel"
+      @confirm="handleRetireVessel"
+    />
+
   </v-container>
 </template>
 
@@ -206,6 +213,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import VesselEditDialog from '@/components/vessel/VesselEditDialog.vue'
+  import VesselRetireDialog from '@/components/vessel/VesselRetireDialog.vue'
   import { useAsyncAction } from '@/composables/useAsyncAction'
   import {
     useFormatters,
@@ -245,8 +253,12 @@
   const editDialogOpen = ref(false)
   const editDialogRef = ref<InstanceType<typeof VesselEditDialog> | null>(null)
 
+  // Retire dialog state
+  const retireDialogOpen = ref(false)
+  const retireDialogRef = ref<InstanceType<typeof VesselRetireDialog> | null>(null)
+
   const { showNotice } = useSnackbar()
-  const { saveVessel } = useVesselActions()
+  const { retireVessel, saveVessel } = useVesselActions()
 
   const currentOccupancy = computed(() => {
     if (!vessel.value) return null
@@ -291,10 +303,8 @@
   }
 
   function openRetireDialog () {
-    // Open edit dialog - user will change status to retired manually
-    // The dialog will show the retirement warning when status is changed
     if (vessel.value) {
-      editDialogOpen.value = true
+      retireDialogOpen.value = true
     }
   }
 
@@ -305,6 +315,16 @@
     if (updated) {
       vessel.value = updated
       editDialogOpen.value = false
+    }
+  }
+
+  async function handleRetireVessel () {
+    if (!vessel.value) return
+
+    const updated = await retireVessel(vessel.value.uuid, retireDialogRef)
+    if (updated) {
+      vessel.value = updated
+      retireDialogOpen.value = false
     }
   }
 

@@ -353,6 +353,84 @@ describe('useInventoryApi', () => {
     })
   })
 
+  describe('stock locations API', () => {
+    it('getStockLocations fetches all locations', async () => {
+      const mockLocations = [{ uuid: 'loc-1', name: 'Main Warehouse' }]
+      mockRequest.mockResolvedValue(mockLocations)
+
+      const { getStockLocations } = useInventoryApi()
+      const result = await getStockLocations()
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-locations')
+      expect(result).toEqual(mockLocations)
+    })
+
+    it('createStockLocation sends POST request with correct body', async () => {
+      const mockLocation = { uuid: 'loc-new', name: 'Cold Storage', location_type: 'refrigerated', description: null }
+      mockRequest.mockResolvedValue(mockLocation)
+
+      const { createStockLocation } = useInventoryApi()
+      const requestData = { name: 'Cold Storage', location_type: 'refrigerated', description: null }
+
+      const result = await createStockLocation(requestData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-locations', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      })
+      expect(result).toEqual(mockLocation)
+    })
+
+    it('updateStockLocation sends PATCH request with correct body', async () => {
+      const mockLocation = { uuid: 'loc-1', name: 'Updated Warehouse', location_type: 'warehouse', description: 'Updated' }
+      mockRequest.mockResolvedValue(mockLocation)
+
+      const { updateStockLocation } = useInventoryApi()
+      const updateData = { name: 'Updated Warehouse', description: 'Updated' }
+
+      const result = await updateStockLocation('loc-1', updateData)
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-locations/loc-1', {
+        method: 'PATCH',
+        body: JSON.stringify(updateData),
+      })
+      expect(result).toEqual(mockLocation)
+    })
+
+    it('updateStockLocation supports partial updates', async () => {
+      mockRequest.mockResolvedValue({ uuid: 'loc-1', name: 'Renamed' })
+
+      const { updateStockLocation } = useInventoryApi()
+      await updateStockLocation('loc-1', { name: 'Renamed' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-locations/loc-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Renamed' }),
+      })
+    })
+
+    it('deleteStockLocation sends DELETE request', async () => {
+      mockRequest.mockResolvedValue(null)
+
+      const { deleteStockLocation } = useInventoryApi()
+      const result = await deleteStockLocation('loc-1')
+
+      expect(mockRequest).toHaveBeenCalledWith('/stock-locations/loc-1', {
+        method: 'DELETE',
+      })
+      expect(result).toBeNull()
+    })
+
+    it('deleteStockLocation propagates conflict errors', async () => {
+      const error = new Error('stock location has inventory and cannot be deleted')
+      mockRequest.mockRejectedValue(error)
+
+      const { deleteStockLocation } = useInventoryApi()
+
+      await expect(deleteStockLocation('loc-1')).rejects.toThrow('stock location has inventory and cannot be deleted')
+    })
+  })
+
   describe('removals API', () => {
     it('listRemovals fetches all removals without filters', async () => {
       const mockRemovals = [{ uuid: 'rem-1', category: 'dump', reason: 'infection' }]

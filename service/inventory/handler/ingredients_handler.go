@@ -13,6 +13,7 @@ import (
 
 type IngredientStore interface {
 	ListIngredients(context.Context) ([]storage.Ingredient, error)
+	ListIngredientsIncludingDeleted(context.Context) ([]storage.Ingredient, error)
 	GetIngredientByUUID(context.Context, string) (storage.Ingredient, error)
 	CreateIngredient(context.Context, storage.Ingredient) (storage.Ingredient, error)
 }
@@ -22,7 +23,14 @@ func HandleIngredients(db IngredientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ingredients, err := db.ListIngredients(r.Context())
+			includeDeleted := r.URL.Query().Get("include_deleted") == "true"
+			var ingredients []storage.Ingredient
+			var err error
+			if includeDeleted {
+				ingredients, err = db.ListIngredientsIncludingDeleted(r.Context())
+			} else {
+				ingredients, err = db.ListIngredients(r.Context())
+			}
 			if err != nil {
 				service.InternalError(w, "error listing ingredients", "error", err)
 				return

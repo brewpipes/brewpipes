@@ -124,7 +124,7 @@
 </template>
 
 <script lang="ts" setup>
-  import type { BeerLotStockLevel, CreateInventoryAdjustmentRequest, CreateInventoryTransferRequest, Ingredient, IngredientLot, InventoryMovement, StockLocation } from '@/types'
+  import type { BeerLotStockLevel, CreateInventoryAdjustmentRequest, CreateInventoryTransferRequest, IngredientLotStockLevel, StockLocation } from '@/types'
   import { computed, onMounted, ref } from 'vue'
   import InventoryAdjustmentDialog from '@/components/inventory/InventoryAdjustmentDialog.vue'
   import type { InventoryLotInfo } from '@/components/inventory/InventoryAdjustmentDialog.vue'
@@ -147,9 +147,7 @@
 
   const {
     getStockLocations,
-    getIngredients: fetchIngredients,
-    getIngredientLots: fetchIngredientLots,
-    getInventoryMovements: fetchInventoryMovements,
+    getIngredientLotStockLevels: fetchIngredientLotStockLevels,
     getBeerLotStockLevels: fetchBeerLotStockLevels,
     createInventoryAdjustment,
     createInventoryTransfer,
@@ -159,9 +157,7 @@
 
   // Data
   const locations = ref<StockLocation[]>([])
-  const ingredients = ref<Ingredient[]>([])
-  const ingredientLots = ref<IngredientLot[]>([])
-  const ingredientMovements = ref<InventoryMovement[]>([])
+  const ingredientLotStockLevels = ref<IngredientLotStockLevel[]>([])
   const beerLotStockLevels = ref<BeerLotStockLevel[]>([])
 
   // UI state
@@ -194,61 +190,21 @@
     })),
   )
 
-  /** Build a map of ingredient lot UUID → location UUID → net quantity from movements */
-  const ingredientLotLocationMap = computed(() => {
-    const map = new Map<string, Map<string, { quantity: number, unit: string }>>()
-    for (const movement of ingredientMovements.value) {
-      if (!movement.ingredient_lot_uuid) continue
-      let lotMap = map.get(movement.ingredient_lot_uuid)
-      if (!lotMap) {
-        lotMap = new Map()
-        map.set(movement.ingredient_lot_uuid, lotMap)
-      }
-      const existing = lotMap.get(movement.stock_location_uuid) ?? { quantity: 0, unit: movement.amount_unit }
-      const delta = movement.direction === 'in' ? movement.amount : -movement.amount
-      existing.quantity += delta
-      lotMap.set(movement.stock_location_uuid, existing)
-    }
-    return map
-  })
-
   const allInventory = computed<InventoryItem[]>(() => {
     const items: InventoryItem[] = []
-    const locationMap = new Map(locations.value.map(l => [l.uuid, l]))
 
     // Add ingredient lots — one row per lot per location with positive stock
-    for (const lot of ingredientLots.value) {
-      const ingredient = ingredients.value.find(i => i.uuid === lot.ingredient_uuid)
-      const lotLocations = ingredientLotLocationMap.value.get(lot.uuid)
-
-      if (lotLocations && lotLocations.size > 0) {
-        for (const [locUuid, stock] of lotLocations) {
-          if (stock.quantity <= 0) continue
-          const location = locationMap.get(locUuid)
-          items.push({
-            key: `ingredient-${lot.uuid}-${locUuid}`,
-            type: 'ingredient',
-            lotUuid: lot.uuid,
-            name: ingredient?.name ?? 'Unknown Ingredient',
-            quantity: stock.quantity,
-            unit: stock.unit,
-            locationUuid: locUuid,
-            locationName: location?.name ?? 'Unknown Location',
-          })
-        }
-      } else {
-        // No movements found — show lot with unknown location
-        items.push({
-          key: `ingredient-${lot.uuid}`,
-          type: 'ingredient',
-          lotUuid: lot.uuid,
-          name: ingredient?.name ?? 'Unknown Ingredient',
-          quantity: lot.current_amount ?? lot.received_amount,
-          unit: lot.current_unit ?? lot.received_unit,
-          locationUuid: '',
-          locationName: '—',
-        })
-      }
+    for (const level of ingredientLotStockLevels.value) {
+      items.push({
+        key: `ingredient-${level.ingredient_lot_uuid}-${level.stock_location_uuid}`,
+        type: 'ingredient',
+        lotUuid: level.ingredient_lot_uuid,
+        name: level.ingredient_name,
+        quantity: level.current_amount,
+        unit: level.current_unit,
+        locationUuid: level.stock_location_uuid,
+        locationName: level.stock_location_name,
+      })
     }
 
     // Add beer lot stock levels
@@ -310,9 +266,7 @@
     await executeLoad(async () => {
       await Promise.all([
         loadLocations(),
-        loadIngredients(),
-        loadIngredientLots(),
-        loadIngredientMovements(),
+        loadIngredientLotStockLevels(),
         loadBeerLotStockLevels(),
       ])
     })
@@ -322,16 +276,8 @@
     locations.value = await getStockLocations()
   }
 
-  async function loadIngredients () {
-    ingredients.value = await fetchIngredients()
-  }
-
-  async function loadIngredientLots () {
-    ingredientLots.value = await fetchIngredientLots()
-  }
-
-  async function loadIngredientMovements () {
-    ingredientMovements.value = await fetchInventoryMovements()
+  async function loadIngredientLotStockLevels () {
+    ingredientLotStockLevels.value = await fetchIngredientLotStockLevels()
   }
 
   async function loadBeerLotStockLevels () {

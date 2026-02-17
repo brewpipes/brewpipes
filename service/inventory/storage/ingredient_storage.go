@@ -108,6 +108,27 @@ func (c *Client) ListIngredients(ctx context.Context) ([]Ingredient, error) {
 	}
 	defer rows.Close()
 
+	return scanIngredientRows(rows)
+}
+
+// ListIngredientsIncludingDeleted returns all ingredients, including soft-deleted ones.
+// This is used by the activity page to resolve ingredient names for lots that may
+// reference ingredients that have since been deleted.
+func (c *Client) ListIngredientsIncludingDeleted(ctx context.Context) ([]Ingredient, error) {
+	rows, err := c.DB().Query(ctx, `
+		SELECT id, uuid, name, category, default_unit, description, created_at, updated_at, deleted_at
+		FROM ingredient
+		ORDER BY created_at DESC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing ingredients including deleted: %w", err)
+	}
+	defer rows.Close()
+
+	return scanIngredientRows(rows)
+}
+
+func scanIngredientRows(rows pgx.Rows) ([]Ingredient, error) {
 	var ingredients []Ingredient
 	for rows.Next() {
 		var ingredient Ingredient
